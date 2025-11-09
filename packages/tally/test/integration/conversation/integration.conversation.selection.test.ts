@@ -34,11 +34,11 @@ describe('Integration | Conversation | Selection', () => {
 			name: 'quality',
 			valueType: 'number',
 		});
-		const scorer = createWeightedAverageScorer(
-			'qualityScorer',
-			outputMetric,
-			[defineInput({ metric: single, weight: 1 })],
-		);
+		const scorer = createWeightedAverageScorer({
+			name: 'qualityScorer',
+			output: outputMetric,
+			inputs: [defineInput({ metric: single, weight: 1 })],
+		});
 		expect(scorer).toBeDefined();
 
 		// Placeholders to be used in evaluator wiring

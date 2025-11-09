@@ -20,8 +20,8 @@
     "fumadocs-mdx": "12.0.3"
   },
   "devDependencies": {
-    "@tally/typescript-config": "workspace:*",
-    "@tally/biome-config": "workspace:*",
+    "@tally-evals/typescript-config": "workspace:*",
+    "@tally-evals/biome-config": "workspace:*",
     "@types/node": "24.6.2",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",

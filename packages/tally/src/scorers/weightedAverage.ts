@@ -91,33 +91,37 @@ function computeWeightedAverage<TInputs extends readonly ScorerInput[]>(
 }
 
 /**
+ * Options for creating a weighted average scorer
+ */
+export interface CreateWeightedAverageScorerOptions<TInputs extends readonly ScorerInput[]> {
+	name: string;
+	output: BaseMetricDef<number>;
+	inputs: TInputs;
+	normalizeWeights?: boolean;
+	fallbackScore?: Score;
+	description?: string;
+	metadata?: Record<string, unknown>;
+}
+
+/**
  * Create a weighted average scorer
  *
  * Uses ScorerBuilder to construct a scorer that combines normalized metrics
  * using weighted average. Weights are normalized to sum to 1.0 by default.
  *
- * @param name - Name of the scorer
- * @param output - Output metric definition
- * @param inputs - Array of metric inputs with weights
- * @param options - Optional configuration
+ * @param options - Configuration object with name, output, inputs, and optional settings
  * @returns Scorer that combines metrics using weighted average
  */
 export function createWeightedAverageScorer<TInputs extends readonly ScorerInput[]>(
-	name: string,
-	output: BaseMetricDef<number>,
-	inputs: TInputs,
-	options?: {
-		normalizeWeights?: boolean;
-		fallbackScore?: Score;
-		description?: string;
-		metadata?: Record<string, unknown>;
-	}
+	options: CreateWeightedAverageScorerOptions<TInputs>
 ): Scorer<TInputs> {
+	const { name, output, inputs, normalizeWeights: normalizeWeightsOption, fallbackScore, description, metadata } = options;
+	
 	if (inputs.length === 0) {
 		throw new Error('Weighted average scorer requires at least one input metric');
 	}
 
-	const normalizeWeights = options?.normalizeWeights ?? true;
+	const normalizeWeights = normalizeWeightsOption ?? true;
 
 	// Build scorer using ScorerBuilder
 	// Note: TypeScript can't track exact type transformations in loops,
@@ -143,7 +147,7 @@ export function createWeightedAverageScorer<TInputs extends readonly ScorerInput
 			computeWeightedAverage(scores, inputs, normalizeWeights)
 		)
 		.withDescription(
-			options?.description ??
+			description ??
 				`Weighted average scorer combining ${inputs.length} metrics`
 		)
 		.build() as Scorer<TInputs>;
@@ -151,10 +155,10 @@ export function createWeightedAverageScorer<TInputs extends readonly ScorerInput
 	// Apply optional overrides
 	return {
 		...scorer,
-		...(options?.fallbackScore !== undefined && {
-			fallbackScore: options.fallbackScore,
+		...(fallbackScore !== undefined && {
+			fallbackScore,
 		}),
-		...(options?.metadata && { metadata: options.metadata }),
+		...(metadata && { metadata }),
 	};
 }
 

@@ -5,7 +5,7 @@
  * 
  * @example
  * ```ts
- * import { demandLetterAgent } from '@tally/examples-ai-sdk';
+ * import { demandLetterAgent } from '@tally-evals/examples-ai-sdk';
  * 
  * const result = await demandLetterAgent.generate({
  *   prompt: 'I need to create a demand letter',

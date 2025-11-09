@@ -55,10 +55,10 @@ importers:
       '@tailwindcss/postcss':
         specifier: ^4.1.14
         version: 4.1.14
-      '@tally/biome-config':
+      '@tally-evals/biome-config':
         specifier: workspace:*
         version: link:../../packages/biome-config
-      '@tally/typescript-config':
+      '@tally-evals/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config
       '@types/mdx':
@@ -89,10 +89,10 @@ importers:
         specifier: workspace:*
         version: link:../../../packages/tally
     devDependencies:
-      '@tally/biome-config':
+      '@tally-evals/biome-config':
         specifier: workspace:*
         version: link:../../../packages/biome-config
-      '@tally/typescript-config':
+      '@tally-evals/typescript-config':
         specifier: workspace:*
         version: link:../../../packages/typescript-config
       tsx:
@@ -113,17 +113,14 @@ importers:
       ai:
         specifier: ^5.0.89
         version: 5.0.89(zod@3.25.76)
-      tally:
-        specifier: workspace:*
-        version: link:../../../packages/tally
       zod:
         specifier: ^3.23.8
         version: 3.25.76
     devDependencies:
-      '@tally/biome-config':
+      '@tally-evals/biome-config':
         specifier: workspace:*
         version: link:../../../packages/biome-config
-      '@tally/typescript-config':
+      '@tally-evals/typescript-config':
         specifier: workspace:*
         version: link:../../../packages/typescript-config
       '@types/node':
@@ -157,10 +154,10 @@ importers:
         specifier: ^3.23.8
         version: 3.25.76
     devDependencies:
-      '@tally/biome-config':
+      '@tally-evals/biome-config':
         specifier: workspace:*
         version: link:../../../packages/biome-config
-      '@tally/typescript-config':
+      '@tally-evals/typescript-config':
         specifier: workspace:*
         version: link:../../../packages/typescript-config
       tsx:
@@ -180,16 +177,16 @@ importers:
       '@ai-sdk/google':
         specifier: ^2.0.29
         version: 2.0.29(zod@4.1.12)
-      '@tally/biome-config':
+      '@tally-evals/biome-config':
         specifier: workspace:*
         version: link:../biome-config
-      '@tally/examples-ai-sdk':
+      '@tally-evals/examples-ai-sdk':
         specifier: workspace:*
         version: link:../../apps/examples/ai-sdk
-      '@tally/trajectories':
+      '@tally-evals/trajectories':
         specifier: workspace:*
         version: link:../trajectories
-      '@tally/typescript-config':
+      '@tally-evals/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@types/node':
@@ -223,10 +220,10 @@ importers:
         specifier: workspace:*
         version: link:../tally
     devDependencies:
-      '@tally/biome-config':
+      '@tally-evals/biome-config':
         specifier: workspace:*
         version: link:../biome-config
-      '@tally/typescript-config':
+      '@tally-evals/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
       '@types/node':

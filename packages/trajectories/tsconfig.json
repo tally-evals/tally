@@ -1,5 +1,5 @@
 {
-  "extends": "@tally/typescript-config/strict.json",
+  "extends": "@tally-evals/typescript-config/strict.json",
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",

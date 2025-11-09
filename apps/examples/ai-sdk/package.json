@@ -1,5 +1,5 @@
 {
-  "name": "@tally/examples-ai-sdk",
+  "name": "@tally-evals/examples-ai-sdk",
   "version": "0.0.0",
   "private": true,
   "description": "AI SDK LLM evaluation examples using the Tally framework",
@@ -22,12 +22,11 @@
   "dependencies": {
     "ai": "^5.0.89",
     "@ai-sdk/google": "^2.0.29",
-    "zod": "^3.23.8",
-    "tally": "workspace:*"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@tally/typescript-config": "workspace:*",
-    "@tally/biome-config": "workspace:*",
+    "@tally-evals/typescript-config": "workspace:*",
+    "@tally-evals/biome-config": "workspace:*",
     "@types/node": "^24.6.2",
     "typescript": "^5.3.3",
     "tsx": "^4.7.0",

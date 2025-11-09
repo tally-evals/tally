@@ -3,7 +3,7 @@
  */
 
 import { google } from '@ai-sdk/google';
-import type { Trajectory } from '@tally/trajectories';
+import type { Trajectory } from '@tally-evals/trajectories';
 
 /**
  * Travel Planner Trajectory Definition

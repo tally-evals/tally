@@ -6,7 +6,7 @@
  * 
  * @example
  * ```ts
- * import { travelPlannerAgent } from '@tally/examples-ai-sdk';
+ * import { travelPlannerAgent } from '@tally-evals/examples-ai-sdk';
  * 
  * const result = await travelPlannerAgent.generate({
  *   prompt: 'I want to plan a trip to San Francisco',

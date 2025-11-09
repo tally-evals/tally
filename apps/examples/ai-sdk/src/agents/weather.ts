@@ -6,7 +6,7 @@
  * 
  * @example
  * ```ts
- * import { weatherAgent } from '@tally/examples-ai-sdk';
+ * import { weatherAgent } from '@tally-evals/examples-ai-sdk';
  * 
  * const result = await weatherAgent.generate({
  *   prompt: 'What is the weather in San Francisco?',

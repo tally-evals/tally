@@ -4,16 +4,16 @@
 
 import { config } from 'dotenv';
 import { resolve, join } from 'node:path';
-import { demandLetterAgent } from '@tally/examples-ai-sdk';
+import { demandLetterAgent } from '@tally-evals/examples-ai-sdk';
 import {
 	createTrajectory,
 	runTrajectory,
 	withAISdkAgent,
 	toConversation,
-} from '@tally/trajectories';
+	toJSONL,
+} from '@tally-evals/trajectories';
 import { demandLetterTrajectory } from '../trajectories';
-import { saveConversationsJSONL } from '../utils/recorder';
-import type { Conversation } from '../../src/index';
+import { saveConversationsStepsJSONL } from '../utils/recorder';
 
 // Load .env.local if it exists
 config({ path: resolve(__dirname, '../../.env.local') });
@@ -40,63 +40,38 @@ async function main() {
 	console.log(`   Mode: ${trajectory.mode}`);
 	console.log(`   Steps: ${trajectory.steps?.length || 0}\n`);
 
-	const allConversations: Conversation[] = [];
+	try {
+		// Run trajectory (userModel is already in trajectory definition)
+		const result = await runTrajectory(trajectory);
 
-	// Run trajectory for each scenario
-	const scenarios = [
-		{
-			...demandLetterTrajectory,
-			goal: 'Create a demand letter for an unpaid invoice. The amount is $2,500 and it was due on March 15th. The recipient is ABC Company located at 123 Business St, New York, NY 10001.',
-		},
-		{
-			...demandLetterTrajectory,
-			goal: 'Help me draft a cease and desist letter. Someone is using my company name without permission. My company is XYZ Corp and I want them to stop immediately.',
-		},
-	];
-
-	for (let i = 0; i < scenarios.length; i++) {
-		const scenario = scenarios[i];
-		console.log(`\n${'='.repeat(60)}`);
-		console.log(`Scenario ${i + 1}: ${scenario.goal.substring(0, 80)}...`);
-		console.log('='.repeat(60));
-
-		try {
-			// Create trajectory for this scenario
-			const scenarioTrajectory = createTrajectory(scenario, agent);
-
-			// Run trajectory (userModel is already in trajectory definition)
-			const result = await runTrajectory(scenarioTrajectory);
-
-			console.log(`✅ Trajectory completed: ${result.completed ? 'SUCCESS' : 'INCOMPLETE'}`);
-			console.log(`   Reason: ${result.reason}`);
-			console.log(`   Total turns: ${result.steps.length}`);
-
-			// Convert to Tally Conversation format
-			const conversation = toConversation(result, `demand-letter-${i + 1}`);
-			conversation.metadata = {
-				...(conversation.metadata || {}),
-				scenario: 'demand-letter',
-				promptIndex: i,
-			};
-
-			allConversations.push(conversation);
-		} catch (error) {
-			console.error('\n❌ Error:', error);
-			if (error instanceof Error) {
-				console.error(`   ${error.message}`);
-				console.error(`   ${error.stack}`);
-			}
+		console.log(`\n✅ Trajectory completed: ${result.completed ? 'SUCCESS' : 'INCOMPLETE'}`);
+		console.log(`   Reason: ${result.reason}`);
+		console.log(`   Total turns: ${result.steps.length}`);
+		if (result.summary) {
+			console.log(`   Summary: ${result.summary}`);
 		}
-	}
 
-	// Save all conversations to a single JSONL file
-	if (allConversations.length > 0) {
-		console.log('\n📦 Saving all conversations...');
-		saveConversationsJSONL(allConversations, join(OUTPUT_DIR, 'conversations/demandLetter.jsonl'));
-		console.log(`✅ Saved ${allConversations.length} conversations to demandLetter.jsonl`);
-	}
+		// Convert to Tally Conversation format
+		const conversation = toConversation(result, 'demand-letter-trajectory');
 
-	console.log('\n✨ Demand Letter Agent Debug Script completed!');
+		// Save conversation steps to JSONL file (one step per line)
+		console.log('\n📦 Saving conversation steps...');
+		saveConversationsStepsJSONL([conversation], join(OUTPUT_DIR, 'conversations/demandLetter.jsonl'));
+		console.log(`✅ Saved ${conversation.steps.length} conversation steps to demandLetter.jsonl`);
+
+		// Also save JSONL format from trajectory
+		const jsonlLines = toJSONL(result);
+		console.log(`✅ Generated ${jsonlLines.length} JSONL lines`);
+
+		console.log('\n✨ Demand Letter Agent Debug Script completed!');
+	} catch (error) {
+		console.error('\n❌ Error running trajectory:', error);
+		if (error instanceof Error) {
+			console.error(`   ${error.message}`);
+			console.error(`   ${error.stack}`);
+		}
+		process.exit(1);
+	}
 }
 
 main().catch((error) => {

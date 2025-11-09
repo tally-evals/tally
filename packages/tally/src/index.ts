@@ -136,6 +136,7 @@ export { createTopicAdherenceMetric } from './metrics/multiTurn/topicAdherence';
 // ============================================================================
 
 export { createWeightedAverageScorer } from './scorers/weightedAverage';
+export type { CreateWeightedAverageScorerOptions } from './scorers/weightedAverage';
 
 // ============================================================================
 // OOB Aggregators

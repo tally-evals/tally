@@ -5,7 +5,7 @@
  * 
  * @example
  * ```ts
- * import { demandLetterAgent } from '@tally/examples-mastra';
+ * import { demandLetterAgent } from '@tally-evals/examples-mastra';
  * 
  * const result = await demandLetterAgent.generate({
  *   messages: [{ role: 'user', content: 'I need to create a demand letter' }],

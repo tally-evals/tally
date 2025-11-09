@@ -1,10 +1,15 @@
 {
-  "name": "@tally/trajectories",
+  "name": "@tally-evals/trajectories",
   "version": "0.0.0",
   "description": "A framework-agnostic trajectory generation package for building multi-turn conversation trajectories",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tally-evals/tally.git",
+    "directory": "packages/trajectories"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -34,12 +39,14 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "ai": "^5.0.89",
+    "ai": "^5.0.89"
+  },
+  "peerDependencies": {
     "tally": "workspace:*"
   },
   "devDependencies": {
-    "@tally/biome-config": "workspace:*",
-    "@tally/typescript-config": "workspace:*",
+    "@tally-evals/biome-config": "workspace:*",
+    "@tally-evals/typescript-config": "workspace:*",
     "@types/node": "24.6.2",
     "tsup": "^8.0.1",
     "typescript": "^5.3.3",

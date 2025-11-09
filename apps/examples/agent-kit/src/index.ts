@@ -5,15 +5,13 @@
  * with Agent Kit from Ingest for evaluating agent performance.
  */
 
-import { tally } from 'tally'
-
+// Placeholder for Agent Kit integration examples
 async function main() {
   console.log('Agent Kit LLM Evaluation Examples')
   console.log('==================================')
   
   // Placeholder for Agent Kit integration examples
   console.log('Examples coming soon...')
-  console.log('Tally framework:', tally)
   
   // Example evaluation scenarios will be implemented here:
   // - Agent task completion evaluation

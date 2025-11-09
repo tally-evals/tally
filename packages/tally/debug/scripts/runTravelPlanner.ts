@@ -4,14 +4,14 @@
 
 import { config } from 'dotenv';
 import { resolve, join } from 'node:path';
-import { travelPlannerAgent } from '@tally/examples-ai-sdk';
+import { travelPlannerAgent } from '@tally-evals/examples-ai-sdk';
 import {
 	createTrajectory,
 	runTrajectory,
 	withAISdkAgent,
 	toConversation,
 	toJSONL,
-} from '@tally/trajectories';
+} from '@tally-evals/trajectories';
 import { travelPlannerTrajectory } from '../trajectories';
 import { saveConversationsStepsJSONL } from '../utils/recorder';
 

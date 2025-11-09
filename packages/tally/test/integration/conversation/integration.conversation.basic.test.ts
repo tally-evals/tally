@@ -26,11 +26,11 @@ describe('Integration | Conversation | Basic', () => {
 			name: 'quality',
 			valueType: 'number',
 		});
-		const scorer = createWeightedAverageScorer(
-			'qualityScorer',
-			outputMetric,
-			[defineInput({ metric: multi, weight: 1 })],
-		);
+		const scorer = createWeightedAverageScorer({
+			name: 'qualityScorer',
+			output: outputMetric,
+			inputs: [defineInput({ metric: multi, weight: 1 })],
+		});
 		expect(scorer).toBeDefined();
 		expect(conversationExampleA.steps.length).toBe(2);
 	});

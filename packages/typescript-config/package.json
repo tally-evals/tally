@@ -1,5 +1,5 @@
 {
-  "name": "@tally/typescript-config",
+  "name": "@tally-evals/typescript-config",
   "version": "0.0.0",
   "private": true,
   "main": "index.js",

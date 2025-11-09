@@ -20,11 +20,11 @@ describe('Integration | Dataset | Edge Cases', () => {
 			name: 'quality',
 			valueType: 'number',
 		});
-		const scorer = createWeightedAverageScorer(
-			'qualityScorer',
-			outputMetric,
-			[defineInput({ metric, weight: 1 })],
-		);
+		const scorer = createWeightedAverageScorer({
+			name: 'qualityScorer',
+			output: outputMetric,
+			inputs: [defineInput({ metric, weight: 1 })],
+		});
 		expect(scorer).toBeDefined();
 		expect(datasetExampleB.length).toBe(2);
 	});

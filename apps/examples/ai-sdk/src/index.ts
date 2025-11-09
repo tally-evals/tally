@@ -5,7 +5,7 @@
  * 
  * @example
  * ```ts
- * import { travelPlannerAgent, demandLetterAgent } from '@tally/examples-ai-sdk';
+ * import { travelPlannerAgent, demandLetterAgent } from '@tally-evals/examples-ai-sdk';
  * 
  * // Use travel planner agent
  * const result = await travelPlannerAgent.generate({

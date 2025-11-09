@@ -39,14 +39,14 @@ describe('E2E | Dataset | OOB + Custom', () => {
 			name: 'final',
 			valueType: 'number',
 		});
-		const scorer = createWeightedAverageScorer(
-			'qualityScorer',
-			outputMetric,
-			[
+		const scorer = createWeightedAverageScorer({
+			name: 'qualityScorer',
+			output: outputMetric,
+			inputs: [
 				defineInput({ metric: relevance, weight: 0.7 }),
 				defineInput({ metric: keywordMetric, weight: 0.3 }),
 			],
-		);
+		});
 
 		// Create evaluator
 		const evaluator = createEvaluator({

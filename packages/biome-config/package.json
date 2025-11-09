@@ -1,5 +1,5 @@
 {
-  "name": "@tally/biome-config",
+  "name": "@tally-evals/biome-config",
   "version": "0.0.0",
   "private": true,
   "main": "index.js",

@@ -1,5 +1,5 @@
 {
-  "extends": "@tally/typescript-config/nextjs.json",
+  "extends": "@tally-evals/typescript-config/nextjs.json",
   "compilerOptions": {
     "baseUrl": ".",
     "moduleResolution": "bundler",

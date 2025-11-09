@@ -6,7 +6,7 @@
  * 
  * @example
  * ```ts
- * import { travelPlannerAgent } from '@tally/examples-mastra';
+ * import { travelPlannerAgent } from '@tally-evals/examples-mastra';
  * 
  * const result = await travelPlannerAgent.generate({
  *   messages: [{ role: 'user', content: 'I want to plan a trip to San Francisco' }],

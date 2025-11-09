@@ -5,7 +5,7 @@
  * 
  * @example
  * ```ts
- * import { travelPlannerAgent, demandLetterAgent } from '@tally/examples-mastra';
+ * import { travelPlannerAgent, demandLetterAgent } from '@tally-evals/examples-mastra';
  * 
  * // Use travel planner agent
  * const result = await travelPlannerAgent.generate({

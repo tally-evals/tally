@@ -69,11 +69,11 @@ const CONVERSATION_QUALITY = defineBaseMetric<number>({
   valueType: 'number',
 });
 
-const CONVERSATION_SCORER = createWeightedAverageScorer(
-  'ConversationQuality',
-  CONVERSATION_QUALITY,
-  [defineInput({ metric: ANSWER_RELEVANCE, weight: 0.5 }), defineInput({ metric: ROLE_ADHERENCE, weight: 0.5 })]
-);
+const CONVERSATION_SCORER = createWeightedAverageScorer({
+  name: 'ConversationQuality',
+  output: CONVERSATION_QUALITY,
+  inputs: [defineInput({ metric: ANSWER_RELEVANCE, weight: 0.5 }), defineInput({ metric: ROLE_ADHERENCE, weight: 0.5 })]
+});
 
 const conversations: Conversation[] = [
   {
@@ -186,11 +186,11 @@ const EXAMPLE_QUALITY = defineBaseMetric<number>({
   valueType: 'number',
 });
 
-const DATASET_SCORER = createWeightedAverageScorer(
-  'DatasetQuality',
-  EXAMPLE_QUALITY,
-  [defineInput({ metric: ANSWER_RELEVANCE_DATASET, weight: 0.7 }), defineInput({ metric: LATENCY_SCORE, weight: 0.3 })]
-);
+const DATASET_SCORER = createWeightedAverageScorer({
+  name: 'DatasetQuality',
+  output: EXAMPLE_QUALITY,
+  inputs: [defineInput({ metric: ANSWER_RELEVANCE_DATASET, weight: 0.7 }), defineInput({ metric: LATENCY_SCORE, weight: 0.3 })]
+});
 
 const datasetItems: DatasetItem[] = [
   { id: 'item-1', prompt: 'Explain the solar eclipse.', completion: 'A solar eclipse occurs when...' },

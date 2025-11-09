@@ -63,14 +63,14 @@ describe('E2E | Conversation | OOB + Custom', () => {
 			name: 'final',
 			valueType: 'number',
 		});
-		const scorer = createWeightedAverageScorer(
-			'qualityScorer',
-			outputMetric,
-			[
+		const scorer = createWeightedAverageScorer({
+			name: 'qualityScorer',
+			output: outputMetric,
+			inputs: [
 				defineInput({ metric: toneMetric, weight: 0.6 }),
 				defineInput({ metric: conciseMetric, weight: 0.4 }),
 			],
-		);
+		});
 
 		// Create evaluator
 		const evaluator = createEvaluator({
