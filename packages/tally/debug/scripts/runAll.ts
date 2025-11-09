@@ -69,6 +69,7 @@ async function runAll() {
 	console.log('📋 Running Travel Planner Agent...\n');
 	for (let i = 0; i < travelScenarios.length; i++) {
 		const scenario = travelScenarios[i];
+		if (!scenario) continue;
 		console.log(`  Scenario ${i + 1}: "${scenario.goal.substring(0, 60)}..."`);
 
 		try {
@@ -100,6 +101,7 @@ async function runAll() {
 	console.log('📋 Running Demand Letter Agent...\n');
 	for (let i = 0; i < demandScenarios.length; i++) {
 		const scenario = demandScenarios[i];
+		if (!scenario) continue;
 		console.log(`  Scenario ${i + 1}: "${scenario.goal.substring(0, 60)}..."`);
 
 		try {
@@ -133,13 +135,13 @@ async function runAll() {
 		const travelConvs = allConversations.filter((c) => c.metadata?.scenario === 'travel-planner');
 		const demandConvs = allConversations.filter((c) => c.metadata?.scenario === 'demand-letter');
 
-		if (travelConvs.length > 0) {
+		if (travelConvs.length > 0 && travelConvs[0]) {
 			saveConversationFixture(travelConvs[0], join(OUTPUT_DIR, 'travelPlannerConversation.ts'), 'travelPlannerConversation');
 			const travelDataset = travelConvs.flatMap(convertConversationToDataset);
 			saveDatasetFixture(travelDataset, join(OUTPUT_DIR, 'travelPlannerDataset.ts'), 'travelPlannerDataset');
 		}
 
-		if (demandConvs.length > 0) {
+		if (demandConvs.length > 0 && demandConvs[0]) {
 			saveConversationFixture(demandConvs[0], join(OUTPUT_DIR, 'demandLetterConversation.ts'), 'demandLetterConversation');
 			const demandDataset = demandConvs.flatMap(convertConversationToDataset);
 			saveDatasetFixture(demandDataset, join(OUTPUT_DIR, 'demandLetterDataset.ts'), 'demandLetterDataset');

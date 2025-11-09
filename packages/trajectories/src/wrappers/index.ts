@@ -6,7 +6,7 @@
  */
 
 import { generateText } from 'ai';
-import type { Experimental_Agent as AISdkAgent, Prompt, ModelMessage, LanguageModel, ToolSet } from 'ai';
+import type { Prompt, ModelMessage, LanguageModel } from 'ai';
 import type { AgentHandle } from '../core/types.js';
 
 /**
@@ -20,24 +20,25 @@ import type { AgentHandle } from '../core/types.js';
  * @param options - Optional config for generateText (only used when first param is a model)
  * @returns AgentHandle that can be used with trajectories
  */
-export function withAISdkAgent<TOOLS extends ToolSet = ToolSet, OUTPUT = unknown>(
-	agent: AISdkAgent<TOOLS, OUTPUT, unknown>
+export function withAISdkAgent(
+	agent: { generate: (input: Prompt) => Promise<{ response: { messages: ModelMessage[] } }> }
 ): AgentHandle;
 export function withAISdkAgent(
 	model: LanguageModel,
 	options?: Omit<Parameters<typeof generateText>[0], 'model' | 'messages' | 'prompt'>
 ): AgentHandle;
 export function withAISdkAgent(
-	agentOrModel: AISdkAgent<ToolSet, unknown, unknown> | LanguageModel,
+	agentOrModel: { generate?: (input: Prompt) => Promise<{ response: { messages: ModelMessage[] } }> } | LanguageModel,
 	options?: Omit<Parameters<typeof generateText>[0], 'model' | 'messages' | 'prompt'>
 ): AgentHandle {
 	// Check if it's an AI SDK Agent instance (has generate method)
 	if (
 		typeof agentOrModel === 'object' &&
 		agentOrModel !== null &&
-		'generate' in agentOrModel
+		'generate' in agentOrModel &&
+		typeof (agentOrModel as { generate?: unknown }).generate === 'function'
 	) {
-		const agent = agentOrModel as AISdkAgent<ToolSet, unknown, unknown>;
+		const agent = agentOrModel as { generate: (input: Prompt) => Promise<{ response: { messages: ModelMessage[] } }> };
 		return {
 			async respond(history: readonly ModelMessage[]) {
 				// Use Prompt.messages for multi-turn support

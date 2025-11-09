@@ -18,7 +18,7 @@ This is a monorepo containing the following packages:
 
 ### Core Packages
 
-- **[`tally`](./packages/tally)** - Main evaluation framework
+- **[`@tally-evals/tally`](./packages/tally)** - Main evaluation framework
 - **[`@tally-evals/trajectories`](./packages/trajectories)** - Framework-agnostic trajectory generation for multi-turn conversations
 
 ### Example Packages
@@ -33,24 +33,32 @@ This is a monorepo containing the following packages:
 
 ## Installation
 
-### Core Package
+Install the packages you need:
 
 ```bash
-npm install tally
+# Core evaluation framework
+npm install @tally-evals/tally
 # or
-pnpm add tally
+pnpm add @tally-evals/tally
 # or
-yarn add tally
-```
+yarn add @tally-evals/tally
 
-### Trajectories Package
-
-```bash
+# Trajectory generation (optional)
 npm install @tally-evals/trajectories
 # or
 pnpm add @tally-evals/trajectories
 # or
 yarn add @tally-evals/trajectories
+```
+
+Or install both at once:
+
+```bash
+npm install @tally-evals/tally @tally-evals/trajectories
+# or
+pnpm add @tally-evals/tally @tally-evals/trajectories
+# or
+yarn add @tally-evals/tally @tally-evals/trajectories
 ```
 
 ## Quick Start
@@ -115,7 +123,7 @@ import {
   createToxicityMetric,
   createRoleAdherenceMetric,
   runAllTargets
-} from 'tally'
+} from '@tally-evals/tally'
 import { google } from '@ai-sdk/google'
 
 // Prepare your data (from trajectory or dataset)

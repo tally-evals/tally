@@ -8,7 +8,6 @@
 import type { Conversation, ConversationStep, DatasetItem } from '@tally/core/types';
 import type { ModelMessage } from 'ai';
 import { writeFileSync, mkdirSync, appendFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { extractTextFromMessage, extractTextFromMessages } from '../../src/metrics/common/utils';
 
 export interface AgentStep {
@@ -43,7 +42,7 @@ export function convertToTallyConversation(
 			stepIndex: step.stepIndex,
 			input: step.input as ConversationStep['input'],
 			output: step.output as ConversationStep['output'],
-			timestamp: step.timestamp,
+			...(step.timestamp && { timestamp: step.timestamp }),
 			metadata: {
 				...(step.toolCalls && { toolCalls: step.toolCalls }),
 			},
