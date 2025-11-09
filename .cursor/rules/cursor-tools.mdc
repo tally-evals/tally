@@ -1,0 +1,569 @@
+---
+alwaysApply: true
+---
+
+# Cursor Tools Usage Guidelines
+
+This document provides comprehensive guidelines for using the available tools in Cursor editor effectively and efficiently.
+
+## Table of Contents
+
+1. [File Management Tools](#file-management-tools)
+2. [Code Search and Analysis Tools](#code-search-and-analysis-tools)
+3. [Terminal and Execution Tools](#terminal-and-execution-tools)
+4. [Browser Automation Tools](#browser-automation-tools)
+5. [Database Tools](#database-tools)
+6. [Task Management Tools](#task-management-tools)
+7. [External Integration Tools](#external-integration-tools)
+8. [General Best Practices](#general-best-practices)
+
+## File Management Tools
+
+### Reading Files
+
+#### When to Use `read_file`
+- Reading configuration files (package.json, tsconfig.json, etc.)
+- Examining source code to understand implementation
+- Reviewing documentation files
+- Checking test files
+
+#### Best Practices
+- Use `offset` and `limit` parameters for large files to avoid unnecessary token usage
+- Always check file size before reading very large files
+- Use absolute paths when possible to avoid ambiguity
+
+```typescript
+// Good: Reading specific lines of a large file
+read_file({
+  target_file: "/home/hammad/projects/spec-lab/apps/web/src/components/FeatureForm.tsx",
+  offset: 1,
+  limit: 50
+})
+
+// Good: Reading entire small file
+read_file({
+  target_file: "/home/hammad/projects/spec-lab/package.json"
+})
+```
+
+### Listing Directories
+
+#### When to Use `list_dir`
+- Exploring project structure
+- Finding available files in a directory
+- Understanding folder organization
+
+#### Best Practices
+- Use `ignore_globs` to exclude unnecessary files (node_modules, .git, etc.)
+- Start with root directory to understand overall structure
+- Use absolute paths for consistency
+
+```typescript
+// Good: Listing directory with ignored files
+list_dir({
+  target_directory: "/home/hammad/projects/spec-lab",
+  ignore_globs: ["node_modules", ".git", "dist"]
+})
+```
+
+### Editing Files
+
+#### When to Use `edit_file`
+- Making targeted code changes
+- Adding new functionality to existing files
+- Updating configuration files
+- Creating new files
+
+#### Best Practices
+- Provide clear, specific instructions
+- Use `// ... existing code ...` to represent unchanged code
+- Make minimal, focused changes per edit
+- Always include sufficient context around changes
+
+```typescript
+// Good: Clear instruction with sufficient context
+edit_file({
+  target_file: "/home/hammad/projects/spec-lab/apps/web/src/components/FeatureForm.tsx",
+  instructions: "Add validation for the feature name field",
+  code_edit: `
+const validateFeatureName = (name: string): boolean => {
+  // ... existing code ...
+  return name.length > 0 && name.length <= 100;
+};
+
+// ... existing code ...
+
+const handleSubmit = () => {
+  if (!validateFeatureName(featureName)) {
+    setError("Feature name must be between 1 and 100 characters");
+    return;
+  }
+  // ... existing code ...
+};
+`
+})
+```
+
+### Editing Jupyter Notebooks
+
+#### When to Use `edit_notebook`
+- Modifying Jupyter notebook cells
+- Adding new cells to notebooks
+- Updating notebook content
+
+#### Best Practices
+- Always specify the correct cell index (0-based)
+- Set `is_new_cell` correctly based on whether you're creating or editing
+- Include sufficient context in `old_string` to uniquely identify the cell
+- Use the correct `cell_language` parameter
+
+```typescript
+// Good: Editing an existing cell
+edit_notebook({
+  target_notebook: "/home/hammad/projects/spec-lab/notebooks/analysis.ipynb",
+  cell_idx: 0,
+  is_new_cell: false,
+  cell_language: "python",
+  old_string: "import pandas as pd\n# Load data\ndf = pd.read_csv('data.csv')",
+  new_string: "import pandas as pd\n# Load data\ndf = pd.read_csv('data.csv')\n# Clean data\ndf = df.dropna()"
+})
+```
+
+### Deleting Files
+
+#### When to Use `delete_file`
+- Removing temporary files
+- Cleaning up generated files
+- Removing deprecated code files
+
+#### Best Practices
+- Always provide a clear explanation
+- Verify the file exists before attempting deletion
+- Check if the file is referenced elsewhere before deletion
+
+```typescript
+// Good: Clear explanation
+delete_file({
+  target_file: "/home/hammad/projects/spec-lab/temp-backup.json",
+  explanation: "Removing temporary backup file created during migration"
+})
+```
+
+### Checking Linting Errors
+
+#### When to Use `read_lints`
+- Identifying linting issues in files
+- Checking code quality before committing
+- Finding potential problems in specific files or directories
+
+#### Best Practices
+- Focus on specific files or directories rather than the entire workspace
+- Use after making significant changes to verify code quality
+- Address linting errors before finalizing changes
+
+```typescript
+// Good: Checking specific files
+read_lints({
+  paths: ["/home/hammad/projects/spec-lab/apps/web/src/components/FeatureForm.tsx"]
+})
+```
+
+## Code Search and Analysis Tools
+
+### Using `grep`
+
+#### When to Use `grep`
+- Finding exact text matches in code
+- Searching for specific function names, variables, or patterns
+- Finding all occurrences of a specific import or usage
+- Counting occurrences of patterns
+
+#### Best Practices
+- Use specific patterns to avoid too many results
+- Use `head_limit` for large codebases
+- Use appropriate file type filters with `type` parameter
+- Use context flags (`-A`, `-B`, `-C`) to see surrounding code
+
+```typescript
+// Good: Specific pattern with context
+grep({
+  pattern: "export.*function.*validate",
+  path: "/home/hammad/projects/spec-lab/apps/web/src",
+  type: "ts",
+  output_mode: "content",
+  -C: 3,
+  head_limit: 20
+})
+
+// Good: Counting occurrences
+grep({
+  pattern: "useState",
+  path: "/home/hammad/projects/spec-lab/apps/web/src",
+  type: "tsx",
+  output_mode: "count"
+})
+```
+
+### Using `codebase_search`
+
+#### When to Use `codebase_search`
+- Understanding how a feature works
+- Finding implementations of specific functionality
+- Exploring unfamiliar codebases
+- Asking "how/where/what" questions about code behavior
+
+#### Best Practices
+- Start with broad, high-level queries
+- Use complete questions rather than keywords
+- Narrow down to specific directories after initial exploration
+- Break complex questions into smaller, focused queries
+
+```typescript
+// Good: Complete question about functionality
+codebase_search({
+  query: "How does user authentication work in this application?",
+  target_directories: ["/home/hammad/projects/spec-lab/apps/web/src"],
+  explanation: "Understanding authentication flow"
+})
+
+// Good: Specific implementation question
+codebase_search({
+  query: "Where are API error handlers implemented?",
+  target_directories: ["/home/hammad/projects/spec-lab/apps/web/src/api"],
+  explanation: "Finding error handling implementation"
+})
+```
+
+### Using `glob_file_search`
+
+#### When to Use `glob_file_search`
+- Finding files by name patterns
+- Locating all files of a certain type
+- Finding configuration files
+- Discovering test files
+
+#### Best Practices
+- Use specific patterns to narrow results
+- Combine with `target_directory` to focus search
+- Remember that patterns are automatically prepended with "**/"
+
+```typescript
+// Good: Finding all TypeScript files in a specific directory
+glob_file_search({
+  glob_pattern: "*.ts",
+  target_directory: "/home/hammad/projects/spec-lab/apps/web/src/utils"
+})
+
+// Good: Finding all test files
+glob_file_search({
+  glob_pattern: "**/*.test.ts",
+  target_directory: "/home/hammad/projects/spec-lab"
+})
+```
+
+## Terminal and Execution Tools
+
+### Using `run_terminal_cmd`
+
+#### When to Use `run_terminal_cmd`
+- Installing dependencies
+- Running build scripts
+- Executing database migrations
+- Running tests
+- Starting development servers
+
+#### Best Practices
+- Always provide clear explanations
+- Use `is_background: true` for long-running processes
+- Use non-interactive flags when possible
+- Check command success before proceeding with dependent operations
+
+```typescript
+// Good: Installing dependencies with clear explanation
+run_terminal_cmd({
+  command: "npm install",
+  is_background: false,
+  explanation: "Installing project dependencies"
+})
+
+// Good: Starting development server in background
+run_terminal_cmd({
+  command: "npm run dev",
+  is_background: true,
+  explanation: "Starting development server"
+})
+```
+
+## Browser Automation Tools
+
+### Chrome DevTools Tools
+
+#### When to Use Chrome DevTools Tools
+- Testing web applications
+- Automating browser interactions
+- Capturing screenshots
+- Analyzing network requests
+- Performance testing
+
+#### Best Practices
+- Always take a snapshot before interacting with elements
+- Use specific selectors to target elements
+- Wait for elements to be available before interaction
+- Clean up by closing pages when done
+
+```typescript
+// Good: Complete browser interaction flow
+mcp_chrome-devtools_navigate_page({ url: "https://example.com" })
+mcp_chrome-devtools_take_snapshot()
+mcp_chrome-devtools_click({ uid: "submit-button" })
+mcp_chrome-devtools_take_screenshot({ filePath: "screenshot.png" })
+mcp_chrome-devtools_close_page({ pageIdx: 0 })
+```
+
+## Database Tools
+
+### Convex Database Tools
+
+#### When to Use Convex Tools
+- Managing application data
+- Running database queries
+- Checking database status
+- Managing environment variables
+- Monitoring database logs
+
+#### Best Practices
+- Always check deployment status first
+- Use specific queries to avoid fetching too much data
+- Use pagination for large datasets
+- Handle errors appropriately
+
+```typescript
+// Good: Checking deployment status first
+mcp_convex_status({ projectDir: "/home/hammad/projects/spec-lab" })
+
+// Good: Running a specific query with pagination
+mcp_convex_data({
+  deploymentSelector: "dev",
+  tableName: "users",
+  order: "asc",
+  limit: 100
+})
+```
+
+## Task Management Tools
+
+### Using `todo_write`
+
+#### When to Use `todo_write`
+- Breaking down complex tasks
+- Tracking progress on multi-step operations
+- Organizing development work
+- Managing feature implementation
+
+#### Best Practices
+- Create specific, actionable items
+- Break complex tasks into smaller steps
+- Update status in real-time
+- Only have one task in progress at a time
+
+```typescript
+// Good: Creating a structured task list
+todo_write({
+  merge: false,
+  todos: [
+    { id: "1", content: "Set up database schema", status: "completed" },
+    { id: "2", content: "Implement API endpoints", status: "in_progress" },
+    { id: "3", content: "Create frontend components", status: "pending" },
+    { id: "4", content: "Write tests", status: "pending" }
+  ]
+})
+```
+
+## External Integration Tools
+
+### Web Search
+
+#### When to Use `web_search`
+- Finding up-to-date information not in training data
+- Verifying current facts
+- Researching recent developments
+- Getting current documentation
+
+#### Best Practices
+- Be specific with search terms
+- Include relevant keywords and version numbers
+- Use for information that changes frequently
+
+```typescript
+// Good: Specific search with version
+web_search({
+  search_term: "React 18 concurrent features documentation",
+  explanation: "Finding latest documentation on React 18 concurrent features"
+})
+```
+
+### Memory Management
+
+#### When to Use `update_memory`
+- Storing important project information
+- Remembering user preferences
+- Saving context for future sessions
+- Building knowledge base
+
+#### Best Practices
+- Store concise, focused information
+- Use descriptive titles
+- Update existing memories when information changes
+- Delete outdated memories
+
+```typescript
+// Good: Creating a new memory
+update_memory({
+  action: "create",
+  title: "Project Database Schema",
+  knowledge_to_store: "The project uses PostgreSQL with Prisma ORM. Main tables are users, posts, and comments."
+})
+```
+
+### MCP Resources
+
+#### When to Use MCP Resource Tools
+- Accessing external MCP server resources
+- Fetching documentation from MCP servers
+- Integrating with external systems
+
+#### Best Practices
+- List resources first to understand what's available
+- Use specific server names when possible
+- Handle errors gracefully when resources are unavailable
+
+```typescript
+// Good: Listing available resources
+list_mcp_resources({ server: "example-server" })
+
+// Good: Fetching a specific resource
+fetch_mcp_resource({
+  server: "example-server",
+  uri: "resource://documentation/api"
+})
+```
+
+### Mastra Integration
+
+#### When to Use Mastra Tools
+- Accessing Mastra documentation
+- Getting code examples
+- Checking changelog information
+- Managing Mastra course progress
+
+#### Best Practices
+- Use specific paths for documentation
+- Use keywords for finding relevant examples
+- Check changelog for package updates
+
+```typescript
+// Good: Getting specific documentation
+mcp_mastra_mastraDocs({
+  paths: ["reference/agents/", "reference/workflows/"],
+  queryKeywords: ["authentication", "error handling"]
+})
+
+// Good: Getting code examples
+mcp_mastra_mastraExamples({
+  example: "weather-agent",
+  queryKeywords: ["api", "integration"]
+})
+```
+
+### CopilotKit Integration
+
+#### When to Use CopilotKit Tools
+- Searching CopilotKit codebase
+- Finding implementation examples
+- Accessing CopilotKit documentation
+
+#### Best Practices
+- Use specific repositories when possible
+- Formulate complete questions for better results
+- Limit results to focus on most relevant code
+
+```typescript
+// Good: Searching specific repository
+mcp_CopilotKit_MCP_search-code({
+  query: "How to implement custom actions in CopilotKit",
+  repo: "https://github.com/CopilotKit/CopilotKit.git",
+  limit: 10
+})
+```
+
+## General Best Practices
+
+### Tool Selection Guidelines
+
+1. **For finding exact text**: Use `grep`
+2. **For understanding functionality**: Use `codebase_search`
+3. **For finding files by name**: Use `glob_file_search`
+4. **For reading files**: Use `read_file`
+5. **For making changes**: Use `edit_file`
+6. **For running commands**: Use `run_terminal_cmd`
+7. **For exploring directories**: Use `list_dir`
+8. **For checking code quality**: Use `read_lints`
+
+### Performance Optimization
+
+1. **Limit scope**: Use specific directories when possible
+2. **Use limits**: Apply `head_limit` to prevent excessive output
+3. **Be specific**: Use precise patterns and queries
+4. **Batch operations**: Combine related operations when possible
+
+### Error Handling
+
+1. **Check existence**: Verify files/directories exist before operations
+2. **Validate inputs**: Ensure parameters are valid before tool calls
+3. **Handle failures**: Have fallback plans for failed operations
+4. **Provide context**: Include clear explanations for all operations
+
+### Code Quality
+
+1. **Maintain consistency**: Follow existing code patterns
+2. **Add documentation**: Document complex changes
+3. **Test changes**: Verify edits work as expected
+4. **Refactor carefully**: Make small, focused changes
+
+## Common Workflows
+
+### Exploring a New Codebase
+
+1. Start with `list_dir` to understand structure
+2. Use `codebase_search` with broad questions
+3. Narrow down with `grep` for specific patterns
+4. Read key files with `read_file`
+5. Create a `todo_write` list for tasks
+
+### Implementing a New Feature
+
+1. Create a task list with `todo_write`
+2. Explore relevant code with `codebase_search`
+3. Find similar implementations with `grep`
+4. Make changes with `edit_file`
+5. Test with `run_terminal_cmd`
+
+### Debugging an Issue
+
+1. Search for error messages with `grep`
+2. Understand related code with `codebase_search`
+3. Check logs with appropriate tools
+4. Make targeted fixes with `edit_file`
+5. Verify fixes with testing tools
+
+## Conclusion
+
+These guidelines provide a foundation for using Cursor tools effectively. The key is to:
+
+1. Choose the right tool for the task
+2. Be specific and focused in your operations
+3. Provide clear context and explanations
+4. Handle errors gracefully
+5. Maintain code quality standards
+
+By following these practices, you'll be able to work more efficiently and produce higher quality code.

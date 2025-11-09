@@ -1,0 +1,53 @@
+{
+  "name": "tally",
+  "version": "0.0.0",
+  "description": "A TypeScript evaluation framework for running model evaluations with datasets, evaluators, metrics, and aggregators",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "clean": "rm -rf dist",
+    "debug:weather": "tsx debug/scripts/runWeather.ts"
+  },
+  "keywords": [
+    "evaluation",
+    "llm",
+    "ai",
+    "testing",
+    "metrics",
+    "datasets"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@ai-sdk/google": "^2.0.29",
+    "@tally/biome-config": "workspace:*",
+    "@tally/typescript-config": "workspace:*",
+    "@tally/trajectories": "workspace:*",
+    "@tally/examples-ai-sdk": "workspace:*",
+    "@types/node": "24.6.2",
+    "@vitest/ui": "^1.1.0",
+    "dotenv": "^17.2.3",
+    "tsup": "^8.0.1",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.0"
+  }
+}

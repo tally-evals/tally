@@ -1,0 +1,24 @@
+{
+  "name": "@tally/examples-agent-kit",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Agent Kit LLM evaluation examples using the Tally framework",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "build": "tsc",
+    "test": "vitest",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "tally": "workspace:*"
+  },
+  "devDependencies": {
+    "@tally/typescript-config": "workspace:*",
+    "@tally/biome-config": "workspace:*",
+    "typescript": "^5.3.3",
+    "tsx": "^4.7.0",
+    "vitest": "^1.1.0"
+  }
+}

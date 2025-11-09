@@ -1,0 +1,30 @@
+---
+alwaysApply: true
+---
+
+# Active Development Rule
+
+## Project Status
+This project is **actively under development**. The codebase is being actively worked on and modified.
+
+## Migration Policy
+- **DO NOT** generate backward compatibility code, adapters, or transitional layers unless explicitly requested
+- **DO NOT** create migration utilities, compatibility wrappers, or version bridges
+
+- **DO NOT** modify existing APIs, interfaces, or data structures without explicit instruction
+
+## Refactoring Policy
+- **ALLOW** refactoring for code improvement (better organization, readability, maintainability)
+- **ALLOW** internal code restructuring that doesn't change external behavior
+- **ALLOW** improving code quality, naming, and structure
+- **DO NOT** create migration files or breaking changes as part of refactoring
+
+## What to Do Instead
+- Focus on implementing new features as requested
+- Refactor existing code for better quality when working on it
+- Make minimal, targeted changes to existing code only when necessary
+- Ask for explicit permission before making any structural changes that affect external APIs
+- Preserve existing patterns and conventions unless specifically asked to change them
+
+## Exception
+Only make migrations or refactoring changes when the user explicitly asks for them with clear instructions.# Active Development Rule

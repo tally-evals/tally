@@ -1,0 +1,84 @@
+---
+title: 'Getting Started'
+description: 'Learn how to set up and use the Tally evaluation framework.'
+---
+
+# Getting Started with Tally
+
+This guide will help you set up Tally and run your first evaluation.
+
+## Installation
+
+```bash
+npm install tally
+# or
+pnpm add tally
+# or
+yarn add tally
+```
+
+## Basic Usage
+
+```typescript
+import { tally } from 'tally'
+
+// Your first evaluation
+const result = await tally.evaluate({
+  dataset: myDataset,
+  evaluators: [myEvaluator],
+  metrics: [myMetric]
+})
+
+console.log(result)
+```
+
+## Core Concepts
+
+### 1. Datasets and Conversations
+
+Datasets contain individual examples, while conversations handle multi-turn exchanges.
+
+```typescript
+// Dataset example
+const dataset = {
+  examples: [
+    { prompt: "What is AI?", expected: "Artificial Intelligence" },
+    { prompt: "Explain ML", expected: "Machine Learning" }
+  ]
+}
+
+// Conversation example
+const conversation = {
+  turns: [
+    { role: "user", content: "Hello" },
+    { role: "assistant", content: "Hi there!" }
+  ]
+}
+```
+
+### 2. Evaluators
+
+Evaluators define what to check and how to check it.
+
+```typescript
+const evaluator = {
+  selector: "lastAssistantTurn",
+  scorer: "correctness"
+}
+```
+
+### 3. Metrics
+
+Metrics define what to measure.
+
+```typescript
+const metric = {
+  type: "boolean",
+  name: "isCorrect"
+}
+```
+
+## Next Steps
+
+- Explore the [Examples](/docs/examples) to see real-world usage
+- Check out the [API Reference](/docs/api) for detailed documentation

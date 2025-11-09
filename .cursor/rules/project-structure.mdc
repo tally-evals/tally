@@ -1,0 +1,47 @@
+---
+alwaysApply: true
+description: Tally evaluation framework monorepo structure and technical guidelines
+---
+
+# Tally Evaluation Framework - Project Structure
+
+## Monorepo Overview
+This is a Turbo monorepo using pnpm workspaces for a TypeScript evaluation framework called "Tally" designed for LLM evaluation with datasets, evaluators, metrics, and aggregators.
+
+## Directory Structure
+```
+tally/
+├── apps/
+│   ├── docs/                    # Fuma Docs documentation site
+│   └── examples/
+│       ├── mastra/              # Mastra LLM evaluation examples
+│       └── agent-kit/           # Agent Kit evaluation examples
+├── packages/
+│   ├── tally/                   # Core evaluation framework package
+│   ├── typescript-config/       # Shared TypeScript configurations
+│   └── biome-config/            # Shared Biome linting/formatting config
+```
+
+## Technical Stack
+- **Package Manager**: pnpm with workspace linking
+- **Build System**: Turbo for monorepo orchestration
+- **Language**: TypeScript with strict configuration
+- **Linting/Formatting**: Biome (configured in [packages/biome-config/biome.json](mdc:packages/biome-config/biome.json))
+- **Testing**: Vitest for unit tests
+- **Bundling**: tsup for dual ESM/CJS output
+- **Documentation**: Fuma Docs (Next.js-based)
+
+## Key Files
+- [package.json](mdc:package.json) - Root workspace configuration
+- [turbo.json](mdc:turbo.json) - Turbo pipeline tasks
+- [pnpm-workspace.yaml](mdc:pnpm-workspace.yaml) - Workspace package definitions
+- [packages/tally/src/index.ts](mdc:packages/tally/src/index.ts) - Core framework entry point
+
+## Development Commands
+- `pnpm build` - Build all packages
+- `pnpm dev` - Start development servers
+- `pnpm --filter=tally dev` - Run specific package
+- `pnpm --filter="@tally/examples-mastra" dev` - Run examples
+
+## Workspace Package Resolution
+All packages use workspace references (e.g., `"tally": "workspace:*"`) and shared configs (e.g., `"@tally/typescript-config/strict.json"`).

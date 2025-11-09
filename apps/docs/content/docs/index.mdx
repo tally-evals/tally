@@ -1,0 +1,42 @@
+---
+title: 'Tally Evaluation Framework'
+description: 'A TypeScript evaluation framework for running model evaluations with datasets, evaluators, metrics, and aggregators.'
+---
+
+# Welcome to Tally
+
+Tally is a comprehensive TypeScript evaluation framework designed for running model evaluations. It provides a structured approach to testing and measuring model behavior through a clear, intuitive API.
+
+## What is Tally?
+
+Think of Tally as a **testing lab for model behavior**. Each test (Eval or Scenario) runs data through a set of judges (Evaluators), who measure specific qualities (Metrics) and then summarize the results (Aggregators).
+
+In simple terms:
+
+> **Data comes in → Evaluators measure → Aggregators summarize → Reports tell the story.**
+
+## Key Concepts
+
+### 🧩 The Big Picture
+
+- **Dataset** → individual examples like prompts, completions, or structured outputs
+- **Conversation** → multi-turn exchanges used to test dialogue or reasoning over time
+- **Evaluator** → connects Selector (chooses scope) and Scorer (applies measurement logic)
+- **Metric** → defines what kind of signal to record (Boolean, Number, Ordinal/Enum)
+- **Aggregator** → combines signals into meaningful summaries
+- **EvaluationReport** → final output with detailed and summary results
+
+## Quick Start
+
+```typescript
+import { tally } from 'tally'
+
+// Framework implementation coming soon
+console.log(tally)
+```
+
+## Next Steps
+
+- [Getting Started](/docs/getting-started) - Set up your first evaluation
+- [Examples](/docs/examples) - See Tally in action with Mastra and Agent Kit
+- [API Reference](/docs/api) - Complete API documentation
