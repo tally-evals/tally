@@ -9,7 +9,7 @@
 
 import { defineBaseMetric, createSingleTurnLLM } from '@tally/core/factory';
 import { createMinMaxNormalizer } from '@tally/core/normalization/factory';
-import type { SingleTurnMetricDef, DatasetItem, ConversationStep } from '@tally/core/types';
+import type { SingleTurnMetricDef, SingleTurnContainer } from '@tally/core/types';
 import type { LanguageModel } from 'ai';
 
 export interface CompletenessOptions {
@@ -47,7 +47,7 @@ export interface CompletenessOptions {
  * @param options - Configuration options
  * @returns A single-turn metric definition for completeness
  */
-export function createCompletenessMetric<TContainer extends DatasetItem | ConversationStep>(
+export function createCompletenessMetric<TContainer extends SingleTurnContainer = SingleTurnContainer>(
 	options: CompletenessOptions
 ): SingleTurnMetricDef<number, TContainer> {
 	const { provider, expectedPoints } = options;

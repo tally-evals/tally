@@ -9,6 +9,7 @@ import type {
 	Score,
 	MetricScalar,
 	MetricDef,
+	MetricContainer,
 	NormalizerSpec,
 	ScoringContext,
 	NormalizeToScore,
@@ -34,7 +35,7 @@ export function applyNormalization<T extends MetricScalar>(
 	value: T,
 	normalizerSpec: NormalizerSpec<T, ScoringContext> | NormalizeToScore<T, ScoringContext>,
 	context: ScoringContext,
-	metric: MetricDef<T, unknown>
+	metric: MetricDef<T, MetricContainer>
 ): Score {
 	// Handle function-based normalizers (custom functions)
 	if (typeof normalizerSpec === 'function') {

@@ -3,7 +3,7 @@
  */
 
 import type { TrajectoryResult } from '../core/types.js';
-import type { Conversation, ConversationStep } from 'tally';
+import type { Conversation, ConversationStep } from '@tally-evals/tally';
 
 /**
  * Convert trajectory result to JSONL format (one step per line)

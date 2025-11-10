@@ -10,7 +10,7 @@
 
 import { defineBaseMetric, createSingleTurnCode } from '@tally/core/factory';
 import { createIdentityNormalizer } from '@tally/core/normalization/factory';
-import type { SingleTurnMetricDef, DatasetItem, ConversationStep } from '@tally/core/types';
+import type { SingleTurnMetricDef, SingleTurnContainer, DatasetItem, ConversationStep } from '@tally/core/types';
 import type { ModelMessage } from 'ai';
 import type { z } from 'zod';
 import { extractToolCalls, extractToolCallsFromMessages, type ExtractedToolCall } from '../common/utils';
@@ -54,7 +54,7 @@ export interface ToolCallAccuracyOptions {
  * @param options - Configuration options
  * @returns A single-turn metric definition for tool call accuracy
  */
-export function createToolCallAccuracyMetric<TContainer extends DatasetItem | ConversationStep>(
+export function createToolCallAccuracyMetric<TContainer extends SingleTurnContainer = SingleTurnContainer>(
 	options: ToolCallAccuracyOptions
 ): SingleTurnMetricDef<number, TContainer> {
 	const { expectedToolCalls, toolCallOrder, strictMode = false } = options;

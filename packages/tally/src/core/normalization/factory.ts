@@ -9,9 +9,11 @@
 import type {
 	NormalizerSpec,
 	MetricScalar,
+	MetricContainer,
 	ScoringContext,
 	MetricDef,
 	Score,
+	NormalizeToScore,
 } from '@tally/core/types';
 
 /**
@@ -186,11 +188,11 @@ export function createCustomNormalizer<
 	T extends MetricScalar = MetricScalar,
 	C = ScoringContext
 >(args: {
-	normalize: (value: T, args: { context: C; metric: MetricDef<T, unknown> }) => Score;
+	normalize: (value: T, args: { context: C; metric: MetricDef<T, MetricContainer> }) => Score;
 }): NormalizerSpec<T, C> {
 	return {
 		type: 'custom',
-		normalize: args.normalize,
+		normalize: args.normalize as NormalizeToScore<T, C>,
 	};
 }
 

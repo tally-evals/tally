@@ -9,7 +9,7 @@
 
 import { defineBaseMetric, createSingleTurnCode } from '@tally/core/factory';
 import { createIdentityNormalizer } from '@tally/core/normalization/factory';
-import type { SingleTurnMetricDef, DatasetItem, ConversationStep } from '@tally/core/types';
+import type { SingleTurnMetricDef, SingleTurnContainer } from '@tally/core/types';
 import type { EmbeddingModel } from 'ai';
 import { extractWords } from '@tally/utils/text';
 
@@ -44,7 +44,7 @@ export interface AnswerSimilarityOptions {
  * @param options - Configuration options
  * @returns A single-turn metric definition for answer similarity
  */
-export function createAnswerSimilarityMetric<TContainer extends DatasetItem | ConversationStep>(
+export function createAnswerSimilarityMetric<TContainer extends SingleTurnContainer = SingleTurnContainer>(
 	options: AnswerSimilarityOptions = {}
 ): SingleTurnMetricDef<number, TContainer> {
 	const { embeddingModel, targetResponse, minKeywords = 1 } = options;

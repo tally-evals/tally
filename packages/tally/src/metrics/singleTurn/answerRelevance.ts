@@ -10,7 +10,7 @@
 
 import { defineBaseMetric, createSingleTurnLLM } from '@tally/core/factory';
 import { createMinMaxNormalizer } from '@tally/core/normalization/factory';
-import type { SingleTurnMetricDef, DatasetItem, ConversationStep } from '@tally/core/types';
+import type { SingleTurnMetricDef, SingleTurnContainer } from '@tally/core/types';
 import type { LanguageModel } from 'ai';
 
 export interface AnswerRelevanceOptions {
@@ -49,7 +49,7 @@ export interface AnswerRelevanceOptions {
  * @param options - Configuration options
  * @returns A single-turn metric definition for answer relevance
  */
-export function createAnswerRelevanceMetric<TContainer extends DatasetItem | ConversationStep>(
+export function createAnswerRelevanceMetric<TContainer extends SingleTurnContainer = SingleTurnContainer>(
 	options: AnswerRelevanceOptions
 ): SingleTurnMetricDef<number, TContainer> {
 	const { provider, partialWeight = 0.3 } = options;

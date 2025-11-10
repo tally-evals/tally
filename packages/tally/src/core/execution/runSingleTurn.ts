@@ -9,6 +9,8 @@ import type {
 	MetricDef,
 	Metric,
 	MetricScalar,
+	SingleTurnContainer,
+	MetricContainer,
 	SingleTargetFor,
 	DatasetItem,
 	ConversationStep,
@@ -44,7 +46,7 @@ export interface RunSingleTurnOptions {
  * @param options - Optional execution options (cache, LLM options)
  * @returns Metric result with execution metadata
  */
-export async function runSingleTurnMetric<T extends MetricScalar, TContainer>(
+export async function runSingleTurnMetric<T extends MetricScalar, TContainer extends SingleTurnContainer>(
 	metricDef: MetricDef<T, TContainer>,
 	target: SingleTargetFor<TContainer>,
 	options?: RunSingleTurnOptions
@@ -72,7 +74,7 @@ export async function runSingleTurnMetric<T extends MetricScalar, TContainer>(
 	const prepared = await resolvedPreprocessor(target as SingleTargetFor<unknown>, metricDef);
 
 	const executor = getExecutor<SingleTargetFor<TContainer>, T>(
-		metricDef as MetricDef<T, unknown>
+		metricDef as MetricDef<T, MetricContainer>
 	);
 	const execOptions: ExecutorOptions = {};
 	if (options?.cache) execOptions.cache = options.cache;
@@ -80,12 +82,12 @@ export async function runSingleTurnMetric<T extends MetricScalar, TContainer>(
 	if (prepared !== undefined) execOptions.prepared = prepared;
 
 	const result = await executor.execute(
-		metricDef as MetricDef<T, unknown>,
+		metricDef as MetricDef<T, MetricContainer>,
 		target,
 		execOptions
 	);
 	return {
-		metricDef: metricDef as MetricDef<T, unknown>,
+		metricDef: metricDef as MetricDef<T, MetricContainer>,
 		value: result.value,
 		...(result.confidence !== undefined && { confidence: result.confidence }),
 		...(result.reasoning !== undefined && { reasoning: result.reasoning }),
@@ -102,13 +104,13 @@ export async function runSingleTurnMetric<T extends MetricScalar, TContainer>(
  * @param options - Optional execution options
  * @returns Array of metric results
  */
-export async function runSingleTurnMetrics<T extends MetricScalar, TContainer>(
+export async function runSingleTurnMetrics<T extends MetricScalar, TContainer extends SingleTurnContainer>(
 	metricDef: MetricDef<T, TContainer>,
 	targets: readonly SingleTargetFor<TContainer>[],
 	options?: RunSingleTurnOptions
 ): Promise<Metric<T>[]> {
 	const results = await Promise.all(
-		targets.map((target) => runSingleTurnMetric(metricDef, target, options))
+		targets.map((target) => runSingleTurnMetric(metricDef as MetricDef<T, SingleTurnContainer>, target, options))
 	);
 
 	return results;

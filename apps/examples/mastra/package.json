@@ -23,7 +23,7 @@
     "@mastra/core": "latest",
     "@ai-sdk/google": "^2.0.29",
     "zod": "^3.23.8",
-    "tally": "workspace:*"
+    "@tally-evals/tally": "workspace:*"
   },
   "devDependencies": {
     "@tally-evals/typescript-config": "workspace:*",

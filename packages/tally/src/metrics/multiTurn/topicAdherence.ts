@@ -10,7 +10,7 @@
 
 import { defineBaseMetric, createMultiTurnLLM } from '@tally/core/factory';
 import { createMinMaxNormalizer } from '@tally/core/normalization/factory';
-import type { MultiTurnMetricDef, Conversation } from '@tally/core/types';
+import type { MultiTurnMetricDef, MultiTurnContainer, Conversation } from '@tally/core/types';
 import type { LanguageModel } from 'ai';
 import { extractTextFromMessage, extractTextFromMessages } from '../common/utils';
 
@@ -63,7 +63,7 @@ export interface TopicAdherenceOptions {
  */
 export function createTopicAdherenceMetric(
 	options: TopicAdherenceOptions
-): MultiTurnMetricDef<number, Conversation> {
+): MultiTurnMetricDef<number, MultiTurnContainer> {
 	const { topics, provider, allowTopicTransitions = true, strictMode = false } = options;
 
 	const base = defineBaseMetric({

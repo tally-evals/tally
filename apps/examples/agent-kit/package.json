@@ -12,7 +12,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "tally": "workspace:*"
+    "@tally-evals/tally": "workspace:*"
   },
   "devDependencies": {
     "@tally-evals/typescript-config": "workspace:*",

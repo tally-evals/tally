@@ -8,6 +8,7 @@
 import type {
 	MetricDef,
 	MetricScalar,
+	MetricContainer,
 	Conversation,
 	SingleTargetFor,
 	LLMMetricFields,
@@ -44,7 +45,7 @@ export interface MetricExecutionResult<T extends MetricScalar> {
 
 export interface MetricExecutor<TTarget, T extends MetricScalar> {
 	execute(
-		metricDef: MetricDef<T, unknown>,
+		metricDef: MetricDef<T, MetricContainer>,
 		target: TTarget,
 		options?: ExecutorOptions
 	): Promise<MetricExecutionResult<T>>;
@@ -54,7 +55,7 @@ class LLMMetricExecutor<TTarget, T extends MetricScalar>
 	implements MetricExecutor<TTarget, T>
 {
 	async execute(
-		metricDef: MetricDef<T, unknown>,
+		metricDef: MetricDef<T, MetricContainer>,
 		target: TTarget,
 		options?: ExecutorOptions
 	): Promise<MetricExecutionResult<T>> {
@@ -122,7 +123,7 @@ class CodeMetricExecutor<TTarget, T extends MetricScalar>
 	implements MetricExecutor<TTarget, T>
 {
 	async execute(
-		metricDef: MetricDef<T, unknown>,
+		metricDef: MetricDef<T, MetricContainer>,
 		target: TTarget,
 		options?: ExecutorOptions
 	): Promise<MetricExecutionResult<T>> {
@@ -201,7 +202,7 @@ class CodeMetricExecutor<TTarget, T extends MetricScalar>
 }
 
 export function getExecutor<TTarget, T extends MetricScalar>(
-	metricDef: MetricDef<T, unknown>
+	metricDef: MetricDef<T, MetricContainer>
 ): MetricExecutor<TTarget, T> {
 	if ((metricDef as unknown as { type: 'llm-based' | 'code-based' }).type === 'llm-based') {
 		return new LLMMetricExecutor<TTarget, T>();

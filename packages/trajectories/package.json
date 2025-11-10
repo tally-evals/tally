@@ -5,6 +5,11 @@
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "*": ["./dist/index.d.ts"]
+    }
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/tally-evals/tally.git",
@@ -42,7 +47,7 @@
     "ai": "^5.0.89"
   },
   "peerDependencies": {
-    "tally": "workspace:*"
+    "@tally-evals/tally": "workspace:*"
   },
   "devDependencies": {
     "@tally-evals/biome-config": "workspace:*",

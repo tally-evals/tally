@@ -9,6 +9,8 @@ import type {
 	MetricDef,
 	Metric,
 	MetricScalar,
+	MultiTurnContainer,
+	MetricContainer,
 	Conversation,
 } from '@tally/core/types';
 import { getExecutor } from './executors';
@@ -45,7 +47,7 @@ export interface RunMultiTurnOptions {
  * @returns Metric result with execution metadata
  */
 export async function runMultiTurnMetric<T extends MetricScalar>(
-	metricDef: MetricDef<T, Conversation>,
+	metricDef: MetricDef<T, MultiTurnContainer>,
 	conversation: Conversation,
 	options?: RunMultiTurnOptions
 ): Promise<Metric<T>> {
@@ -70,9 +72,9 @@ export async function runMultiTurnMetric<T extends MetricScalar>(
 				: (options?.preprocessor ?? defaultPreprocess);
 	const prepared = await resolvedPreprocessor(conversation, metricDef);
 
-	const executor = getExecutor<Conversation, T>(metricDef as unknown as MetricDef<T, unknown>);
+	const executor = getExecutor<Conversation, T>(metricDef as MetricDef<T, MetricContainer>);
 	const execResult = await executor.execute(
-		metricDef as MetricDef<T, unknown>,
+		metricDef as MetricDef<T, MetricContainer>,
 		conversation,
 		{
 			...(options?.cache !== undefined && { cache: options.cache }),
@@ -83,7 +85,7 @@ export async function runMultiTurnMetric<T extends MetricScalar>(
 	);
 
 	return {
-		metricDef: metricDef as MetricDef<T, unknown>,
+		metricDef: metricDef as MetricDef<T, MetricContainer>,
 		value: execResult.value,
 		...(execResult.confidence !== undefined && { confidence: execResult.confidence }),
 		...(execResult.reasoning !== undefined && { reasoning: execResult.reasoning }),
@@ -101,7 +103,7 @@ export async function runMultiTurnMetric<T extends MetricScalar>(
  * @returns Array of metric results
  */
 export async function runMultiTurnMetrics<T extends MetricScalar>(
-	metricDef: MetricDef<T, Conversation>,
+	metricDef: MetricDef<T, MultiTurnContainer>,
 	conversations: readonly Conversation[],
 	options?: RunMultiTurnOptions
 ): Promise<Metric<T>[]> {

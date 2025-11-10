@@ -10,7 +10,7 @@
 
 import { defineBaseMetric, createMultiTurnLLM } from '@tally/core/factory';
 import { createMinMaxNormalizer } from '@tally/core/normalization/factory';
-import type { MultiTurnMetricDef, Conversation } from '@tally/core/types';
+import type { MultiTurnMetricDef, MultiTurnContainer, Conversation } from '@tally/core/types';
 import type { LanguageModel } from 'ai';
 import { extractTextFromMessage, extractTextFromMessages } from '../common/utils';
 
@@ -63,7 +63,7 @@ export interface GoalCompletionOptions {
  */
 export function createGoalCompletionMetric(
 	options: GoalCompletionOptions
-): MultiTurnMetricDef<number, Conversation> {
+): MultiTurnMetricDef<number, MultiTurnContainer> {
 	const { goal, provider, checkPartialCompletion = true, considerEfficiency = false } = options;
 
 	const base = defineBaseMetric({

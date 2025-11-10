@@ -34,6 +34,24 @@ export interface Conversation {
 	metadata?: Record<string, unknown>;
 }
 
+/**
+ * Valid container types for single-turn metrics
+ * Single-turn metrics measure individual steps or items
+ */
+export type SingleTurnContainer = ConversationStep | DatasetItem;
+
+/**
+ * Valid container types for multi-turn metrics
+ * Multi-turn metrics measure entire conversations
+ */
+export type MultiTurnContainer = Conversation;
+
+/**
+ * Valid container types for metrics
+ * Union of all possible container types
+ */
+export type MetricContainer = SingleTurnContainer | MultiTurnContainer;
+
 // ============================================================================
 // Metric System Types
 // ============================================================================
@@ -168,7 +186,7 @@ export interface CodeMetricFields<TRawValue extends MetricScalar = MetricScalar>
  * Single-turn metric definition
  * Measures a single target (DatasetItem or ConversationStep)
  */
-export interface SingleTurnMetricDef<TRawValue extends MetricScalar, TContainerData>
+export interface SingleTurnMetricDef<TRawValue extends MetricScalar, TContainerData extends SingleTurnContainer = SingleTurnContainer>
 	extends BaseMetricDef<TRawValue> {
 	scope: 'single';
 	/**
@@ -183,7 +201,7 @@ export interface SingleTurnMetricDef<TRawValue extends MetricScalar, TContainerD
  * Multi-turn metric definition
  * Measures an entire Conversation
  */
-export interface MultiTurnMetricDef<TRawValue extends MetricScalar, TContainer extends Conversation>
+export interface MultiTurnMetricDef<TRawValue extends MetricScalar, TContainer extends MultiTurnContainer = MultiTurnContainer>
 	extends BaseMetricDef<TRawValue> {
 	scope: 'multi';
 	/**
@@ -203,7 +221,7 @@ export interface MultiTurnMetricDef<TRawValue extends MetricScalar, TContainer e
  */
 export type SingleTurnMetricVariants<
 	TRawValue extends MetricScalar,
-	TContainerData,
+	TContainerData extends SingleTurnContainer = SingleTurnContainer,
 	TVars extends VarsTuple = readonly []
 > =
 	| (SingleTurnMetricDef<TRawValue, TContainerData> & LLMMetricFields<TRawValue, TVars>)
@@ -214,10 +232,11 @@ export type SingleTurnMetricVariants<
  */
 export type MultiTurnMetricVariants<
 	TRawValue extends MetricScalar,
+	TContainer extends MultiTurnContainer = MultiTurnContainer,
 	TVars extends VarsTuple = readonly []
 > =
-	| (MultiTurnMetricDef<TRawValue, Conversation> & LLMMetricFields<TRawValue, TVars>)
-	| (MultiTurnMetricDef<TRawValue, Conversation> & CodeMetricFields<TRawValue>);
+	| (MultiTurnMetricDef<TRawValue, TContainer> & LLMMetricFields<TRawValue, TVars>)
+	| (MultiTurnMetricDef<TRawValue, TContainer> & CodeMetricFields<TRawValue>);
 
 /**
  * Metric definition union type
@@ -225,22 +244,36 @@ export type MultiTurnMetricVariants<
  */
 export type MetricDef<
 	TRawValue extends MetricScalar = MetricScalar,
-	TContainerData = unknown
+	TContainerData extends MetricContainer = MetricContainer
 > =
-	| SingleTurnMetricVariants<TRawValue, TContainerData>
-	| (TContainerData extends Conversation ? MultiTurnMetricVariants<TRawValue> : never);
+	| SingleTurnMetricVariants<TRawValue, TContainerData extends SingleTurnContainer ? TContainerData : SingleTurnContainer>
+	| (TContainerData extends MultiTurnContainer ? MultiTurnMetricVariants<TRawValue, TContainerData> : never);
 
 /**
  * Any MetricDef for a container type
  */
-export type MetricDefFor<TContainer> = MetricDef<MetricScalar, TContainer>;
+export type MetricDefFor<TContainer extends MetricContainer> = MetricDef<MetricScalar, TContainer>;
+
+/**
+ * Accepts any MetricDef for a container type, regardless of TRawValue
+ * This avoids variance issues when creating evaluators
+ */
+export type AnyMetricDefFor<TContainer extends MetricContainer> =
+	TContainer extends SingleTurnContainer
+		// biome-ignore lint/suspicious/noExplicitAny: Using any to accept any metric types regardless of generic parameters to avoid variance issues
+		? SingleTurnMetricDef<any, any>
+		: TContainer extends MultiTurnContainer
+		// biome-ignore lint/suspicious/noExplicitAny: Using any to accept any metric types regardless of generic parameters to avoid variance issues
+		? MultiTurnMetricDef<any, any>
+		// biome-ignore lint/suspicious/noExplicitAny: Using any to accept any metric types regardless of generic parameters to avoid variance issues
+		: SingleTurnMetricDef<any, any> | MultiTurnMetricDef<any, any>;
 
 /**
  * Runtime Metric (result of executing a MetricDef)
  * Contains the raw value and execution metadata
  */
 export interface Metric<TRawValue extends MetricScalar = MetricScalar> {
-	metricDef: MetricDef<TRawValue, unknown>; // Direct reference to the definition that produced this value
+	metricDef: MetricDef<TRawValue, MetricContainer>; // Direct reference to the definition that produced this value
 	value: TRawValue;
 	confidence?: number; // For LLM metrics
 	reasoning?: string; // For LLM metrics
@@ -259,7 +292,7 @@ export interface Metric<TRawValue extends MetricScalar = MetricScalar> {
  */
 export type NormalizeToScore<TRawValue extends MetricScalar = number, TContext = unknown> = (
 	value: TRawValue,
-	args: { context: TContext; metric: MetricDef<TRawValue, unknown> }
+	args: { context: TContext; metric: MetricDef<TRawValue, MetricContainer> }
 ) => Score; // must return [0,1] Score
 
 /**
@@ -308,14 +341,14 @@ export interface MetricNormalization<TRawValue extends MetricScalar = MetricScal
  * References a metric definition directly (value-based composition)
  */
 export interface ScorerInput<
-	M extends MetricDef<MetricScalar, unknown> = MetricDef<MetricScalar, unknown>,
+	M extends MetricDef<MetricScalar, MetricContainer> = MetricDef<MetricScalar, MetricContainer>,
 	TContext = ScoringContext
 > {
 	metric: M; // Direct reference to the MetricDef being combined
 	weight: number;
 	// Optional override; metrics own normalization by default.
 	// If provided, it must match the raw value type of the referenced metric.
-	normalizerOverride?: M extends MetricDef<infer TRawValue, unknown>
+	normalizerOverride?: M extends MetricDef<infer TRawValue, MetricContainer>
 		? NormalizerSpec<TRawValue, TContext> | NormalizeToScore<TRawValue, TContext>
 		: never;
 	required?: boolean; // default true
@@ -371,7 +404,7 @@ export interface EvaluationContext {
  * Orchestrates metric execution and scoring
  */
 export interface Evaluator<
-	TContainer,
+	TContainer extends MetricContainer,
 	TInputs extends readonly MetricDefFor<TContainer>[]
 > {
 	name: string;
@@ -445,7 +478,7 @@ export interface EvaluationReport {
  * Tally container
  * Main evaluation container that orchestrates the entire evaluation flow
  */
-export interface Tally<TContainer> {
+export interface Tally<TContainer extends MetricContainer> {
 	data: readonly TContainer[];
 	evaluators: readonly Evaluator<
 		TContainer,

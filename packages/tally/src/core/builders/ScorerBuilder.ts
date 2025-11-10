@@ -11,6 +11,7 @@ import type {
 	BaseMetricDef,
 	MetricDef,
 	MetricScalar,
+	MetricContainer,
 	Score,
 	InputScores,
 	NormalizerSpec,
@@ -55,34 +56,38 @@ class ScorerBuilder<TInputs extends readonly ScorerInput[] = readonly []> {
 	 * @param normalizerOverride - Optional normalizer override (defaults to metric's normalization)
 	 * @param required - Whether this metric is required (default: true)
 	 */
-	addMetric<M extends MetricDef<MetricScalar, unknown>>(
+	addMetric<
+		TRawValue extends MetricScalar,
+		TContainer extends MetricContainer = MetricContainer,
+		M extends MetricDef<TRawValue, TContainer> = MetricDef<TRawValue, TContainer>
+	>(
 		metric: M,
 		weight: number,
 		normalizerOverride?:
-			| NormalizerSpec<M extends MetricDef<infer TRawValue, unknown> ? TRawValue : never, ScoringContext>
-			| NormalizeToScore<M extends MetricDef<infer TRawValue, unknown> ? TRawValue : never, ScoringContext>,
+			| NormalizerSpec<TRawValue, ScoringContext>
+			| NormalizeToScore<TRawValue, ScoringContext>,
 		required = true
 	): ScorerBuilder<
 		readonly [
 			...TInputs,
-			ScorerInput<M, ScoringContext>
+			ScorerInput<MetricDef<MetricScalar, MetricContainer>, ScoringContext>
 		]
 	> {
 		const input = {
-			metric,
+			metric: metric as unknown as MetricDef<MetricScalar, MetricContainer>,
 			weight,
 			required,
 			...(normalizerOverride !== undefined && { normalizerOverride }),
-		} as ScorerInput<M, ScoringContext>;
+		} as ScorerInput<MetricDef<MetricScalar, MetricContainer>, ScoringContext>;
 
 		const builder = new ScorerBuilder<
-			readonly [...TInputs, ScorerInput<M, ScoringContext>]
+			readonly [...TInputs, ScorerInput<MetricDef<MetricScalar, MetricContainer>, ScoringContext>]
 		>(this.name, this.output);
 		builder.inputs = [...this.inputs, input];
 		builder.description = this.description;
 		builder.normalizeWeights = this.normalizeWeights;
 		builder.combineScoresFn = this.combineScoresFn as
-			| ((scores: InputScores<readonly [...TInputs, ScorerInput<M, ScoringContext>]>) => Score)
+			| ((scores: InputScores<readonly [...TInputs, ScorerInput<MetricDef<MetricScalar, MetricContainer>, ScoringContext>]>) => Score)
 			| undefined;
 		builder.fallbackScore = this.fallbackScore;
 		builder.metadata = this.metadata;

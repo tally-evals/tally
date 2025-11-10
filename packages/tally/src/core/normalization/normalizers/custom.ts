@@ -5,7 +5,7 @@
  * The function is responsible for ensuring the output is in [0, 1] range
  */
 
-import type { Score, MetricScalar, MetricDef, NormalizeToScore } from '@tally/core/types';
+import type { Score, MetricScalar, MetricDef, MetricContainer, NormalizeToScore } from '@tally/core/types';
 import { toScore } from '@tally/core/types';
 
 /**
@@ -15,7 +15,7 @@ export function normalizeCustom<T extends MetricScalar, C = unknown>(
 	value: T,
 	normalizeFn: NormalizeToScore<T, C>,
 	context: C,
-	metric: MetricDef<T, unknown>
+	metric: MetricDef<T, MetricContainer>
 ): Score {
 	const result = normalizeFn(value, { context, metric });
 

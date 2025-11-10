@@ -9,7 +9,7 @@
 
 import { defineBaseMetric, createSingleTurnLLM } from '@tally/core/factory';
 import { createMinMaxNormalizer } from '@tally/core/normalization/factory';
-import type { SingleTurnMetricDef, DatasetItem, ConversationStep } from '@tally/core/types';
+import type { SingleTurnMetricDef, SingleTurnContainer } from '@tally/core/types';
 import type { LanguageModel } from 'ai';
 
 export interface ToxicityOptions {
@@ -48,7 +48,7 @@ export interface ToxicityOptions {
  * @param options - Configuration options
  * @returns A single-turn metric definition for toxicity detection
  */
-export function createToxicityMetric<TContainer extends DatasetItem | ConversationStep>(
+export function createToxicityMetric<TContainer extends SingleTurnContainer = SingleTurnContainer>(
 	options: ToxicityOptions
 ): SingleTurnMetricDef<number, TContainer> {
 	const { provider, categories } = options;

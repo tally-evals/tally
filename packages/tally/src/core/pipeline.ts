@@ -11,6 +11,8 @@
 
 import type {
 	MetricDef,
+	SingleTurnContainer,
+	MetricContainer,
 	Metric,
 	MetricScalar,
 	Score,
@@ -153,9 +155,11 @@ async function phaseMeasure<TContainer extends DatasetItem | Conversation>(
 					// Single-turn: select targets based on policy
 					const policy = resolveRunPolicy(evaluator.context);
 					const targets = selectTargets(container, policy);
+					// Type assertion: we've checked scope === 'single', so this is a single-turn metric
+					const singleTurnMetric = metricDef as unknown as MetricDef<MetricScalar, SingleTurnContainer>;
 					const results = await runSingleTurnMetrics(
-						metricDef as MetricDef<MetricScalar, TContainer>,
-						targets,
+						singleTurnMetric,
+						targets as unknown as SingleTargetFor<SingleTurnContainer>[],
 						executionOptions
 					);
 					metrics.push(...results);
@@ -264,7 +268,7 @@ function phaseNormalize<TContainer extends DatasetItem | Conversation>(
 				metric.value,
 				normalizerSpec,
 				context,
-				metricDef
+				metricDef as MetricDef<MetricScalar, MetricContainer>
 			);
 
 			scores.set(metricDef.name, score);

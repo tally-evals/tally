@@ -18,6 +18,9 @@ export type {
 	DatasetItem,
 	Conversation,
 	ConversationStep,
+	SingleTurnContainer,
+	MultiTurnContainer,
+	MetricContainer,
 
 	// Metric system
 	MetricScalar,

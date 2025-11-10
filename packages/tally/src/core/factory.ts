@@ -9,10 +9,13 @@
 import type {
 	BaseMetricDef,
 	CodeMetricFields,
-	Conversation,
+	
 	LLMMetricFields,
 	MetricDef,
 	MetricScalar,
+	MetricContainer,
+	SingleTurnContainer,
+	MultiTurnContainer,
 	MultiTurnMetricDef,
 	NormalizerSpec,
 	NormalizeToScore,
@@ -27,6 +30,7 @@ import type {
 	EvaluationContext,
 	Evaluator,
 	MetricDefFor,
+	AnyMetricDefFor,
 } from '@tally/core/types';
 
 // -----------------------------------------------------------------------------
@@ -52,7 +56,7 @@ export function defineBaseMetric<T extends MetricScalar>(args: {
 
 export function withNormalization<
 	T extends MetricScalar,
-	TMetric extends BaseMetricDef<T> | MetricDef<T, unknown>
+	TMetric extends BaseMetricDef<T> | MetricDef<T, MetricContainer>
 >(args: {
 	metric: TMetric;
 	default: NormalizerSpec<T, ScoringContext> | NormalizeToScore<T, ScoringContext>;
@@ -72,7 +76,7 @@ export function withNormalization<
 
 export function withMetadata<
 	T extends MetricScalar,
-	TMetric extends BaseMetricDef<T> | MetricDef<T, unknown>
+	TMetric extends BaseMetricDef<T> | MetricDef<T, MetricContainer>
 >(metric: TMetric, metadata: Record<string, unknown>): TMetric {
 	return {
 		...metric,
@@ -89,7 +93,7 @@ export function withMetadata<
 
 export function createSingleTurnCode<
 	T extends MetricScalar,
-	TContainer
+	TContainer extends SingleTurnContainer = SingleTurnContainer
 >(args: {
 	base: BaseMetricDef<T>;
 	preProcessor?: SingleTurnMetricDef<T, TContainer>['preProcessor'];
@@ -118,7 +122,7 @@ export function createSingleTurnCode<
 
 export function createSingleTurnLLM<
 	T extends MetricScalar,
-	TContainer,
+	TContainer extends SingleTurnContainer = SingleTurnContainer,
 	V extends VarsTuple = readonly []
 >(args: {
 	base: BaseMetricDef<T>;
@@ -158,13 +162,13 @@ export function createSingleTurnLLM<
 
 export function createMultiTurnCode<T extends MetricScalar>(args: {
 	base: BaseMetricDef<T>;
-	runOnContainer: MultiTurnMetricDef<T, Conversation>['runOnContainer'];
+	runOnContainer: MultiTurnMetricDef<T, MultiTurnContainer>['runOnContainer'];
 	compute: CodeMetricFields<T>['compute'];
 	dependencies?: CodeMetricFields<T>['dependencies'];
 	cacheable?: CodeMetricFields<T>['cacheable'];
 	normalization?: MetricNormalization<T, ScoringContext>;
 	metadata?: Record<string, unknown>;
-}): MetricDef<T, Conversation> {
+}): MetricDef<T, MultiTurnContainer> {
 	const { base, runOnContainer, compute, dependencies, cacheable, normalization, metadata } = args;
 	const mergedBase: BaseMetricDef<T> = {
 		...base,
@@ -179,22 +183,23 @@ export function createMultiTurnCode<T extends MetricScalar>(args: {
 		...(dependencies !== undefined && { dependencies }),
 		...(cacheable !== undefined && { cacheable }),
 		runOnContainer,
-	} as MetricDef<T, Conversation>;
+	} as MetricDef<T, MultiTurnContainer>;
 }
 
 export function createMultiTurnLLM<
 	T extends MetricScalar,
+	TContainer extends MultiTurnContainer = MultiTurnContainer,
 	V extends VarsTuple = readonly []
 >(args: {
 	base: BaseMetricDef<T>;
-	runOnContainer: MultiTurnMetricDef<T, Conversation>['runOnContainer'];
+	runOnContainer: MultiTurnMetricDef<T, TContainer>['runOnContainer'];
 	provider: LLMMetricFields<T, V>['provider'];
 	prompt: LLMMetricFields<T, V>['prompt'];
 	rubric?: LLMMetricFields<T, V>['rubric'];
 	postProcessing?: LLMMetricFields<T, V>['postProcessing'];
 	normalization?: MetricNormalization<T, ScoringContext>;
 	metadata?: Record<string, unknown>;
-}): MetricDef<T, Conversation> {
+}): MetricDef<T, TContainer> {
 	const { base, runOnContainer, provider, prompt, rubric, postProcessing, normalization, metadata } = args;
 	const mergedBase: BaseMetricDef<T> = {
 		...base,
@@ -214,7 +219,7 @@ export function createMultiTurnLLM<
 		type: 'llm-based',
 		...llmFields,
 		runOnContainer,
-	} as MetricDef<T, Conversation>;
+	} as MetricDef<T, TContainer>;
 }
 
 // -----------------------------------------------------------------------------
@@ -222,21 +227,29 @@ export function createMultiTurnLLM<
 // -----------------------------------------------------------------------------
 
 export function defineInput<
-	M extends MetricDef<MetricScalar, unknown>
+	// biome-ignore lint/suspicious/noExplicitAny: Accept any TRawValue and TContainer to avoid variance issues
+	M extends SingleTurnMetricDef<any, any> | MultiTurnMetricDef<any, any>,
+	// biome-ignore lint/suspicious/noExplicitAny: Infer TRawValue from the metric type
+	TRawValue extends MetricScalar = M extends SingleTurnMetricDef<infer T, any>
+		? T
+		// biome-ignore lint/suspicious/noExplicitAny: Infer TRawValue from MultiTurnMetricDef
+		: M extends MultiTurnMetricDef<infer T, any>
+		? T
+		: MetricScalar
 >(args: {
 	metric: M;
 	weight: number;
 	normalizerOverride?:
-		| NormalizerSpec<M extends MetricDef<infer TRawValue, unknown> ? TRawValue : never, ScoringContext>
-		| NormalizeToScore<M extends MetricDef<infer TRawValue, unknown> ? TRawValue : never, ScoringContext>;
+		| NormalizerSpec<TRawValue, ScoringContext>
+		| NormalizeToScore<TRawValue, ScoringContext>;
 	required?: boolean;
-}): ScorerInput<M, ScoringContext> {
+}): ScorerInput<MetricDef<MetricScalar, MetricContainer>, ScoringContext> {
 	return {
-		metric: args.metric,
+		metric: args.metric as unknown as MetricDef<MetricScalar, MetricContainer>,
 		weight: args.weight,
 		required: args.required ?? true,
 		...(args.normalizerOverride !== undefined && { normalizerOverride: args.normalizerOverride }),
-	} as ScorerInput<M, ScoringContext>;
+	} as ScorerInput<MetricDef<MetricScalar, MetricContainer>, ScoringContext>;
 }
 
 export function defineScorer<
@@ -278,15 +291,15 @@ export function defineScorer<
 // -----------------------------------------------------------------------------
 
 export function createEvaluator<
-	TContainer,
-	TInputs extends readonly MetricDefFor<TContainer>[]
+	TContainer extends MetricContainer,
+	TInputs extends readonly AnyMetricDefFor<TContainer>[]
 >(args: {
 	name: string;
 	metrics: TInputs;
 	scorer: Scorer;
 	context?: EvaluationContext;
 	description?: string;
-}): Evaluator<TContainer, TInputs> {
+}): Evaluator<TContainer, readonly MetricDefFor<TContainer>[]> {
 	const { name, metrics, scorer, context, description } = args;
 	if (!Array.isArray(metrics) || metrics.length === 0) {
 		throw new Error('createEvaluator: metrics must be a non-empty array');
@@ -297,10 +310,10 @@ export function createEvaluator<
 	return {
 		name,
 		...(description !== undefined && { description }),
-		metrics,
+		metrics: metrics as readonly MetricDefFor<TContainer>[],
 		scorer,
 		...(context !== undefined && { context }),
-	};
+	} as Evaluator<TContainer, readonly MetricDefFor<TContainer>[]>;
 }
 
 

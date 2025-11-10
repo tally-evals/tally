@@ -11,7 +11,8 @@ import type {
 	MetricDef,
 	SingleTurnMetricDef,
 	MultiTurnMetricDef,
-	Conversation,
+	SingleTurnContainer,
+	MultiTurnContainer,
 	LLMMetricFields,
 	CodeMetricFields,
 	VarsTuple,
@@ -27,7 +28,7 @@ import type {
  */
 class SingleTurnMetricDefBuilder<
 	T extends MetricScalar,
-	TContainer,
+	TContainer extends SingleTurnContainer = SingleTurnContainer,
 	HasKind extends boolean = false,
 	HasRunnerFn extends boolean = false
 > {
@@ -48,7 +49,7 @@ class SingleTurnMetricDefBuilder<
 		this.preProcessorFn = args.preProcessorFn;
 	}
 
-	static create<T extends MetricScalar, TContainer>(
+	static create<T extends MetricScalar, TContainer extends SingleTurnContainer = SingleTurnContainer>(
 		base: BaseMetricDef<T>
 	): SingleTurnMetricDefBuilder<T, TContainer, false, false> {
 		return new SingleTurnMetricDefBuilder<T, TContainer, false, false>({ base });
@@ -147,19 +148,20 @@ class SingleTurnMetricDefBuilder<
  */
 class MultiTurnMetricDefBuilder<
 	T extends MetricScalar,
+	TContainer extends MultiTurnContainer = MultiTurnContainer,
 	HasKind extends boolean = false,
 	HasRunnerFn extends boolean = false
 > {
 	private readonly base: BaseMetricDef<T>;
 	private readonly codeConfig: Omit<CodeMetricFields<T>, 'type'> | undefined;
 	private readonly llmConfig: Omit<LLMMetricFields<T, readonly []>, 'type'> | undefined;
-	private readonly runOnContainerFn: MultiTurnMetricDef<T, Conversation>['runOnContainer'] | undefined;
+	private readonly runOnContainerFn: MultiTurnMetricDef<T, TContainer>['runOnContainer'] | undefined;
 
 	private constructor(args: {
 		base: BaseMetricDef<T>;
 		codeConfig?: Omit<CodeMetricFields<T>, 'type'> | undefined;
 		llmConfig?: Omit<LLMMetricFields<T, readonly []>, 'type'> | undefined;
-		runOnContainerFn?: MultiTurnMetricDef<T, Conversation>['runOnContainer'] | undefined;
+		runOnContainerFn?: MultiTurnMetricDef<T, TContainer>['runOnContainer'] | undefined;
 	}) {
 		this.base = args.base;
 		this.codeConfig = args.codeConfig;
@@ -167,16 +169,16 @@ class MultiTurnMetricDefBuilder<
 		this.runOnContainerFn = args.runOnContainerFn;
 	}
 
-	static create<T extends MetricScalar>(
+	static create<T extends MetricScalar, TContainer extends MultiTurnContainer = MultiTurnContainer>(
 		base: BaseMetricDef<T>
-	): MultiTurnMetricDefBuilder<T, false, false> {
-		return new MultiTurnMetricDefBuilder<T, false, false>({ base });
+	): MultiTurnMetricDefBuilder<T, TContainer, false, false> {
+		return new MultiTurnMetricDefBuilder<T, TContainer, false, false>({ base });
 	}
 
 	asLLM<V extends VarsTuple = readonly []>(
 		config: Omit<LLMMetricFields<T, V>, 'type'>
-	): MultiTurnMetricDefBuilder<T, true, HasRunnerFn> {
-		return new MultiTurnMetricDefBuilder<T, true, HasRunnerFn>({
+	): MultiTurnMetricDefBuilder<T, TContainer, true, HasRunnerFn> {
+		return new MultiTurnMetricDefBuilder<T, TContainer, true, HasRunnerFn>({
 			base: this.base,
 			llmConfig: config as unknown as Omit<LLMMetricFields<T, readonly []>, 'type'>,
 			codeConfig: this.codeConfig,
@@ -186,8 +188,8 @@ class MultiTurnMetricDefBuilder<
 
 	asCode(
 		config: Omit<CodeMetricFields<T>, 'type'>
-	): MultiTurnMetricDefBuilder<T, true, HasRunnerFn> {
-		return new MultiTurnMetricDefBuilder<T, true, HasRunnerFn>({
+	): MultiTurnMetricDefBuilder<T, TContainer, true, HasRunnerFn> {
+		return new MultiTurnMetricDefBuilder<T, TContainer, true, HasRunnerFn>({
 			base: this.base,
 			codeConfig: config,
 			llmConfig: this.llmConfig,
@@ -196,9 +198,9 @@ class MultiTurnMetricDefBuilder<
 	}
 
 	runOnContainer(
-		fn: MultiTurnMetricDef<T, Conversation>['runOnContainer']
-	): MultiTurnMetricDefBuilder<T, HasKind, true> {
-		return new MultiTurnMetricDefBuilder<T, HasKind, true>({
+		fn: MultiTurnMetricDef<T, TContainer>['runOnContainer']
+	): MultiTurnMetricDefBuilder<T, TContainer, HasKind, true> {
+		return new MultiTurnMetricDefBuilder<T, TContainer, HasKind, true>({
 			base: this.base,
 			codeConfig: this.codeConfig,
 			llmConfig: this.llmConfig,
@@ -233,7 +235,7 @@ class MultiTurnMetricDefBuilder<
 		return this;
 	}
 
-	build(this: MultiTurnMetricDefBuilder<T, true, true>): MetricDef<T, Conversation> {
+	build(this: MultiTurnMetricDefBuilder<T, TContainer, true, true>): MetricDef<T, TContainer> {
 		if (!this.runOnContainerFn) {
 			throw new Error('MultiTurnMetricDefBuilder: runOnContainer() is required before build()');
 		}
@@ -245,7 +247,7 @@ class MultiTurnMetricDefBuilder<
 				type: 'code-based',
 				...codeFields,
 				runOnContainer: this.runOnContainerFn,
-			} as MetricDef<T, Conversation>;
+			} as MetricDef<T, TContainer>;
 		}
 		if (this.llmConfig) {
 			return {
@@ -254,7 +256,7 @@ class MultiTurnMetricDefBuilder<
 				type: 'llm-based',
 				...this.llmConfig,
 				runOnContainer: this.runOnContainerFn,
-			} as MetricDef<T, Conversation>;
+			} as MetricDef<T, TContainer>;
 		}
 		throw new Error('MultiTurnMetricDefBuilder: asCode() or asLLM() must be called before build()');
 	}
@@ -267,11 +269,11 @@ class MultiTurnMetricDefBuilder<
  * MetricDefBuilder will be removed in a future release.
  */
 export const MetricDefBuilder = {
-	singleTurn<T extends MetricScalar, TContainer>(base: BaseMetricDef<T>) {
+	singleTurn<T extends MetricScalar, TContainer extends SingleTurnContainer = SingleTurnContainer>(base: BaseMetricDef<T>) {
 		return SingleTurnMetricDefBuilder.create<T, TContainer>(base);
 	},
-	multiTurn<T extends MetricScalar>(base: BaseMetricDef<T>) {
-		return MultiTurnMetricDefBuilder.create<T>(base);
+	multiTurn<T extends MetricScalar, TContainer extends MultiTurnContainer = MultiTurnContainer>(base: BaseMetricDef<T>) {
+		return MultiTurnMetricDefBuilder.create<T, TContainer>(base);
 	},
 };
 
