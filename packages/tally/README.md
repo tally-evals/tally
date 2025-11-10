@@ -24,15 +24,19 @@ import {
   createTally,
   createEvaluator,
   runAllTargets,
+  defineBaseMetric,
+  defineInput,
+} from '@tally-evals/tally'
+import {
   createAnswerRelevanceMetric,
   createCompletenessMetric,
   createRoleAdherenceMetric,
-  defineBaseMetric,
-  defineInput,
-  createWeightedAverageScorer,
+} from '@tally-evals/tally/metrics'
+import { createWeightedAverageScorer } from '@tally-evals/tally/scorers'
+import {
   createMeanAggregator,
   createPassRateAggregator,
-} from 'tally'
+} from '@tally-evals/tally/aggregators'
 import { google } from '@ai-sdk/google'
 
 // Your data: either from a dataset or from @tally-evals/trajectories → toConversation()

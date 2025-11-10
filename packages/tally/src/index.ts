@@ -98,88 +98,6 @@ export {
 	createEvaluator,
 } from './core/factory';
 
-// ============================================================================
-// Normalization
-// ============================================================================
-
-export {
-	createMinMaxNormalizer,
-	createZScoreNormalizer,
-	createThresholdNormalizer,
-	createLinearNormalizer,
-	createOrdinalMapNormalizer,
-	createIdentityNormalizer,
-	createCustomNormalizer,
-} from './core/normalization/factory';
-
-export { applyNormalization } from './core/normalization/apply';
-export {
-	resolveContext,
-	computeDistributionStats,
-	computeRange,
-	clearContextCache,
-	getCachedContext,
-} from './core/normalization/context';
-
-// ============================================================================
-// OOB Metrics
-// ============================================================================
-
-export { createAnswerRelevanceMetric } from './metrics/singleTurn/answerRelevance';
-export { createAnswerSimilarityMetric } from './metrics/singleTurn/answerSimilarity';
-export { createCompletenessMetric } from './metrics/singleTurn/completeness';
-export { createToxicityMetric } from './metrics/singleTurn/toxicity';
-export { createToolCallAccuracyMetric } from './metrics/singleTurn/toolCallAccuracy';
-export { createRoleAdherenceMetric } from './metrics/multiTurn/roleAdherence';
-export { createGoalCompletionMetric } from './metrics/multiTurn/goalCompletion';
-export { createTopicAdherenceMetric } from './metrics/multiTurn/topicAdherence';
-
-// ============================================================================
-// OOB Scorers
-// ============================================================================
-
-export { createWeightedAverageScorer } from './scorers/weightedAverage';
-export type { CreateWeightedAverageScorerOptions } from './scorers/weightedAverage';
-
-// ============================================================================
-// OOB Aggregators
-// ============================================================================
-
-export { createMeanAggregator } from './aggregators/mean';
-export { createPercentileAggregator } from './aggregators/percentile';
-export { createPassRateAggregator } from './aggregators/passRate';
-
-// ============================================================================
-// Data Loaders & Validation
-// ============================================================================
-
-export {
-	loadDatasetFromJSONL,
-	loadConversationsFromJSONL,
-	loadFromJSONL,
-} from './data/loaders/jsonl';
-export type { JSONLLoadOptions } from './data/loaders/jsonl';
-
-export {
-	isValidDatasetItem,
-	isValidConversation,
-	isValidConversationStep,
-	isValidDataset,
-	isValidConversations,
-	assertDatasetItem,
-	assertConversation,
-	assertDataset,
-	assertConversations,
-} from './data/validate';
-
-export {
-	adaptToDatasetItem,
-	adaptToDataset,
-	adaptToConversationStep,
-	adaptToConversation,
-	adaptToConversations,
-} from './data/shape';
-export type { ShapeAdapterOptions } from './data/shape';
 
 // ============================================================================
 // Evaluation Context Helpers
@@ -226,19 +144,3 @@ export * from './utils/guards';
 export * from './utils/text';
 export * from './utils/time';
 
-// ============================================================================
-// Metric Utilities
-// ============================================================================
-
-export {
-	extractInputOutput,
-	extractTextFromMessage,
-	extractKeywords,
-	checkKeywordCoverage,
-	extractToolCalls,
-} from './metrics/common/utils';
-export type {
-	KeywordExtractionOptions,
-	KeywordCoverageResult,
-	ExtractedToolCall,
-} from './metrics/common/utils';

@@ -12,14 +12,18 @@ import {
 	createTally,
 	createEvaluator,
 	runAllTargets,
-	createAnswerRelevanceMetric,
-	createCompletenessMetric,
-	createWeightedAverageScorer,
-	createMeanAggregator,
-	createPassRateAggregator,
 	defineBaseMetric,
 	defineInput,
 } from '@tally-evals/tally';
+import {
+	createAnswerRelevanceMetric,
+	createCompletenessMetric,
+} from '@tally-evals/tally/metrics';
+import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
+import {
+	createMeanAggregator,
+	createPassRateAggregator,
+} from '@tally-evals/tally/aggregators';
 import { google } from '@ai-sdk/google';
 
 describe('Weather Agent - Golden Path', () => {

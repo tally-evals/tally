@@ -112,18 +112,22 @@ Evaluate your agents using datasets and conversations with multiple metrics:
 import { 
   createTally, 
   createEvaluator, 
+  defineInput, 
+  defineBaseMetric,
+  runAllTargets
+} from '@tally-evals/tally'
+import {
   createMeanAggregator,
   createPercentileAggregator,
   createPassRateAggregator,
-  createWeightedAverageScorer, 
-  defineInput, 
-  defineBaseMetric,
+} from '@tally-evals/tally/aggregators'
+import { createWeightedAverageScorer } from '@tally-evals/tally/scorers'
+import {
   createAnswerRelevanceMetric,
   createCompletenessMetric,
   createToxicityMetric,
   createRoleAdherenceMetric,
-  runAllTargets
-} from '@tally-evals/tally'
+} from '@tally-evals/tally/metrics'
 import { google } from '@ai-sdk/google'
 
 // Prepare your data (from trajectory or dataset)
@@ -208,12 +212,11 @@ const aggregators = [
   }),
   createPercentileAggregator(overallQualityMetric, { 
     percentile: 75,
-    options: { description: '75th percentile quality score' }
+    description: '75th percentile quality score'
   }),
-  createPassRateAggregator({
-    metric: overallQualityMetric,
+  createPassRateAggregator(overallQualityMetric, {
     threshold: 0.7,
-    options: { description: 'Pass rate (quality >= 0.7)' }
+    description: 'Pass rate (quality >= 0.7)'
   }),
 ]
 

@@ -5,7 +5,6 @@ import {
 } from '../../_exports';
 import { makeMockLanguageModelReturningObject } from '../../_mocks/mockModel';
 import type { ConversationStep, DatasetItem } from '../../_exports';
-import type { ModelMessage } from 'ai';
 
 describe('Integration | Metrics | Answer Relevance', () => {
 	it('creates answer relevance metric', () => {
@@ -43,7 +42,7 @@ describe('Integration | Metrics | Answer Relevance', () => {
 		const step: ConversationStep = {
 			stepIndex: 0,
 			input: { role: 'user', content: 'What is the capital of France?' },
-			output: { role: 'assistant', content: 'Paris is the capital of France.' },
+			output: [{ role: 'assistant', content: 'Paris is the capital of France.' }],
 		};
 
 		const result = await runSingleTurnMetric(metric, step);

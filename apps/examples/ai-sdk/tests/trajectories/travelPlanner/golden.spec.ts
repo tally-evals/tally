@@ -10,15 +10,19 @@ import {
 	createTally,
 	createEvaluator,
 	runAllTargets,
-	createAnswerRelevanceMetric,
-	createCompletenessMetric,
-	createRoleAdherenceMetric,
-	createWeightedAverageScorer,
-	createMeanAggregator,
-	createPassRateAggregator,
 	defineBaseMetric,
 	defineInput,
 } from '@tally-evals/tally';
+import {
+	createAnswerRelevanceMetric,
+	createCompletenessMetric,
+	createRoleAdherenceMetric,
+} from '@tally-evals/tally/metrics';
+import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
+import {
+	createMeanAggregator,
+	createPassRateAggregator,
+} from '@tally-evals/tally/aggregators';
 import { google } from '@ai-sdk/google';
 
 describe('Travel Planner Agent - Golden Path', () => {

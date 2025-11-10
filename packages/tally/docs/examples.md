@@ -18,9 +18,7 @@ import {
   withNormalization,
   createSingleTurnLLM,
   createMultiTurnLLM,
-  createWeightedAverageScorer,
   defineInput,
-  createMeanAggregator,
   runSpecificSteps,
   toScore,
   type Conversation,
@@ -30,7 +28,9 @@ import {
   type Aggregator,
   type SingleTurnMetricDef,
   type MultiTurnMetricDef,
-} from 'tally';
+} from '@tally-evals/tally';
+import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
+import { createMeanAggregator } from '@tally-evals/tally/aggregators';
 import { openai } from '@ai-sdk/openai';
 import type { ModelMessage } from 'ai';
 
@@ -129,16 +129,16 @@ import {
   defineBaseMetric,
   withNormalization,
   createSingleTurnCode,
-  createWeightedAverageScorer,
   defineInput,
-  createMeanAggregator,
   toScore,
   type DatasetItem,
   type Score,
   type Evaluator,
   type Aggregator,
   type SingleTurnMetricDef,
-} from 'tally';
+} from '@tally-evals/tally';
+import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
+import { createMeanAggregator } from '@tally-evals/tally/aggregators';
 
 const computeAnswerRelevance = (item: DatasetItem) =>
   item.prompt.split(' ').some((word) => item.completion.includes(word)) ? 1 : 0;
