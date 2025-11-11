@@ -136,7 +136,7 @@ const conversation = toConversation(result)
 
 ### Evaluation with Tally
 
-Evaluate your agents using datasets and conversations with multiple metrics:
+Evaluate your agents using datasets and conversations with evals (recommended approach):
 
 ```typescript
 import { 
@@ -144,19 +144,19 @@ import {
   createEvaluator, 
   defineInput, 
   defineBaseMetric,
-  runAllTargets
+  runAllTargets,
+  defineSingleTurnEval,
+  defineMultiTurnEval,
+  defineScorerEval,
+  thresholdVerdict,
+  formatReportAsTables,
 } from '@tally-evals/tally'
-import {
-  createMeanAggregator,
-  createPercentileAggregator,
-  createPassRateAggregator,
-} from '@tally-evals/tally/aggregators'
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers'
 import {
   createAnswerRelevanceMetric,
   createCompletenessMetric,
-  createToxicityMetric,
   createRoleAdherenceMetric,
+  createGoalCompletionMetric,
 } from '@tally-evals/tally/metrics'
 import { google } from '@ai-sdk/google'
 
@@ -168,13 +168,13 @@ const conversations = [
       {
         stepIndex: 0,
         input: { role: 'user', content: 'What is the weather in San Francisco?' },
-        output: { role: 'assistant', content: 'The weather in San Francisco is sunny, 72°F.' },
+        output: [{ role: 'assistant', content: 'The weather in San Francisco is sunny, 72°F.' }],
         timestamp: new Date(),
       },
       {
         stepIndex: 1,
         input: { role: 'user', content: 'What about New York?' },
-        output: { role: 'assistant', content: 'New York is currently cloudy with a temperature of 65°F.' },
+        output: [{ role: 'assistant', content: 'New York is currently cloudy with a temperature of 65°F.' }],
         timestamp: new Date(),
       },
     ],
@@ -184,33 +184,18 @@ const conversations = [
 const model = google('models/gemini-2.5-flash-lite')
 
 // Create single-turn metrics
-const relevanceMetric = createAnswerRelevanceMetric({
-  model,
-  prompt: {
-    instruction: 'Rate how relevant the completion is to the prompt (0-1)',
-  },
-})
-
-const completenessMetric = createCompletenessMetric({
-  model,
-  prompt: {
-    instruction: 'Rate how complete and thorough the answer is (0-1)',
-  },
-})
-
-const toxicityMetric = createToxicityMetric({
-  model,
-  prompt: {
-    instruction: 'Rate the toxicity level of the response (0 = safe, 1 = toxic)',
-  },
-})
+const relevanceMetric = createAnswerRelevanceMetric({ provider: model })
+const completenessMetric = createCompletenessMetric({ provider: model })
 
 // Create multi-turn metric
 const roleAdherenceMetric = createRoleAdherenceMetric({
-  model,
-  prompt: {
-    instruction: 'Rate how well the assistant adheres to its role across the conversation (0-1)',
-  },
+  expectedRole: 'weather information assistant',
+  provider: model,
+})
+
+const goalCompletionMetric = createGoalCompletionMetric({
+  goal: 'Provide accurate weather information for requested locations',
+  provider: model,
 })
 
 // Create scorer combining multiple metrics with weights
@@ -221,54 +206,104 @@ const qualityScorer = createWeightedAverageScorer({
   inputs: [
     defineInput({ metric: relevanceMetric, weight: 0.3 }),
     defineInput({ metric: completenessMetric, weight: 0.3 }),
-    defineInput({ metric: roleAdherenceMetric, weight: 0.3 }),
-    defineInput({ metric: toxicityMetric, weight: 0.1 }), // Lower is better, so inverted in scorer
+    defineInput({ metric: roleAdherenceMetric, weight: 0.2 }),
+    defineInput({ metric: goalCompletionMetric, weight: 0.2 }),
   ],
 })
 
-// Create evaluator with multiple metrics
-const evaluator = createEvaluator({
-  name: 'Agent Quality Evaluation',
-  metrics: [relevanceMetric, completenessMetric, toxicityMetric, roleAdherenceMetric],
-  scorer: qualityScorer,
-  context: runAllTargets(), // Evaluate all conversation steps
+// Define evals (combine metrics with verdict policies)
+const relevanceEval = defineSingleTurnEval({
+  name: 'Answer Relevance',
+  metric: relevanceMetric,
+  verdict: thresholdVerdict(0.7), // Pass if score >= 0.7
 })
 
-// Create multiple aggregators
-const aggregators = [
-  createMeanAggregator({ 
-    metric: overallQualityMetric,
-    options: { description: 'Average overall quality score' }
-  }),
-  createPercentileAggregator(overallQualityMetric, { 
-    percentile: 75,
-    description: '75th percentile quality score'
-  }),
-  createPassRateAggregator(overallQualityMetric, {
-    threshold: 0.7,
-    description: 'Pass rate (quality >= 0.7)'
-  }),
-]
+const completenessEval = defineSingleTurnEval({
+  name: 'Completeness',
+  metric: completenessMetric,
+  verdict: thresholdVerdict(0.6), // Pass if score >= 0.6
+})
+
+const roleAdherenceEval = defineMultiTurnEval({
+  name: 'Role Adherence',
+  metric: roleAdherenceMetric,
+  verdict: thresholdVerdict(0.8), // Pass if score >= 0.8
+})
+
+const goalCompletionEval = defineMultiTurnEval({
+  name: 'Goal Completion',
+  metric: goalCompletionMetric,
+  verdict: thresholdVerdict(0.7), // Pass if score >= 0.7
+})
+
+const overallQualityEval = defineScorerEval({
+  name: 'Overall Quality',
+  inputs: [relevanceMetric, completenessMetric, roleAdherenceMetric, goalCompletionMetric],
+  scorer: qualityScorer,
+  verdict: thresholdVerdict(0.7), // Pass if score >= 0.7
+})
+
+// Create evaluator with evals
+const evaluator = createEvaluator({
+  name: 'Agent Quality Evaluation',
+  evals: [relevanceEval, completenessEval, roleAdherenceEval, goalCompletionEval, overallQualityEval],
+  context: runAllTargets(), // Evaluate all conversation steps
+})
 
 // Create Tally instance and run evaluation
 const tally = createTally({
   data: conversations,
   evaluators: [evaluator],
-  aggregators,
 })
 
 const report = await tally.run()
 
-// Access results
-console.log('Average quality:', report.aggregateSummaries[0]?.value)
-console.log('75th percentile:', report.aggregateSummaries[1]?.value)
-console.log('Pass rate:', report.aggregateSummaries[2]?.value)
+// Format and display results as tables
+formatReportAsTables(report, conversations)
 
-// Per-target results
+// Access results programmatically
+console.log('Eval summaries:', report.evalSummaries)
+console.log('Per-target results:', report.perTargetResults)
+
+// Check verdicts for each conversation
 report.perTargetResults.forEach((result) => {
-  console.log(`Conversation ${result.targetId}:`, result.scores)
+  console.log(`Conversation ${result.targetId}:`)
+  result.verdicts.forEach((verdict, evalName) => {
+    console.log(`  ${evalName}: ${verdict.verdict} (score: ${verdict.score})`)
+  })
 })
 ```
+
+## Evals API
+
+**Evals** are the recommended way to define evaluations in Tally. They combine metrics with verdict policies to define what to evaluate and how to determine pass/fail.
+
+### Types of Evals
+
+1. **Single-Turn Evals** - Evaluate individual conversation steps or dataset items
+2. **Multi-Turn Evals** - Evaluate entire conversations
+3. **Scorer Evals** - Combine multiple metrics using a scorer
+
+### Verdict Policies
+
+Verdict policies define pass/fail criteria:
+
+- `thresholdVerdict(threshold)` - Pass if normalized score >= threshold (0-1)
+- `booleanVerdict(passWhen)` - Pass if boolean value matches (true/false)
+- `rangeVerdict(min, max)` - Pass if score is within range
+- `ordinalVerdict(categories)` - Pass if value matches allowed categories
+- `customVerdict(fn)` - Custom pass/fail logic function
+
+### Report Structure
+
+The `EvaluationReport` includes:
+
+- `evalSummaries` - Aggregated statistics per eval (mean, percentiles, pass rates)
+- `perTargetResults` - Detailed results per conversation/dataset item
+  - `rawMetrics` - Raw metric values
+  - `derivedMetrics` - Scorer outputs
+  - `verdicts` - Pass/fail verdicts per eval
+- `aggregateSummaries` - Legacy aggregator results (deprecated, use evalSummaries)
 
 ## Development
 
