@@ -8,6 +8,7 @@ export {
 	loadDatasetFromJSONL,
 	loadConversationsFromJSONL,
 	loadFromJSONL,
+	loadConversationStepsFromJSONL,
 } from './loaders/jsonl';
 export type { JSONLLoadOptions } from './loaders/jsonl';
 

@@ -42,10 +42,10 @@ describe('Integration | Metrics | Completeness', () => {
 		const step: ConversationStep = {
 			stepIndex: 0,
 			input: { role: 'user', content: 'Explain the water cycle.' },
-			output: {
+			output: [{
 				role: 'assistant',
 				content: 'The water cycle involves evaporation, condensation, and precipitation.',
-			},
+			}],
 		};
 
 		const result = await runSingleTurnMetric(metric, step);

@@ -17,8 +17,8 @@ Implementation is intentionally deferred. This document serves as a detailed blu
   - `withAISdkAgent(agent)` for AI SDK agents
   - `withMastraAgent(agent)` for Mastra agents
 - Internally rely on AI SDK-style `ModelMessage` for message flow.
-- Do not expose a separate “user adapter”; provide an internal AI-as-user generator.
-- Provide built-in, configurable memory (can be disabled) without requiring external persistence.
+- Do not expose a separate "user adapter"; provide an internal AI-as-user generator.
+- Provide built-in, configurable storage for conversation history (can be disabled) without requiring external persistence.
 - Produce artifacts compatible with Tally:
   - One line per step in JSONL
   - `Conversation` conversion for metrics
@@ -30,7 +30,7 @@ Implementation is intentionally deferred. This document serves as a detailed blu
 
 - No UI/CLI tooling beyond minimal helpers (future work).
 - No baked-in evaluation metrics (handled by Tally).
-- No external persistence layer beyond built-in local memory.
+- No external persistence layer beyond built-in local storage.
 
 ---
 
@@ -50,26 +50,18 @@ src/
   core/
     types.ts
     orchestrator.ts
-    planner.ts
-    memory/
+    storage/
       interface.ts
-      localMemory.ai.ts
-      noopMemory.ts
-  adapters/
-    ai-sdk/
-      agentAdapter.ts
-      userAdapter.ts
-      types.ts
-    mastra/
-      agentAdapter.ts
-      userAdapter.ts
-      types.ts
+      localStorage.ts
+      noopStorage.ts
+    userGenerator.ts
+  wrappers/
+    index.ts          # Agent wrappers (withAISdkAgent, withMastraAgent)
   policies/
-    strictPolicy.ts
-    loosePolicy.ts
+    index.ts          # StrictPolicy, LoosePolicy
   utils/
-    messages.ts
-    tracing.ts
+    prompt.ts         # Prompt building utilities
+    output.ts         # JSONL, Conversation conversion
   index.ts
 ```
 
@@ -90,12 +82,10 @@ interface Persona {
 
 interface TrajectoryStep {
   instruction: string;
-  expectedOutcome?: string;
   requiredInfo?: readonly string[];
-  hardStopIfMissing?: boolean;
 }
 
-interface MemoryConfig {
+interface StorageConfig {
   strategy: 'local' | 'none';
   ttlMs?: number;
   capacity?: number;
@@ -108,7 +98,7 @@ interface Trajectory {
   steps?: readonly TrajectoryStep[];
   mode: TrajectoryMode;
   maxTurns?: number;
-  memory?: MemoryConfig;      // built-in memory; defaults to 'local'
+  storage?: StorageConfig;     // built-in storage; defaults to 'local'
   userModel?: LanguageModel;   // AI SDK model function for user message generation
   metadata?: Record<string, unknown>;
 }
@@ -128,13 +118,7 @@ export type ModelMessage = {
 interface StepTrace {
   turnIndex: number;
   userMessage: ModelMessage;
-  agentMessages: readonly ModelMessage[];
-  toolCalls?: readonly {
-    toolCallId: string;
-    toolName: string;
-    args: unknown;
-    result?: unknown;
-  }[];
+  agentMessages: readonly ModelMessage[];  // Includes assistant and tool messages
   timestamp: Date;
 }
 
@@ -158,11 +142,22 @@ interface AgentHandle {
 }
 ```
 
-### Agent Wrappers (continued)
+### Agent Wrappers
 
 - Wrappers normalize each agent runtime to a consistent `AgentHandle.respond(history)`.
 - History is represented as AI SDK `ModelMessage` throughout.
-- Built-in local memory is provided and configurable; it can be disabled with `strategy: 'none'`.
+- `withAISdkAgent` supports two patterns:
+  1. AI SDK Agent instance (with `generate` method)
+  2. `generateText` input config (without `messages`/`prompt`, which are added from history)
+- Built-in local storage is provided and configurable; it can be disabled with `strategy: 'none'`.
+
+### Prompt Utilities
+
+- `buildPromptFromHistory()` - Builds AI SDK `Prompt` object from conversation history
+  - Supports both `messages` and `prompt` string formats
+  - Handles system message injection
+- `historyToMessages()` - Converts history to `ModelMessage[]` array
+- These utilities ensure consistent prompt construction for both `agent.generate()` and `generateText()` calls
 
 ---
 
@@ -171,20 +166,23 @@ interface AgentHandle {
 - **Strict Mode**:
   - Execute steps in order; deviations are violations.
   - If required info is missing:
-    - Ask one clarifying question or stop if `hardStopIfMissing`.
-  - Validate against `expectedOutcome` when provided.
+    - Ask one clarifying question or stop.
 - **Loose Mode**:
   - Steps act as guidance; allow reasonable deviations.
   - Answer the agent’s clarifying questions using persona + goal + steps context.
   - Prefer progress toward the goal over rigid adherence.
 
 Execution loop (conceptual):
-1. Resolve memory and conversationId (built-in memory).
-2. Build the next user message via the internal AI-as-user generator (persona + goal + step) as a `ModelMessage`.
-3. Call `agent.respond(history)` with full `ModelMessage` history.
-4. Append messages to history via Memory.
-5. Evaluate stop conditions: goal reached, maxTurns, policy violation.
-6. Emit `StepTrace`.
+1. Resolve storage and conversationId (built-in storage).
+2. Determine current step based on `turnIndex` (one user turn per iteration).
+3. Build the next user message via the internal AI-as-user generator (persona + goal + step) as a `ModelMessage`.
+4. Call `agent.respond(history)` with full `ModelMessage` history.
+   - Uses `buildPromptFromHistory()` to construct proper `Prompt` object
+   - Handles both agent and generateText patterns
+5. Collect all agent response messages (assistant and tool messages).
+6. Append all messages (user + assistant + tool) to history via Storage.
+7. Evaluate stop conditions: goal reached, maxTurns, policy violation.
+8. Emit `StepTrace` with all agent messages (assistant and tool messages included).
 
 ---
 
@@ -211,14 +209,28 @@ function createTrajectory(
 // Runtime
 function runTrajectory(
   trajectory: Trajectory,
-  env?: {
-    memory?: Memory; // override built-in memory if desired
+  options?: {
+    storage?: Storage; // override built-in storage if desired
+    userModel?: LanguageModel; // override trajectory userModel
   }
 ): Promise<TrajectoryResult>;
 
 // Agent wrappers
-function withAISdkAgent(agent: unknown): AgentHandle;
-function withMastraAgent(agent: unknown): AgentHandle;
+function withAISdkAgent(
+  agent: { generate: (input: Prompt) => Promise<{ response: { messages: ModelMessage[] } }> }
+): AgentHandle;
+function withAISdkAgent(
+  config: Omit<GenerateTextInput, 'messages' | 'prompt'>
+): AgentHandle;
+function withMastraAgent(agent: { generate: (input: { messages: ModelMessage[] }) => Promise<{ messages: ModelMessage[] }> }): AgentHandle;
+
+// Prompt utilities
+function buildPromptFromHistory(options: {
+  history: readonly ModelMessage[];
+  system?: string;
+  useMessages?: boolean;
+}): Prompt;
+function historyToMessages(history: readonly ModelMessage[]): ModelMessage[];
 
 // Helpers
 function toJSONL(result: TrajectoryResult): string[];    // one step per line
@@ -233,15 +245,21 @@ function summarize(result: TrajectoryResult): string;    // short human-readable
 
 ---
 
-## Memory Strategy
+## Storage Strategy
 
-- **Built-in Local Memory**:
+- **Built-in Local Storage**:
   - `Map<string, readonly ModelMessage[]>`
   - Optional `ttlMs` and `capacity` for pruning
   - Always append user + assistant + tool messages in order
   - Tool-call/result pairing is preserved
+  - Implemented via `LocalStorage` class
 - **Disable Option**:
-  - `strategy: 'none'` to avoid storing history (stream-to-agent only).
+  - `strategy: 'none'` to avoid storing history (stateless execution)
+  - Implemented via `NoopStorage` class
+- **Storage Interface**:
+  - `get(conversationId): readonly ModelMessage[]`
+  - `set(conversationId, messages): void`
+  - `clear(conversationId): void`
 
 ---
 
@@ -256,22 +274,25 @@ function summarize(result: TrajectoryResult): string;    // short human-readable
 
 - Unit:
   - Strict vs. loose policy behaviors
-  - LocalMemory (eviction rules, TTL)
-  - Adapters’ normalization and error propagation
+  - LocalStorage (eviction rules, TTL)
+  - Agent wrapper normalization and error propagation
+  - Prompt utility correctness (messages vs prompt format)
 - E2E:
   - Travel planner on AI SDK and Mastra (happy paths + clarify-first)
   - Dataset writing: JSONL one-step-per-line artifacts
 - Performance:
-  - Large history handling and memory pruning behavior
+  - Large history handling and storage pruning behavior
 
 ---
 
 ## Roadmap
 
 - v0 (Docs → Skeleton):
-  - Finalize types and public API
-  - Implement agent wrappers (AI SDK first) and LocalMemory
-  - JSONL writer + Tally conversion helpers
+  - ✅ Finalize types and public API
+  - ✅ Implement agent wrappers (AI SDK first) and LocalStorage
+  - ✅ Prompt utilities for consistent message handling
+  - ✅ JSONL writer + Tally conversion helpers
+  - ✅ Step indexing fixes and message separation
 - v0.1:
   - Mastra agent wrapper
   - Enhanced tracing utilities
@@ -286,9 +307,13 @@ function summarize(result: TrajectoryResult): string;    // short human-readable
 
 ## Acceptance Criteria
 
-- Define and run trajectories with or without steps in strict/loose modes
-- Accept agents via functional wrappers (`withAISdkAgent`, `withMastraAgent`) without changing orchestration code
-- Built-in memory works out-of-the-box and can be disabled
-- JSONL and Tally outputs are correct and complete for evaluation
+- ✅ Define and run trajectories with or without steps in strict/loose modes
+- ✅ Accept agents via functional wrappers (`withAISdkAgent`, `withMastraAgent`) without changing orchestration code
+  - `withAISdkAgent` supports both Agent instances and `generateText` config
+- ✅ Built-in storage works out-of-the-box and can be disabled
+- ✅ Prompt utilities ensure consistent message handling for both agent and generateText patterns
+- ✅ Step indexing accurately tracks turns using `turnIndex` instead of message count
+- ✅ Assistant and tool messages are properly separated in step traces
+- ✅ JSONL and Tally outputs are correct and complete for evaluation
 
 

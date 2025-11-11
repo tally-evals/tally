@@ -5,7 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import { demandLetterAgent } from '../../../src/agents/demandLetter';
 import { demandLetterGoldenTrajectory } from './definitions';
-import { runCase } from '../../utils/harness';
+import { runCase, assertToolCallSequence } from '../../utils/harness';
 import {
 	createTally,
 	createEvaluator,
@@ -34,6 +34,25 @@ describe('Demand Letter Agent - Golden Path', () => {
 		});
 
 		expect(conversation.steps.length).toBeGreaterThan(0);
+
+		// Assert tool call sequences are valid
+		for (const step of conversation.steps) {
+			try {
+				assertToolCallSequence(step);
+			} catch (error) {
+				// Only fail if there are tool calls but no results
+				// Some steps might not have tool calls at all
+				const hasToolCalls = step.output.some(
+					(msg) => msg.role === 'assistant' &&
+					(Array.isArray(msg.content) ? msg.content.some((p: unknown) => 
+						typeof p === 'object' && p !== null && 'type' in p && p.type === 'tool-call'
+					) : false)
+				);
+				if (hasToolCalls) {
+					throw error;
+				}
+			}
+		}
 
 		const model = google('models/gemini-2.5-flash-lite');
 

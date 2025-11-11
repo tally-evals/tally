@@ -246,13 +246,16 @@ export function extractToolCalls(message: ModelMessage): ExtractedToolCall[] {
 				'type' in part &&
 				part.type === 'tool-call' &&
 				'toolCallId' in part &&
-				'toolName' in part &&
-				'args' in part
+				'toolName' in part
 			) {
+				// Handle both 'input' (JSONL format) and 'args' (AI SDK format)
+				const partObj = part as unknown as Record<string, unknown>;
+				const args = 'input' in partObj ? partObj.input : 'args' in partObj ? partObj.args : {};
+				
 				toolCalls.push({
 					toolCallId: String(part.toolCallId),
 					toolName: String(part.toolName),
-					args: part.args,
+					args,
 				});
 			}
 		}

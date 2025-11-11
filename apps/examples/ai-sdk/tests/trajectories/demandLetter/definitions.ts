@@ -23,20 +23,17 @@ export const demandLetterGoldenTrajectory: Trajectory = {
 	steps: [
 		{
 			instruction: 'Express need to create a demand letter for an unpaid invoice',
-			expectedOutcome: 'Agent explains the process and asks for required information',
 		},
 		{
 			instruction: 'Provide invoice details (amount: $2,500, due date: March 15th)',
-			expectedOutcome: 'Agent asks for recipient information',
 		},
 		{
 			instruction: 'Provide recipient details (ABC Company, address)',
-			expectedOutcome: 'Agent validates information and generates preview',
 		},
 	],
 	mode: 'loose',
 	maxTurns: 10,
-	memory: {
+	storage: {
 		strategy: 'local',
 		conversationId: 'demand-letter-golden',
 	},
@@ -61,24 +58,20 @@ export const demandLetterCurveTrajectory: Trajectory = {
 	steps: [
 		{
 			instruction: 'Express need for demand letter but provide no details',
-			expectedOutcome: 'Agent asks for required information',
 		},
 		{
 			instruction: 'Provide partial information (amount but no date)',
-			expectedOutcome: 'Agent asks for missing information',
 		},
 		{
 			instruction: 'Change the amount after providing it',
-			expectedOutcome: 'Agent handles the change gracefully',
 		},
 		{
 			instruction: 'Provide invalid information (negative amount)',
-			expectedOutcome: 'Agent validates and asks for correction',
 		},
 	],
 	mode: 'loose',
 	maxTurns: 10,
-	memory: {
+	storage: {
 		strategy: 'local',
 		conversationId: 'demand-letter-curve',
 	},
