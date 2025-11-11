@@ -23,48 +23,48 @@ export const travelPlannerGoldenTrajectory: Trajectory = {
 	steps: [
 		{
 			instruction: 'Express interest in planning a trip to San Francisco',
-			expectedOutcome: 'Agent acknowledges and asks for origin',
+			
 		},
 		{
-			instruction: 'Provide origin city (New York)',
-			expectedOutcome: 'Agent acknowledges origin and asks for departure date',
+			instruction: 'Provide origin city (New York), JFK',
+			
 		},
 		{
 			instruction: 'Provide departure date (June 15th, 2025)',
-			expectedOutcome: 'Agent asks if round trip is needed',
+			
 		},
 		{
 			instruction: 'Confirm round trip is needed',
-			expectedOutcome: 'Agent asks for return date',
+			
 		},
 		{
 			instruction: 'Provide return date (June 20th, 2025)',
-			expectedOutcome: 'Agent searches for flights',
+		},
+		{
+			instruction: 'Review flight options and express preference or ask for more options',
 		},
 		{
 			instruction: 'Request help finding a hotel in San Francisco',
-			expectedOutcome: 'Agent asks for check-in/check-out dates',
 		},
 		{
 			instruction: 'Provide check-in date and duration (June 15th for 5 nights)',
-			expectedOutcome: 'Agent asks for number of guests',
 		},
 		{
 			instruction: 'Provide guest count (just for me)',
-			expectedOutcome: 'Agent searches for accommodations',
 		},
 		{
 			instruction: 'Express preference for hotels over apartments',
-			expectedOutcome: 'Agent refines search or presents results',
+		},
+		{
+			instruction: 'Review hotel options and express preference or ask for more options',
 		},
 		{
 			instruction: 'Ask about weather during the trip',
-			expectedOutcome: 'Agent provides weather forecast',
 		},
 	],
 	mode: 'loose',
 	maxTurns: 15,
-	memory: {
+	storage: {
 		strategy: 'local',
 		conversationId: 'travel-planner-golden',
 	},
@@ -89,28 +89,23 @@ export const travelPlannerCurveTrajectory: Trajectory = {
 	steps: [
 		{
 			instruction: 'Express interest in planning a trip but don\'t specify destination',
-			expectedOutcome: 'Agent asks for destination',
 		},
 		{
 			instruction: 'Provide destination but no dates',
-			expectedOutcome: 'Agent asks for dates',
 		},
 		{
 			instruction: 'Change destination after providing it',
-			expectedOutcome: 'Agent handles the change gracefully',
 		},
 		{
 			instruction: 'Provide conflicting information (e.g., round trip but no return date)',
-			expectedOutcome: 'Agent clarifies or asks for missing information',
 		},
 		{
 			instruction: 'Request accommodations before flights are confirmed',
-			expectedOutcome: 'Agent handles appropriately (may ask for flight dates or proceed)',
 		},
 	],
 	mode: 'loose',
 	maxTurns: 15,
-	memory: {
+	storage: {
 		strategy: 'local',
 		conversationId: 'travel-planner-curve',
 	},

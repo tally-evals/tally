@@ -1,16 +1,16 @@
 /**
- * Local memory implementation using Map for in-memory storage
+ * Local storage implementation using Map for in-memory storage
  */
 
 import type { ModelMessage } from 'ai';
-import type { Memory } from './interface.js';
+import type { Storage } from './interface.js';
 
 interface MessageEntry {
 	messages: readonly ModelMessage[];
 	timestamp: number;
 }
 
-export class LocalMemory implements Memory {
+export class LocalStorage implements Storage {
 	private storage: Map<string, MessageEntry>;
 	private readonly ttlMs?: number;
 	private readonly capacity?: number;

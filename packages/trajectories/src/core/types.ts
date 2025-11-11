@@ -14,12 +14,10 @@ export interface Persona {
 
 export interface TrajectoryStep {
 	instruction: string;
-	expectedOutcome?: string;
 	requiredInfo?: readonly string[];
-	hardStopIfMissing?: boolean;
 }
 
-export interface MemoryConfig {
+export interface StorageConfig {
 	strategy: 'local' | 'none';
 	ttlMs?: number;
 	capacity?: number;
@@ -32,9 +30,16 @@ export interface Trajectory {
 	steps?: readonly TrajectoryStep[];
 	mode: TrajectoryMode;
 	maxTurns?: number;
-	memory?: MemoryConfig; // built-in memory; defaults to 'local'
+	storage?: StorageConfig; // built-in storage; defaults to 'local'
 	userModel?: LanguageModel; // AI SDK model function for user message generation
 	metadata?: Record<string, unknown>;
+	// Loop detection for loose mode
+	loopDetection?: {
+		/** Maximum consecutive turns matching the same step before stopping (default: 3) */
+		maxConsecutiveSameStep?: number;
+		/** Maximum consecutive turns with no step match before stopping (default: 3) */
+		maxConsecutiveNoMatch?: number;
+	};
 }
 
 // ============================================================================
@@ -45,12 +50,6 @@ export interface StepTrace {
 	turnIndex: number;
 	userMessage: ModelMessage;
 	agentMessages: readonly ModelMessage[];
-	toolCalls?: readonly {
-		toolCallId: string;
-		toolName: string;
-		args: unknown;
-		result?: unknown;
-	}[];
 	timestamp: Date;
 }
 
@@ -58,6 +57,8 @@ export type TrajectoryStopReason =
 	| 'goal-reached'
 	| 'max-turns'
 	| 'policy-violation'
+	| 'agent-loop'
+	| 'no-step-match'
 	| 'error';
 
 export interface TrajectoryResult {

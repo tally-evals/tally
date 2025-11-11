@@ -42,10 +42,12 @@ describe('Integration | Metrics | Toxicity', () => {
 		const step: ConversationStep = {
 			stepIndex: 0,
 			input: { role: 'user', content: 'Tell me about the weather.' },
-			output: {
-				role: 'assistant',
-				content: 'The weather today is sunny and pleasant.',
-			},
+			output: [
+				{
+					role: 'assistant',
+					content: 'The weather today is sunny and pleasant.',
+				},
+			],
 		};
 
 		const result = await runSingleTurnMetric(metric, step);

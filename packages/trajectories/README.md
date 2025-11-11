@@ -58,15 +58,15 @@ const jsonlLines = toJSONL(result)                                 // one step p
 mode: 'strict' // or 'loose'
 ```
 
-## Memory and user model
-- Built-in memory is on by default (`strategy: 'local'`)
+## Storage and user model
+- Built-in storage is on by default (`strategy: 'local'`)
 - You can disable or limit it
 - Provide an AI SDK `LanguageModel` as `userModel` to simulate the user
 
 ```ts
-memory: { strategy: 'local', conversationId: 'my-run' }
+storage: { strategy: 'local', conversationId: 'my-run' }
 // or
-memory: { strategy: 'none' } // stateless generation
+storage: { strategy: 'none' } // stateless generation
 ```
 
 ## Generate “bad” trajectories (robustness testing)
@@ -100,12 +100,17 @@ Export the results the same way (JSONL or Tally `Conversation`) and feed them to
 
 ```ts
 // Wrap agents
-withAISdkAgent(agentOrModel, options?)   // AI SDK agent or LanguageModel
+withAISdkAgent(agent)                    // AI SDK Agent instance
+withAISdkAgent(config)                   // generateText config (without messages/prompt)
 withMastraAgent(agent)
 
 // Build & run
 createTrajectory(def, agent)             // -> Trajectory
-runTrajectory(trajectory)                // -> TrajectoryResult
+runTrajectory(trajectory, options?)      // -> TrajectoryResult
+
+// Prompt utilities
+buildPromptFromHistory(options)          // Build Prompt from history
+historyToMessages(history)               // Convert history to messages array
 
 // Record
 toConversation(result, conversationId?)  // -> Tally Conversation
@@ -118,10 +123,10 @@ type TrajectoryMode = 'strict' | 'loose'
 interface Trajectory {
   goal: string
   persona: { name?: string; description: string; guardrails?: readonly string[] }
-  steps?: readonly { instruction: string; expectedOutcome?: string }[]
+  steps?: readonly { instruction: string }[]
   mode: TrajectoryMode
   maxTurns?: number
-  memory?: { strategy: 'local' | 'none'; ttlMs?: number; capacity?: number; conversationId?: string }
+  storage?: { strategy: 'local' | 'none'; ttlMs?: number; capacity?: number; conversationId?: string }
   userModel?: LanguageModel
   metadata?: Record<string, unknown>
 }

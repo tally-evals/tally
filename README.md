@@ -65,14 +65,16 @@ yarn add @tally-evals/tally @tally-evals/trajectories
 
 ### Trajectory Generation
 
-Generate multi-turn conversation trajectories using AI-as-user simulation:
+Generate multi-turn conversation trajectories using AI-as-user simulation. The trajectories package supports multiple agent patterns:
+
+**Using an AI SDK Agent instance:**
 
 ```typescript
 import { createTrajectory, runTrajectory, withAISdkAgent, toConversation } from '@tally-evals/trajectories'
 import { weatherAgent } from '@tally-evals/examples-ai-sdk'
 import { google } from '@ai-sdk/google'
 
-// Wrap your agent
+// Wrap your agent (AI SDK Agent instance)
 const agent = withAISdkAgent(weatherAgent)
 
 // Define trajectory with goal, persona, and steps
@@ -93,6 +95,7 @@ const trajectory = createTrajectory({
   ],
   mode: 'loose',
   maxTurns: 10,
+  storage: { strategy: 'local', conversationId: 'weather-run' }, // Optional storage config
   userModel: google('models/gemini-2.5-flash-lite'),
 }, agent)
 
@@ -102,6 +105,33 @@ const result = await runTrajectory(trajectory)
 // Convert to Tally Conversation format
 const conversation = toConversation(result, 'weather-trajectory')
 console.log(`Completed ${result.steps.length} turns`)
+```
+
+**Using generateText config directly:**
+
+```typescript
+import { createTrajectory, runTrajectory, withAISdkAgent, toConversation } from '@tally-evals/trajectories'
+import { google } from '@ai-sdk/google'
+
+// Wrap using generateText config (without messages/prompt)
+const agent = withAISdkAgent({
+  model: google('models/gemini-2.5-flash-lite'),
+  temperature: 0.7,
+  // ... other generateText options
+})
+
+const trajectory = createTrajectory({
+  goal: 'Get weather information',
+  persona: {
+    description: 'You need weather information.',
+  },
+  mode: 'loose',
+  maxTurns: 10,
+  userModel: google('models/gemini-2.5-flash-lite'),
+}, agent)
+
+const result = await runTrajectory(trajectory)
+const conversation = toConversation(result)
 ```
 
 ### Evaluation with Tally
