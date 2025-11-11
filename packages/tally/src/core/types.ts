@@ -7,6 +7,7 @@
 
 // Reuse AI SDK's ModelMessage for framework-agnostic conversation messages
 import type { ModelMessage } from 'ai';
+import type { Eval } from './evals/types';
 
 // ============================================================================
 // Data Types
@@ -252,7 +253,7 @@ export type MetricDef<
 /**
  * Any MetricDef for a container type
  */
-export type MetricDefFor<TContainer extends MetricContainer> = MetricDef<MetricScalar, TContainer>;
+export type MetricDefFor<TContainer extends MetricContainer> = AnyMetricDefFor<TContainer>;
 
 /**
  * Accepts any MetricDef for a container type, regardless of TRawValue
@@ -400,18 +401,16 @@ export interface EvaluationContext {
 }
 
 /**
- * Evaluator definition
- * Orchestrates metric execution and scoring
+ * Evaluator definition (REFACTORED)
+ * Now accepts evals instead of metrics/scorers directly
+ * Defines context that applies to all evals within it
  */
-export interface Evaluator<
-	TContainer extends MetricContainer,
-	TInputs extends readonly MetricDefFor<TContainer>[]
-> {
+export interface Evaluator<TContainer extends MetricContainer> {
 	name: string;
 	description?: string;
-	metrics: TInputs; // May mix single-turn and multi-turn metric definitions
-	scorer: Scorer; // Combine normalized results emitted by the listed metrics
-	context?: EvaluationContext; // Applied to single-turn metrics only
+	evals: readonly Eval<TContainer>[]; // Changed from metrics + scorer
+	context: EvaluationContext; // REQUIRED: Context applies to all evals in this evaluator
+	metadata?: Record<string, unknown>;
 }
 
 // ============================================================================
@@ -435,6 +434,15 @@ export interface Aggregator {
 // ============================================================================
 
 /**
+ * Per-target verdict (pass/fail result)
+ */
+export interface TargetVerdict {
+	verdict: 'pass' | 'fail' | 'unknown';
+	score: Score; // Normalized score used for verdict
+	rawValue?: MetricScalar; // Original raw value (if available)
+}
+
+/**
  * Per-target result
  * Contains raw and derived metrics for a single data point
  */
@@ -445,6 +453,27 @@ export interface PerTargetResult {
 		definition: BaseMetricDef<number>;
 		value: Score;
 	}>;
+	// NEW: Verdicts per eval
+	verdicts: Map<string, TargetVerdict>; // key: eval name
+}
+
+/**
+ * Built-in aggregation metrics (always calculated)
+ */
+export interface BuiltInAggregations {
+	mean: Score;
+	percentiles: {
+		p50: Score; // median
+		p75: Score;
+		p90: Score;
+		p95: Score;
+		p99: Score;
+	};
+	passRate?: Score; // Only if verdict policy exists
+	failRate?: Score; // Only if verdict policy exists
+	passCount?: number; // Only if verdict policy exists
+	failCount?: number; // Only if verdict policy exists
+	distribution?: Record<string, number>; // For ordinal metrics: category counts
 }
 
 /**
@@ -453,9 +482,11 @@ export interface PerTargetResult {
  */
 export interface AggregateSummary {
 	metric: BaseMetricDef<number>;
-	average: Score;
-	percentile?: Record<number, number>;
+	aggregations: BuiltInAggregations; // Always present
 	count: number;
+	// Legacy field removed - use aggregations.mean instead
+	average?: Score; // Deprecated: use aggregations.mean
+	percentile?: Record<number, number>; // Deprecated: use aggregations.percentiles
 }
 
 /**
@@ -467,6 +498,19 @@ export interface EvaluationReport {
 	timestamp: Date;
 	perTargetResults: PerTargetResult[];
 	aggregateSummaries: AggregateSummary[];
+	// NEW: Eval-level summaries (one per eval)
+	evalSummaries: Map<string, {
+		evalName: string;
+		evalKind: 'singleTurn' | 'multiTurn' | 'scorer';
+		aggregations: BuiltInAggregations;
+		verdictSummary?: {
+			passRate: Score;
+			failRate: Score;
+			passCount: number;
+			failCount: number;
+			totalCount: number;
+		};
+	}>;
 	metadata: Record<string, unknown>;
 }
 
@@ -475,16 +519,14 @@ export interface EvaluationReport {
 // ============================================================================
 
 /**
- * Tally container
+ * Tally container (REFACTORED)
  * Main evaluation container that orchestrates the entire evaluation flow
+ * Now accepts evaluators (which contain evals) - no aggregators needed
  */
 export interface Tally<TContainer extends MetricContainer> {
 	data: readonly TContainer[];
-	evaluators: readonly Evaluator<
-		TContainer,
-		readonly MetricDefFor<TContainer>[]
-	>[];
-	aggregators: readonly Aggregator[];
+	// Allow evaluators over any metric container to avoid variance issues between data and eval targets
+	evaluators: readonly Evaluator<MetricContainer>[]; // Changed: no aggregators parameter
 	run(): Promise<EvaluationReport>;
 }
 

@@ -12,6 +12,10 @@ import {
 	runAllTargets,
 	defineBaseMetric,
 	defineInput,
+	defineSingleTurnEval,
+	defineMultiTurnEval,
+	defineScorerEval,
+	thresholdVerdict,
 } from '@tally-evals/tally';
 import {
 	createAnswerRelevanceMetric,
@@ -19,10 +23,6 @@ import {
 	createRoleAdherenceMetric,
 } from '@tally-evals/tally/metrics';
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
-import {
-	createMeanAggregator,
-	createPassRateAggregator,
-} from '@tally-evals/tally/aggregators';
 import { google } from '@ai-sdk/google';
 
 describe('Travel Planner Agent - Golden Path', () => {
@@ -88,35 +88,50 @@ describe('Travel Planner Agent - Golden Path', () => {
 				],
 			});
 
-			const evaluator = createEvaluator({
-				name: 'Travel Planner Agent Quality',
-				metrics: [answerRelevance, completeness, roleAdherence],
-				scorer: qualityScorer,
-				context: runAllTargets(),
+			// Create evals
+			const answerRelevanceEval = defineSingleTurnEval({
+				name: 'Answer Relevance',
+				metric: answerRelevance,
 			});
 
-			// Create aggregators
-			const aggregators = [
-				createMeanAggregator({ metric: overallQuality }),
-				createPassRateAggregator(overallQuality, { threshold: 0.7 }),
-			];
+			const completenessEval = defineSingleTurnEval({
+				name: 'Completeness',
+				metric: completeness,
+				verdict: thresholdVerdict(0.5),
+			});
+
+	const roleAdherenceEval = defineMultiTurnEval({
+		name: 'Role Adherence',
+		metric: roleAdherence,
+	});
+
+			const overallQualityEval = defineScorerEval({
+				name: 'Overall Quality',
+				inputs: [answerRelevance, completeness, roleAdherence],
+				scorer: qualityScorer,
+				verdict: thresholdVerdict(0.7),
+			});
+
+			const evaluator = createEvaluator({
+				name: 'Travel Planner Agent Quality',
+				evals: [answerRelevanceEval, completenessEval, roleAdherenceEval, overallQualityEval],
+				context: runAllTargets(),
+			});
 
 			const tally = createTally({
 				data: [conversation],
 				evaluators: [evaluator],
-				aggregators,
 			});
 
 			const report = await tally.run();
 
 			expect(report).toBeDefined();
 			expect(report.perTargetResults.length).toBeGreaterThan(0);
+			expect(report.evalSummaries.size).toBeGreaterThan(0);
 
-			const passRateSummary = report.aggregateSummaries.find(
-				(s) => s.metric.name === 'overallQuality' && 'passRate' in s
-			);
-			if (passRateSummary && 'passRate' in passRateSummary) {
-				expect(passRateSummary.passRate).toBeGreaterThan(0.8);
+			const overallQualitySummary = report.evalSummaries.get('Overall Quality');
+			if (overallQualitySummary?.verdictSummary) {
+				expect(overallQualitySummary.verdictSummary.passRate).toBeGreaterThan(0.8);
 			}
 		},
 		120000 // 2 minute timeout for trajectory execution

@@ -14,16 +14,15 @@ import {
 	runAllTargets,
 	defineBaseMetric,
 	defineInput,
+	defineSingleTurnEval,
+	defineScorerEval,
+	thresholdVerdict,
 } from '@tally-evals/tally';
 import {
 	createAnswerRelevanceMetric,
 	createCompletenessMetric,
 } from '@tally-evals/tally/metrics';
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
-import {
-	createMeanAggregator,
-	createPassRateAggregator,
-} from '@tally-evals/tally/aggregators';
 import { google } from '@ai-sdk/google';
 
 describe('Weather Agent - Curve Ball', () => {
@@ -65,25 +64,35 @@ describe('Weather Agent - Curve Ball', () => {
 			],
 		});
 
+		// Create evals
+		const answerRelevanceEval = defineSingleTurnEval({
+			name: 'Answer Relevance',
+			metric: answerRelevance,
+		});
+
+		const completenessEval = defineSingleTurnEval({
+			name: 'Completeness',
+			metric: completeness,
+		});
+
+		const overallQualityEval = defineScorerEval({
+			name: 'Overall Quality',
+			inputs: [answerRelevance, completeness],
+			scorer: qualityScorer,
+			verdict: thresholdVerdict(0.5), // Lower threshold for curve ball
+		});
+
 		// Create evaluator
 		const evaluator = createEvaluator({
 			name: 'Weather Agent Quality',
-			metrics: [answerRelevance, completeness],
-			scorer: qualityScorer,
+			evals: [answerRelevanceEval, completenessEval, overallQualityEval],
 			context: runAllTargets(),
 		});
-
-		// Create aggregators (more lenient thresholds for curve ball)
-		const aggregators = [
-			createMeanAggregator({ metric: overallQuality }),
-			createPassRateAggregator(overallQuality, { threshold: 0.5 }), // Lower threshold
-		];
 
 		// Run evaluation
 		const tally = createTally({
 			data: [conversation],
 			evaluators: [evaluator],
-			aggregators,
 		});
 
 		const report = await tally.run();
@@ -91,15 +100,13 @@ describe('Weather Agent - Curve Ball', () => {
 		// Assertions
 		expect(report).toBeDefined();
 		expect(report.perTargetResults.length).toBeGreaterThan(0);
-		expect(report.aggregateSummaries.length).toBe(2);
+		expect(report.evalSummaries.size).toBeGreaterThan(0);
 
 		// For curve ball, we're more lenient - just check that agent handled it
 		// The agent should still respond appropriately even if the request is ambiguous
-		const meanSummary = report.aggregateSummaries.find(
-			(s) => s.metric.name === 'overallQuality' && 'average' in s
-		);
-		if (meanSummary && 'average' in meanSummary) {
-			expect(meanSummary.average).toBeGreaterThan(0.4); // At least 0.4 average score
+		const overallQualitySummary = report.evalSummaries.get('Overall Quality');
+		if (overallQualitySummary) {
+			expect(overallQualitySummary.aggregations.mean).toBeGreaterThan(0.4); // At least 0.4 average score
 		}
 	});
 });

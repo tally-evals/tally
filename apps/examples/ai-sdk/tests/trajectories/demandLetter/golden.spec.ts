@@ -12,16 +12,15 @@ import {
 	runAllTargets,
 	defineBaseMetric,
 	defineInput,
+	defineSingleTurnEval,
+	defineScorerEval,
+	thresholdVerdict,
 } from '@tally-evals/tally';
 import {
 	createAnswerRelevanceMetric,
 	createCompletenessMetric,
 } from '@tally-evals/tally/metrics';
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
-import {
-	createMeanAggregator,
-	createPassRateAggregator,
-} from '@tally-evals/tally/aggregators';
 import { google } from '@ai-sdk/google';
 
 describe('Demand Letter Agent - Golden Path', () => {
@@ -78,34 +77,44 @@ describe('Demand Letter Agent - Golden Path', () => {
 			],
 		});
 
-		const evaluator = createEvaluator({
-			name: 'Demand Letter Agent Quality',
-			metrics: [answerRelevance, completeness],
-			scorer: qualityScorer,
-			context: runAllTargets(),
+		// Create evals
+		const answerRelevanceEval = defineSingleTurnEval({
+			name: 'Answer Relevance',
+			metric: answerRelevance,
 		});
 
-		const aggregators = [
-			createMeanAggregator({ metric: overallQuality }),
-			createPassRateAggregator(overallQuality, { threshold: 0.7 }),
-		];
+		const completenessEval = defineSingleTurnEval({
+			name: 'Completeness',
+			metric: completeness,
+		});
+
+		const overallQualityEval = defineScorerEval({
+			name: 'Overall Quality',
+			inputs: [answerRelevance, completeness],
+			scorer: qualityScorer,
+			verdict: thresholdVerdict(0.7),
+		});
+
+		const evaluator = createEvaluator({
+			name: 'Demand Letter Agent Quality',
+			evals: [answerRelevanceEval, completenessEval, overallQualityEval],
+			context: runAllTargets(),
+		});
 
 		const tally = createTally({
 			data: [conversation],
 			evaluators: [evaluator],
-			aggregators,
 		});
 
 		const report = await tally.run();
 
 		expect(report).toBeDefined();
 		expect(report.perTargetResults.length).toBeGreaterThan(0);
+		expect(report.evalSummaries.size).toBeGreaterThan(0);
 
-		const passRateSummary = report.aggregateSummaries.find(
-			(s) => s.metric.name === 'overallQuality' && 'passRate' in s
-		);
-		if (passRateSummary && 'passRate' in passRateSummary) {
-			expect(passRateSummary.passRate).toBeGreaterThan(0.8);
+		const overallQualitySummary = report.evalSummaries.get('Overall Quality');
+		if (overallQualitySummary?.verdictSummary) {
+			expect(overallQualitySummary.verdictSummary.passRate).toBeGreaterThan(0.8);
 		}
 	});
 });
