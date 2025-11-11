@@ -26,17 +26,17 @@
 
 ## Concepts
 
-- **Conversation**: A multi-turn exchange used as the evaluation target — enables testing realistic multi-turn interactions
-- **MetricDef**: A definition of what to measure (LLM-based or code-based) — reusable measurement logic
-  - **Single-turn**: Measures individual conversation steps or dataset items — evaluate per-turn quality
-  - **Multi-turn**: Measures entire conversations — evaluate overall conversation quality
-- **Scorer**: Combines/normalizes multiple metrics into a single score — create composite quality scores
-- **Eval**: A metric + verdict policy that defines pass/fail criteria — enables automated pass/fail decisions
-  - **Single-turn eval**: Evaluates individual steps with a threshold or custom policy — per-turn quality gates
-  - **Multi-turn eval**: Evaluates entire conversations with a threshold or custom policy — conversation-level quality gates
-  - **Scorer eval**: Combines multiple metrics via a scorer, then applies a verdict — composite quality gates
-- **Evaluator**: A set of evals + a run policy (which steps/items to evaluate) — groups related evaluations together
-- **Report**: The output, including per-target details and eval summaries with aggregations — actionable results for CI/CD
+- **Conversation**: A multi-turn exchange used as the evaluation target — *enables testing realistic multi-turn interactions*
+- **MetricDef**: A definition of what to measure (LLM-based or code-based) — *reusable measurement logic*
+  - **Single-Turn**: Measures individual conversation steps or dataset items — *evaluate per-turn quality*
+  - **Multi-Turn**: Measures entire conversations — *evaluate overall conversation quality*
+- **Scorer**: Combines/normalizes multiple metrics into a single score — *create composite quality scores*
+- **Eval**: A metric + verdict policy that defines pass/fail criteria — *enables automated pass/fail decisions*
+  - **Single-Turn Eval**: Evaluates individual steps with a threshold or custom policy — *per-turn quality gates*
+  - **Multi-Turn Eval**: Evaluates entire conversations with a threshold or custom policy — *conversation-level quality gates*
+  - **Scorer Eval**: Combines multiple metrics via a scorer, then applies a verdict — *composite quality gates*
+- **Evaluator**: A set of evals + a run policy (which steps/items to evaluate) — *groups related evaluations together*
+- **Report**: The output, including per-target details and eval summaries with aggregations — *actionable results for CI/CD*
 
 ## Getting Started
 
