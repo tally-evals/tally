@@ -1,137 +1,107 @@
-# Tally
+<div align="center">
+  <br/>
+  <h1>Tally</h1>
+  <p><b>Typesafe agent evaluations and simulated conversations</b></p>
+  <p>
+    Tally is a TypeScript library to <b>simulate conversations</b> with your agents and <b>evaluate</b> them with reusable, composable building blocks.
+    Ship agents with confidence using concise, expressive, <b>type-safe</b> APIs.
+  </p>
+  <p>
+    <a href="#getting-started">Quickstart</a> •
+    <a href="#concepts">Concepts</a> •
+    <a href="./packages/tally">Package</a> •
+    <a href="./apps/examples/ai-sdk">AI SDK Examples</a>
+  </p>
+</div>
 
-A TypeScript evaluation framework for running model evaluations with datasets, evaluators, metrics, and aggregators.
+## Why Tally
 
-## Overview
+- **Typesafe by design**: Strongly-typed metrics, evals, verdicts, and reports
+- **Composable primitives**: Reuse metrics, scorers, and evals across tests
+- **Single-turn + Multi-turn**: Measure steps and whole conversations
+- **Realistic testing**: Generate simulated conversations (optional) and evaluate end-to-end
+- **Actionable reports**: Built-in summaries and verdicts ready for CI
 
-Tally provides a structured approach to evaluating model behavior through:
 
-- **Datasets & Conversations** - Input data for evaluation
-- **Evaluators** - Judge what to check and how (Selector + Scorer)
-- **Metrics** - Define what to measure (Boolean, Number, Ordinal/Enum)
-- **Aggregators** - Summarize many results into meaningful insights
-- **EvaluationReport** - Final output with detailed and summary results
+
+## Concepts
+
+- **Conversation**: A multi-turn exchange used as the evaluation target — enables testing realistic multi-turn interactions
+- **MetricDef**: A definition of what to measure (LLM-based or code-based) — reusable measurement logic
+  - **Single-turn**: Measures individual conversation steps or dataset items — evaluate per-turn quality
+  - **Multi-turn**: Measures entire conversations — evaluate overall conversation quality
+- **Scorer**: Combines/normalizes multiple metrics into a single score — create composite quality scores
+- **Eval**: A metric + verdict policy that defines pass/fail criteria — enables automated pass/fail decisions
+  - **Single-turn eval**: Evaluates individual steps with a threshold or custom policy — per-turn quality gates
+  - **Multi-turn eval**: Evaluates entire conversations with a threshold or custom policy — conversation-level quality gates
+  - **Scorer eval**: Combines multiple metrics via a scorer, then applies a verdict — composite quality gates
+- **Evaluator**: A set of evals + a run policy (which steps/items to evaluate) — groups related evaluations together
+- **Report**: The output, including per-target details and eval summaries with aggregations — actionable results for CI/CD
+
+## Getting Started
+
+```bash
+pnpm add @tally-evals/tally
+# Optional: conversation generation
+pnpm add @tally-evals/trajectories
+```
 
 ## Packages
 
-This is a monorepo containing the following packages:
+This monorepo contains:
 
-### Core Packages
-
-- **[`@tally-evals/tally`](./packages/tally)** - Main evaluation framework
-- **[`@tally-evals/trajectories`](./packages/trajectories)** - Framework-agnostic trajectory generation for multi-turn conversations
-
-### Example Packages
-
-- **[`@tally-evals/examples-ai-sdk`](./apps/examples/ai-sdk)** - Example agents built with AI SDK
-- **[`@tally-evals/examples-mastra`](./apps/examples/mastra)** - Example agents built with Mastra
-- **[`@tally-evals/examples-agent-kit`](./apps/examples/agent-kit)** - Example agents built with Agent Kit
-
-### Documentation
-
-- **[`docs`](./apps/docs)** - Documentation site built with Fumadocs
-
-## Installation
-
-Install the packages you need:
-
-```bash
-# Core evaluation framework
-npm install @tally-evals/tally
-# or
-pnpm add @tally-evals/tally
-# or
-yarn add @tally-evals/tally
-
-# Trajectory generation (optional)
-npm install @tally-evals/trajectories
-# or
-pnpm add @tally-evals/trajectories
-# or
-yarn add @tally-evals/trajectories
-```
-
-Or install both at once:
-
-```bash
-npm install @tally-evals/tally @tally-evals/trajectories
-# or
-pnpm add @tally-evals/tally @tally-evals/trajectories
-# or
-yarn add @tally-evals/tally @tally-evals/trajectories
-```
+- **[`@tally-evals/tally`](./packages/tally)** - Core evaluation framework
+- **[`@tally-evals/trajectories`](./packages/trajectories)** - Generate simulated conversations
+- **[Examples](./apps/examples)** - Example agents (AI SDK, Mastra, Agent Kit)
 
 ## Quick Start
 
 ### Trajectory Generation
 
-Generate multi-turn conversation trajectories using AI-as-user simulation. The trajectories package supports multiple agent patterns:
-
-**Using an AI SDK Agent instance:**
+Generate multi-turn conversation trajectories using AI-as-user simulation:
 
 ```typescript
-import { createTrajectory, runTrajectory, withAISdkAgent, toConversation } from '@tally-evals/trajectories'
+import {
+  createTrajectory,
+  runTrajectory,
+  withAISdkAgent,
+  toConversation,
+} from '@tally-evals/trajectories'
 import { weatherAgent } from '@tally-evals/examples-ai-sdk'
 import { google } from '@ai-sdk/google'
 
-// Wrap your agent (AI SDK Agent instance)
+// Wrap your agent
 const agent = withAISdkAgent(weatherAgent)
 
 // Define trajectory with goal, persona, and steps
-const trajectory = createTrajectory({
-  goal: 'Get weather information for multiple locations',
-  persona: {
-    name: 'Weather Inquirer',
-    description: 'You need weather information for different locations.',
-    guardrails: [
-      'Ask naturally and conversationally',
-      'Provide location names clearly',
+const trajectory = createTrajectory(
+  {
+    goal: 'Get weather information for multiple locations',
+    persona: {
+      name: 'Weather Inquirer',
+      description: 'You need weather information for different locations.',
+      guardrails: [
+        'Ask naturally and conversationally',
+        'Provide location names clearly',
+      ],
+    },
+    steps: [
+      { instruction: 'Ask for current weather in San Francisco' },
+      { instruction: 'Ask for weather in New York in celsius' },
+      { instruction: 'Ask for weather forecast in Paris, France' },
     ],
+    mode: 'loose',
+    maxTurns: 10,
+    userModel: google('models/gemini-2.5-flash-lite'),
   },
-  steps: [
-    { instruction: 'Ask for current weather in San Francisco' },
-    { instruction: 'Ask for weather in New York in celsius' },
-    { instruction: 'Ask for weather forecast in Paris, France' },
-  ],
-  mode: 'loose',
-  maxTurns: 10,
-  storage: { strategy: 'local', conversationId: 'weather-run' }, // Optional storage config
-  userModel: google('models/gemini-2.5-flash-lite'),
-}, agent)
+  agent
+)
 
 // Run the trajectory
 const result = await runTrajectory(trajectory)
 
 // Convert to Tally Conversation format
 const conversation = toConversation(result, 'weather-trajectory')
-console.log(`Completed ${result.steps.length} turns`)
-```
-
-**Using generateText config directly:**
-
-```typescript
-import { createTrajectory, runTrajectory, withAISdkAgent, toConversation } from '@tally-evals/trajectories'
-import { google } from '@ai-sdk/google'
-
-// Wrap using generateText config (without messages/prompt)
-const agent = withAISdkAgent({
-  model: google('models/gemini-2.5-flash-lite'),
-  temperature: 0.7,
-  // ... other generateText options
-})
-
-const trajectory = createTrajectory({
-  goal: 'Get weather information',
-  persona: {
-    description: 'You need weather information.',
-  },
-  mode: 'loose',
-  maxTurns: 10,
-  userModel: google('models/gemini-2.5-flash-lite'),
-}, agent)
-
-const result = await runTrajectory(trajectory)
-const conversation = toConversation(result)
 ```
 
 ### Evaluation with Tally
@@ -139,10 +109,10 @@ const conversation = toConversation(result)
 Evaluate your agents using datasets and conversations with evals (recommended approach):
 
 ```typescript
-import { 
-  createTally, 
-  createEvaluator, 
-  defineInput, 
+import {
+  createTally,
+  createEvaluator,
+  defineInput,
   defineBaseMetric,
   runAllTargets,
   defineSingleTurnEval,
@@ -238,7 +208,12 @@ const goalCompletionEval = defineMultiTurnEval({
 
 const overallQualityEval = defineScorerEval({
   name: 'Overall Quality',
-  inputs: [relevanceMetric, completenessMetric, roleAdherenceMetric, goalCompletionMetric],
+  inputs: [
+    relevanceMetric,
+    completenessMetric,
+    roleAdherenceMetric,
+    goalCompletionMetric,
+  ],
   scorer: qualityScorer,
   verdict: thresholdVerdict(0.7), // Pass if score >= 0.7
 })
@@ -246,7 +221,13 @@ const overallQualityEval = defineScorerEval({
 // Create evaluator with evals
 const evaluator = createEvaluator({
   name: 'Agent Quality Evaluation',
-  evals: [relevanceEval, completenessEval, roleAdherenceEval, goalCompletionEval, overallQualityEval],
+  evals: [
+    relevanceEval,
+    completenessEval,
+    roleAdherenceEval,
+    goalCompletionEval,
+    overallQualityEval,
+  ],
   context: runAllTargets(), // Evaluate all conversation steps
 })
 
