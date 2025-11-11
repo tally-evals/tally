@@ -16,7 +16,6 @@ export function toJSONL(result: TrajectoryResult): string[] {
 			turnIndex: step.turnIndex,
 			input: step.userMessage,
 			output: step.agentMessages,
-			toolCalls: step.toolCalls,
 			timestamp: step.timestamp.toISOString(),
 			metadata: {
 				completed: result.completed,
@@ -41,7 +40,6 @@ export function toConversation(
 		timestamp: step.timestamp,
 		metadata: {
 			turnIndex: step.turnIndex,
-			toolCalls: step.toolCalls,
 		},
 	}));
 
@@ -79,9 +77,6 @@ export function summarize(result: TrajectoryResult): string {
 					? step.userMessage.content.substring(0, 50)
 					: '[complex content]';
 			lines.push(`  ${index + 1}. User: ${userContent}...`);
-			if (step.toolCalls && step.toolCalls.length > 0) {
-				lines.push(`     Tools called: ${step.toolCalls.map((tc) => tc.toolName).join(', ')}`);
-			}
 		});
 	}
 

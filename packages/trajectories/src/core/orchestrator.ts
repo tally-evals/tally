@@ -8,17 +8,21 @@ import type {
 	StepTrace,
 	AgentHandle,
 } from './types.js';
-import { LocalMemory } from './memory/localMemory.js';
-import { NoopMemory } from './memory/noopMemory.js';
-import type { Memory } from './memory/interface.js';
-import { StrictPolicy, LoosePolicy } from '../policies/index.js';
-import type { PolicyContext } from '../policies/index.js';
+import type { Storage } from './storage/interface.js';
 import { generateUserMessage } from './userGenerator.js';
 import type { UserMessageContext } from './userGenerator.js';
+import { logStep, logTrajectoryStart, logTrajectoryEnd } from '../utils/logger.js';
+import { initializeStorage } from './execution/storage.js';
+import { createPolicy, evaluatePolicy, buildPolicyContext } from './execution/policyEvaluator.js';
+import { determineStep } from './execution/stepSelector.js';
+import { LoopDetector } from './execution/loopDetector.js';
+import { invokeAgent } from './execution/agentInvoker.js';
+import { advanceStepIndex } from './execution/stepAdvancement.js';
 
 export interface RunTrajectoryOptions {
-	memory?: Memory;
+	storage?: Storage;
 	userModel?: Parameters<typeof import('ai').generateText>[0]['model'];
+	generateLogs?: boolean; // Default: false
 }
 
 /**
@@ -31,7 +35,7 @@ export function createTrajectory(
 	// Set defaults
 	const trajectory: Trajectory & { agent: AgentHandle } = {
 		...def,
-		memory: def.memory ?? { strategy: 'local' },
+		storage: def.storage ?? { strategy: 'local' },
 		agent,
 	};
 
@@ -45,34 +49,29 @@ export async function runTrajectory(
 	trajectory: Trajectory & { agent: AgentHandle },
 	options?: RunTrajectoryOptions
 ): Promise<TrajectoryResult> {
+	const generateLogs = options?.generateLogs ?? false;
 	const steps: StepTrace[] = [];
 	let turnIndex = 0;
 	const conversationId =
-		trajectory.memory?.conversationId || `trajectory-${Date.now()}`;
+		trajectory.storage?.conversationId || `trajectory-${Date.now()}`;
 
-	// Initialize memory
-	let memory: Memory;
-	if (options?.memory) {
-		memory = options.memory;
-	} else if (trajectory.memory?.strategy === 'none') {
-		memory = new NoopMemory();
-	} else {
-		const memoryOptions: { ttlMs?: number; capacity?: number } = {};
-		if (trajectory.memory?.ttlMs !== undefined) {
-			memoryOptions.ttlMs = trajectory.memory.ttlMs;
-		}
-		if (trajectory.memory?.capacity !== undefined) {
-			memoryOptions.capacity = trajectory.memory.capacity;
-		}
-		memory = new LocalMemory(memoryOptions);
+	// Log trajectory start if enabled
+	if (generateLogs) {
+		logTrajectoryStart(
+			trajectory.goal,
+			trajectory.persona,
+			trajectory.mode,
+			conversationId
+		);
 	}
 
+	// Initialize storage
+	const storage = initializeStorage(trajectory, options);
+
 	// Initialize policy
-	const policy =
-		trajectory.mode === 'strict' ? new StrictPolicy() : new LoosePolicy();
+	const policy = createPolicy(trajectory.mode);
 
 	// Get user model (required for AI-as-user generation)
-	// Can be provided in trajectory or options (options takes precedence)
 	const userModel = options?.userModel || trajectory.userModel;
 	if (!userModel) {
 		throw new Error(
@@ -80,28 +79,91 @@ export async function runTrajectory(
 		);
 	}
 
+	// Track the current step index (may differ from turnIndex in loose mode)
+	let currentStepIndex = 0;
+
+	// Initialize loop detector (for loose mode)
+	const loopDetector = new LoopDetector(trajectory.loopDetection);
+
 	// Main execution loop
 	while (true) {
 		// Get current history
-		const history = memory.get(conversationId);
+		const history = storage.get(conversationId);
 
-		// Determine current step
-		const currentStepIndex = Math.floor(history.length / 2); // Rough estimate
-		const nextStep =
-			trajectory.steps && currentStepIndex < trajectory.steps.length
-				? trajectory.steps[currentStepIndex]
-				: undefined;
+		// Determine step to use for user message generation
+		const stepSelection = await determineStep(
+			trajectory,
+			turnIndex,
+			currentStepIndex,
+			history,
+			userModel,
+			generateLogs
+		);
+
+		const { stepToUse, stepIndexToUse, matchResult } = stepSelection;
+
+		// Update loop detector based on match result (only in loose mode after first turn)
+		if (trajectory.mode === 'loose' && turnIndex > 0 && matchResult) {
+			if (matchResult.matchedStepIndex !== null) {
+				const loopResult = loopDetector.recordMatch(matchResult.matchedStepIndex);
+				if (generateLogs && loopResult.shouldStop) {
+					console.log(
+						`\n🔍 [DEBUG] Loop detection: Same step ${matchResult.matchedStepIndex} matched ${loopDetector.getState().consecutiveSameStepCount} times (limit: ${trajectory.loopDetection?.maxConsecutiveSameStep ?? 3})`
+					);
+				}
+				if (loopResult.shouldStop && loopResult.reason && loopResult.summary) {
+					const result: TrajectoryResult = {
+						steps,
+						completed: false,
+						reason: loopResult.reason,
+						summary: loopResult.summary,
+					};
+					if (generateLogs) {
+						logTrajectoryEnd(
+							result.completed,
+							result.reason,
+							steps.length,
+							result.summary
+						);
+					}
+					return result;
+				}
+			} else {
+				const loopResult = loopDetector.recordNoMatch();
+				if (generateLogs) {
+					const state = loopDetector.getState();
+					console.log(
+						`\n🔍 [DEBUG] Loop detection: No match ${state.consecutiveNoMatchCount} times (limit: ${trajectory.loopDetection?.maxConsecutiveNoMatch ?? 3})`
+					);
+				}
+				if (loopResult.shouldStop && loopResult.reason && loopResult.summary) {
+					const result: TrajectoryResult = {
+						steps,
+						completed: false,
+						reason: loopResult.reason,
+						summary: loopResult.summary,
+					};
+					if (generateLogs) {
+						logTrajectoryEnd(
+							result.completed,
+							result.reason,
+							steps.length,
+							result.summary
+						);
+					}
+					return result;
+				}
+			}
+		}
 
 		// Evaluate policy
-		const policyContext: PolicyContext = {
+		const policyContext = buildPolicyContext(
 			trajectory,
 			history,
-			currentStepIndex,
-		};
-		if (nextStep !== undefined) {
-			policyContext.nextStep = nextStep;
-		}
-		const policyResult = policy.evaluate(policyContext, turnIndex);
+			stepIndexToUse,
+			stepToUse
+		);
+		const policyResult = evaluatePolicy(policy, policyContext, turnIndex);
 
 		if (policyResult.shouldStop) {
 			const result: TrajectoryResult = {
@@ -112,6 +174,16 @@ export async function runTrajectory(
 			if (policyResult.message !== undefined) {
 				result.summary = policyResult.message;
 			}
+
+			if (generateLogs) {
+				logTrajectoryEnd(
+					result.completed,
+					result.reason,
+					steps.length,
+					result.summary
+				);
+			}
+
 			return result;
 		}
 
@@ -119,72 +191,64 @@ export async function runTrajectory(
 		const userContext: UserMessageContext = {
 			trajectory,
 			history,
-			currentStepIndex,
+			currentStepIndex: stepIndexToUse,
 		};
-		if (nextStep !== undefined) {
-			userContext.nextStep = nextStep;
+		if (stepToUse !== undefined) {
+			userContext.nextStep = stepToUse;
 		}
 		const userMessage = await generateUserMessage(userContext, userModel);
 
 		// Add user message to history
 		const updatedHistory = [...history, userMessage];
-		memory.set(conversationId, updatedHistory);
+		storage.set(conversationId, updatedHistory);
 
-		// Call agent
-		const agentResult = await trajectory.agent.respond(updatedHistory);
-
-		// Extract tool calls if any
-		const toolCalls: Array<{
-			toolCallId: string;
-			toolName: string;
-			args: unknown;
-			result?: unknown;
-		}> = [];
-		for (const msg of agentResult.messages) {
-			if (msg.role === 'assistant' && typeof msg.content === 'object' && Array.isArray(msg.content)) {
-				// Extract tool call info from structured content
-				for (const part of msg.content) {
-					if (part.type === 'tool-call' && 'id' in part && 'name' in part && 'args' in part) {
-						toolCalls.push({
-							toolCallId: part.id as string,
-							toolName: part.name as string,
-							args: part.args,
-						});
-					} else if (part.type === 'tool-result' && 'id' in part && 'result' in part) {
-						const existing = toolCalls.find((tc) => tc.toolCallId === part.id as string);
-						if (existing) {
-							existing.result = part.result;
-						}
-					}
-				}
-			}
-		}
+		// Invoke agent and parse response
+		const agentResult = await invokeAgent(trajectory.agent, updatedHistory);
 
 		// Create step trace
 		const stepTrace: StepTrace = {
 			turnIndex,
 			userMessage,
-			agentMessages: agentResult.messages,
-			...(toolCalls.length > 0 && { toolCalls }),
+			agentMessages: agentResult.allMessages,
 			timestamp: new Date(),
 		};
 
 		steps.push(stepTrace);
 
-		// Update history with agent messages
-		const finalHistory = [...updatedHistory, ...agentResult.messages];
-		memory.set(conversationId, finalHistory);
+		// Log step if enabled
+		if (generateLogs) {
+			logStep(stepTrace, turnIndex);
+		}
+
+		// Update history with all agent messages (assistant + tool) for full context
+		const finalHistory = [...updatedHistory, ...agentResult.allMessages];
+		storage.set(conversationId, finalHistory);
+
+		// Advance step index
+		currentStepIndex = advanceStepIndex(
+			trajectory.mode,
+			currentStepIndex,
+			stepIndexToUse,
+			stepToUse !== undefined,
+			turnIndex
+		);
 
 		turnIndex++;
 
 		// Safety check for infinite loops
-		if (turnIndex > 100) {
-			return {
+		if (turnIndex > 30) {
+			const result: TrajectoryResult = {
 				steps,
 				completed: false,
 				reason: 'max-turns',
-				summary: 'Maximum safety limit reached (100 turns)',
+				summary: 'Maximum safety limit reached (30 turns)',
 			};
+
+			if (generateLogs) {
+				logTrajectoryEnd(result.completed, result.reason, steps.length, result.summary);
+			}
+
+			return result;
 		}
 	}
 }

@@ -57,11 +57,7 @@ export class StrictPolicy {
 		// Check if current step has required info
 		if (nextStep?.requiredInfo && nextStep.requiredInfo.length > 0) {
 			// In strict mode, we'd need to check if info is present
-			// For now, we'll let the step proceed and check hardStopIfMissing later
-			if (nextStep.hardStopIfMissing) {
-				// This would need more sophisticated checking
-				// For now, we'll continue and let the orchestrator handle it
-			}
+			// For now, we'll let the step proceed
 		}
 
 		return {
@@ -76,7 +72,7 @@ export class StrictPolicy {
  */
 export class LoosePolicy {
 	evaluate(context: PolicyContext, turnIndex: number): PolicyResult {
-		const { trajectory } = context;
+		const { trajectory, currentStepIndex } = context;
 
 		// Check max turns
 		if (trajectory.maxTurns !== undefined && turnIndex >= trajectory.maxTurns) {
@@ -85,6 +81,16 @@ export class LoosePolicy {
 				shouldStop: true,
 				reason: 'max-turns',
 				message: `Maximum turns (${trajectory.maxTurns}) reached`,
+			};
+		}
+
+		// If steps are defined and all steps are completed, stop
+		if (trajectory.steps && trajectory.steps.length > 0 && currentStepIndex >= trajectory.steps.length) {
+			return {
+				shouldContinue: false,
+				shouldStop: true,
+				reason: 'goal-reached',
+				message: 'All steps completed',
 			};
 		}
 

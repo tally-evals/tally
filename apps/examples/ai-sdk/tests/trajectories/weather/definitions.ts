@@ -23,20 +23,17 @@ export const weatherGoldenTrajectory: Trajectory = {
 	steps: [
 		{
 			instruction: 'Ask for current weather in San Francisco',
-			expectedOutcome: 'Agent provides current weather information',
 		},
 		{
 			instruction: 'Ask for weather in New York and request conversion to celsius',
-			expectedOutcome: 'Agent provides weather in celsius',
 		},
 		{
 			instruction: 'Ask for weather forecast in Paris, France for a specific date',
-			expectedOutcome: 'Agent asks for date or provides forecast',
 		},
 	],
 	mode: 'loose',
 	maxTurns: 10,
-	memory: {
+	storage: {
 		strategy: 'local',
 		conversationId: 'weather-golden',
 	},
@@ -61,24 +58,20 @@ export const weatherCurveTrajectory: Trajectory = {
 	steps: [
 		{
 			instruction: 'Ask for weather without specifying a location',
-			expectedOutcome: 'Agent asks for location',
 		},
 		{
 			instruction: 'Provide an ambiguous location name (e.g., "Springfield")',
-			expectedOutcome: 'Agent asks for clarification or handles ambiguity',
 		},
 		{
 			instruction: 'Ask for weather forecast but forget to mention the date',
-			expectedOutcome: 'Agent asks for date or handles gracefully',
 		},
 		{
 			instruction: 'Request weather for a past date',
-			expectedOutcome: 'Agent handles past date request appropriately',
 		},
 	],
 	mode: 'loose',
 	maxTurns: 10,
-	memory: {
+	storage: {
 		strategy: 'local',
 		conversationId: 'weather-curve',
 	},

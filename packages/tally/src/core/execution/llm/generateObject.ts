@@ -68,10 +68,22 @@ export async function generateMetricValue<T extends MetricScalar>(
 	});
 
 	try {
+		// Add explicit output format instructions to the prompt
+		const outputFormatInstructions = `\n\nIMPORTANT: You must respond with a JSON object matching this exact format:
+{
+  "value": <your score as a number>,
+  "confidence": <optional, a number between 0 and 1 indicating your confidence in the score>,
+  "reasoning": <optional, a string explaining your reasoning>
+}
+
+Note: The "confidence" field must be a decimal number between 0.0 and 1.0 (e.g., 0.8, 0.95), NOT a score on a 0-5 scale.`;
+
+		const promptWithFormat = fullPrompt + outputFormatInstructions;
+
 		// generateObject already validates against the schema and returns type-safe results
 		const result = await generateObject({
 			model,
-			prompt: fullPrompt,
+			prompt: promptWithFormat,
 			schema: outputSchema,
 			maxRetries: options?.maxRetries ?? 1,
 			...(options?.temperature !== undefined && { temperature: options.temperature }),

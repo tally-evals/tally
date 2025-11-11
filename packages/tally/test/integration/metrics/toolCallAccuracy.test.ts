@@ -53,22 +53,26 @@ describe('Integration | Metrics | Tool Call Accuracy', () => {
 		const step: ConversationStep = {
 			stepIndex: 0,
 			input: { role: 'user', content: 'What is the weather in Paris?' },
-			output: {
-				role: 'assistant',
-				content: 'Let me check the weather for you.',
-				toolCalls: [
-					{
-						toolCallId: 'call_1',
-						toolName: 'getWeather',
-						args: { location: 'Paris', unit: 'celsius' },
-					},
-					{
-						toolCallId: 'call_2',
-						toolName: 'formatResponse',
-						args: {},
-					},
-				],
-			} as ModelMessage,
+			output: [
+				{
+					role: 'assistant',
+					content: [
+						{ type: 'text', text: 'Let me check the weather for you.' },
+						{
+							type: 'tool-call',
+							toolCallId: 'call_1',
+							toolName: 'getWeather',
+							input: { location: 'Paris', unit: 'celsius' },
+						},
+						{
+							type: 'tool-call',
+							toolCallId: 'call_2',
+							toolName: 'formatResponse',
+							input: {},
+						},
+					],
+				},
+			] as readonly ModelMessage[],
 		};
 
 		const result = await runSingleTurnMetric(metric, step);
@@ -96,18 +100,21 @@ describe('Integration | Metrics | Tool Call Accuracy', () => {
 		const step: ConversationStep = {
 			stepIndex: 0,
 			input: { role: 'user', content: 'What is the weather?' },
-			output: {
-				role: 'assistant',
-				content: 'Let me check.',
-				toolCalls: [
-					{
-						toolCallId: 'call_1',
-						toolName: 'getWeather',
-						args: { location: 'Paris' },
-					},
-					// Missing formatResponse
-				],
-			} as ModelMessage,
+			output: [
+				{
+					role: 'assistant',
+					content: [
+						{ type: 'text', text: 'Let me check.' },
+						{
+							type: 'tool-call',
+							toolCallId: 'call_1',
+							toolName: 'getWeather',
+							input: { location: 'Paris' },
+						},
+						// Missing formatResponse
+					],
+				},
+			] as readonly ModelMessage[],
 		};
 
 		const result = await runSingleTurnMetric(metric, step);
@@ -135,17 +142,20 @@ describe('Integration | Metrics | Tool Call Accuracy', () => {
 		const stepCorrect: ConversationStep = {
 			stepIndex: 0,
 			input: { role: 'user', content: 'What is the weather?' },
-			output: {
-				role: 'assistant',
-				content: 'Checking...',
-				toolCalls: [
-					{
-						toolCallId: 'call_1',
-						toolName: 'getWeather',
-						args: { location: 'Paris' },
-					},
-				],
-			} as ModelMessage,
+			output: [
+				{
+					role: 'assistant',
+					content: [
+						{ type: 'text', text: 'Checking...' },
+						{
+							type: 'tool-call',
+							toolCallId: 'call_1',
+							toolName: 'getWeather',
+							input: { location: 'Paris' },
+						},
+					],
+				},
+			] as readonly ModelMessage[],
 		};
 
 		const resultCorrect = await runSingleTurnMetric(metric, stepCorrect);
@@ -155,22 +165,26 @@ describe('Integration | Metrics | Tool Call Accuracy', () => {
 		const stepExtra: ConversationStep = {
 			stepIndex: 0,
 			input: { role: 'user', content: 'What is the weather?' },
-			output: {
-				role: 'assistant',
-				content: 'Checking...',
-				toolCalls: [
-					{
-						toolCallId: 'call_1',
-						toolName: 'getWeather',
-						args: { location: 'Paris' },
-					},
-					{
-						toolCallId: 'call_2',
-						toolName: 'extraTool',
-						args: {},
-					},
-				],
-			} as ModelMessage,
+			output: [
+				{
+					role: 'assistant',
+					content: [
+						{ type: 'text', text: 'Checking...' },
+						{
+							type: 'tool-call',
+							toolCallId: 'call_1',
+							toolName: 'getWeather',
+							input: { location: 'Paris' },
+						},
+						{
+							type: 'tool-call',
+							toolCallId: 'call_2',
+							toolName: 'extraTool',
+							input: {},
+						},
+					],
+				},
+			] as readonly ModelMessage[],
 		};
 
 		const resultExtra = await runSingleTurnMetric(metric, stepExtra);
@@ -195,17 +209,20 @@ describe('Integration | Metrics | Tool Call Accuracy', () => {
 		const stepInvalid: ConversationStep = {
 			stepIndex: 0,
 			input: { role: 'user', content: 'What is the weather?' },
-			output: {
-				role: 'assistant',
-				content: 'Checking...',
-				toolCalls: [
-					{
-						toolCallId: 'call_1',
-						toolName: 'getWeather',
-						args: { location: 'Paris', unit: 'kelvin' }, // Invalid unit
-					},
-				],
-			} as ModelMessage,
+			output: [
+				{
+					role: 'assistant',
+					content: [
+						{ type: 'text', text: 'Checking...' },
+						{
+							type: 'tool-call',
+							toolCallId: 'call_1',
+							toolName: 'getWeather',
+							input: { location: 'Paris', unit: 'kelvin' }, // Invalid unit
+						},
+					],
+				},
+			] as readonly ModelMessage[],
 		};
 
 		const resultInvalid = await runSingleTurnMetric(metric, stepInvalid);
@@ -215,17 +232,20 @@ describe('Integration | Metrics | Tool Call Accuracy', () => {
 		const stepValid: ConversationStep = {
 			stepIndex: 0,
 			input: { role: 'user', content: 'What is the weather?' },
-			output: {
-				role: 'assistant',
-				content: 'Checking...',
-				toolCalls: [
-					{
-						toolCallId: 'call_1',
-						toolName: 'getWeather',
-						args: { location: 'Paris', unit: 'celsius' }, // Valid unit
-					},
-				],
-			} as ModelMessage,
+			output: [
+				{
+					role: 'assistant',
+					content: [
+						{ type: 'text', text: 'Checking...' },
+						{
+							type: 'tool-call',
+							toolCallId: 'call_1',
+							toolName: 'getWeather',
+							input: { location: 'Paris', unit: 'celsius' }, // Valid unit
+						},
+					],
+				},
+			] as readonly ModelMessage[],
 		};
 
 		const resultValid = await runSingleTurnMetric(metric, stepValid);
@@ -250,22 +270,26 @@ describe('Integration | Metrics | Tool Call Accuracy', () => {
 		const stepCorrectOrder: ConversationStep = {
 			stepIndex: 0,
 			input: { role: 'user', content: 'Do something' },
-			output: {
-				role: 'assistant',
-				content: 'Processing...',
-				toolCalls: [
-					{
-						toolCallId: 'call_1',
-						toolName: 'step1',
-						args: {},
-					},
-					{
-						toolCallId: 'call_2',
-						toolName: 'step2',
-						args: {},
-					},
-				],
-			} as ModelMessage,
+			output: [
+				{
+					role: 'assistant',
+					content: [
+						{ type: 'text', text: 'Processing...' },
+						{
+							type: 'tool-call',
+							toolCallId: 'call_1',
+							toolName: 'step1',
+							input: {},
+						},
+						{
+							type: 'tool-call',
+							toolCallId: 'call_2',
+							toolName: 'step2',
+							input: {},
+						},
+					],
+				},
+			] as readonly ModelMessage[],
 		};
 
 		const resultCorrect = await runSingleTurnMetric(metric, stepCorrectOrder);
@@ -275,22 +299,26 @@ describe('Integration | Metrics | Tool Call Accuracy', () => {
 		const stepWrongOrder: ConversationStep = {
 			stepIndex: 0,
 			input: { role: 'user', content: 'Do something' },
-			output: {
-				role: 'assistant',
-				content: 'Processing...',
-				toolCalls: [
-					{
-						toolCallId: 'call_1',
-						toolName: 'step2',
-						args: {},
-					},
-					{
-						toolCallId: 'call_2',
-						toolName: 'step1',
-						args: {},
-					},
-				],
-			} as ModelMessage,
+			output: [
+				{
+					role: 'assistant',
+					content: [
+						{ type: 'text', text: 'Processing...' },
+						{
+							type: 'tool-call',
+							toolCallId: 'call_1',
+							toolName: 'step2',
+							input: {},
+						},
+						{
+							type: 'tool-call',
+							toolCallId: 'call_2',
+							toolName: 'step1',
+							input: {},
+						},
+					],
+				},
+			] as readonly ModelMessage[],
 		};
 
 		const resultWrong = await runSingleTurnMetric(metric, stepWrongOrder);
@@ -312,12 +340,13 @@ describe('Integration | Metrics | Tool Call Accuracy', () => {
 			prompt: 'What is the weather in Paris?',
 			completion: {
 				role: 'assistant',
-				content: 'Let me check the weather for you.',
-				toolCalls: [
+				content: [
+					{ type: 'text', text: 'Let me check the weather for you.' },
 					{
+						type: 'tool-call',
 						toolCallId: 'call_1',
 						toolName: 'getWeather',
-						args: { location: 'Paris', unit: 'celsius' },
+						input: { location: 'Paris', unit: 'celsius' },
 					},
 				],
 			} as ModelMessage,
@@ -328,6 +357,131 @@ describe('Integration | Metrics | Tool Call Accuracy', () => {
 		expect(result).toBeDefined();
 		expect(result.value).toBeGreaterThanOrEqual(0);
 		expect(result.value).toBeLessThanOrEqual(1);
+	});
+
+	it('executes tool call accuracy metric with tool calls in separate assistant messages (JSONL format)', async () => {
+		const metric = createToolCallAccuracyMetric({
+			expectedToolCalls: [
+				{
+					toolName: 'weather',
+					argsSchema: z.object({
+						location: z.string(),
+					}),
+				},
+			],
+			strictMode: false,
+		});
+
+		// Simulate JSONL format where tool calls are in separate assistant messages
+		const step: ConversationStep = {
+			stepIndex: 0,
+			input: { role: 'user', content: 'What is the weather in San Francisco?' },
+			output: [
+				{
+					role: 'assistant',
+					content: [
+						{
+							type: 'tool-call',
+							toolCallId: 'call_1',
+							toolName: 'weather',
+							input: { location: 'San Francisco, CA' },
+						},
+					],
+				},
+				{
+					role: 'tool',
+					toolCallId: 'call_1',
+					content: [
+						{
+							type: 'tool-result',
+							toolCallId: 'call_1',
+							toolName: 'weather',
+							output: { temperature: 72, condition: 'sunny' },
+						},
+					],
+				},
+				{
+					role: 'assistant',
+					content: [
+						{
+							type: 'text',
+							text: 'The current weather in San Francisco, CA is sunny with a temperature of 72°F.',
+						},
+					],
+				},
+			] as readonly ModelMessage[],
+		};
+
+		const result = await runSingleTurnMetric(metric, step);
+
+		expect(result).toBeDefined();
+		expect(result.value).toBeGreaterThanOrEqual(0);
+		expect(result.value).toBeLessThanOrEqual(1);
+		// Should have high score since tool call is present and args are valid
+		expect(result.value).toBeGreaterThan(0.8);
+	});
+
+	it('executes tool call accuracy metric with multiple tool calls in same message (travel planner format)', async () => {
+		const metric = createToolCallAccuracyMetric({
+			expectedToolCalls: [
+				{
+					toolName: 'searchFlights',
+					argsSchema: z.object({
+						origin: z.string(),
+						destination: z.string(),
+						departureDate: z.string(),
+						returnDate: z.string(),
+						passengers: z.number(),
+					}),
+				},
+			],
+			strictMode: false,
+		});
+
+		// Simulate travel planner format with multiple tool calls in one message
+		const step: ConversationStep = {
+			stepIndex: 0,
+			input: { role: 'user', content: 'Search flights from New York to San Francisco' },
+			output: [
+				{
+					role: 'assistant',
+					content: [
+						{
+							type: 'tool-call',
+							toolCallId: 'call_1',
+							toolName: 'searchFlights',
+							input: {
+								origin: 'New York, JFK',
+								destination: 'San Francisco, SFO',
+								departureDate: '2025-06-15',
+								returnDate: '2025-06-22',
+								passengers: 1,
+							},
+						},
+						{
+							type: 'tool-call',
+							toolCallId: 'call_2',
+							toolName: 'searchFlights',
+							input: {
+								origin: 'New York, LGA',
+								destination: 'San Francisco, SFO',
+								departureDate: '2025-06-15',
+								returnDate: '2025-06-22',
+								passengers: 1,
+							},
+						},
+					],
+				},
+			] as readonly ModelMessage[],
+		};
+
+		const result = await runSingleTurnMetric(metric, step);
+
+		expect(result).toBeDefined();
+		expect(result.value).toBeGreaterThanOrEqual(0);
+		expect(result.value).toBeLessThanOrEqual(1);
+		// Should have high score since expected tool call is present (even if multiple times)
+		expect(result.value).toBeGreaterThan(0.8);
 	});
 });
 

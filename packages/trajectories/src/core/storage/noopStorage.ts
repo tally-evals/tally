@@ -1,11 +1,11 @@
 /**
- * No-op memory implementation that doesn't store anything
+ * No-op storage implementation that doesn't store anything
  */
 
 import type { ModelMessage } from 'ai';
-import type { Memory } from './interface.js';
+import type { Storage } from './interface.js';
 
-export class NoopMemory implements Memory {
+export class NoopStorage implements Storage {
 	get(_conversationId: string): readonly ModelMessage[] {
 		return [];
 	}
