@@ -29,9 +29,8 @@ import type {
 	InputScores,
 	EvaluationContext,
 	Evaluator,
-	MetricDefFor,
-	AnyMetricDefFor,
 } from '@tally/core/types';
+import type { Eval } from './evals/types';
 
 // -----------------------------------------------------------------------------
 // Base Metric Definition
@@ -290,30 +289,31 @@ export function defineScorer<
 // Evaluator Factory
 // -----------------------------------------------------------------------------
 
-export function createEvaluator<
-	TContainer extends MetricContainer,
-	TInputs extends readonly AnyMetricDefFor<TContainer>[]
->(args: {
+/**
+ * Create an evaluator with evals (new API)
+ * Accepts any eval types to allow mixing single-turn and multi-turn evals
+ */
+export function createEvaluator<TContainer extends MetricContainer = MetricContainer>(args: {
 	name: string;
-	metrics: TInputs;
-	scorer: Scorer;
-	context?: EvaluationContext;
+	evals: readonly Eval<MetricContainer>[];
+	context: EvaluationContext; // REQUIRED
 	description?: string;
-}): Evaluator<TContainer, readonly MetricDefFor<TContainer>[]> {
-	const { name, metrics, scorer, context, description } = args;
-	if (!Array.isArray(metrics) || metrics.length === 0) {
-		throw new Error('createEvaluator: metrics must be a non-empty array');
+	metadata?: Record<string, unknown>;
+}): Evaluator<TContainer> {
+	const { name, evals, context, description, metadata } = args;
+	if (!Array.isArray(evals) || evals.length === 0) {
+		throw new Error('createEvaluator: evals must be a non-empty array');
 	}
-	if (!scorer) {
-		throw new Error('createEvaluator: scorer is required');
+	if (!context) {
+		throw new Error('createEvaluator: context is required');
 	}
 	return {
 		name,
 		...(description !== undefined && { description }),
-		metrics: metrics as readonly MetricDefFor<TContainer>[],
-		scorer,
-		...(context !== undefined && { context }),
-	} as Evaluator<TContainer, readonly MetricDefFor<TContainer>[]>;
+		evals: evals as readonly Eval<TContainer>[],
+		context,
+		...(metadata !== undefined && { metadata }),
+	};
 }
 
 

@@ -14,16 +14,15 @@ import {
 	runAllTargets,
 	defineBaseMetric,
 	defineInput,
+	defineSingleTurnEval,
+	defineScorerEval,
+	thresholdVerdict,
 } from '@tally-evals/tally';
 import {
 	createAnswerRelevanceMetric,
 	createCompletenessMetric,
 } from '@tally-evals/tally/metrics';
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
-import {
-	createMeanAggregator,
-	createPassRateAggregator,
-} from '@tally-evals/tally/aggregators';
 import { google } from '@ai-sdk/google';
 
 describe('Weather Agent - Golden Path', () => {
@@ -65,25 +64,35 @@ describe('Weather Agent - Golden Path', () => {
 			],
 		});
 
+		// Create evals
+		const answerRelevanceEval = defineSingleTurnEval({
+			name: 'Answer Relevance',
+			metric: answerRelevance,
+		});
+
+		const completenessEval = defineSingleTurnEval({
+			name: 'Completeness',
+			metric: completeness,
+		});
+
+		const overallQualityEval = defineScorerEval({
+			name: 'Overall Quality',
+			inputs: [answerRelevance, completeness],
+			scorer: qualityScorer,
+			verdict: thresholdVerdict(0.7),
+		});
+
 		// Create evaluator
 		const evaluator = createEvaluator({
 			name: 'Weather Agent Quality',
-			metrics: [answerRelevance, completeness],
-			scorer: qualityScorer,
+			evals: [answerRelevanceEval, completenessEval, overallQualityEval],
 			context: runAllTargets(),
 		});
-
-		// Create aggregators
-		const aggregators = [
-			createMeanAggregator({ metric: overallQuality }),
-			createPassRateAggregator(overallQuality, { threshold: 0.7 }),
-		];
 
 		// Run evaluation
 		const tally = createTally({
 			data: [conversation],
 			evaluators: [evaluator],
-			aggregators,
 		});
 
 		const report = await tally.run();
@@ -91,22 +100,17 @@ describe('Weather Agent - Golden Path', () => {
 		// Assertions
 		expect(report).toBeDefined();
 		expect(report.perTargetResults.length).toBeGreaterThan(0);
-		expect(report.aggregateSummaries.length).toBe(2);
+		expect(report.evalSummaries.size).toBeGreaterThan(0);
 
 		// Check pass rate (should be high for golden path)
-		const passRateSummary = report.aggregateSummaries.find(
-			(s) => s.metric.name === 'overallQuality' && 'passRate' in s
-		);
-		if (passRateSummary && 'passRate' in passRateSummary) {
-			expect(passRateSummary.passRate).toBeGreaterThan(0.8); // At least 80% pass rate
+		const overallQualitySummary = report.evalSummaries.get('Overall Quality');
+		if (overallQualitySummary?.verdictSummary) {
+			expect(overallQualitySummary.verdictSummary.passRate).toBeGreaterThan(0.8); // At least 80% pass rate
 		}
 
 		// Check mean score (should be high for golden path)
-		const meanSummary = report.aggregateSummaries.find(
-			(s) => s.metric.name === 'overallQuality' && 'average' in s
-		);
-		if (meanSummary && 'average' in meanSummary) {
-			expect(meanSummary.average).toBeGreaterThan(0.7); // At least 0.7 average score
+		if (overallQualitySummary) {
+			expect(overallQualitySummary.aggregations.mean).toBeGreaterThan(0.7); // At least 0.7 average score
 		}
 	});
 });

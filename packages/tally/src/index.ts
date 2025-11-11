@@ -3,10 +3,9 @@
  *
  * This framework provides tools for:
  * - Datasets and Conversations (input data)
- * - Evaluators (Selector + Scorer)
+ * - Evaluators (with Evals - new API)
  * - Metrics (Boolean, Number, Ordinal/Enum)
- * - Aggregators (summarizing results)
- * - EvaluationReport (final output)
+ * - EvaluationReport (final output with built-in aggregations)
  */
 
 // ============================================================================
@@ -48,16 +47,15 @@ export type {
 	InputScores,
 	Scorer,
 
-	// Evaluator types
+	// Evaluator types (REFACTORED - now accepts evals)
 	SingleTurnRunPolicy,
 	EvaluationContext,
 	Evaluator,
 
-	// Aggregator types
-	Aggregator,
-
-	// Report types
+	// Report types (ENHANCED)
+	TargetVerdict,
 	PerTargetResult,
+	BuiltInAggregations,
 	AggregateSummary,
 	EvaluationReport,
 
@@ -66,6 +64,34 @@ export type {
 } from './core/types';
 
 export { toScore } from './core/types';
+
+// ============================================================================
+// Eval API (New - Primary API)
+// ============================================================================
+
+export {
+	defineSingleTurnEval,
+	defineMultiTurnEval,
+	defineScorerEval,
+	runAllTargets,
+	runSelectedSteps,
+	runSelectedItems,
+	booleanVerdict,
+	thresholdVerdict,
+	rangeVerdict,
+	ordinalVerdict,
+	customVerdict,
+} from './evals';
+
+export type {
+	Eval,
+	SingleTurnEval,
+	MultiTurnEval,
+	ScorerEval,
+	VerdictPolicy,
+	VerdictPolicyFor,
+	AutoNormalizer,
+} from './evals';
 
 // ============================================================================
 // Tally Container
@@ -104,7 +130,7 @@ export {
 // ============================================================================
 
 export {
-	runAllTargets,
+	runAllTargets as runAllTargetsLegacy,
 	runSpecificSteps,
 	runSpecificItems,
 	createEvaluationContext,
@@ -143,4 +169,4 @@ export { generateId } from './utils/ids';
 export * from './utils/guards';
 export * from './utils/text';
 export * from './utils/time';
-
+export { formatReportAsTables } from './utils/reportFormatter';
