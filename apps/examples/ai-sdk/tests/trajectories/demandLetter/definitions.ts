@@ -20,17 +20,24 @@ export const demandLetterGoldenTrajectory: Trajectory = {
 			'Request clarification if needed',
 		],
 	},
-	steps: [
-		{
-			instruction: 'Express need to create a demand letter for an unpaid invoice',
-		},
-		{
-			instruction: 'Provide invoice details (amount: $2,500, due date: March 15th)',
-		},
-		{
-			instruction: 'Provide recipient details (ABC Company, address)',
-		},
-	],
+	steps: {
+		steps: [
+			{
+				id: 'step-1',
+				instruction: 'Express need to create a demand letter for an unpaid invoice',
+			},
+			{
+				id: 'step-2',
+				instruction: 'Provide invoice details (amount: $2,500, due date: March 15th)',
+			},
+			{
+				id: 'step-3',
+				instruction: 'Provide recipient details (ABC Company, address)',
+			},
+		],
+		start: 'step-1',
+		terminals: ['step-3'],
+	},
 	mode: 'loose',
 	maxTurns: 10,
 	storage: {
@@ -55,20 +62,28 @@ export const demandLetterCurveTrajectory: Trajectory = {
 			'Forget to provide required fields',
 		],
 	},
-	steps: [
-		{
-			instruction: 'Express need for demand letter but provide no details',
-		},
-		{
-			instruction: 'Provide partial information (amount but no date)',
-		},
-		{
-			instruction: 'Change the amount after providing it',
-		},
-		{
-			instruction: 'Provide invalid information (negative amount)',
-		},
-	],
+	steps: {
+		steps: [
+			{
+				id: 'step-1',
+				instruction: 'Express need for demand letter but provide no details',
+			},
+			{
+				id: 'step-2',
+				instruction: 'Provide partial information (amount but no date)',
+			},
+			{
+				id: 'step-3',
+				instruction: 'Change the amount after providing it',
+			},
+			{
+				id: 'step-4',
+				instruction: 'Provide invalid information (negative amount)',
+			},
+		],
+		start: 'step-1',
+		terminals: ['step-4'],
+	},
 	mode: 'loose',
 	maxTurns: 10,
 	storage: {

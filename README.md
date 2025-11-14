@@ -85,11 +85,15 @@ const trajectory = createTrajectory(
         'Provide location names clearly',
       ],
     },
-    steps: [
-      { instruction: 'Ask for current weather in San Francisco' },
-      { instruction: 'Ask for weather in New York in celsius' },
-      { instruction: 'Ask for weather forecast in Paris, France' },
-    ],
+    steps: {
+      steps: [
+        { id: 'step-1', instruction: 'Ask for current weather in San Francisco' },
+        { id: 'step-2', instruction: 'Ask for weather in New York in celsius' },
+        { id: 'step-3', instruction: 'Ask for weather forecast in Paris, France' },
+      ],
+      start: 'step-1',
+      terminals: ['step-3'],
+    },
     mode: 'loose',
     maxTurns: 10,
     userModel: google('models/gemini-2.5-flash-lite'),

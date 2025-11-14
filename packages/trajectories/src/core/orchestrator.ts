@@ -17,7 +17,8 @@ import { createPolicy, evaluatePolicy, buildPolicyContext } from './execution/po
 import { determineStep } from './execution/stepSelector.js';
 import { LoopDetector } from './execution/loopDetector.js';
 import { invokeAgent } from './execution/agentInvoker.js';
-import { advanceStepIndex } from './execution/stepAdvancement.js';
+import type { StepRuntimeState, StepId } from './steps/types.js';
+import { evaluateSatisfaction } from './execution/satisfaction.js';
 
 export interface RunTrajectoryOptions {
 	storage?: Storage;
@@ -79,8 +80,11 @@ export async function runTrajectory(
 		);
 	}
 
-	// Track the current step index (may differ from turnIndex in loose mode)
-	let currentStepIndex = 0;
+	// Track the current step ID
+	let currentStepId: StepId | undefined = trajectory.steps?.start;
+
+	// Track runtime states for steps
+	const runtimeStates = new Map<StepId, StepRuntimeState>();
 
 	// Initialize loop detector (for loose mode)
 	const loopDetector = new LoopDetector(trajectory.loopDetection);
@@ -93,22 +97,22 @@ export async function runTrajectory(
 		// Determine step to use for user message generation
 		const stepSelection = await determineStep(
 			trajectory,
-			turnIndex,
-			currentStepIndex,
+			currentStepId,
 			history,
 			userModel,
-			generateLogs
+			runtimeStates
 		);
 
-		const { stepToUse, stepIndexToUse, matchResult } = stepSelection;
+		const { stepToUse, chosenStepId } = stepSelection;
 
-		// Update loop detector based on match result (only in loose mode after first turn)
-		if (trajectory.mode === 'loose' && turnIndex > 0 && matchResult) {
-			if (matchResult.matchedStepIndex !== null) {
-				const loopResult = loopDetector.recordMatch(matchResult.matchedStepIndex);
+		// Update loop detector based on chosen step (only in loose mode after first turn)
+		if (trajectory.mode === 'loose' && turnIndex > 0) {
+			if (chosenStepId) {
+				const loopResult = loopDetector.recordMatch(chosenStepId);
 				if (generateLogs && loopResult.shouldStop) {
+					const state = loopDetector.getState();
 					console.log(
-						`\n🔍 [DEBUG] Loop detection: Same step ${matchResult.matchedStepIndex} matched ${loopDetector.getState().consecutiveSameStepCount} times (limit: ${trajectory.loopDetection?.maxConsecutiveSameStep ?? 3})`
+						`\n🔍 [DEBUG] Loop detection: ${loopResult.summary} (State: ${JSON.stringify(state)})`
 					);
 				}
 				if (loopResult.shouldStop && loopResult.reason && loopResult.summary) {
@@ -160,7 +164,7 @@ export async function runTrajectory(
 		const policyContext = buildPolicyContext(
 			trajectory,
 			history,
-			stepIndexToUse,
+			currentStepId,
 			stepToUse
 		);
 		const policyResult = evaluatePolicy(policy, policyContext, turnIndex);
@@ -191,11 +195,8 @@ export async function runTrajectory(
 		const userContext: UserMessageContext = {
 			trajectory,
 			history,
-			currentStepIndex: stepIndexToUse,
+			...(stepToUse && { nextStep: stepToUse }),
 		};
-		if (stepToUse !== undefined) {
-			userContext.nextStep = stepToUse;
-		}
 		const userMessage = await generateUserMessage(userContext, userModel);
 
 		// Add user message to history
@@ -224,14 +225,42 @@ export async function runTrajectory(
 		const finalHistory = [...updatedHistory, ...agentResult.allMessages];
 		storage.set(conversationId, finalHistory);
 
-		// Advance step index
-		currentStepIndex = advanceStepIndex(
-			trajectory.mode,
-			currentStepIndex,
-			stepIndexToUse,
-			stepToUse !== undefined,
-			turnIndex
-		);
+		// Update runtime state for the step we just used
+		if (chosenStepId && stepToUse) {
+			const existingState = runtimeStates.get(chosenStepId);
+			const newState: StepRuntimeState = {
+				stepId: chosenStepId,
+				status: 'in_progress',
+				attempts: (existingState?.attempts || 0) + 1,
+				lastUpdatedAt: new Date(),
+			};
+			runtimeStates.set(chosenStepId, newState);
+
+			// Evaluate satisfaction
+			const satisfied = await evaluateSatisfaction(
+				stepToUse,
+				newState,
+				finalHistory,
+				{
+					satisfied: new Set(
+						Array.from(runtimeStates.values())
+							.filter((s) => s.status === 'satisfied')
+							.map((s) => s.stepId)
+					),
+					attemptsByStep: new Map(
+						Array.from(runtimeStates.entries()).map(([id, state]) => [id, state.attempts])
+					),
+				}
+			);
+
+			if (satisfied) {
+				newState.status = 'satisfied';
+				runtimeStates.set(chosenStepId, newState);
+			}
+		}
+
+		// Update current step ID
+		currentStepId = chosenStepId;
 
 		turnIndex++;
 
