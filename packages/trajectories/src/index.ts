@@ -9,13 +9,29 @@ export type {
 	Trajectory,
 	TrajectoryMode,
 	Persona,
-	TrajectoryStep,
 	StorageConfig,
+	LooseConfig,
 	StepTrace,
 	TrajectoryResult,
 	TrajectoryStopReason,
 	AgentHandle,
 } from './core/types.js';
+
+// Step types
+export type {
+	StepId,
+	StepDefinition,
+	StepGraph,
+	Precondition,
+	PreconditionContext,
+	StepStatus,
+	StepRuntimeState,
+	StepsSnapshot,
+	SatisfactionContext,
+} from './core/steps/types.js';
+
+// Step ranker
+export type { StepRanker } from './core/execution/stepRanker.js';
 
 // Storage
 export type { Storage } from './core/storage/interface.js';

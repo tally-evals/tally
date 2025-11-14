@@ -76,10 +76,14 @@ describeE2E('Trajectories E2E Tests', () => {
 						description: 'You need weather information for different locations. When asking for weather, always include both the city and state (e.g., "San Francisco, CA" or "New York, NY"). Ask clearly and provide location names accurately.',
 						guardrails: ['Ask naturally', 'Always include both city and state when asking for weather', 'Provide location names clearly'],
 					},
-					steps: [
-						{ instruction: 'Ask for current weather in San Francisco, CA' },
-						{ instruction: 'Ask for weather in New York, NY in celsius' },
-					],
+					steps: {
+						steps: [
+							{ id: 'step-0', instruction: 'Ask for current weather in San Francisco, CA' },
+							{ id: 'step-1', instruction: 'Ask for weather in New York, NY in celsius' },
+						],
+						start: 'step-0',
+						terminals: ['step-1'],
+					},
 					mode: 'loose',
 					maxTurns: 3,
 					storage: { strategy: 'local', conversationId: 'e2e-agent-instance' },
@@ -94,7 +98,7 @@ describeE2E('Trajectories E2E Tests', () => {
 			// Assert result structure
 			expect(result).toBeDefined();
 			expect(result.completed).toBeTypeOf('boolean');
-			expect(['goal-reached', 'max-turns', 'policy-violation', 'error']).toContain(result.reason);
+			expect(['goal-reached', 'max-turns', 'policy-violation', 'agent-loop', 'no-step-match', 'error']).toContain(result.reason);
 			expect(result.steps.length).toBeGreaterThanOrEqual(1);
 			expect(result.steps.length).toBeLessThanOrEqual(3);
 
@@ -118,7 +122,11 @@ describeE2E('Trajectories E2E Tests', () => {
 					persona: {
 						description: 'You need weather information. When asking for weather, always include both the city and state (e.g., "San Francisco, CA").',
 					},
-					steps: [{ instruction: 'Ask for current weather in San Francisco, CA' }],
+					steps: {
+						steps: [{ id: 'step-0', instruction: 'Ask for current weather in San Francisco, CA' }],
+						start: 'step-0',
+						terminals: ['step-0'],
+					},
 					mode: 'loose',
 					maxTurns: 2,
 					storage: { strategy: 'local', conversationId: 'e2e-separation' },
@@ -150,7 +158,11 @@ describeE2E('Trajectories E2E Tests', () => {
 					persona: {
 						description: 'You need weather information for different locations. When asking for weather, always include both the city and state (e.g., "San Francisco, CA").',
 					},
-					steps: [{ instruction: 'Ask for current weather in San Francisco, CA' }],
+					steps: {
+						steps: [{ id: 'step-0', instruction: 'Ask for current weather in San Francisco, CA' }],
+						start: 'step-0',
+						terminals: ['step-0'],
+					},
 					mode: 'loose',
 					maxTurns: 2,
 					storage: { strategy: 'local', conversationId: 'e2e-generatetext' },
@@ -186,7 +198,11 @@ describeE2E('Trajectories E2E Tests', () => {
 					persona: {
 						description: 'You need weather information. When asking for weather, always include both the city and state (e.g., "San Francisco, CA").',
 					},
-					steps: [{ instruction: 'Ask for current weather in San Francisco, CA' }],
+					steps: {
+						steps: [{ id: 'step-0', instruction: 'Ask for current weather in San Francisco, CA' }],
+						start: 'step-0',
+						terminals: ['step-0'],
+					},
 					mode: 'loose',
 					maxTurns: 2,
 					storage: { strategy: 'local', conversationId },
@@ -217,7 +233,11 @@ describeE2E('Trajectories E2E Tests', () => {
 					persona: {
 						description: 'You need weather information. When asking for weather, always include both the city and state (e.g., "San Francisco, CA").',
 					},
-					steps: [{ instruction: 'Ask for current weather in San Francisco, CA' }],
+					steps: {
+						steps: [{ id: 'step-0', instruction: 'Ask for current weather in San Francisco, CA' }],
+						start: 'step-0',
+						terminals: ['step-0'],
+					},
 					mode: 'loose',
 					maxTurns: 2,
 					storage: { strategy: 'none', conversationId },
@@ -247,7 +267,11 @@ describeE2E('Trajectories E2E Tests', () => {
 					persona: {
 						description: 'You need weather information. When asking for weather, always include both the city and state (e.g., "San Francisco, CA").',
 					},
-					steps: [{ instruction: 'Ask for current weather in San Francisco, CA' }],
+					steps: {
+						steps: [{ id: 'step-0', instruction: 'Ask for current weather in San Francisco, CA' }],
+						start: 'step-0',
+						terminals: ['step-0'],
+					},
 					mode: 'loose',
 					maxTurns: 2,
 					storage: { strategy: 'local', conversationId: 'e2e-jsonl' },
@@ -282,7 +306,11 @@ describeE2E('Trajectories E2E Tests', () => {
 					persona: {
 						description: 'You need weather information. When asking for weather, always include both the city and state (e.g., "San Francisco, CA").',
 					},
-					steps: [{ instruction: 'Ask for current weather in San Francisco, CA' }],
+					steps: {
+						steps: [{ id: 'step-0', instruction: 'Ask for current weather in San Francisco, CA' }],
+						start: 'step-0',
+						terminals: ['step-0'],
+					},
 					mode: 'loose',
 					maxTurns: 2,
 					storage: { strategy: 'local', conversationId: 'e2e-conversation' },
@@ -319,10 +347,14 @@ describeE2E('Trajectories E2E Tests', () => {
 					persona: {
 						description: 'You need weather information. When asking for weather, always include both the city and state (e.g., "San Francisco, CA" or "New York, NY").',
 					},
-					steps: [
-						{ instruction: 'Ask for current weather in San Francisco, CA' },
-						{ instruction: 'Ask for weather in New York, NY' },
-					],
+					steps: {
+						steps: [
+							{ id: 'step-0', instruction: 'Ask for current weather in San Francisco, CA' },
+							{ id: 'step-1', instruction: 'Ask for weather in New York, NY' },
+						],
+						start: 'step-0',
+						terminals: ['step-1'],
+					},
 					mode: 'loose',
 					maxTurns: 3,
 					storage: { strategy: 'local', conversationId: 'e2e-turn-indexing' },
@@ -351,7 +383,11 @@ describeE2E('Trajectories E2E Tests', () => {
 						name: 'Weather Inquirer',
 						description: 'You need weather information. When asking for weather, always include both the city and state (e.g., "San Francisco, CA").',
 					},
-					steps: [{ instruction: 'Ask for current weather in San Francisco, CA' }],
+					steps: {
+						steps: [{ id: 'step-0', instruction: 'Ask for current weather in San Francisco, CA' }],
+						start: 'step-0',
+						terminals: ['step-0'],
+					},
 					mode: 'loose',
 					maxTurns: 2,
 					storage: { strategy: 'local', conversationId: 'e2e-logging' },
