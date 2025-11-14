@@ -20,48 +20,60 @@ export const travelPlannerGoldenTrajectory: Trajectory = {
 			'Express preferences when relevant',
 		],
 	},
-	steps: [
-		{
-			instruction: 'Express interest in planning a trip to San Francisco',
-			
-		},
-		{
-			instruction: 'Provide origin city (New York), JFK',
-			
-		},
-		{
-			instruction: 'Provide departure date (June 15th, 2025)',
-			
-		},
-		{
-			instruction: 'Confirm round trip is needed',
-			
-		},
-		{
-			instruction: 'Provide return date (June 20th, 2025)',
-		},
-		{
-			instruction: 'Review flight options and express preference or ask for more options',
-		},
-		{
-			instruction: 'Request help finding a hotel in San Francisco',
-		},
-		{
-			instruction: 'Provide check-in date and duration (June 15th for 5 nights)',
-		},
-		{
-			instruction: 'Provide guest count (just for me)',
-		},
-		{
-			instruction: 'Express preference for hotels over apartments',
-		},
-		{
-			instruction: 'Review hotel options and express preference or ask for more options',
-		},
-		{
-			instruction: 'Ask about weather during the trip',
-		},
-	],
+	steps: {
+		steps: [
+			{
+				id: 'step-1',
+				instruction: 'Express interest in planning a trip to San Francisco',
+			},
+			{
+				id: 'step-2',
+				instruction: 'Provide origin city (New York), JFK',
+			},
+			{
+				id: 'step-3',
+				instruction: 'Provide departure date (June 15th, 2025)',
+			},
+			{
+				id: 'step-4',
+				instruction: 'Confirm round trip is needed',
+			},
+			{
+				id: 'step-5',
+				instruction: 'Provide return date (June 20th, 2025)',
+			},
+			{
+				id: 'step-6',
+				instruction: 'Review flight options and express preference or ask for more options',
+			},
+			{
+				id: 'step-7',
+				instruction: 'Request help finding a hotel in San Francisco',
+			},
+			{
+				id: 'step-8',
+				instruction: 'Provide check-in date and duration (June 15th for 5 nights)',
+			},
+			{
+				id: 'step-9',
+				instruction: 'Provide guest count (just for me)',
+			},
+			{
+				id: 'step-10',
+				instruction: 'Express preference for hotels over apartments',
+			},
+			{
+				id: 'step-11',
+				instruction: 'Review hotel options and express preference or ask for more options',
+			},
+			{
+				id: 'step-12',
+				instruction: 'Ask about weather during the trip',
+			},
+		],
+		start: 'step-1',
+		terminals: ['step-12'],
+	},
 	mode: 'loose',
 	maxTurns: 15,
 	storage: {
@@ -86,23 +98,32 @@ export const travelPlannerCurveTrajectory: Trajectory = {
 			'Be ambiguous about preferences',
 		],
 	},
-	steps: [
-		{
-			instruction: 'Express interest in planning a trip but don\'t specify destination',
-		},
-		{
-			instruction: 'Provide destination but no dates',
-		},
-		{
-			instruction: 'Change destination after providing it',
-		},
-		{
-			instruction: 'Provide conflicting information (e.g., round trip but no return date)',
-		},
-		{
-			instruction: 'Request accommodations before flights are confirmed',
-		},
-	],
+	steps: {
+		steps: [
+			{
+				id: 'step-1',
+				instruction: 'Express interest in planning a trip but don\'t specify destination',
+			},
+			{
+				id: 'step-2',
+				instruction: 'Provide destination but no dates',
+			},
+			{
+				id: 'step-3',
+				instruction: 'Change destination after providing it',
+			},
+			{
+				id: 'step-4',
+				instruction: 'Provide conflicting information (e.g., round trip but no return date)',
+			},
+			{
+				id: 'step-5',
+				instruction: 'Request accommodations before flights are confirmed',
+			},
+		],
+		start: 'step-1',
+		terminals: ['step-5'],
+	},
 	mode: 'loose',
 	maxTurns: 15,
 	storage: {
