@@ -1,8 +1,8 @@
-# @tally/trajectories — Architectural Plan (Docs Only)
+# @tally/trajectories — Architecture
 
-This document outlines a reusable, framework-agnostic “trajectory generator” for multi-turn conversations. It enables simulating both sides of a dialogue by letting an AI act as a user, orchestrating strict/loose step plans, and integrating with multiple LLM runtimes via adapters (AI SDK, Mastra).
+This document describes a reusable, framework-agnostic “trajectory generator” for multi-turn conversations. It enables simulating both sides of a dialogue by letting an AI act as a user, orchestrating strict/loose step plans, and integrating with multiple LLM runtimes via adapters (AI SDK, Mastra).
 
-Implementation is intentionally deferred. This document serves as a detailed blueprint for future development and API stabilization with strong type-safety.
+Status: Implemented. The code reflects the concepts below; specifics are noted where behavior evolved.
 
 ---
 
@@ -34,42 +34,51 @@ Implementation is intentionally deferred. This document serves as a detailed blu
 
 ---
 
-## Package Layout (planned)
+## Package Layout (implemented)
 
 ```
 packages/trajectories/
   README.md
   ARCHITECTURE.md
-  (src/ to be added later)
-```
-
-When implemented, the `src/` directory will follow this conceptual structure:
-
-```
-src/
-  core/
-    types.ts
-    orchestrator.ts
-    storage/
-      interface.ts
-      localStorage.ts
-      noopStorage.ts
-    userGenerator.ts
-  wrappers/
-    index.ts          # Agent wrappers (withAISdkAgent, withMastraAgent)
-  policies/
-    index.ts          # StrictPolicy, LoosePolicy
-  utils/
-    prompt.ts         # Prompt building utilities
-    output.ts         # JSONL, Conversation conversion
-  index.ts
+  src/
+    index.ts
+    core/
+      types.ts
+      orchestrator.ts
+      userGenerator.ts
+      steps/
+        types.ts           # StepDefinition, StepGraph, Precondition, etc.
+      execution/
+        storage.ts         # initialize storage from config/overrides
+        policyEvaluator.ts # create/evaluate policies, build context
+        agentInvoker.ts    # call agent and normalize messages
+        stepSelector.ts    # bridge to step selection (strict/loose)
+        stepRanker.ts      # StepRanker interface for LLM-based ranking
+        eligibility.ts     # check preconditions and get eligible steps
+        satisfaction.ts    # evaluate step satisfaction
+        selectors/
+          strictSelector.ts # deterministic sequential step selection
+          looseSelector.ts  # LLM-based step ranking with confidence gating
+        loopDetector.ts    # loop/no-match/cycle detection and stop reasons
+      storage/
+        interface.ts
+        localStorage.ts
+        noopStorage.ts
+    policies/
+      index.ts             # StrictPolicy, LoosePolicy
+    wrappers/
+      index.ts             # withAISdkAgent, withMastraAgent
+    utils/
+      prompt.ts            # build prompts/messages
+      output.ts            # JSONL + Tally conversion + summary
+      logger.ts            # pretty console logs (optional)
 ```
 
 ---
 
 ## Core Concepts and Types (Type-Safe Design)
 
-> TypeScript pseudocode — exact signatures may evolve during implementation.
+> TypeScript pseudocode mirrors the implementation; some details are elided for clarity.
 
 ```ts
 type TrajectoryMode = 'strict' | 'loose';
@@ -80,9 +89,47 @@ interface Persona {
   guardrails?: readonly string[];
 }
 
-interface TrajectoryStep {
+// Step Graph Architecture
+type StepId = string;
+
+interface StepDefinition {
+  id: StepId;
   instruction: string;
-  requiredInfo?: readonly string[];
+  hints?: readonly string[];              // Optional prompt hints for user generation
+  preconditions?: readonly Precondition[]; // Steps that must be satisfied first
+  maxAttempts?: number;
+  timeoutMs?: number;
+  isSatisfied?: (ctx: SatisfactionContext) => boolean | Promise<boolean>;
+}
+
+interface StepGraph {
+  steps: readonly StepDefinition[];
+  start: StepId;                          // Starting step ID
+  terminals?: readonly StepId[];          // Terminal/end step IDs
+}
+
+type Precondition =
+  | { type: 'stepSatisfied'; stepId: StepId }  // Declarative: step must be satisfied
+  | {
+      type: 'custom';
+      name?: string;
+      // Can be sync or async - evaluated in parallel
+      evaluate: (ctx: PreconditionContext) => boolean | Promise<boolean>;
+    };
+
+interface PreconditionContext {
+  history: readonly ModelMessage[];
+  snapshot: {
+    satisfied: Set<StepId>;
+    attemptsByStep: Map<StepId, number>;
+  };
+}
+
+interface StepRuntimeState {
+  stepId: StepId;
+  status: 'idle' | 'in_progress' | 'satisfied' | 'blocked' | 'failed' | 'skipped';
+  attempts: number;
+  lastUpdatedAt: Date;
 }
 
 interface StorageConfig {
@@ -92,15 +139,31 @@ interface StorageConfig {
   conversationId?: string;
 }
 
+interface LooseConfig {
+  ranker?: StepRanker;                    // Custom step ranker (optional)
+  scoreThreshold?: number;                 // Min confidence to select (default: 0.5)
+  margin?: number;                        // Min score difference (default: 0.1)
+  fallback?: 'sequential' | 'stay';       // Fallback when confidence low (default: 'sequential')
+}
+
 interface Trajectory {
   goal: string;
   persona: Persona;
-  steps?: readonly TrajectoryStep[];
+  steps?: StepGraph;                      // Step graph (replaces old TrajectoryStep[])
   mode: TrajectoryMode;
   maxTurns?: number;
-  storage?: StorageConfig;     // built-in storage; defaults to 'local'
-  userModel?: LanguageModel;   // AI SDK model function for user message generation
+  storage?: StorageConfig;                 // built-in storage; defaults to 'local'
+  userModel?: LanguageModel;               // AI SDK model function for user message generation
   metadata?: Record<string, unknown>;
+  // Loop detection for loose mode
+  loopDetection?: {
+    maxConsecutiveSameStep?: number;       // Same step repeated (default: 3)
+    maxConsecutiveNoMatch?: number;        // No step matches (default: 3)
+    maxCycleLength?: number;               // Max cycle pattern length (default: 3)
+    maxCycleRepetitions?: number;         // Max cycle repetitions (default: 2)
+  };
+  // Loose mode configuration
+  loose?: LooseConfig;
 }
 
 // We rely on AI SDK ModelMessage semantics
@@ -122,7 +185,13 @@ interface StepTrace {
   timestamp: Date;
 }
 
-type TrajectoryStopReason = 'goal-reached' | 'max-turns' | 'policy-violation' | 'error';
+type TrajectoryStopReason =
+  | 'goal-reached'      // Terminal step reached or all steps completed
+  | 'max-turns'         // Maximum turns exceeded
+  | 'policy-violation'  // Policy determined violation
+  | 'agent-loop'        // Loop detected (same step or cycle)
+  | 'no-step-match'     // No step matches agent's questions
+  | 'error';            // Error occurred
 
 interface TrajectoryResult {
   steps: readonly StepTrace[];
@@ -150,6 +219,7 @@ interface AgentHandle {
   1. AI SDK Agent instance (with `generate` method)
   2. `generateText` input config (without `messages`/`prompt`, which are added from history)
 - Built-in local storage is provided and configurable; it can be disabled with `strategy: 'none'`.
+  - When using `generateText` config, wrapper converts `steps` responses and `text` into `ModelMessage[]`.
 
 ### Prompt Utilities
 
@@ -163,26 +233,90 @@ interface AgentHandle {
 
 ## Orchestration and Policies
 
-- **Strict Mode**:
-  - Execute steps in order; deviations are violations.
-  - If required info is missing:
-    - Ask one clarifying question or stop.
-- **Loose Mode**:
-  - Steps act as guidance; allow reasonable deviations.
-  - Answer the agent’s clarifying questions using persona + goal + steps context.
-  - Prefer progress toward the goal over rigid adherence.
+### Step Selection Architecture
 
-Execution loop (conceptual):
-1. Resolve storage and conversationId (built-in storage).
-2. Determine current step based on `turnIndex` (one user turn per iteration).
-3. Build the next user message via the internal AI-as-user generator (persona + goal + step) as a `ModelMessage`.
-4. Call `agent.respond(history)` with full `ModelMessage` history.
-   - Uses `buildPromptFromHistory()` to construct proper `Prompt` object
-   - Handles both agent and generateText patterns
-5. Collect all agent response messages (assistant and tool messages).
-6. Append all messages (user + assistant + tool) to history via Storage.
-7. Evaluate stop conditions: goal reached, maxTurns, policy violation.
-8. Emit `StepTrace` with all agent messages (assistant and tool messages included).
+The system uses a pluggable step selection architecture with two strategies:
+
+- **Strict Mode** (`StrictSelector`):
+  - Deterministic sequential selection following graph order
+  - Respects preconditions (only selects steps whose preconditions are satisfied)
+  - Advances to next eligible step in graph order
+  - No LLM required
+
+- **Loose Mode** (`LooseSelector`):
+  - LLM-based step ranking using `StepRanker` interface
+  - Ranks all eligible steps based on agent's last message and goal
+  - Confidence gating: requires score ≥ threshold and margin between top candidates
+  - Fallback strategies when confidence is low:
+    - `sequential`: pick next step in graph order
+    - `stay`: remain on current step
+  - Supports custom rankers via `LooseConfig.ranker`
+
+### Preconditions
+
+Steps can define preconditions that must be satisfied before selection:
+
+- **`stepSatisfied`**: Declarative precondition requiring another step to be satisfied
+- **`custom`**: Procedural precondition with custom async evaluation function
+  - Can inspect conversation history and step snapshot
+  - Supports both sync and async evaluation
+  - All preconditions evaluated in parallel for performance
+
+### Step Satisfaction
+
+Steps track runtime state (`StepRuntimeState`) with status:
+- `idle`: Not yet started
+- `in_progress`: Currently being executed
+- `satisfied`: Step requirements met
+- `blocked`: Cannot proceed (preconditions not met)
+- `failed`: Step execution failed
+- `skipped`: Step was skipped
+
+Steps can define custom `isSatisfied` function, or use default heuristic (user responded to assistant's question).
+
+### Execution Loop (implemented)
+
+1. Initialize storage and conversationId (built-in storage).
+2. Build `StepsSnapshot` from current step graph and runtime states.
+3. Determine eligible steps by checking preconditions (parallel evaluation).
+4. Select next step:
+   - **Strict**: Use `StrictSelector` to pick next eligible step in graph order
+   - **Loose**: Use `LooseSelector` with LLM ranking, confidence gating, and fallback
+5. Check loop detection (loose mode only):
+   - Track step selection history
+   - Detect consecutive same step, cycles (A→B→A→B), or no matches
+6. Evaluate policy (stop conditions: terminal steps, maxTurns).
+7. Generate user message via AI-as-user generator (persona + goal + selected step).
+8. Call `agent.respond(history)` with full `ModelMessage` history.
+9. Collect all agent response messages (assistant and tool messages).
+10. Update step runtime state (attempts, status, satisfaction).
+11. Append all messages to history via Storage.
+12. Emit `StepTrace` with all agent messages.
+13. Update current step ID to chosen step.
+14. Safety: hard cap at 30 turns to prevent infinite loops.
+
+### Policies
+
+- **`StrictPolicy`**: 
+  - Stops when terminal step reached or `maxTurns` exceeded
+  - Checks step graph terminals for completion
+  
+- **`LoosePolicy`**: 
+  - More permissive, allows deviations
+  - Stops when terminal step reached or `maxTurns` exceeded
+  - Steps are guidance, not strict requirements
+
+### Loop Detection (loose mode)
+
+Enhanced loop detection tracks multiple patterns:
+
+1. **Consecutive Same Step**: Same step selected N times in a row (configurable, default: 3)
+2. **Cycles**: Repeating patterns like A→B→A→B or A→B→C→A→B→C
+   - Configurable cycle length (default: 3)
+   - Configurable repetition threshold (default: 2)
+3. **No Matches**: Agent questions don't match any step (configurable, default: 3)
+
+All detection uses step IDs (not indices) and maintains step selection history for cycle detection.
 
 ---
 
@@ -194,26 +328,30 @@ Execution loop (conceptual):
   - `steps: readonly { input: Message; output: readonly Message[] }[]`
 - **Tracing**:
   - Optional: tool-call timelines, token/latency counters (future).
+ - Pretty console logging is available via `logger.ts` and can be toggled with `generateLogs` at runtime.
 
 ---
 
-## API Surface (Planned)
+## API Surface (Implemented)
 
 ```ts
 // Factory
 function createTrajectory(
   def: Trajectory,
   agent: AgentHandle
-): Trajectory;
+): Trajectory & { agent: AgentHandle };
 
 // Runtime
 function runTrajectory(
-  trajectory: Trajectory,
-  options?: {
-    storage?: Storage; // override built-in storage if desired
-    userModel?: LanguageModel; // override trajectory userModel
-  }
+  trajectory: Trajectory & { agent: AgentHandle },
+  options?: RunTrajectoryOptions
 ): Promise<TrajectoryResult>;
+
+interface RunTrajectoryOptions {
+  storage?: Storage; // override built-in storage if desired
+  userModel?: LanguageModel; // override trajectory userModel
+  generateLogs?: boolean; // pretty console logging (default: false)
+}
 
 // Agent wrappers
 function withAISdkAgent(
@@ -223,6 +361,15 @@ function withAISdkAgent(
   config: Omit<GenerateTextInput, 'messages' | 'prompt'>
 ): AgentHandle;
 function withMastraAgent(agent: { generate: (input: { messages: ModelMessage[] }) => Promise<{ messages: ModelMessage[] }> }): AgentHandle;
+
+// Step ranker interface (for custom loose mode ranking)
+interface StepRanker {
+  rank(args: {
+    history: readonly ModelMessage[];
+    goal: string;
+    steps: readonly StepDefinition[];
+  }): Promise<Array<{ stepId: StepId; score: number; reasons?: string[] }>>;
+}
 
 // Prompt utilities
 function buildPromptFromHistory(options: {
@@ -260,6 +407,8 @@ function summarize(result: TrajectoryResult): string;    // short human-readable
   - `get(conversationId): readonly ModelMessage[]`
   - `set(conversationId, messages): void`
   - `clear(conversationId): void`
+ - **Initialization**:
+   - `initializeStorage(trajectory, options)` resolves to `NoopStorage` or `LocalStorage` with configured `ttlMs`, `capacity`, and supports overriding via runtime `options.storage`.
 
 ---
 
@@ -287,18 +436,25 @@ function summarize(result: TrajectoryResult): string;    // short human-readable
 
 ## Roadmap
 
-- v0 (Docs → Skeleton):
-  - ✅ Finalize types and public API
-  - ✅ Implement agent wrappers (AI SDK first) and LocalStorage
+- v0:
+  - ✅ Types and public API
+  - ✅ Agent wrappers (AI SDK + generateText, Mastra) and LocalStorage
   - ✅ Prompt utilities for consistent message handling
   - ✅ JSONL writer + Tally conversion helpers
-  - ✅ Step indexing fixes and message separation
+  - ✅ Step graph architecture with StepDefinition and StepGraph
+  - ✅ Preconditions (declarative and custom async)
+  - ✅ Step runtime state tracking and satisfaction evaluation
+  - ✅ Strict and loose selectors with pluggable architecture
+  - ✅ LLM-based step ranking with confidence gating
+  - ✅ Enhanced loop detection (consecutive, cycles, no-match)
+  - ✅ Loose mode configuration (threshold, margin, fallback)
 - v0.1:
-  - Mastra agent wrapper
-  - Enhanced tracing utilities
+  - Enhanced tracing utilities and richer logs
+  - Step graph visualization
 - v0.2:
   - Goal-reached detectors and simple rule-based evaluators
   - Rich personas (tone, constraints)
+  - Step graph branching/guards
 - v0.3:
   - CLI for running trajectories and exporting artifacts
   - Examples repository with curated scenarios
@@ -312,7 +468,13 @@ function summarize(result: TrajectoryResult): string;    // short human-readable
   - `withAISdkAgent` supports both Agent instances and `generateText` config
 - ✅ Built-in storage works out-of-the-box and can be disabled
 - ✅ Prompt utilities ensure consistent message handling for both agent and generateText patterns
-- ✅ Step indexing accurately tracks turns using `turnIndex` instead of message count
+- ✅ Step graph architecture with StepDefinition, StepGraph, and step IDs
+- ✅ Preconditions support (declarative `stepSatisfied` and custom async functions)
+- ✅ Step runtime state tracking (status, attempts, satisfaction)
+- ✅ Strict selector: deterministic sequential selection with precondition checking
+- ✅ Loose selector: LLM-based ranking with confidence gating and fallback strategies
+- ✅ Enhanced loop detection: consecutive same step, cycles, and no-match patterns
+- ✅ Loose mode configuration: custom rankers, thresholds, margins, and fallbacks
 - ✅ Assistant and tool messages are properly separated in step traces
 - ✅ JSONL and Tally outputs are correct and complete for evaluation
 

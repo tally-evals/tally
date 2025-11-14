@@ -20,17 +20,24 @@ export const weatherGoldenTrajectory: Trajectory = {
 			'Request conversions when needed',
 		],
 	},
-	steps: [
-		{
-			instruction: 'Ask for current weather in San Francisco',
-		},
-		{
-			instruction: 'Ask for weather in New York and request conversion to celsius',
-		},
-		{
-			instruction: 'Ask for weather forecast in Paris, France for a specific date',
-		},
-	],
+	steps: {
+		steps: [
+			{
+				id: 'step-1',
+				instruction: 'Ask for current weather in San Francisco',
+			},
+			{
+				id: 'step-2',
+				instruction: 'Ask for weather in New York and request conversion to celsius',
+			},
+			{
+				id: 'step-3',
+				instruction: 'Ask for weather forecast in Paris, France for a specific date',
+			},
+		],
+		start: 'step-1',
+		terminals: ['step-3'],
+	},
 	mode: 'loose',
 	maxTurns: 10,
 	storage: {
@@ -55,20 +62,28 @@ export const weatherCurveTrajectory: Trajectory = {
 			'Change requests mid-conversation',
 		],
 	},
-	steps: [
-		{
-			instruction: 'Ask for weather without specifying a location',
-		},
-		{
-			instruction: 'Provide an ambiguous location name (e.g., "Springfield")',
-		},
-		{
-			instruction: 'Ask for weather forecast but forget to mention the date',
-		},
-		{
-			instruction: 'Request weather for a past date',
-		},
-	],
+	steps: {
+		steps: [
+			{
+				id: 'step-1',
+				instruction: 'Ask for weather without specifying a location',
+			},
+			{
+				id: 'step-2',
+				instruction: 'Provide an ambiguous location name (e.g., "Springfield")',
+			},
+			{
+				id: 'step-3',
+				instruction: 'Ask for weather forecast but forget to mention the date',
+			},
+			{
+				id: 'step-4',
+				instruction: 'Request weather for a past date',
+			},
+		],
+		start: 'step-1',
+		terminals: ['step-4'],
+	},
 	mode: 'loose',
 	maxTurns: 10,
 	storage: {

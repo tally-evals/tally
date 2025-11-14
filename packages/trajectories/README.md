@@ -25,7 +25,7 @@ import { google } from '@ai-sdk/google'
 // 1) Wrap your agent
 const agent = withAISdkAgent(weatherAgent) // also supports LanguageModel directly
 
-// 2) Define a trajectory
+// 2) Define a trajectory with step graph
 const trajectory = createTrajectory({
   goal: 'Get weather information for multiple locations',
   persona: {
@@ -33,17 +33,23 @@ const trajectory = createTrajectory({
     description: 'Ask concise weather questions and follow up if unclear.',
     guardrails: ['Be concise', 'Provide city names clearly'],
   },
-  steps: [
-    { instruction: 'Ask for current weather in San Francisco' },
-    { instruction: 'Ask for weather in New York in celsius' },
-  ],
+  steps: {
+    steps: [
+      { id: 'step-1', instruction: 'Ask for current weather in San Francisco' },
+      { id: 'step-2', instruction: 'Ask for weather in New York in celsius' },
+    ],
+    start: 'step-1',
+    terminals: ['step-2'],
+  },
   mode: 'loose',                        // 'strict' or 'loose'
   maxTurns: 10,
   userModel: google('models/gemini-2.5-flash-lite'),
 }, agent)
 
 // 3) Run it
-const result = await runTrajectory(trajectory)
+const result = await runTrajectory(trajectory, {
+  generateLogs: true,  // Optional: pretty console logging
+})
 
 // 4) Record outputs
 const conversation = toConversation(result, 'weather-trajectory')  // Tally format
@@ -51,11 +57,87 @@ const jsonlLines = toJSONL(result)                                 // one step p
 ```
 
 ## Modes (pick one)
-- **strict**: Follow steps exactly (great for onboarding flows, forms, checklists)
-- **loose**: Steps are guidance (great for natural, exploratory chats)
+- **strict**: Follow steps sequentially, respecting preconditions (great for onboarding flows, forms, checklists)
+- **loose**: Steps are guidance, uses LLM-based ranking to select the most relevant step (great for natural, exploratory chats)
 
 ```ts
 mode: 'strict' // or 'loose'
+```
+
+## Step Graph Architecture
+
+Trajectories use a **step graph** to define conversation flow:
+
+```ts
+steps: {
+  steps: [
+    {
+      id: 'step-1',
+      instruction: 'Ask for weather in San Francisco',
+      hints: ['Include city and state', 'Be specific about location'],
+      preconditions: [], // No prerequisites
+    },
+    {
+      id: 'step-2',
+      instruction: 'Ask for weather in New York in celsius',
+      preconditions: [
+        { type: 'stepSatisfied', stepId: 'step-1' }, // Wait for step-1 to complete
+      ],
+    },
+  ],
+  start: 'step-1',        // Starting step ID
+  terminals: ['step-2'],  // Terminal/end step IDs
+}
+```
+
+### Step Definition
+
+Each step can include:
+- `id`: Unique identifier (required)
+- `instruction`: What the user should do (required)
+- `hints`: Optional hints for the user model
+- `preconditions`: Steps that must be satisfied first (supports async evaluation)
+- `maxAttempts`: Maximum retry attempts for this step
+- `timeoutMs`: Timeout for step completion
+- `isSatisfied`: Custom function to determine if step is complete
+
+### Preconditions
+
+Preconditions control step eligibility:
+
+```ts
+// Declarative: Wait for another step to be satisfied
+preconditions: [
+  { type: 'stepSatisfied', stepId: 'step-1' }
+]
+
+// Custom: Use your own logic (supports async)
+preconditions: [
+  {
+    type: 'custom',
+    name: 'userProvidedLocation',
+    evaluate: async (ctx) => {
+      const lastMessage = ctx.history[ctx.history.length - 1];
+      return lastMessage?.role === 'user' && 
+             lastMessage.content.includes('location');
+    }
+  }
+]
+```
+
+### Loose Mode Configuration
+
+In loose mode, you can configure LLM-based step ranking:
+
+```ts
+mode: 'loose',
+looseConfig: {
+  ranker: customRanker,        // Optional custom StepRanker
+  scoreThreshold: 0.5,         // Minimum confidence to select a step
+  margin: 0.1,                 // Minimum score difference between top candidates
+  fallback: 'sequential',      // 'sequential' or 'stay' when confidence is low
+  userModel: google('models/gemini-2.5-flash-lite'),
+}
 ```
 
 ## Storage and user model
@@ -68,6 +150,24 @@ storage: { strategy: 'local', conversationId: 'my-run' }
 // or
 storage: { strategy: 'none' } // stateless generation
 ```
+
+## Loop Detection
+
+Trajectories include built-in loop detection to prevent repetitive conversations:
+
+```ts
+loopDetection: {
+  enabled: true,
+  maxNoMatch: 3,              // Stop after N consecutive "no step matches"
+  maxCycleLength: 5,          // Maximum cycle length to detect
+  maxCycleRepetitions: 2,     // Stop after N cycle repetitions
+}
+```
+
+The system detects:
+- **Agent loops**: Agent repeating the same responses
+- **Step cycles**: User/agent stuck in repeating step patterns (A→B→A→B)
+- **No step match**: No eligible steps available for multiple turns
 
 ## Generate “bad” trajectories (robustness testing)
 Use adversarial personas or conflicting steps to stress-test your agent.
@@ -82,10 +182,14 @@ const adversarial = createTrajectory({
     description: 'Be ambiguous, change details mid-conversation, and provide partial info.',
     guardrails: ['Avoid giving all details at once', 'Introduce contradictions occasionally'],
   },
-  steps: [
-    { instruction: 'Ask for flights without origin or date' },
-    { instruction: 'Change destination mid-way' },
-  ],
+  steps: {
+    steps: [
+      { id: 'step-1', instruction: 'Ask for flights without origin or date' },
+      { id: 'step-2', instruction: 'Change destination mid-way' },
+    ],
+    start: 'step-1',
+    terminals: ['step-2'],
+  },
   mode: 'loose',
   userModel: google('models/gemini-2.5-flash-lite'),
 }, agent)
@@ -120,11 +224,37 @@ toJSONL(result)                          // -> string[] (one line per step)
 Types (essentials):
 ```ts
 type TrajectoryMode = 'strict' | 'loose'
+
+interface StepDefinition {
+  id: string
+  instruction: string
+  hints?: readonly string[]
+  preconditions?: readonly Precondition[]
+  maxAttempts?: number
+  timeoutMs?: number
+  isSatisfied?: (ctx: SatisfactionContext) => boolean | Promise<boolean>
+}
+
+interface StepGraph {
+  steps: readonly StepDefinition[]
+  start: string
+  terminals?: readonly string[]
+}
+
+type Precondition =
+  | { type: 'stepSatisfied'; stepId: string }
+  | {
+      type: 'custom'
+      name?: string
+      evaluate: (ctx: PreconditionContext) => boolean | Promise<boolean>
+    }
+
 interface Trajectory {
   goal: string
   persona: { name?: string; description: string; guardrails?: readonly string[] }
-  steps?: readonly { instruction: string }[]
+  steps: StepGraph
   mode: TrajectoryMode
+  looseConfig?: LooseConfig
   maxTurns?: number
   storage?: { strategy: 'local' | 'none'; ttlMs?: number; capacity?: number; conversationId?: string }
   userModel?: LanguageModel
@@ -133,9 +263,11 @@ interface Trajectory {
 ```
 
 ## Examples
-- `packages/tally/debug/scripts/runWeather.ts`
-- `packages/tally/debug/scripts/runTravelPlanner.ts`
-- `packages/tally/debug/scripts/runDemandLetter.ts`
+
+See the example agents in the monorepo:
+- `apps/examples/ai-sdk/` - AI SDK agent examples (weather, travel planner, demand letter)
+- `apps/examples/mastra/` - Mastra agent examples
+- `test/e2e/weather.e2e.test.ts` - E2E test examples showing trajectory usage
 
 These show end-to-end runs and saving JSONL/Tally outputs.
 

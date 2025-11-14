@@ -3,13 +3,14 @@
  */
 
 import type { ModelMessage } from 'ai';
-import type { Trajectory, TrajectoryStep, TrajectoryStopReason } from '../core/types.js';
+import type { Trajectory, TrajectoryStopReason } from '../core/types.js';
+import type { StepDefinition } from '../core/steps/types.js';
 
 export interface PolicyContext {
 	trajectory: Trajectory;
 	history: readonly ModelMessage[];
-	currentStepIndex: number;
-	nextStep?: TrajectoryStep;
+	currentStepId?: string;
+	nextStep?: StepDefinition;
 }
 
 export interface PolicyResult {
@@ -24,7 +25,7 @@ export interface PolicyResult {
  */
 export class StrictPolicy {
 	evaluate(context: PolicyContext, turnIndex: number): PolicyResult {
-		const { trajectory, currentStepIndex, nextStep } = context;
+		const { trajectory } = context;
 
 		// Check max turns
 		if (trajectory.maxTurns !== undefined && turnIndex >= trajectory.maxTurns) {
@@ -37,27 +38,23 @@ export class StrictPolicy {
 		}
 
 		// If no steps defined, allow continuation
-		if (!trajectory.steps || trajectory.steps.length === 0) {
+		if (!trajectory.steps || trajectory.steps.steps.length === 0) {
 			return {
 				shouldContinue: true,
 				shouldStop: false,
 			};
 		}
 
-		// If we've completed all steps
-		if (currentStepIndex >= trajectory.steps.length) {
+		// Check if we've reached a terminal step (only after at least one turn)
+		// This prevents stopping immediately if start step is also a terminal
+		const currentStepId = context.currentStepId;
+		if (turnIndex > 0 && currentStepId && trajectory.steps.terminals?.includes(currentStepId)) {
 			return {
 				shouldContinue: false,
 				shouldStop: true,
 				reason: 'goal-reached',
-				message: 'All steps completed',
+				message: 'Terminal step reached',
 			};
-		}
-
-		// Check if current step has required info
-		if (nextStep?.requiredInfo && nextStep.requiredInfo.length > 0) {
-			// In strict mode, we'd need to check if info is present
-			// For now, we'll let the step proceed
 		}
 
 		return {
@@ -72,7 +69,7 @@ export class StrictPolicy {
  */
 export class LoosePolicy {
 	evaluate(context: PolicyContext, turnIndex: number): PolicyResult {
-		const { trajectory, currentStepIndex } = context;
+		const { trajectory } = context;
 
 		// Check max turns
 		if (trajectory.maxTurns !== undefined && turnIndex >= trajectory.maxTurns) {
@@ -84,13 +81,15 @@ export class LoosePolicy {
 			};
 		}
 
-		// If steps are defined and all steps are completed, stop
-		if (trajectory.steps && trajectory.steps.length > 0 && currentStepIndex >= trajectory.steps.length) {
+		// Check if we've reached a terminal step (only after at least one turn)
+		// This prevents stopping immediately if start step is also a terminal
+		const currentStepId = context.currentStepId;
+		if (turnIndex > 0 && currentStepId && trajectory.steps?.terminals?.includes(currentStepId)) {
 			return {
 				shouldContinue: false,
 				shouldStop: true,
 				reason: 'goal-reached',
-				message: 'All steps completed',
+				message: 'Terminal step reached',
 			};
 		}
 

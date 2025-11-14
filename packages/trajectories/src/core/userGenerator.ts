@@ -4,13 +4,13 @@
 
 import { generateText } from 'ai';
 import type { ModelMessage } from 'ai';
-import type { Trajectory, TrajectoryStep } from './types.js';
+import type { Trajectory } from './types.js';
+import type { StepDefinition } from './steps/types.js';
 
 export interface UserMessageContext {
 	trajectory: Trajectory;
 	history: readonly ModelMessage[];
-	currentStepIndex: number;
-	nextStep?: TrajectoryStep;
+	nextStep?: StepDefinition;
 }
 
 /**
@@ -39,8 +39,8 @@ export async function generateUserMessage(
 	let stepDesc = '';
 	if (nextStep) {
 		stepDesc = `\n\nCurrent step instruction: ${nextStep.instruction}`;
-		if (nextStep.requiredInfo && nextStep.requiredInfo.length > 0) {
-			stepDesc += `\nRequired information: ${nextStep.requiredInfo.join(', ')}`;
+		if (nextStep.hints && nextStep.hints.length > 0) {
+			stepDesc += `\nHints: ${nextStep.hints.join(', ')}`;
 		}
 	}
 

@@ -4,7 +4,8 @@
 
 import { StrictPolicy, LoosePolicy } from '../../policies/index.js';
 import type { PolicyContext, PolicyResult } from '../../policies/index.js';
-import type { Trajectory, TrajectoryStep } from '../types.js';
+import type { Trajectory } from '../types.js';
+import type { StepDefinition } from '../steps/types.js';
 import type { ModelMessage } from 'ai';
 
 /**
@@ -31,13 +32,13 @@ export function evaluatePolicy(
 export function buildPolicyContext(
 	trajectory: Trajectory,
 	history: readonly ModelMessage[],
-	currentStepIndex: number,
-	stepToUse?: TrajectoryStep
+	currentStepId: string | undefined,
+	stepToUse?: StepDefinition
 ): PolicyContext {
 	const context: PolicyContext = {
 		trajectory,
 		history,
-		currentStepIndex,
+		currentStepId,
 	};
 	if (stepToUse !== undefined) {
 		context.nextStep = stepToUse;
