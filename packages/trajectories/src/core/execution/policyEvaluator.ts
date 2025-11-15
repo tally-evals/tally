@@ -2,17 +2,17 @@
  * Policy evaluation helper
  */
 
-import { StrictPolicy, LoosePolicy } from '../../policies/index.js';
+import { DefaultPolicy } from '../../policies/index.js';
 import type { PolicyContext, PolicyResult } from '../../policies/index.js';
 import type { Trajectory } from '../types.js';
 import type { StepDefinition } from '../steps/types.js';
 import type { ModelMessage } from 'ai';
 
 /**
- * Create policy instance based on trajectory mode
+ * Create policy instance (single default policy)
  */
-export function createPolicy(mode: Trajectory['mode']) {
-	return mode === 'strict' ? new StrictPolicy() : new LoosePolicy();
+export function createPolicy() {
+	return new DefaultPolicy();
 }
 
 /**
@@ -38,7 +38,7 @@ export function buildPolicyContext(
 	const context: PolicyContext = {
 		trajectory,
 		history,
-		currentStepId,
+		...(currentStepId !== undefined && { currentStepId }),
 	};
 	if (stepToUse !== undefined) {
 		context.nextStep = stepToUse;

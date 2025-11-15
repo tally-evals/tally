@@ -1,6 +1,6 @@
 # @tally/trajectories — Architecture
 
-This document describes a reusable, framework-agnostic “trajectory generator” for multi-turn conversations. It enables simulating both sides of a dialogue by letting an AI act as a user, orchestrating strict/loose step plans, and integrating with multiple LLM runtimes via adapters (AI SDK, Mastra).
+This document describes a reusable, framework-agnostic "trajectory generator" for multi-turn conversations. It enables simulating both sides of a dialogue by letting an AI act as a user, orchestrating step plans with unified selection logic, and integrating with multiple LLM runtimes via adapters (AI SDK, Mastra).
 
 Status: Implemented. The code reflects the concepts below; specifics are noted where behavior evolved.
 
@@ -11,7 +11,7 @@ Status: Implemented. The code reflects the concepts below; specifics are noted w
 - Provide a generic way to build conversation trajectories driven by:
   - **Goal**: The desired outcome (e.g., plan a trip, complete a form, research a topic).
   - **Persona**: Voice, preferences, and behavioral constraints for the AI-as-user.
-  - **Steps (optional)**: Milestones that can be followed strictly or loosely.
+  - **Steps (optional)**: Milestones with unified selection logic that prioritizes preconditions and falls back to LLM ranking.
 - Support AI-as-user simulation to automate trajectory creation.
 - Accept agents via small functional wrappers (no trajectory-level adapter):
   - `withAISdkAgent(agent)` for AI SDK agents
@@ -52,23 +52,24 @@ packages/trajectories/
         storage.ts         # initialize storage from config/overrides
         policyEvaluator.ts # create/evaluate policies, build context
         agentInvoker.ts    # call agent and normalize messages
-        stepSelector.ts    # bridge to step selection (strict/loose)
-        stepRanker.ts      # StepRanker interface for LLM-based ranking
+        stepSelector.ts    # unified step selection (precondition-first, LLM fallback)
+        ranker/
+          llmRanker.ts     # LLM-based step ranking with confidence filtering
         eligibility.ts     # check preconditions and get eligible steps
         satisfaction.ts    # evaluate step satisfaction
-        selectors/
-          strictSelector.ts # deterministic sequential step selection
-          looseSelector.ts  # LLM-based step ranking with confidence gating
-        loopDetector.ts    # loop/no-match/cycle detection and stop reasons
+        loopDetector.ts    # consecutive same step detection
+        utils/
+          messageFormatting.ts # utilities for formatting messages from step traces
       storage/
         interface.ts
         localStorage.ts
         noopStorage.ts
     policies/
-      index.ts             # StrictPolicy, LoosePolicy
+      index.ts             # DefaultPolicy
     wrappers/
       index.ts             # withAISdkAgent, withMastraAgent
     utils/
+      messageFormatting.ts # extract and format messages from step traces
       prompt.ts            # build prompts/messages
       output.ts            # JSONL + Tally conversion + summary
       logger.ts            # pretty console logs (optional)
@@ -81,8 +82,6 @@ packages/trajectories/
 > TypeScript pseudocode mirrors the implementation; some details are elided for clarity.
 
 ```ts
-type TrajectoryMode = 'strict' | 'loose';
-
 interface Persona {
   name?: string;
   description: string;
@@ -118,7 +117,7 @@ type Precondition =
     };
 
 interface PreconditionContext {
-  history: readonly ModelMessage[];
+  history: readonly ModelMessage[];  // Built from stepTraces internally
   snapshot: {
     satisfied: Set<StepId>;
     attemptsByStep: Map<StepId, number>;
@@ -139,31 +138,19 @@ interface StorageConfig {
   conversationId?: string;
 }
 
-interface LooseConfig {
-  ranker?: StepRanker;                    // Custom step ranker (optional)
-  scoreThreshold?: number;                 // Min confidence to select (default: 0.5)
-  margin?: number;                        // Min score difference (default: 0.1)
-  fallback?: 'sequential' | 'stay';       // Fallback when confidence low (default: 'sequential')
-}
-
 interface Trajectory {
   goal: string;
   persona: Persona;
   steps?: StepGraph;                      // Step graph (replaces old TrajectoryStep[])
-  mode: TrajectoryMode;
   maxTurns?: number;
   storage?: StorageConfig;                 // built-in storage; defaults to 'local'
   userModel?: LanguageModel;               // AI SDK model function for user message generation
   metadata?: Record<string, unknown>;
-  // Loop detection for loose mode
+  // Loop detection
   loopDetection?: {
-    maxConsecutiveSameStep?: number;       // Same step repeated (default: 3)
-    maxConsecutiveNoMatch?: number;        // No step matches (default: 3)
-    maxCycleLength?: number;               // Max cycle pattern length (default: 3)
-    maxCycleRepetitions?: number;         // Max cycle repetitions (default: 2)
+    /** Maximum consecutive times the same step can be selected (default: 3) */
+    maxConsecutiveSameStep?: number;
   };
-  // Loose mode configuration
-  loose?: LooseConfig;
 }
 
 // We rely on AI SDK ModelMessage semantics
@@ -233,24 +220,27 @@ interface AgentHandle {
 
 ## Orchestration and Policies
 
-### Step Selection Architecture
+### Unified Step Selection Architecture
 
-The system uses a pluggable step selection architecture with two strategies:
+The system uses a unified step selection approach that combines deterministic and LLM-based selection:
 
-- **Strict Mode** (`StrictSelector`):
-  - Deterministic sequential selection following graph order
-  - Respects preconditions (only selects steps whose preconditions are satisfied)
-  - Advances to next eligible step in graph order
-  - No LLM required
+1. **Precondition-First Selection**:
+   - Evaluates all step preconditions in parallel
+   - Prioritizes steps with satisfied preconditions
+   - Selects the next eligible step with preconditions in graph order (deterministic)
+   - No LLM required for this path
 
-- **Loose Mode** (`LooseSelector`):
-  - LLM-based step ranking using `StepRanker` interface
-  - Ranks all eligible steps based on agent's last message and goal
-  - Confidence gating: requires score ≥ threshold and margin between top candidates
-  - Fallback strategies when confidence is low:
-    - `sequential`: pick next step in graph order
-    - `stay`: remain on current step
-  - Supports custom rankers via `LooseConfig.ranker`
+2. **LLM Fallback**:
+   - If no next step with preconditions is found, falls back to LLM-based ranking
+   - Ranks all eligible steps (including those without preconditions) based on conversation context
+   - Uses step traces (not raw history) for context, including tool messages
+   - Filters out candidates with scores ≤ 0.5 (low confidence threshold)
+   - If no high-confidence match is found, gracefully continues without a step
+
+3. **Graceful Continuation**:
+   - When no step is selected, the conversation continues naturally
+   - User generator produces messages based on persona, goal, and conversation history
+   - Allows the trajectory to progress even when step matching is uncertain
 
 ### Preconditions
 
@@ -278,45 +268,42 @@ Steps can define custom `isSatisfied` function, or use default heuristic (user r
 
 1. Initialize storage and conversationId (built-in storage).
 2. Build `StepsSnapshot` from current step graph and runtime states.
-3. Determine eligible steps by checking preconditions (parallel evaluation).
-4. Select next step:
-   - **Strict**: Use `StrictSelector` to pick next eligible step in graph order
-   - **Loose**: Use `LooseSelector` with LLM ranking, confidence gating, and fallback
-5. Check loop detection (loose mode only):
-   - Track step selection history
-   - Detect consecutive same step, cycles (A→B→A→B), or no matches
+3. Determine eligible steps by checking preconditions (parallel evaluation, uses stepTraces).
+4. Select next step using unified selection:
+   - Prioritize steps with preconditions (deterministic graph order)
+   - Fall back to LLM ranking if no preconditioned step is next
+   - Filter candidates with scores ≤ 0.5
+   - Gracefully continue without a step if no high-confidence match
+5. Check loop detection:
+   - Track consecutive same step selections
+   - Stop if same step selected more than `maxConsecutiveSameStep` times (default: 3)
 6. Evaluate policy (stop conditions: terminal steps, maxTurns).
-7. Generate user message via AI-as-user generator (persona + goal + selected step).
+7. Generate user message via AI-as-user generator:
+   - Uses stepTraces (last N steps, default: 2) for conversation context
+   - Includes tool messages in context
+   - Generates message based on persona, goal, and selected step (if any)
 8. Call `agent.respond(history)` with full `ModelMessage` history.
 9. Collect all agent response messages (assistant and tool messages).
 10. Update step runtime state (attempts, status, satisfaction).
 11. Append all messages to history via Storage.
-12. Emit `StepTrace` with all agent messages.
-13. Update current step ID to chosen step.
-14. Safety: hard cap at 30 turns to prevent infinite loops.
+12. Emit `StepTrace` with user message and all agent messages.
+13. Update current step ID to chosen step (if any).
+14. Repeat until policy stops the trajectory.
 
 ### Policies
 
-- **`StrictPolicy`**: 
+- **`DefaultPolicy`**: 
   - Stops when terminal step reached or `maxTurns` exceeded
   - Checks step graph terminals for completion
-  
-- **`LoosePolicy`**: 
-  - More permissive, allows deviations
-  - Stops when terminal step reached or `maxTurns` exceeded
-  - Steps are guidance, not strict requirements
+  - Works for all trajectories regardless of step selection approach
 
-### Loop Detection (loose mode)
+### Loop Detection
 
-Enhanced loop detection tracks multiple patterns:
+Loop detection tracks consecutive same step selections:
 
-1. **Consecutive Same Step**: Same step selected N times in a row (configurable, default: 3)
-2. **Cycles**: Repeating patterns like A→B→A→B or A→B→C→A→B→C
-   - Configurable cycle length (default: 3)
-   - Configurable repetition threshold (default: 2)
-3. **No Matches**: Agent questions don't match any step (configurable, default: 3)
-
-All detection uses step IDs (not indices) and maintains step selection history for cycle detection.
+- **Consecutive Same Step**: Same step selected N times in a row (configurable via `loopDetection.maxConsecutiveSameStep`, default: 3)
+- Stops the trajectory with reason `'agent-loop'` when threshold is exceeded
+- Always active (not mode-specific)
 
 ---
 
@@ -362,14 +349,9 @@ function withAISdkAgent(
 ): AgentHandle;
 function withMastraAgent(agent: { generate: (input: { messages: ModelMessage[] }) => Promise<{ messages: ModelMessage[] }> }): AgentHandle;
 
-// Step ranker interface (for custom loose mode ranking)
-interface StepRanker {
-  rank(args: {
-    history: readonly ModelMessage[];
-    goal: string;
-    steps: readonly StepDefinition[];
-  }): Promise<Array<{ stepId: StepId; score: number; reasons?: string[] }>>;
-}
+// LLM-based step ranking (internal, not exposed as interface)
+// Filters candidates with scores <= 0.5
+// Uses stepTraces for conversation context (includes tool messages)
 
 // Prompt utilities
 function buildPromptFromHistory(options: {
@@ -419,13 +401,36 @@ function summarize(result: TrajectoryResult): string;    // short human-readable
 
 ---
 
+## Message Formatting Utilities
+
+The system provides utilities for extracting and formatting messages from step traces:
+
+- **`extractMessageContent()`**: Extracts text content from `ModelMessage`, handling both string and array formats
+  - Supports text parts and tool-call parts
+  - Returns formatted string representation
+
+- **`formatConversationFromTraces()`**: Formats conversation exchanges from step traces
+  - Extracts user and assistant messages from step traces
+  - Includes tool messages in chronological order
+  - Formats tool results with tool name and output (JSON, text, errors, content)
+  - Returns conversation context string and last assistant message
+  - Supports `lastNSteps` parameter to limit context window (default: all steps)
+  - Used with `lastNSteps: 1` for LLM ranking (step selection)
+  - Used with `lastNSteps: 2` for user generation (default, provides more context)
+
+These utilities are used by:
+- LLM ranker for step selection context
+- User generator for conversation history
+- Any component that needs to format conversation context from step traces
+
 ## Validation & Testing Plan
 
 - Unit:
-  - Strict vs. loose policy behaviors
+  - Policy behaviors (DefaultPolicy)
   - LocalStorage (eviction rules, TTL)
   - Agent wrapper normalization and error propagation
   - Prompt utility correctness (messages vs prompt format)
+  - Message formatting utilities (extractMessageContent, formatConversationFromTraces)
 - E2E:
   - Travel planner on AI SDK and Mastra (happy paths + clarify-first)
   - Dataset writing: JSONL one-step-per-line artifacts
@@ -444,10 +449,12 @@ function summarize(result: TrajectoryResult): string;    // short human-readable
   - ✅ Step graph architecture with StepDefinition and StepGraph
   - ✅ Preconditions (declarative and custom async)
   - ✅ Step runtime state tracking and satisfaction evaluation
-  - ✅ Strict and loose selectors with pluggable architecture
-  - ✅ LLM-based step ranking with confidence gating
-  - ✅ Enhanced loop detection (consecutive, cycles, no-match)
-  - ✅ Loose mode configuration (threshold, margin, fallback)
+  - ✅ Unified step selection (precondition-first with LLM fallback)
+  - ✅ LLM-based step ranking with score filtering (<= 0.5)
+  - ✅ Loop detection (consecutive same step)
+  - ✅ Step traces as single source of truth (replaces history dependency)
+  - ✅ Message formatting utilities for step traces
+  - ✅ Tool message support in conversation context
 - v0.1:
   - Enhanced tracing utilities and richer logs
   - Step graph visualization
@@ -463,7 +470,7 @@ function summarize(result: TrajectoryResult): string;    // short human-readable
 
 ## Acceptance Criteria
 
-- ✅ Define and run trajectories with or without steps in strict/loose modes
+- ✅ Define and run trajectories with or without steps using unified selection
 - ✅ Accept agents via functional wrappers (`withAISdkAgent`, `withMastraAgent`) without changing orchestration code
   - `withAISdkAgent` supports both Agent instances and `generateText` config
 - ✅ Built-in storage works out-of-the-box and can be disabled
@@ -471,10 +478,13 @@ function summarize(result: TrajectoryResult): string;    // short human-readable
 - ✅ Step graph architecture with StepDefinition, StepGraph, and step IDs
 - ✅ Preconditions support (declarative `stepSatisfied` and custom async functions)
 - ✅ Step runtime state tracking (status, attempts, satisfaction)
-- ✅ Strict selector: deterministic sequential selection with precondition checking
-- ✅ Loose selector: LLM-based ranking with confidence gating and fallback strategies
-- ✅ Enhanced loop detection: consecutive same step, cycles, and no-match patterns
-- ✅ Loose mode configuration: custom rankers, thresholds, margins, and fallbacks
+- ✅ Unified step selection: precondition-first with LLM fallback
+- ✅ LLM ranking with score filtering (candidates with scores <= 0.5 are filtered)
+- ✅ Graceful continuation when no high-confidence step match is found
+- ✅ Loop detection: consecutive same step tracking (always active)
+- ✅ Step traces used throughout (replaces history dependency)
+- ✅ Message formatting utilities for extracting and formatting messages from step traces
+- ✅ Tool messages included in conversation context
 - ✅ Assistant and tool messages are properly separated in step traces
 - ✅ JSONL and Tally outputs are correct and complete for evaluation
 

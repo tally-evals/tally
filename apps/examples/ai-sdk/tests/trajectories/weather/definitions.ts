@@ -38,7 +38,6 @@ export const weatherGoldenTrajectory: Trajectory = {
 		start: 'step-1',
 		terminals: ['step-3'],
 	},
-	mode: 'loose',
 	maxTurns: 10,
 	storage: {
 		strategy: 'local',
@@ -84,7 +83,6 @@ export const weatherCurveTrajectory: Trajectory = {
 		start: 'step-1',
 		terminals: ['step-4'],
 	},
-	mode: 'loose',
 	maxTurns: 10,
 	storage: {
 		strategy: 'local',

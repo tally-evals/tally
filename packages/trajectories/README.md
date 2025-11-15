@@ -41,7 +41,6 @@ const trajectory = createTrajectory({
     start: 'step-1',
     terminals: ['step-2'],
   },
-  mode: 'loose',                        // 'strict' or 'loose'
   maxTurns: 10,
   userModel: google('models/gemini-2.5-flash-lite'),
 }, agent)
@@ -56,13 +55,15 @@ const conversation = toConversation(result, 'weather-trajectory')  // Tally form
 const jsonlLines = toJSONL(result)                                 // one step per line
 ```
 
-## Modes (pick one)
-- **strict**: Follow steps sequentially, respecting preconditions (great for onboarding flows, forms, checklists)
-- **loose**: Steps are guidance, uses LLM-based ranking to select the most relevant step (great for natural, exploratory chats)
+## Step Selection
 
-```ts
-mode: 'strict' // or 'loose'
-```
+The system uses a unified step selection approach that combines deterministic and LLM-based selection:
+
+1. **Precondition-First Selection**: Steps with satisfied preconditions are prioritized and selected in graph order (deterministic, no LLM required)
+2. **LLM Fallback**: If no next step with preconditions is found, the system falls back to LLM-based ranking of all eligible steps
+3. **Graceful Continuation**: If no high-confidence step match is found (scores ≤ 0.5 are filtered), the conversation continues naturally without forcing a step
+
+This approach works well for both structured flows (onboarding, forms, checklists) and natural, exploratory conversations.
 
 ## Step Graph Architecture
 
@@ -125,20 +126,14 @@ preconditions: [
 ]
 ```
 
-### Loose Mode Configuration
+### LLM-Based Step Ranking
 
-In loose mode, you can configure LLM-based step ranking:
+When no deterministic next step is available, the system uses LLM-based ranking:
 
-```ts
-mode: 'loose',
-looseConfig: {
-  ranker: customRanker,        // Optional custom StepRanker
-  scoreThreshold: 0.5,         // Minimum confidence to select a step
-  margin: 0.1,                 // Minimum score difference between top candidates
-  fallback: 'sequential',      // 'sequential' or 'stay' when confidence is low
-  userModel: google('models/gemini-2.5-flash-lite'),
-}
-```
+- Ranks all eligible steps based on conversation context (including tool messages)
+- Filters out candidates with scores ≤ 0.5 (low confidence threshold)
+- If no high-confidence match is found, gracefully continues without a step
+- Uses step traces (not raw history) for richer context
 
 ## Storage and user model
 - Built-in storage is on by default (`strategy: 'local'`)
@@ -157,17 +152,13 @@ Trajectories include built-in loop detection to prevent repetitive conversations
 
 ```ts
 loopDetection: {
-  enabled: true,
-  maxNoMatch: 3,              // Stop after N consecutive "no step matches"
-  maxCycleLength: 5,          // Maximum cycle length to detect
-  maxCycleRepetitions: 2,     // Stop after N cycle repetitions
+  maxConsecutiveSameStep: 3,  // Stop after N consecutive same step selections (default: 3)
 }
 ```
 
 The system detects:
-- **Agent loops**: Agent repeating the same responses
-- **Step cycles**: User/agent stuck in repeating step patterns (A→B→A→B)
-- **No step match**: No eligible steps available for multiple turns
+- **Consecutive same step**: Same step selected N times in a row (configurable, default: 3)
+- Stops the trajectory with reason `'agent-loop'` when threshold is exceeded
 
 ## Generate “bad” trajectories (robustness testing)
 Use adversarial personas or conflicting steps to stress-test your agent.
@@ -190,7 +181,6 @@ const adversarial = createTrajectory({
     start: 'step-1',
     terminals: ['step-2'],
   },
-  mode: 'loose',
   userModel: google('models/gemini-2.5-flash-lite'),
 }, agent)
 
@@ -223,8 +213,6 @@ toJSONL(result)                          // -> string[] (one line per step)
 
 Types (essentials):
 ```ts
-type TrajectoryMode = 'strict' | 'loose'
-
 interface StepDefinition {
   id: string
   instruction: string
@@ -252,13 +240,14 @@ type Precondition =
 interface Trajectory {
   goal: string
   persona: { name?: string; description: string; guardrails?: readonly string[] }
-  steps: StepGraph
-  mode: TrajectoryMode
-  looseConfig?: LooseConfig
+  steps?: StepGraph
   maxTurns?: number
   storage?: { strategy: 'local' | 'none'; ttlMs?: number; capacity?: number; conversationId?: string }
   userModel?: LanguageModel
   metadata?: Record<string, unknown>
+  loopDetection?: {
+    maxConsecutiveSameStep?: number
+  }
 }
 ```
 

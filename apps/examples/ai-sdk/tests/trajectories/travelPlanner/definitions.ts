@@ -74,7 +74,6 @@ export const travelPlannerGoldenTrajectory: Trajectory = {
 		start: 'step-1',
 		terminals: ['step-12'],
 	},
-	mode: 'loose',
 	maxTurns: 15,
 	storage: {
 		strategy: 'local',
@@ -124,7 +123,6 @@ export const travelPlannerCurveTrajectory: Trajectory = {
 		start: 'step-1',
 		terminals: ['step-5'],
 	},
-	mode: 'loose',
 	maxTurns: 15,
 	storage: {
 		strategy: 'local',
