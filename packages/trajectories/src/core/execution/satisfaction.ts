@@ -32,8 +32,22 @@ function defaultSatisfactionHeuristic(
 		return false;
 	}
 
-	const lastUser = history[lastUserIndex];
-	if (typeof lastUser.content === 'string' && lastUser.content.trim().length > 0) {
+	const lastUser = history[lastUserIndex] as ModelMessage;
+	const contentStr = typeof lastUser.content === 'string' ? lastUser.content : '';
+
+	// Light relevance check using step content (ensures 'step' is meaningfully read)
+	const instructionHints = [
+		...(step.hints ?? []),
+		...step.instruction
+			.split(/\W+/)
+			.filter((t) => t.length > 4)
+			.slice(0, 5),
+	].map((t) => t.toLowerCase());
+	const mentionsKeyword =
+		contentStr.length > 0 &&
+		instructionHints.some((kw) => contentStr.toLowerCase().includes(kw));
+
+	if (contentStr.trim().length > 0 || mentionsKeyword) {
 		return true;
 	}
 

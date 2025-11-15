@@ -1,5 +1,5 @@
 /**
- * Policy implementations for trajectory execution
+ * Policy implementation for trajectory execution (single default policy)
  */
 
 import type { ModelMessage } from 'ai';
@@ -20,10 +20,7 @@ export interface PolicyResult {
 	message?: string;
 }
 
-/**
- * Strict policy: Execute steps in order; deviations are violations
- */
-export class StrictPolicy {
+export class DefaultPolicy {
 	evaluate(context: PolicyContext, turnIndex: number): PolicyResult {
 		const { trajectory } = context;
 
@@ -64,41 +61,4 @@ export class StrictPolicy {
 	}
 }
 
-/**
- * Loose policy: Steps act as guidance; allow reasonable deviations
- */
-export class LoosePolicy {
-	evaluate(context: PolicyContext, turnIndex: number): PolicyResult {
-		const { trajectory } = context;
-
-		// Check max turns
-		if (trajectory.maxTurns !== undefined && turnIndex >= trajectory.maxTurns) {
-			return {
-				shouldContinue: false,
-				shouldStop: true,
-				reason: 'max-turns',
-				message: `Maximum turns (${trajectory.maxTurns}) reached`,
-			};
-		}
-
-		// Check if we've reached a terminal step (only after at least one turn)
-		// This prevents stopping immediately if start step is also a terminal
-		const currentStepId = context.currentStepId;
-		if (turnIndex > 0 && currentStepId && trajectory.steps?.terminals?.includes(currentStepId)) {
-			return {
-				shouldContinue: false,
-				shouldStop: true,
-				reason: 'goal-reached',
-				message: 'Terminal step reached',
-			};
-		}
-
-		// In loose mode, we're more permissive
-		// Steps are guidance, not strict requirements
-		return {
-			shouldContinue: true,
-			shouldStop: false,
-		};
-	}
-}
-
+// Backwards exports removed; use DefaultPolicy going forward

@@ -4,6 +4,7 @@
 
 import type { StepDefinition, StepsSnapshot, Precondition } from '../steps/types.js';
 import type { ModelMessage } from 'ai';
+import type { StepTrace } from '../types.js';
 
 /**
  * Check if a precondition is satisfied.
@@ -36,15 +37,32 @@ async function checkPrecondition(
 }
 
 /**
+ * Build history from step traces for precondition evaluation
+ */
+function buildHistoryFromTraces(stepTraces: readonly StepTrace[]): readonly ModelMessage[] {
+	const history: ModelMessage[] = [];
+	for (const trace of stepTraces) {
+		// Add user message
+		history.push(trace.userMessage);
+		// Add all agent messages (assistant + tool)
+		history.push(...trace.agentMessages);
+	}
+	return history;
+}
+
+/**
  * Get all eligible steps (preconditions satisfied).
  * All preconditions are evaluated in parallel for performance.
  * Supports both synchronous and asynchronous preconditions.
  */
 export async function getEligibleSteps(
 	snapshot: StepsSnapshot,
-	history: readonly ModelMessage[]
+	stepTraces: readonly StepTrace[]
 ): Promise<StepDefinition[]> {
 	const eligible: StepDefinition[] = [];
+
+	// Build history from step traces for custom preconditions
+	const history = buildHistoryFromTraces(stepTraces);
 
 	// Build snapshot context once for all precondition checks
 	const snapshotContext = {

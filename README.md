@@ -94,7 +94,6 @@ const trajectory = createTrajectory(
       start: 'step-1',
       terminals: ['step-3'],
     },
-    mode: 'loose',
     maxTurns: 10,
     userModel: google('models/gemini-2.5-flash-lite'),
   },

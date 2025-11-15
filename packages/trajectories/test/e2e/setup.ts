@@ -5,7 +5,7 @@
  */
 
 import { config } from 'dotenv';
-import { resolve } from 'path';
+import { resolve } from 'node:path';
 
 // Try to load .env.local from root or tally package
 const envPaths = [

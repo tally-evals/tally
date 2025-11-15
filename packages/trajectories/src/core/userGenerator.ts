@@ -4,12 +4,14 @@
 
 import { generateText } from 'ai';
 import type { ModelMessage } from 'ai';
-import type { Trajectory } from './types.js';
+import type { Trajectory, StepTrace } from './types.js';
 import type { StepDefinition } from './steps/types.js';
+import { formatConversationFromTraces } from '../utils/messageFormatting.js';
 
 export interface UserMessageContext {
 	trajectory: Trajectory;
-	history: readonly ModelMessage[];
+	stepTraces: readonly StepTrace[];
+	lastNSteps?: number;
 	nextStep?: StepDefinition;
 }
 
@@ -23,7 +25,7 @@ export async function generateUserMessage(
 	context: UserMessageContext,
 	model: Parameters<typeof generateText>[0]['model']
 ): Promise<ModelMessage> {
-	const { trajectory, history, nextStep } = context;
+	const { trajectory, stepTraces, lastNSteps = 2, nextStep } = context;
 
 	// Build the prompt for the AI-as-user
 	const personaDesc = trajectory.persona.description;
@@ -44,24 +46,9 @@ export async function generateUserMessage(
 		}
 	}
 
-	const conversationHistory = history
-		.map((msg) => {
-			if (typeof msg.content === 'string') {
-				return `${msg.role}: ${msg.content}`;
-			}
-			// Handle structured content
-			return `${msg.role}: [complex content]`;
-		})
-		.join('\n');
-
-	// Extract the assistant's last message to understand what they're asking
-	const lastAssistantMessage = history
-		.slice()
-		.reverse()
-		.find((msg) => msg.role === 'assistant');
-	const assistantQuestion = lastAssistantMessage && typeof lastAssistantMessage.content === 'string'
-		? lastAssistantMessage.content
-		: null;
+	// Format conversation from step traces
+	const { conversationContext: conversationHistory, lastAssistantMessage: assistantQuestion } =
+		formatConversationFromTraces(stepTraces, lastNSteps);
 
 		const systemMessage = `${personaName}${guardrails}
 

@@ -178,7 +178,6 @@ export function logStep(step: StepTrace, turnIndex: number): void {
 export function logTrajectoryStart(
 	goal: string,
 	persona: { name?: string; description: string },
-	mode: string,
 	conversationId: string
 ): void {
 	console.log(`\n${colors.bright}${colors.blue}═══════════════════════════════════════════════════════════════${colors.reset}`);
@@ -189,7 +188,6 @@ export function logTrajectoryStart(
 		console.log(`${colors.bright}Persona:${colors.reset} ${persona.name}`);
 	}
 	console.log(`${colors.bright}Description:${colors.reset} ${persona.description}`);
-	console.log(`${colors.bright}Mode:${colors.reset} ${mode}`);
 	console.log(`${colors.bright}Conversation ID:${colors.reset} ${conversationId}`);
 	console.log(`${colors.bright}${colors.blue}═══════════════════════════════════════════════════════════════${colors.reset}\n`);
 }
