@@ -61,7 +61,6 @@ export async function runTrajectory(
 		logTrajectoryStart(
 			trajectory.goal,
 			trajectory.persona,
-			trajectory.mode,
 			conversationId
 		);
 	}
@@ -70,7 +69,7 @@ export async function runTrajectory(
 	const storage = initializeStorage(trajectory, options);
 
 	// Initialize policy
-	const policy = createPolicy(trajectory.mode);
+	const policy = createPolicy();
 
 	// Get user model (required for AI-as-user generation)
 	const userModel = options?.userModel || trajectory.userModel;
@@ -95,68 +94,69 @@ export async function runTrajectory(
 		const history = storage.get(conversationId);
 
 		// Determine step to use for user message generation
+		// Pass all step traces for eligibility and LLM ranking context
 		const stepSelection = await determineStep(
 			trajectory,
 			currentStepId,
-			history,
 			userModel,
-			runtimeStates
+			runtimeStates,
+			turnIndex,
+			steps
 		);
 
-		const { stepToUse, chosenStepId } = stepSelection;
+		const { stepToUse, chosenStepId, candidates } = stepSelection;
 
-		// Update loop detector based on chosen step (only in loose mode after first turn)
-		if (trajectory.mode === 'loose' && turnIndex > 0) {
-			if (chosenStepId) {
-				const loopResult = loopDetector.recordMatch(chosenStepId);
-				if (generateLogs && loopResult.shouldStop) {
-					const state = loopDetector.getState();
+		// Debug logging for step selection
+		if (generateLogs) {
+			console.log(`\n🔍 [STEP SELECTION] Turn ${turnIndex}`);
+			console.log(`  Current step ID: ${currentStepId || 'none'}`);
+			console.log(`  Chosen step ID: ${chosenStepId || 'none'}`);
+			if (chosenStepId && stepToUse) {
+				console.log(`  Chosen step instruction: "${stepToUse.instruction}"`);
+			}
+			if (candidates && candidates.length > 0) {
+				console.log(`  Candidates (${candidates.length}):`);
+				for (const candidate of candidates.slice(0, 5)) {
+					const step = trajectory.steps?.steps.find((s) => s.id === candidate.stepId);
+					const score = 'score' in candidate ? candidate.score : 'N/A';
+					const reasons = 'reasons' in candidate ? candidate.reasons : [];
 					console.log(
-						`\n🔍 [DEBUG] Loop detection: ${loopResult.summary} (State: ${JSON.stringify(state)})`
+						`    - ${candidate.stepId}: score=${score}${reasons.length > 0 ? `, reasons=[${reasons.join(', ')}]` : ''}`
 					);
-				}
-				if (loopResult.shouldStop && loopResult.reason && loopResult.summary) {
-					const result: TrajectoryResult = {
-						steps,
-						completed: false,
-						reason: loopResult.reason,
-						summary: loopResult.summary,
-					};
-					if (generateLogs) {
-						logTrajectoryEnd(
-							result.completed,
-							result.reason,
-							steps.length,
-							result.summary
-						);
+					if (step) {
+						console.log(`      instruction: "${step.instruction}"`);
 					}
-					return result;
 				}
 			} else {
-				const loopResult = loopDetector.recordNoMatch();
+				console.log('  No candidates found');
+			}
+		}
+
+		// Update loop detector based on chosen step (always-on)
+		if (turnIndex > 0 && chosenStepId) {
+			const loopResult = loopDetector.recordMatch(chosenStepId);
+			if (generateLogs && loopResult.shouldStop) {
+				const state = loopDetector.getState();
+				console.log(
+					`\n🔍 [DEBUG] Loop detection: ${loopResult.summary} (State: ${JSON.stringify(state)})`
+				);
+			}
+			if (loopResult.shouldStop && loopResult.reason && loopResult.summary) {
+				const result: TrajectoryResult = {
+					steps,
+					completed: false,
+					reason: loopResult.reason,
+					summary: loopResult.summary,
+				};
 				if (generateLogs) {
-					const state = loopDetector.getState();
-					console.log(
-						`\n🔍 [DEBUG] Loop detection: No match ${state.consecutiveNoMatchCount} times (limit: ${trajectory.loopDetection?.maxConsecutiveNoMatch ?? 3})`
+					logTrajectoryEnd(
+						result.completed,
+						result.reason,
+						steps.length,
+						result.summary
 					);
 				}
-				if (loopResult.shouldStop && loopResult.reason && loopResult.summary) {
-					const result: TrajectoryResult = {
-						steps,
-						completed: false,
-						reason: loopResult.reason,
-						summary: loopResult.summary,
-					};
-					if (generateLogs) {
-						logTrajectoryEnd(
-							result.completed,
-							result.reason,
-							steps.length,
-							result.summary
-						);
-					}
-					return result;
-				}
+				return result;
 			}
 		}
 
@@ -168,6 +168,24 @@ export async function runTrajectory(
 			stepToUse
 		);
 		const policyResult = evaluatePolicy(policy, policyContext, turnIndex);
+
+		// Debug logging for policy evaluation
+		if (generateLogs) {
+			console.log(`\n🔍 [POLICY EVALUATION] Turn ${turnIndex}`);
+			console.log(`  Current step ID: ${currentStepId || 'none'}`);
+			console.log(`  Should continue: ${policyResult.shouldContinue}`);
+			console.log(`  Should stop: ${policyResult.shouldStop}`);
+			if (policyResult.reason) {
+				console.log(`  Reason: ${policyResult.reason}`);
+			}
+			if (policyResult.message) {
+				console.log(`  Message: ${policyResult.message}`);
+			}
+			if (trajectory.steps?.terminals && currentStepId) {
+				const isTerminal = trajectory.steps.terminals.includes(currentStepId);
+				console.log(`  Is terminal step: ${isTerminal}`);
+			}
+		}
 
 		if (policyResult.shouldStop) {
 			const result: TrajectoryResult = {
@@ -194,7 +212,8 @@ export async function runTrajectory(
 		// Generate user message
 		const userContext: UserMessageContext = {
 			trajectory,
-			history,
+			stepTraces: steps,
+			lastNSteps: 2, // Default to last 2 steps for user generation context
 			...(stepToUse && { nextStep: stepToUse }),
 		};
 		const userMessage = await generateUserMessage(userContext, userModel);
@@ -236,16 +255,16 @@ export async function runTrajectory(
 			};
 			runtimeStates.set(chosenStepId, newState);
 
-			// Evaluate satisfaction
+			// Evaluate satisfaction (use history up to the user's message for default heuristic)
 			const satisfied = await evaluateSatisfaction(
 				stepToUse,
 				newState,
-				finalHistory,
+				updatedHistory,
 				{
 					satisfied: new Set(
 						Array.from(runtimeStates.values())
-							.filter((s) => s.status === 'satisfied')
-							.map((s) => s.stepId)
+						.filter((s) => s.status === 'satisfied')
+						.map((s) => s.stepId)
 					),
 					attemptsByStep: new Map(
 						Array.from(runtimeStates.entries()).map(([id, state]) => [id, state.attempts])
@@ -253,14 +272,38 @@ export async function runTrajectory(
 				}
 			);
 
+			// Debug logging for satisfaction
+			if (generateLogs) {
+				console.log(`\n🔍 [SATISFACTION] Turn ${turnIndex}`);
+				console.log(`  Step ID: ${chosenStepId}`);
+				console.log(`  Step instruction: "${stepToUse.instruction}"`);
+				console.log(`  Attempts: ${newState.attempts}`);
+				console.log(`  Satisfied: ${satisfied}`);
+			}
+
 			if (satisfied) {
 				newState.status = 'satisfied';
 				runtimeStates.set(chosenStepId, newState);
+				if (generateLogs) {
+					console.log('  ✅ Step marked as satisfied');
+				}
 			}
 		}
 
-		// Update current step ID
-		currentStepId = chosenStepId;
+		// Update current step ID only when a step is satisfied
+		const previousStepId = currentStepId;
+		if (chosenStepId && stepToUse) {
+			const state = runtimeStates.get(chosenStepId);
+			if (state?.status === 'satisfied') {
+				currentStepId = chosenStepId;
+			}
+		}
+		
+		// Debug logging for step ID update
+		if (generateLogs && previousStepId !== currentStepId) {
+			console.log(`\n🔍 [STEP ID UPDATE] Turn ${turnIndex}`);
+			console.log(`  Previous: ${previousStepId || 'none'} → Current: ${currentStepId || 'none'}`);
+		}
 
 		turnIndex++;
 
