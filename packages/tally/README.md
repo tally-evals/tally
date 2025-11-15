@@ -185,8 +185,10 @@ const agent = withAISdkAgent(weatherAgent)
 const trajectory = createTrajectory({
   goal: 'Get weather information',
   persona: { description: 'Ask concise weather questions.' },
-  steps: [{ instruction: 'Ask for current weather in San Francisco' }],
-  mode: 'loose',
+  steps: {
+    steps: [{ id: 'step-1', instruction: 'Ask for current weather in San Francisco' }],
+    start: 'step-1',
+  },
   userModel: google('models/gemini-2.5-flash-lite'),
 }, agent)
 

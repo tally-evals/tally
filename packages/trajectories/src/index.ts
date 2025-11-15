@@ -7,10 +7,8 @@
 // Core types
 export type {
 	Trajectory,
-	TrajectoryMode,
 	Persona,
 	StorageConfig,
-	LooseConfig,
 	StepTrace,
 	TrajectoryResult,
 	TrajectoryStopReason,
@@ -30,9 +28,6 @@ export type {
 	SatisfactionContext,
 } from './core/steps/types.js';
 
-// Step ranker
-export type { StepRanker } from './core/execution/stepRanker.js';
-
 // Storage
 export type { Storage } from './core/storage/interface.js';
 export { LocalStorage } from './core/storage/localStorage.js';
@@ -46,7 +41,7 @@ export type { RunTrajectoryOptions } from './core/orchestrator.js';
 export { withAISdkAgent, withMastraAgent } from './wrappers/index.js';
 
 // Policies
-export { StrictPolicy, LoosePolicy } from './policies/index.js';
+export { DefaultPolicy } from './policies/index.js';
 export type { PolicyContext, PolicyResult } from './policies/index.js';
 
 // User generator
