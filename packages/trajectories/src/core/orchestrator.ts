@@ -104,33 +104,8 @@ export async function runTrajectory(
 			steps
 		);
 
-		const { stepToUse, chosenStepId, candidates } = stepSelection;
+		const { stepToUse, chosenStepId } = stepSelection;
 
-		// Debug logging for step selection
-		if (generateLogs) {
-			console.log(`\n🔍 [STEP SELECTION] Turn ${turnIndex}`);
-			console.log(`  Current step ID: ${currentStepId || 'none'}`);
-			console.log(`  Chosen step ID: ${chosenStepId || 'none'}`);
-			if (chosenStepId && stepToUse) {
-				console.log(`  Chosen step instruction: "${stepToUse.instruction}"`);
-			}
-			if (candidates && candidates.length > 0) {
-				console.log(`  Candidates (${candidates.length}):`);
-				for (const candidate of candidates.slice(0, 5)) {
-					const step = trajectory.steps?.steps.find((s) => s.id === candidate.stepId);
-					const score = 'score' in candidate ? candidate.score : 'N/A';
-					const reasons = 'reasons' in candidate ? candidate.reasons : [];
-					console.log(
-						`    - ${candidate.stepId}: score=${score}${reasons.length > 0 ? `, reasons=[${reasons.join(', ')}]` : ''}`
-					);
-					if (step) {
-						console.log(`      instruction: "${step.instruction}"`);
-					}
-				}
-			} else {
-				console.log('  No candidates found');
-			}
-		}
 
 		// Update loop detector based on chosen step (always-on)
 		if (turnIndex > 0 && chosenStepId) {
@@ -169,23 +144,6 @@ export async function runTrajectory(
 		);
 		const policyResult = evaluatePolicy(policy, policyContext, turnIndex);
 
-		// Debug logging for policy evaluation
-		if (generateLogs) {
-			console.log(`\n🔍 [POLICY EVALUATION] Turn ${turnIndex}`);
-			console.log(`  Current step ID: ${currentStepId || 'none'}`);
-			console.log(`  Should continue: ${policyResult.shouldContinue}`);
-			console.log(`  Should stop: ${policyResult.shouldStop}`);
-			if (policyResult.reason) {
-				console.log(`  Reason: ${policyResult.reason}`);
-			}
-			if (policyResult.message) {
-				console.log(`  Message: ${policyResult.message}`);
-			}
-			if (trajectory.steps?.terminals && currentStepId) {
-				const isTerminal = trajectory.steps.terminals.includes(currentStepId);
-				console.log(`  Is terminal step: ${isTerminal}`);
-			}
-		}
 
 		if (policyResult.shouldStop) {
 			const result: TrajectoryResult = {
@@ -272,14 +230,6 @@ export async function runTrajectory(
 				}
 			);
 
-			// Debug logging for satisfaction
-			if (generateLogs) {
-				console.log(`\n🔍 [SATISFACTION] Turn ${turnIndex}`);
-				console.log(`  Step ID: ${chosenStepId}`);
-				console.log(`  Step instruction: "${stepToUse.instruction}"`);
-				console.log(`  Attempts: ${newState.attempts}`);
-				console.log(`  Satisfied: ${satisfied}`);
-			}
 
 			if (satisfied) {
 				newState.status = 'satisfied';
@@ -291,7 +241,6 @@ export async function runTrajectory(
 		}
 
 		// Update current step ID only when a step is satisfied
-		const previousStepId = currentStepId;
 		if (chosenStepId && stepToUse) {
 			const state = runtimeStates.get(chosenStepId);
 			if (state?.status === 'satisfied') {
@@ -299,11 +248,6 @@ export async function runTrajectory(
 			}
 		}
 		
-		// Debug logging for step ID update
-		if (generateLogs && previousStepId !== currentStepId) {
-			console.log(`\n🔍 [STEP ID UPDATE] Turn ${turnIndex}`);
-			console.log(`  Previous: ${previousStepId || 'none'} → Current: ${currentStepId || 'none'}`);
-		}
 
 		turnIndex++;
 

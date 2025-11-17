@@ -44,7 +44,7 @@ export const travelPlannerGoldenTrajectory: Trajectory = {
 			},
 			{
 				id: 'step-6',
-				instruction: 'Review flight options and express preference or ask for more options',
+				instruction: 'Review flight options and express preference from given options',
 			},
 			{
 				id: 'step-7',
@@ -78,6 +78,9 @@ export const travelPlannerGoldenTrajectory: Trajectory = {
 	storage: {
 		strategy: 'local',
 		conversationId: 'travel-planner-golden',
+	},
+	loopDetection: {
+		maxConsecutiveSameStep: 3,
 	},
 	userModel: google('models/gemini-2.5-flash-lite'),
 };
