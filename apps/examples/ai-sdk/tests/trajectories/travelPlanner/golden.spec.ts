@@ -114,6 +114,7 @@ describe('Travel Planner Agent - Golden Path', () => {
     // - Completeness: 0.3+ (some turns may be incomplete when agent asks clarifying questions)
     // - Role Adherence: 0.7+ (agent should consistently act as travel assistant)
     // - Overall Quality: 0.5+ (combined score should be reasonable for golden path)
+    // - Knowledge Retention: 0.7+ (agent should remember the user's preferences well since they are unchanging)
 
     const answerRelevanceEval = defineSingleTurnEval({
       name: 'Answer Relevance',
@@ -195,15 +196,24 @@ describe('Travel Planner Agent - Golden Path', () => {
       expect(roleAdherenceVerdict.score).toBeGreaterThanOrEqual(0.7);
     }
 
-    // Answer Relevance: Check mean score (should be >= 0.6 for golden path)
-    const answerRelevanceSummary = report.evalSummaries.get('Answer Relevance');
-    if (answerRelevanceSummary?.aggregations?.mean !== undefined) {
-      expect(answerRelevanceSummary.aggregations.mean).toBeGreaterThanOrEqual(
-        0.6,
-      );
+    // Answer Relevance: Should pass for golden path (score >= 0.6)
+    const answerRelevanceVerdict =
+      targetResult.verdicts.get('Answer Relevance');
+    if (answerRelevanceVerdict) {
+      expect(answerRelevanceVerdict.verdict).toBe('pass');
+      expect(answerRelevanceVerdict.score).toBeGreaterThanOrEqual(0.6);
     }
 
-    // Overall Quality: Check mean score (should be >= 0.6 for golden path)
+    // Knowledge Retention: Should pass for golden path (score >= 0.7)
+    const knowledgeRetentionVerdict = targetResult.verdicts.get(
+      'Knowledge Retention',
+    );
+    if (knowledgeRetentionVerdict) {
+      expect(knowledgeRetentionVerdict.verdict).toBe('pass');
+      expect(knowledgeRetentionVerdict.score).toBeGreaterThanOrEqual(0.7);
+    }
+
+    // Overall Quality: Should pass for golden path (score >= 0.6)
     const overallQualitySummary = report.evalSummaries.get('Overall Quality');
     if (overallQualitySummary?.aggregations?.mean !== undefined) {
       expect(overallQualitySummary.aggregations.mean).toBeGreaterThanOrEqual(
