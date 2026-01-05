@@ -7,182 +7,208 @@ import { travelPlannerAgent } from '../../../src/agents/travelPlanner';
 import { travelPlannerGoldenTrajectory } from './definitions';
 import { runCase, assertToolCallSequence } from '../../utils/harness';
 import {
-	createTally,
-	createEvaluator,
-	runAllTargets,
-	defineBaseMetric,
-	defineInput,
-	defineSingleTurnEval,
-	defineMultiTurnEval,
-	defineScorerEval,
-	thresholdVerdict,
-	formatReportAsTables,
+  createTally,
+  createEvaluator,
+  runAllTargets,
+  defineBaseMetric,
+  defineInput,
+  defineSingleTurnEval,
+  defineMultiTurnEval,
+  defineScorerEval,
+  thresholdVerdict,
+  formatReportAsTables,
 } from '@tally-evals/tally';
 import {
-	createAnswerRelevanceMetric,
-	createCompletenessMetric,
-	createRoleAdherenceMetric,
+  createAnswerRelevanceMetric,
+  createCompletenessMetric,
+  createRoleAdherenceMetric,
 } from '@tally-evals/tally/metrics';
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
 import { google } from '@ai-sdk/google';
+import { createKnowledgeRetentionMetric } from './metrics';
 
 describe('Travel Planner Agent - Golden Path', () => {
-	it(
-		'should plan trip successfully',
-		async () => {
-			const { conversation } = await runCase({
-				trajectory: travelPlannerGoldenTrajectory,
-				agent: travelPlannerAgent,
-				recordedPath: '_fixtures/recorded/travelPlanner/golden.jsonl',
-				conversationId: 'travel-planner-golden',
-				generateLogs: true,
-			});
+  it('should plan trip successfully', async () => {
+    const { conversation } = await runCase({
+      trajectory: travelPlannerGoldenTrajectory,
+      agent: travelPlannerAgent,
+      recordedPath: '_fixtures/recorded/travelPlanner/golden.jsonl',
+      conversationId: 'travel-planner-golden',
+      generateLogs: true,
+    });
 
-			expect(conversation.steps.length).toBeGreaterThan(0);
+    expect(conversation.steps.length).toBeGreaterThan(0);
 
-			// Assert tool call sequences are valid
-			for (const step of conversation.steps) {
-				try {
-					assertToolCallSequence(step);
-				} catch (error) {
-					// Only fail if there are tool calls but no results
-					// Some steps might not have tool calls at all
-					const hasToolCalls = step.output.some(
-						(msg) => msg.role === 'assistant' &&
-						(Array.isArray(msg.content) ? msg.content.some((p: unknown) => 
-							typeof p === 'object' && p !== null && 'type' in p && p.type === 'tool-call'
-						) : false)
-					);
-					if (hasToolCalls) {
-						throw error;
-					}
-				}
-			}
+    // Assert tool call sequences are valid
+    for (const step of conversation.steps) {
+      try {
+        assertToolCallSequence(step);
+      } catch (error) {
+        // Only fail if there are tool calls but no results
+        // Some steps might not have tool calls at all
+        const hasToolCalls = step.output.some(
+          (msg) =>
+            msg.role === 'assistant' &&
+            (Array.isArray(msg.content)
+              ? msg.content.some(
+                  (p: unknown) =>
+                    typeof p === 'object' &&
+                    p !== null &&
+                    'type' in p &&
+                    p.type === 'tool-call',
+                )
+              : false),
+        );
+        if (hasToolCalls) {
+          throw error;
+        }
+      }
+    }
 
-			const model = google('models/gemini-2.5-flash-lite');
+    const model = google('models/gemini-2.5-flash-lite');
 
-			// Create metrics for travel planner evaluation
-			// Answer Relevance: Agent should answer user questions appropriately
-			const answerRelevance = createAnswerRelevanceMetric({
-				provider: model,
-			});
+    // Create metrics for travel planner evaluation
+    // Answer Relevance: Agent should answer user questions appropriately
+    const answerRelevance = createAnswerRelevanceMetric({
+      provider: model,
+    });
 
-			// Completeness: Agent should provide complete information when needed
-			// For travel planning, we expect the agent to gather necessary details
-			const completeness = createCompletenessMetric({
-				provider: model,
-			});
+    // Completeness: Agent should provide complete information when needed
+    // For travel planning, we expect the agent to gather necessary details
+    const completeness = createCompletenessMetric({
+      provider: model,
+    });
 
-			// Role Adherence: Agent should act as a helpful travel planning assistant
-			const roleAdherence = createRoleAdherenceMetric({
-				expectedRole: 'travel planning assistant that helps users find flights, accommodations, and travel information',
-				provider: model,
-			});
+    // Role Adherence: Agent should act as a helpful travel planning assistant
+    const roleAdherence = createRoleAdherenceMetric({
+      expectedRole:
+        'travel planning assistant that helps users find flights, accommodations, and travel information',
+      provider: model,
+    });
 
-			// Overall Quality: Combined score of all metrics
-			const overallQuality = defineBaseMetric({
-				name: 'overallQuality',
-				valueType: 'number',
-			});
+    const knowledgeRetention = createKnowledgeRetentionMetric({
+      provider: model,
+      parameters: ['origin', 'destination', 'dates', 'preferences'],
+    });
 
-			const qualityScorer = createWeightedAverageScorer({
-				name: 'OverallQuality',
-				output: overallQuality,
-				inputs: [
-					defineInput({ metric: answerRelevance, weight: 0.35 }), // Most important: agent must answer questions
-					defineInput({ metric: roleAdherence, weight: 0.35 }), // Important: agent must act as travel assistant
-					defineInput({ metric: completeness, weight: 0.30 }), // Less critical: completeness varies by turn
-				],
-			});
+    // Overall Quality: Combined score of all metrics
+    const overallQuality = defineBaseMetric({
+      name: 'overallQuality',
+      valueType: 'number',
+    });
 
-			// Create evals with appropriate pass/fail criteria for golden path
-			// Golden path expectations (adjusted based on realistic performance):
-			// - Answer Relevance: 0.5+ (agent should answer questions, but some turns may be questions)
-			// - Completeness: 0.3+ (some turns may be incomplete when agent asks clarifying questions)
-			// - Role Adherence: 0.7+ (agent should consistently act as travel assistant)
-			// - Overall Quality: 0.5+ (combined score should be reasonable for golden path)
+    const qualityScorer = createWeightedAverageScorer({
+      name: 'OverallQuality',
+      output: overallQuality,
+      inputs: [
+        defineInput({ metric: answerRelevance, weight: 0.3 }), // Most important: agent must answer questions
+        defineInput({ metric: roleAdherence, weight: 0.3 }), // Important: agent must act as travel assistant
+        defineInput({ metric: knowledgeRetention, weight: 0.25 }), // Knowledge retention is important for long-term success
+        defineInput({ metric: completeness, weight: 0.15 }), // Less critical: completeness varies by turn
+      ],
+    });
 
-			const answerRelevanceEval = defineSingleTurnEval({
-				name: 'Answer Relevance',
-				metric: answerRelevance,
-				verdict: thresholdVerdict(0.5), // Golden path: agent should answer questions, but some turns may be questions
-			});
+    // Create evals with appropriate pass/fail criteria for golden path
+    // Golden path expectations (adjusted based on realistic performance):
+    // - Answer Relevance: 0.5+ (agent should answer questions, but some turns may be questions)
+    // - Completeness: 0.3+ (some turns may be incomplete when agent asks clarifying questions)
+    // - Role Adherence: 0.7+ (agent should consistently act as travel assistant)
+    // - Overall Quality: 0.5+ (combined score should be reasonable for golden path)
 
-			const completenessEval = defineSingleTurnEval({
-				name: 'Completeness',
-				metric: completeness,
-				verdict: thresholdVerdict(0.3), // Lower threshold: agent asks questions, so some turns are incomplete
-			});
+    const answerRelevanceEval = defineSingleTurnEval({
+      name: 'Answer Relevance',
+      metric: answerRelevance,
+      verdict: thresholdVerdict(0.5), // Golden path: agent should answer questions, but some turns may be questions
+    });
 
-			const roleAdherenceEval = defineMultiTurnEval({
-				name: 'Role Adherence',
-				metric: roleAdherence,
-				verdict: thresholdVerdict(0.7), // Golden path: agent should consistently act as travel assistant
-			});
+    const completenessEval = defineSingleTurnEval({
+      name: 'Completeness',
+      metric: completeness,
+      verdict: thresholdVerdict(0.3), // Lower threshold: agent asks questions, so some turns are incomplete
+    });
 
-			const overallQualityEval = defineScorerEval({
-				name: 'Overall Quality',
-				inputs: [answerRelevance, completeness, roleAdherence],
-				scorer: qualityScorer,
-				verdict: thresholdVerdict(0.5), // Golden path: overall quality should be reasonable
-			});
+    const roleAdherenceEval = defineMultiTurnEval({
+      name: 'Role Adherence',
+      metric: roleAdherence,
+      verdict: thresholdVerdict(0.7), // Golden path: agent should consistently act as travel assistant
+    });
 
-			const evaluator = createEvaluator({
-				name: 'Travel Planner Agent Quality',
-				evals: [answerRelevanceEval, completenessEval, roleAdherenceEval, overallQualityEval],
-				context: runAllTargets(),
-			});
+    const knowledgeRetentionEval = defineMultiTurnEval({
+      name: 'Knowledge Retention',
+      metric: knowledgeRetention,
+      verdict: thresholdVerdict(0.7), // Golden path: agent should remember the user's preferences well since they are unchanging
+    });
 
-			const tally = createTally({
-				data: [conversation],
-				evaluators: [evaluator],
-			});
+    const overallQualityEval = defineScorerEval({
+      name: 'Overall Quality',
+      inputs: [answerRelevance, completeness, roleAdherence],
+      scorer: qualityScorer,
+      verdict: thresholdVerdict(0.5), // Golden path: overall quality should be reasonable
+    });
 
-			const report = await tally.run();
+    const evaluator = createEvaluator({
+      name: 'Travel Planner Agent Quality',
+      evals: [
+        answerRelevanceEval,
+        completenessEval,
+        roleAdherenceEval,
+        knowledgeRetentionEval,
+        overallQualityEval,
+      ],
+      context: runAllTargets(),
+    });
 
-			expect(report).toBeDefined();
-			expect(report.perTargetResults.length).toBeGreaterThan(0);
-			expect(report.evalSummaries.size).toBeGreaterThan(0);
+    const tally = createTally({
+      data: [conversation],
+      evaluators: [evaluator],
+    });
 
-			// Format and display report as tables
-			formatReportAsTables(report, [conversation]);
+    const report = await tally.run();
 
-			// Assertions for golden path expectations
-			// Check actual verdicts from per-target results (more reliable than summaries)
-			const targetResult = report.perTargetResults[0];
-			expect(targetResult).toBeDefined();
+    expect(report).toBeDefined();
+    expect(report.perTargetResults.length).toBeGreaterThan(0);
+    expect(report.evalSummaries.size).toBeGreaterThan(0);
 
-			if (!targetResult) {
-				throw new Error('No target result found');
-			}
+    // Format and display report as tables
+    formatReportAsTables(report, [conversation]);
 
-			// Overall Quality: Should pass for golden path (score >= 0.6)
-			const overallQualityVerdict = targetResult.verdicts.get('Overall Quality');
-			if (overallQualityVerdict) {
-				expect(overallQualityVerdict.verdict).toBe('pass');
-				expect(overallQualityVerdict.score).toBeGreaterThanOrEqual(0.6);
-			}
+    // Assertions for golden path expectations
+    // Check actual verdicts from per-target results (more reliable than summaries)
+    const targetResult = report.perTargetResults[0];
+    expect(targetResult).toBeDefined();
 
-			// Role Adherence: Should pass for golden path (score >= 0.7)
-			const roleAdherenceVerdict = targetResult.verdicts.get('Role Adherence');
-			if (roleAdherenceVerdict) {
-				expect(roleAdherenceVerdict.verdict).toBe('pass');
-				expect(roleAdherenceVerdict.score).toBeGreaterThanOrEqual(0.7);
-			}
+    if (!targetResult) {
+      throw new Error('No target result found');
+    }
 
-			// Answer Relevance: Check mean score (should be >= 0.6 for golden path)
-			const answerRelevanceSummary = report.evalSummaries.get('Answer Relevance');
-			if (answerRelevanceSummary?.aggregations?.mean !== undefined) {
-				expect(answerRelevanceSummary.aggregations.mean).toBeGreaterThanOrEqual(0.6);
-			}
+    // Overall Quality: Should pass for golden path (score >= 0.6)
+    const overallQualityVerdict = targetResult.verdicts.get('Overall Quality');
+    if (overallQualityVerdict) {
+      expect(overallQualityVerdict.verdict).toBe('pass');
+      expect(overallQualityVerdict.score).toBeGreaterThanOrEqual(0.6);
+    }
 
-			// Overall Quality: Check mean score (should be >= 0.6 for golden path)
-			const overallQualitySummary = report.evalSummaries.get('Overall Quality');
-			if (overallQualitySummary?.aggregations?.mean !== undefined) {
-				expect(overallQualitySummary.aggregations.mean).toBeGreaterThanOrEqual(0.6);
-			}
-		},
-		120000 // 2 minute timeout for trajectory execution
-	);
+    // Role Adherence: Should pass for golden path (score >= 0.7)
+    const roleAdherenceVerdict = targetResult.verdicts.get('Role Adherence');
+    if (roleAdherenceVerdict) {
+      expect(roleAdherenceVerdict.verdict).toBe('pass');
+      expect(roleAdherenceVerdict.score).toBeGreaterThanOrEqual(0.7);
+    }
+
+    // Answer Relevance: Check mean score (should be >= 0.6 for golden path)
+    const answerRelevanceSummary = report.evalSummaries.get('Answer Relevance');
+    if (answerRelevanceSummary?.aggregations?.mean !== undefined) {
+      expect(answerRelevanceSummary.aggregations.mean).toBeGreaterThanOrEqual(
+        0.6,
+      );
+    }
+
+    // Overall Quality: Check mean score (should be >= 0.6 for golden path)
+    const overallQualitySummary = report.evalSummaries.get('Overall Quality');
+    if (overallQualitySummary?.aggregations?.mean !== undefined) {
+      expect(overallQualitySummary.aggregations.mean).toBeGreaterThanOrEqual(
+        0.6,
+      );
+    }
+  }, 120000); // 2 minute timeout for trajectory execution
 });
-
