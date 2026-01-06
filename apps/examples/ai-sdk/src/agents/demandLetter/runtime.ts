@@ -191,41 +191,41 @@ function contextualizeQuestionText(
 			const unsure = `If ${label} is not sure, that's okay too`;
 			return `When was it supposed to be paid? (${unsure})`;
 		}
-		case 16: {
+		case 14: {
 			// Base: "Can you tell me about any ways you've been negatively affected ...?"
 			if (label === 'you') return question.text;
 			return `Can you tell me about any ways ${label} has been negatively affected by what the other party did or didn't do? If there haven't been any negative impacts, it's completely okay to say so.`;
 		}
-		case 17: {
+		case 15: {
 			// Base: "What do you think would be a fair way to resolve this dispute? ..."
 			if (label === 'you') return question.text;
 			return `What does ${label} think would be a fair way to resolve this dispute? This can include money, as well as non-monetary things like a positive review, product replacement, or an apology.`;
 		}
-		case 18: {
+		case 16: {
 			// Base: "Have you and the other person discussed this dispute before now?"
 			if (label === 'you') {
 				return question.text.replace('the other person', otherParty);
 			}
 			return `Have ${label} and ${otherParty} discussed this dispute before now?`;
 		}
-		case 19: {
+		case 17: {
 			// Base: "Okay, can you tell me what was discussed? ... how you communicated ... and when it happened."
 			if (label === 'you') {
 				return question.text.replace('the other party', otherParty);
 			}
 			return `Okay, can you tell me what was discussed? It's helpful for me to know the main points, how ${label} communicated with ${otherParty} (like text, email, etc.), and when it happened.`;
 		}
-		case 21: {
+		case 19: {
 			// Base: "When do you want a response to your letter?"
 			if (label === 'you') return question.text;
 			return `When does ${label} want a response to your letter?`;
 		}
-		case 22: {
+		case 20: {
 			// Base: "What is your email address (the sender's contact information)?"
 			if (label === 'you') return question.text;
 			return `What is ${label}'s email address (the sender's contact information)?`;
 		}
-		case 23: {
+		case 21: {
 			// Base: "What is the recipient's email address (where we'll send the demand letter)?"
 			if (otherParty === 'the other party') return question.text;
 			return `What is ${otherParty}'s email address (where we'll send the demand letter)?`;
@@ -472,6 +472,7 @@ Rules:
 }
 
 function needsLLM(question: QuestionConfig): boolean {
+	if (process.env.SKIP_LLM_VERIFY === '1') return false;
 	// Skip for structured validations
 	const t = question.validation.type;
 	if (['email', 'phone', 'currency', 'date'].includes(t)) return false;
