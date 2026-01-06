@@ -15,30 +15,28 @@ export const demandLetterGoldenTrajectory: Trajectory = {
 		description:
 			'You need to create a legal demand letter. You provide information as the agent guides you through the process. You are professional and want to ensure all required information is included.',
 		guardrails: [
-			'Provide accurate information',
-			'Answer all questions asked by the agent',
-			'Request clarification if needed',
+			'Answer each agent question succinctly and accurately',
+			'Do not volunteer extra topics; follow the questionnaire order',
+			'When offered options, pick exactly one of the listed options verbatim',
+			'If unsure, say you are unsure',
 		],
 	},
 	steps: {
 		steps: [
 			{
 				id: 'step-1',
-				instruction: 'Express need to create a demand letter for an unpaid invoice',
+				instruction: 'Say you need to create a demand letter for an unpaid invoice.',
 			},
 			{
 				id: 'step-2',
-				instruction: 'Provide invoice details (amount: $2,500, due date: March 15th)',
-			},
-			{
-				id: 'step-3',
-				instruction: 'Provide recipient details (ABC Company, address)',
+				instruction:
+					'Continue to answer each question the agent asks until they reach the end and show the preview. For choice questions, answer with exactly one of the provided options.',
 			},
 		],
 		start: 'step-1',
-		terminals: ['step-3'],
+		terminals: ['step-2'],
 	},
-	maxTurns: 10,
+	maxTurns: 40,
 	storage: {
 		strategy: 'local',
 		conversationId: 'demand-letter-golden',
@@ -56,34 +54,27 @@ export const demandLetterCurveTrajectory: Trajectory = {
 		description:
 			'You need a demand letter but sometimes provide incomplete information or change your mind about details. You might forget important information.',
 		guardrails: [
-			'Provide incomplete information sometimes',
-			'Change details mid-conversation',
-			'Forget to provide required fields',
+			'Answer the current question, but sometimes omit details or change answers later',
+			'If a question is unclear, ask for clarification',
+			'Provide corrections when you realize earlier answers were wrong',
+			'When offered options, pick exactly one of the listed options verbatim (even if you might change it later)',
 		],
 	},
 	steps: {
 		steps: [
 			{
 				id: 'step-1',
-				instruction: 'Express need for demand letter but provide no details',
+				instruction: 'Say you need a demand letter but give minimal detail.',
 			},
 			{
 				id: 'step-2',
-				instruction: 'Provide partial information (amount but no date)',
-			},
-			{
-				id: 'step-3',
-				instruction: 'Change the amount after providing it',
-			},
-			{
-				id: 'step-4',
-				instruction: 'Provide invalid information (negative amount)',
+				instruction: 'As questions come, sometimes give partial answers; later, correct or change them. For choice questions, answer with exactly one of the provided options.',
 			},
 		],
 		start: 'step-1',
-		terminals: ['step-4'],
+		terminals: ['step-2'],
 	},
-	maxTurns: 10,
+	maxTurns: 40,
 	storage: {
 		strategy: 'local',
 		conversationId: 'demand-letter-curve',
