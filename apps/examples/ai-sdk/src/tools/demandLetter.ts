@@ -26,14 +26,31 @@ export const demandLetterTools = {
 	startSession: tool({
 		description: 'Start a new demand letter chat session and return the first question',
 		inputSchema: z.object({}),
+		outputSchema: z.object({
+			sessionId: z.string(),
+			question: z
+				.object({
+					id: z.string(),
+					order: z.number(),
+					text: z.string(),
+					type: z.enum(['open', 'choice']),
+					options: z.array(z.string()).optional(),
+					validation: z.object({
+						type: z.enum(['text', 'email', 'phone', 'currency', 'date']),
+						required: z.boolean(),
+						minLength: z.number().optional(),
+						maxLength: z.number().optional(),
+					}),
+				})
+				.nullable()
+				.optional(),
+		}),
 		execute: async () => {
 			const sessionId = createSession();
 			const next = getNextQuestion(sessionId);
-
-			return {
-				sessionId,
-				question: next,
-			};
+			const payload: Record<string, unknown> = { sessionId };
+			if (next) payload.question = next;
+			return payload;
 		},
 	}),
 
@@ -43,6 +60,43 @@ export const demandLetterTools = {
 			sessionId: z.string().describe('Session identifier returned by startSession'),
 			questionId: z.string().describe('ID of the question being answered'),
 			answer: z.string().describe('User answer text'),
+		}),
+		outputSchema: z.object({
+			status: z.enum(['ok', 'retry', 'error']),
+			errors: z.array(z.string()).optional(),
+			summary: z.string().optional(),
+			suggestion: z.string().optional(),
+			example: z.string().optional().nullable(),
+			nextSteps: z.string().optional(),
+			errorType: z.string().optional(),
+			preview: z
+				.object({
+					items: z.array(
+						z.object({
+							order: z.number(),
+							question: z.string(),
+							answer: z.string(),
+						}),
+					),
+				})
+				.optional()
+				.nullable(),
+			nextQuestion: z
+				.object({
+					id: z.string(),
+					order: z.number(),
+					text: z.string(),
+					type: z.enum(['open', 'choice']),
+					options: z.array(z.string()).optional(),
+					validation: z.object({
+						type: z.enum(['text', 'email', 'phone', 'currency', 'date']),
+						required: z.boolean(),
+						minLength: z.number().optional(),
+						maxLength: z.number().optional(),
+					}),
+				})
+				.optional()
+				.nullable(),
 		}),
 		execute: async ({
 			sessionId,
@@ -59,21 +113,25 @@ export const demandLetterTools = {
 				questionId,
 				answer,
 			});
+			const payload: AnswerResult & {
+				nextQuestion?: DemandLetterQuestion | null;
+				preview?: Preview;
+			} = { ...result };
 
 			if (result.status === 'ok') {
 				const next = getNextQuestion(sessionId);
-				return {
-					...result,
-					nextQuestion: next,
-					preview: next ? undefined : result.preview,
-				};
+				if (next) {
+					payload.nextQuestion = next;
+					delete payload.preview;
+				} else if (result.preview) {
+					payload.preview = result.preview;
+				}
+			} else {
+				delete payload.preview;
+				delete payload.nextQuestion;
 			}
 
-			return {
-				...result,
-				nextQuestion: null,
-				preview: undefined,
-			};
+			return payload;
 		},
 	}),
 };
