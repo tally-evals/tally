@@ -36,11 +36,6 @@ export type {
 } from './tools/travelPlanner';
 
 export type {
-	TemplateField,
-	DemandLetterData,
-} from './tools/demandLetter';
-
-export type {
 	WeatherData,
 } from './tools/weather';
 

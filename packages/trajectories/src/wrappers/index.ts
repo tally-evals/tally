@@ -41,6 +41,35 @@ export function withAISdkAgent(
 		| { generate: (input: Prompt) => Promise<{ response: { messages: ModelMessage[] } }> }
 		| Omit<GenerateTextInput, 'messages' | 'prompt'>
 ): AgentHandle {
+	const normalizeMessages = (messages: ModelMessage[]): ModelMessage[] => {
+		return messages.map((msg) => {
+			if (!Array.isArray(msg.content)) return msg;
+			const normalizedParts = msg.content.map((part: any) => {
+				if (part?.type === 'tool-call' && 'input' in part && !('args' in part)) {
+					return {
+						...part,
+						args: part.input,
+						input: undefined,
+					};
+				}
+				if (part?.type === 'tool-result' && 'output' in part && !('result' in part)) {
+					const raw = part.output;
+					const result =
+						raw && typeof raw === 'object' && 'type' in raw && raw.type === 'json'
+							? (raw as any).value
+							: raw;
+					return {
+						...part,
+						result,
+						output: undefined,
+					};
+				}
+				return part;
+			});
+			return { ...msg, content: normalizedParts as any };
+		});
+	};
+
 	// Check if it's an AI SDK Agent instance (has generate method)
 	if (
 		typeof agentOrConfig === 'object' &&
@@ -52,9 +81,11 @@ export function withAISdkAgent(
 		return {
 			async respond(history: readonly ModelMessage[]) {
 				// Use Prompt.messages for multi-turn support
-				const promptInput = buildPromptFromHistory({ history, useMessages: true });
+				const normalizedHistory = normalizeMessages([...history] as ModelMessage[]);
+				const promptInput = buildPromptFromHistory({ history: normalizedHistory, useMessages: true });
 				const result = await agent.generate(promptInput);
-				return { messages: result.response.messages };
+				const normalized = normalizeMessages(result.response.messages as ModelMessage[]);
+				return { messages: normalized };
 			},
 		};
 	}
@@ -65,7 +96,7 @@ export function withAISdkAgent(
 		async respond(history: readonly ModelMessage[]) {
 			const result = await generateText({
 				...config,
-				messages: historyToMessages(history),
+				messages: historyToMessages(normalizeMessages([...history] as ModelMessage[])),
 			});
 			
 			// Convert result to messages format
@@ -109,7 +140,7 @@ export function withAISdkAgent(
 				});
 			}
 			
-			return { messages };
+			return { messages: normalizeMessages(messages) };
 		},
 	};
 }

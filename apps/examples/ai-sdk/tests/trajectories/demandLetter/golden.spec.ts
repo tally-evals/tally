@@ -24,7 +24,10 @@ import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
 import { google } from '@ai-sdk/google';
 
 describe('Demand Letter Agent - Golden Path', () => {
-	it('should create demand letter successfully', async () => {
+	it(
+		'should create demand letter successfully',
+		{ timeout: 300_000 },
+		async () => {
 		const { conversation } = await runCase({
 			trajectory: demandLetterGoldenTrajectory,
 			agent: demandLetterAgent,
@@ -116,6 +119,7 @@ describe('Demand Letter Agent - Golden Path', () => {
 		if (overallQualitySummary?.verdictSummary) {
 			expect(overallQualitySummary.verdictSummary.passRate).toBeGreaterThan(0.8);
 		}
-	});
+	},
+	);
 });
 

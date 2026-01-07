@@ -15,6 +15,7 @@
   "scripts": {
     "build": "tsc",
     "test": "vitest",
+    "test:demandLetter:trajectories": "vitest run tests/trajectories/demandLetter",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "clean": "rm -rf dist"

@@ -24,7 +24,10 @@ import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
 import { google } from '@ai-sdk/google';
 
 describe('Demand Letter Agent - Curve Ball', () => {
-	it('should handle incomplete information and changing requirements', async () => {
+	it(
+		'should handle incomplete information and changing requirements',
+		{ timeout: 300_000 },
+		async () => {
 		const { conversation } = await runCase({
 			trajectory: demandLetterCurveTrajectory,
 			agent: demandLetterAgent,
@@ -97,6 +100,7 @@ describe('Demand Letter Agent - Curve Ball', () => {
 		if (overallQualitySummary) {
 			expect(overallQualitySummary.aggregations.mean).toBeGreaterThan(0.4);
 		}
-	});
+	},
+	);
 });
 
