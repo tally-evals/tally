@@ -157,81 +157,94 @@ function contextualizeQuestionText(
 	question: QuestionConfig,
 	session: Session,
 ): string {
-	const { label, possessive } = getEntity(session);
+	const { label, possessive, rep } = getEntity(session);
 	const otherParty = getOtherPartyLabel(session);
 
+	// Helper flags
+	const isMyself = rep.type === 'myself';
+	const isBusiness = rep.type === 'business';
+	const isLawFirm = rep.type === 'law_firm';
+	const isSomeoneElse = rep.type === 'someone_else';
+
+	// Safe defaults
+	const base = question.text;
+
 	switch (question.order) {
+		case 7: {
+			// Other party name question: keep independent of client; just substitute otherParty if known
+			if (otherParty !== 'the other party') {
+				return base.replace("the other person's name or their business name", otherParty);
+			}
+			return base;
+		}
 		case 8: {
-			// Base: "What is your relationship with the other party (how do you know them)?"
-			if (label === 'you') return question.text;
-			return `What is ${possessive} relationship with ${otherParty} (how do you know them)?`;
+			// Relationship with other party
+			if (isMyself) return base;
+			if (isBusiness || isLawFirm || isSomeoneElse) {
+				return `What is ${possessive} relationship with ${otherParty} (how do you know them)?`;
+			}
+			return base;
 		}
 		case 9: {
-			// Base: "Let's start with what happened. Please tell me your side of the story. You can include as many details as you want."
-			if (label === 'you') return question.text;
-			return `Let's start with what happened. Please tell me ${possessive} side of the story. You can include as many details as you want.`;
+			// Story question: preserve opener and "side of the story"
+			if (isMyself) return base;
+			const who =
+				isBusiness || isLawFirm || isSomeoneElse
+					? `${label}'s`
+					: possessive;
+			return `Let's start with what happened. Please tell me ${who} side of the story. You can include as many details as you want.`;
 		}
 		case 10: {
-			// Keep original text; no perspective change needed.
-			return question.text;
+			// Key events — no perspective change
+			return base;
 		}
 		case 11: {
-			// Base: "Does the other party owe you money?"
-			if (label === 'you') return question.text;
-			return `Does the other party owe ${label} money?`;
+			if (isMyself) return base;
+			return `Does ${otherParty} owe ${label} money?`;
 		}
 		case 12: {
-			// Base: "How much does the other party owe you?"
-			if (label === 'you') return question.text;
-			return `How much does the other party owe ${label}?`;
+			if (isMyself) return base;
+			return `How much does ${otherParty} owe ${label}?`;
 		}
 		case 13: {
-			// Base: "When was it supposed to be paid? (If you're not sure, that's okay too)"
-			if (label === 'you') return question.text;
-			const unsure = `If ${label} is not sure, that's okay too`;
-			return `When was it supposed to be paid? (${unsure})`;
+			if (isMyself) return base;
+			return `When was it supposed to be paid? (If ${label} is not sure, that's okay too)`;
 		}
 		case 14: {
-			// Base: "Can you tell me about any ways you've been negatively affected ...?"
-			if (label === 'you') return question.text;
-			return `Can you tell me about any ways ${label} has been negatively affected by what the other party did or didn't do? If there haven't been any negative impacts, it's completely okay to say so.`;
+			if (isMyself) return base;
+			return `Can you tell me about any ways ${label} has been negatively affected by what ${otherParty} did or didn't do? If there haven't been any negative impacts, it's completely okay to say so.`;
 		}
 		case 15: {
-			// Base: "What do you think would be a fair way to resolve this dispute? ..."
-			if (label === 'you') return question.text;
+			if (isMyself) return base;
 			return `What does ${label} think would be a fair way to resolve this dispute? This can include money, as well as non-monetary things like a positive review, product replacement, or an apology.`;
 		}
 		case 16: {
-			// Base: "Have you and the other person discussed this dispute before now?"
-			if (label === 'you') {
-				return question.text.replace('the other person', otherParty);
-			}
+			if (isMyself) return base.replace('the other person', otherParty);
 			return `Have ${label} and ${otherParty} discussed this dispute before now?`;
 		}
 		case 17: {
-			// Base: "Okay, can you tell me what was discussed? ... how you communicated ... and when it happened."
-			if (label === 'you') {
-				return question.text.replace('the other party', otherParty);
-			}
+			if (isMyself) return base.replace('the other party', otherParty);
 			return `Okay, can you tell me what was discussed? It's helpful for me to know the main points, how ${label} communicated with ${otherParty} (like text, email, etc.), and when it happened.`;
 		}
+		case 18: {
+			// Additional info — no perspective change
+			return base;
+		}
 		case 19: {
-			// Base: "When do you want a response to your letter?"
-			if (label === 'you') return question.text;
+			if (isMyself) return base;
 			return `When does ${label} want a response to your letter?`;
 		}
 		case 20: {
-			// Base: "What is your email address (the sender's contact information)?"
-			if (label === 'you') return question.text;
+			if (isMyself) return base;
 			return `What is ${label}'s email address (the sender's contact information)?`;
 		}
 		case 21: {
-			// Base: "What is the recipient's email address (where we'll send the demand letter)?"
-			if (otherParty === 'the other party') return question.text;
+			// Recipient email: keep focused on other party
+			if (otherParty === 'the other party') return base;
 			return `What is ${otherParty}'s email address (where we'll send the demand letter)?`;
 		}
 		default:
-			return question.text;
+			return base;
 	}
 }
 
