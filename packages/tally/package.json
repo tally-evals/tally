@@ -75,7 +75,6 @@
     "@ai-sdk/google": "^2.0.29",
     "@tally-evals/biome-config": "workspace:*",
     "@tally-evals/typescript-config": "workspace:*",
-    "@tally-evals/trajectories": "workspace:*",
     "@types/node": "24.6.2",
     "@vitest/ui": "^1.1.0",
     "dotenv": "^17.2.3",
