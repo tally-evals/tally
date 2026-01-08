@@ -53,6 +53,7 @@
   "devDependencies": {
     "@ai-sdk/google": "^2.0.29",
     "@tally-evals/biome-config": "workspace:*",
+    "@tally-evals/tally": "workspace:*",
     "@tally-evals/typescript-config": "workspace:*",
     "@types/node": "24.6.2",
     "dotenv": "^17.2.3",

@@ -186,9 +186,6 @@ importers:
       '@tally-evals/biome-config':
         specifier: workspace:*
         version: link:../biome-config
-      '@tally-evals/trajectories':
-        specifier: workspace:*
-        version: link:../trajectories
       '@tally-evals/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
@@ -216,9 +213,6 @@ importers:
 
   packages/trajectories:
     dependencies:
-      '@tally-evals/tally':
-        specifier: workspace:*
-        version: link:../tally
       ai:
         specifier: ^5.0.89
         version: 5.0.89(zod@3.25.76)
@@ -229,6 +223,9 @@ importers:
       '@tally-evals/biome-config':
         specifier: workspace:*
         version: link:../biome-config
+      '@tally-evals/tally':
+        specifier: workspace:*
+        version: link:../tally
       '@tally-evals/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
