@@ -1,0 +1,264 @@
+/**
+ * Side-by-side comparison view for two reports
+ */
+
+import React, { useState } from 'react';
+import { Box, Text, useInput } from 'ink';
+import Table from 'cli-table3';
+import { colors } from '../utils/colors.js';
+import {
+  formatScore,
+  extractTextFromMessage,
+  extractTextFromMessages,
+  extractToolCallsFromMessages,
+  sanitizeText,
+  truncateText,
+} from '../utils/formatters.js';
+import { KeyboardHelp } from './shared/KeyboardHelp.js';
+import { Conversation, EvaluationReport } from '@tally-evals/tally';
+import { ToolCallList } from './shared/ToolCallList.jsx';
+
+interface CompareViewProps {
+  conversation: Conversation;
+  leftReport: EvaluationReport;
+  rightReport: EvaluationReport;
+  onBack?: () => void;
+}
+
+export function CompareView({
+  conversation,
+  leftReport,
+  rightReport,
+  onBack,
+}: CompareViewProps): React.ReactElement {
+  const [scrollPosition, setScrollPosition] = useState(0);
+
+  useInput((input, key) => {
+    if (input === 'q') {
+      process.exit(0);
+    }
+    if (key.escape && onBack) {
+      onBack();
+    }
+    if (key.upArrow || key.leftArrow) {
+      setScrollPosition(Math.max(0, scrollPosition - 1));
+    }
+    if (key.downArrow || key.rightArrow) {
+      setScrollPosition(
+        Math.min(conversation.steps.length - 1, scrollPosition + 1),
+      );
+    }
+  });
+
+  const leftResult = leftReport.perTargetResults[0];
+  const rightResult = rightReport.perTargetResults[0];
+
+  if (!leftResult || !rightResult) {
+    return (
+      <Text>{colors.error('One or both reports missing target results')}</Text>
+    );
+  }
+
+  const getMetricsForStep = (
+    targetMetrics: typeof leftResult.rawMetrics,
+    stepIdx: number,
+  ) => {
+    const metricArray: typeof targetMetrics = [];
+    let metricCount = 0;
+
+    for (const metric of targetMetrics) {
+      const scopeInfo = metric.metricDef as unknown as { scope?: string };
+      if (scopeInfo.scope === 'single') {
+        if (metricCount === stepIdx) {
+          metricArray.push(metric);
+        }
+        metricCount++;
+      }
+    }
+
+    return metricArray;
+  };
+
+  const currentStep = conversation.steps[scrollPosition];
+  if (!currentStep) {
+    return <Text>{colors.error('No step at current position')}</Text>;
+  }
+
+  const inputText = truncateText(
+    sanitizeText(extractTextFromMessage(currentStep.input)),
+    60,
+  );
+  const outputText = truncateText(
+    sanitizeText(extractTextFromMessages(currentStep.output)),
+    60,
+  );
+  const toolCalls = extractToolCallsFromMessages(currentStep.output);
+
+  const leftMetrics = getMetricsForStep(leftResult.rawMetrics, scrollPosition);
+  const rightMetrics = getMetricsForStep(
+    rightResult.rawMetrics,
+    scrollPosition,
+  );
+
+  const table = new Table({
+    head: [
+      colors.bold('Metric'),
+      colors.bold('Left'),
+      colors.bold('Right'),
+      colors.bold('Delta'),
+    ].map((h) => colors.info(h)),
+    style: {
+      head: [],
+      border: ['grey'],
+      compact: true,
+    },
+    colWidths: [20, 12, 12, 12],
+  });
+
+  const allMetricNames = new Set<string>();
+  for (const m of leftMetrics) {
+    allMetricNames.add(m.metricDef.name);
+  }
+  for (const m of rightMetrics) {
+    allMetricNames.add(m.metricDef.name);
+  }
+
+  for (const metricName of Array.from(allMetricNames).sort()) {
+    const leftMetric = leftMetrics.find((m) => m.metricDef.name === metricName);
+    const rightMetric = rightMetrics.find(
+      (m) => m.metricDef.name === metricName,
+    );
+
+    let leftNormalized = 0;
+    let rightNormalized = 0;
+
+    const leftScore = leftMetric
+      ? typeof leftMetric.value === 'number'
+        ? (() => {
+            leftNormalized =
+              leftMetric.value >= 0 && leftMetric.value <= 5
+                ? leftMetric.value / 5
+                : leftMetric.value;
+            return formatScore(leftMetric.value);
+          })()
+        : String(leftMetric.value)
+      : colors.muted('-');
+    const rightScore = rightMetric
+      ? typeof rightMetric.value === 'number'
+        ? (() => {
+            rightNormalized =
+              rightMetric.value >= 0 && rightMetric.value <= 5
+                ? rightMetric.value / 5
+                : rightMetric.value;
+            return formatScore(rightMetric.value);
+          })()
+        : String(rightMetric.value)
+      : colors.muted('-');
+
+    let deltaText = colors.muted('-');
+    if (
+      typeof leftMetric?.value === 'number' &&
+      typeof rightMetric?.value === 'number'
+    ) {
+      const delta = rightNormalized - leftNormalized;
+      deltaText =
+        delta > 0.01
+          ? colors.success(`+${delta.toFixed(3)}`)
+          : delta < -0.01
+          ? colors.error(delta.toFixed(3))
+          : colors.muted(delta.toFixed(3));
+    }
+
+    table.push([metricName, leftScore, rightScore, deltaText]);
+  }
+
+  return (
+    <Box flexDirection="column">
+      <Box paddingTop={1} paddingX={1}>
+        <Text>
+          {colors.bold(`Comparing: ${conversation.id}`)}{' '}
+          {colors.muted(
+            `(Turn ${scrollPosition + 1}/${conversation.steps.length})`,
+          )}
+        </Text>
+      </Box>
+
+      <Box marginBottom={1} borderStyle="round" borderColor="gray" paddingX={1}>
+        <Box flexDirection="column">
+          <Text>
+            {colors.info('Input:')} {inputText}
+          </Text>
+          <Text>
+            {colors.info('Output:')} {outputText}
+          </Text>
+          <ToolCallList toolCalls={toolCalls} />
+        </Box>
+      </Box>
+
+      <Box flexDirection="column" paddingX={1}>
+        <Box gap={1}>
+          <Text>
+            {colors.bold('Left:')} {colors.muted(leftReport.runId)}
+          </Text>
+          <Text>
+            {colors.bold('Right:')} {colors.muted(rightReport.runId)}
+          </Text>
+        </Box>
+      </Box>
+
+      <Box>
+        <Text>{table.toString()}</Text>
+      </Box>
+
+      <Box paddingX={1} marginTop={1} flexDirection="column">
+        <Text>{colors.bold('Summary Comparison')}</Text>
+      </Box>
+      <Box>
+        {(() => {
+          const summaryTable = new Table({
+            head: [
+              colors.bold('Eval'),
+              colors.bold('Left'),
+              colors.bold('Right'),
+              colors.bold('Delta'),
+            ].map((h) => colors.info(h)),
+            style: {
+              head: [],
+              border: ['grey'],
+              compact: true,
+            },
+            colWidths: [20, 12, 12, 12],
+          });
+
+          for (const [evalName, leftSummary] of leftReport.evalSummaries) {
+            const rightSummary = rightReport.evalSummaries.get(evalName);
+            if (!rightSummary) continue;
+
+            const leftMean = leftSummary.aggregations.mean.toFixed(3);
+            const rightMean = rightSummary.aggregations.mean.toFixed(3);
+            const delta =
+              rightSummary.aggregations.mean - leftSummary.aggregations.mean;
+            const deltaText =
+              delta > 0.01
+                ? colors.success(`+${delta.toFixed(3)}`)
+                : delta < -0.01
+                ? colors.error(delta.toFixed(3))
+                : colors.muted(delta.toFixed(3));
+
+            summaryTable.push([evalName, leftMean, rightMean, deltaText]);
+          }
+
+          return <Text>{summaryTable.toString()}</Text>;
+        })()}
+      </Box>
+
+      <KeyboardHelp
+        shortcuts={[
+          { key: '↑↓', description: 'Navigate turns' },
+          ...(onBack ? [{ key: 'Esc', description: 'Back' }] : []),
+          { key: 'q', description: 'Quit' },
+        ]}
+      />
+    </Box>
+  );
+}
