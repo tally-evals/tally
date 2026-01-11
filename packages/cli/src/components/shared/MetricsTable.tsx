@@ -5,9 +5,9 @@
 import Table from 'cli-table3';
 import { Box, Text } from 'ink';
 import React, { useMemo } from 'react';
-import { colors } from '../../utils/colors.js';
-import { formatScore, formatVerdict, truncateText } from '../../utils/formatters.js';
-import type { CliMetric } from './ConversationTurn.js';
+import { colors } from '../../utils/colors';
+import { formatScore, formatVerdict, truncateText } from '../../utils/formatters';
+import type { CliMetric } from './ConversationTurn';
 
 interface MetricsTableProps {
   metrics: CliMetric[];

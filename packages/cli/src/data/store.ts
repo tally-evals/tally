@@ -18,11 +18,10 @@ export function findTallyProject(cwd: string = process.cwd()): {
   const configFile = findConfigFile(cwd);
 
   if (hasTallyDir || configFile) {
-    return {
-      found: true,
-      tallyDir: hasTallyDir ? tallyDir : undefined,
-      configFile: configFile ?? undefined,
-    };
+    const result: { found: boolean; tallyDir?: string; configFile?: string } = { found: true };
+    if (hasTallyDir) result.tallyDir = tallyDir;
+    if (configFile) result.configFile = configFile;
+    return result;
   }
 
   return { found: false };

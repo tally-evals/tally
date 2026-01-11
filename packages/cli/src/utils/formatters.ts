@@ -2,7 +2,7 @@
  * Formatter utilities for metrics and text
  */
 
-import { score, verdict } from './colors.js';
+import { score, verdict } from './colors';
 
 export type MetricScalar = number | boolean | string;
 

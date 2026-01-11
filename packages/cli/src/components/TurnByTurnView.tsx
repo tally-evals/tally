@@ -7,8 +7,8 @@ import { Box, Text, useInput } from 'ink';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { colors } from 'src/utils/colors.js';
-import { ConversationTurn } from './shared/ConversationTurn.js';
-import { MetricsTable } from './shared/MetricsTable.js';
+import { ConversationTurn } from './shared/ConversationTurn';
+import { MetricsTable } from './shared/MetricsTable';
 
 type MetricScope = 'single' | 'multi';
 type CliMetric = React.ComponentProps<typeof ConversationTurn>['metrics'][number];

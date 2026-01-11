@@ -6,11 +6,11 @@ import type { Conversation, EvaluationReport } from '@tally-evals/core';
 import { Box, Text, useInput } from 'ink';
 import type React from 'react';
 import { useState } from 'react';
-import type { ViewMode } from '../types/index.js';
-import { colors } from '../utils/colors.js';
-import { SummaryView } from './SummaryView.js';
-import { TurnByTurnView } from './TurnByTurnView.js';
-import { KeyboardHelp } from './shared/KeyboardHelp.js';
+import type { ViewMode } from '../types/index';
+import { colors } from '../utils/colors';
+import { SummaryView } from './SummaryView';
+import { TurnByTurnView } from './TurnByTurnView';
+import { KeyboardHelp } from './shared/KeyboardHelp';
 
 interface ViewRouterProps {
   conversation: Conversation;

@@ -56,14 +56,24 @@ export function SummaryView({ report }: SummaryViewProps): React.ReactElement {
     colWidths: [20, 15, 10, 10, 10, 10, 12],
   });
 
-  for (const [evalName, summary] of report.evalSummaries) {
+  const summaries =
+    report.evalSummaries instanceof Map
+      ? report.evalSummaries
+      : new Map(Object.entries(report.evalSummaries));
+
+  for (const [evalName, summary] of summaries) {
+    const percentiles = summary.aggregations.percentiles;
+    const p =
+      percentiles && typeof percentiles === 'object' && !Array.isArray(percentiles)
+        ? (percentiles as { p50?: number; p75?: number; p90?: number })
+        : null;
     const row = [
       evalName,
       summary.evalKind,
       formatScoreValue(summary.aggregations.mean),
-      formatScoreValue(summary.aggregations.percentiles.p50),
-      formatScoreValue(summary.aggregations.percentiles.p75),
-      formatScoreValue(summary.aggregations.percentiles.p90),
+      p?.p50 !== undefined ? formatScoreValue(p.p50) : colors.muted('-'),
+      p?.p75 !== undefined ? formatScoreValue(p.p75) : colors.muted('-'),
+      p?.p90 !== undefined ? formatScoreValue(p.p90) : colors.muted('-'),
       summary.verdictSummary?.passRate
         ? formatScoreValue(summary.verdictSummary.passRate)
         : colors.muted('-'),

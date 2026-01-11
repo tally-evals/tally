@@ -8,7 +8,10 @@
     "sourceMap": true,
     "jsx": "react-jsx",
     "baseUrl": ".",
-    "types": ["node"]
+    "types": ["bun-types"],
+    "moduleResolution": "bundler",
+    "module": "ESNext",
+    "target": "ESNext"
   },
   "include": ["src/**/*"],
   "exclude": ["dist", "node_modules", "**/*.test.ts", "**/*.spec.ts"]

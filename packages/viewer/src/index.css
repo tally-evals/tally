@@ -1,0 +1,56 @@
+@import "../styles/globals.css";
+
+@layer base {
+  :root {
+    @apply font-sans;
+  }
+
+  body {
+    @apply min-h-screen relative m-0 bg-background text-foreground;
+  }
+}
+
+/* Custom scrollbar for dark mode */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* Code blocks */
+.code-block {
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Conversation turn styling */
+.turn-user {
+  border-left: 3px solid hsl(var(--primary));
+}
+
+.turn-assistant {
+  border-left: 3px solid hsl(var(--chart-2));
+}
+
+.turn-system {
+  border-left: 3px solid hsl(var(--chart-4));
+}
+
+.turn-tool {
+  border-left: 3px solid hsl(var(--muted-foreground));
+}
