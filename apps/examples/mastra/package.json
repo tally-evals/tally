@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest",
     "dev": "mastra dev",
     "build": "mastra build",
     "start": "mastra start"
@@ -17,17 +17,24 @@
     "node": ">=22.13.0"
   },
   "dependencies": {
+    "@ai-sdk/google": "^2.0.29",
     "@faker-js/faker": "^10.2.0",
     "@mastra/core": "^0.24.9",
     "@mastra/evals": "^0.14.4",
     "@mastra/libsql": "^0.16.4",
     "@mastra/loggers": "^0.10.19",
     "@mastra/memory": "^0.15.13",
+    "@tally-evals/tally": "workspace:*",
+    "@tally-evals/trajectories": "workspace:*",
+    "dotenv": "^17.2.3",
     "zod": "^4"
   },
   "devDependencies": {
+    "@tally-evals/typescript-config": "workspace:*",
     "@types/node": "^25.0.3",
     "mastra": "^0.18.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vite-tsconfig-paths": "^6.0.3",
+    "vitest": "^1.1.0"
   }
 }
