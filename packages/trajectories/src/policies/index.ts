@@ -2,13 +2,13 @@
  * Policy implementation for trajectory execution (single default policy)
  */
 
-import type { ModelMessage } from 'ai';
 import type { Trajectory, TrajectoryStopReason } from '../core/types.js';
 import type { StepDefinition } from '../core/steps/types.js';
+import type { StepTrace } from '../core/types.js';
 
 export interface PolicyContext {
 	trajectory: Trajectory;
-	history: readonly ModelMessage[];
+	stepTraces: readonly StepTrace[];
 	currentStepId?: string;
 	nextStep?: StepDefinition;
 }

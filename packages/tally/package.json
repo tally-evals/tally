@@ -71,16 +71,19 @@
   ],
   "author": "",
   "license": "MIT",
+  "dependencies": {
+    "@tally-evals/core": "workspace:*"
+  },
   "devDependencies": {
     "@ai-sdk/google": "^2.0.29",
     "@tally-evals/biome-config": "workspace:*",
     "@tally-evals/typescript-config": "workspace:*",
     "@types/node": "24.6.2",
-    "@vitest/ui": "^1.1.0",
+    "@vitest/ui": "^4.0.16",
     "dotenv": "^17.2.3",
     "tsup": "^8.0.1",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",
-    "vitest": "^1.1.0"
+    "vitest": "^4.0.16"
   }
 }

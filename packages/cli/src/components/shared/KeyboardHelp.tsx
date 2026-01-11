@@ -2,8 +2,8 @@
  * Keyboard help footer component
  */
 
-import React from 'react';
 import { Box, Text } from 'ink';
+import type React from 'react';
 import { colors } from '../../utils/colors.js';
 
 interface KeyboardHelpProps {
@@ -13,9 +13,7 @@ interface KeyboardHelpProps {
   }>;
 }
 
-export function KeyboardHelp({
-  shortcuts,
-}: KeyboardHelpProps): React.ReactElement {
+export function KeyboardHelp({ shortcuts }: KeyboardHelpProps): React.ReactElement {
   const shortcutText = shortcuts
     .map((s) => `${colors.bold(s.key)}: ${s.description}`)
     .join('  │  ');

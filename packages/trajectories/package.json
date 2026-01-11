@@ -45,6 +45,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@tally-evals/core": "workspace:*",
     "ai": "^5.0.89"
   },
   "peerDependencies": {
@@ -59,7 +60,7 @@
     "dotenv": "^17.2.3",
     "tsup": "^8.0.1",
     "typescript": "^5.3.3",
-    "vitest": "^1.1.0",
+    "vitest": "^4.0.16",
     "zod": "^3.25.76"
   }
 }

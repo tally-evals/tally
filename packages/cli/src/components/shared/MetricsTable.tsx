@@ -2,19 +2,15 @@
  * Reusable metrics table component
  */
 
-import React, { useMemo } from 'react';
-import { Box, Text } from 'ink';
 import Table from 'cli-table3';
+import { Box, Text } from 'ink';
+import React, { useMemo } from 'react';
 import { colors } from '../../utils/colors.js';
-import {
-  formatScore,
-  formatVerdict,
-  truncateText,
-} from '../../utils/formatters.js';
-import { Metric } from '@tally-evals/tally';
+import { formatScore, formatVerdict, truncateText } from '../../utils/formatters.js';
+import type { CliMetric } from './ConversationTurn.js';
 
 interface MetricsTableProps {
-  metrics: Metric[];
+  metrics: CliMetric[];
   verdicts?: Map<string, { verdict: 'pass' | 'fail' | 'unknown' }> | undefined;
   metricToEvalMap?: Map<string, string> | undefined;
   maxReasoningLength?: number;
@@ -53,29 +49,18 @@ function MetricsTableComponent({
     for (const metric of metrics) {
       const name = truncateText(metric.metricDef.name, 20);
       const score =
-        typeof metric.value === 'number'
-          ? formatScore(metric.value)
-          : String(metric.value);
+        typeof metric.value === 'number' ? formatScore(metric.value) : String(metric.value);
       // Look up eval name using the metric-to-eval map, then get the verdict
-      const evalName =
-        metricToEvalMap?.get(metric.metricDef.name) ?? metric.metricDef.name;
+      const evalName = metricToEvalMap?.get(metric.metricDef.name) ?? metric.metricDef.name;
       const verdict = verdicts?.get(evalName);
       const verdictIcon = formatVerdict(verdict?.verdict);
       const fullReasoning = metric.reasoning || '';
       const reasoning =
         maxReasoningLength > 40
           ? fullReasoning.split('\n')[0]
-          : truncateText(
-              fullReasoning.split('\n')[0] as string,
-              maxReasoningLength,
-            );
+          : truncateText(fullReasoning.split('\n')[0] as string, maxReasoningLength);
 
-      table.push([
-        name,
-        score,
-        ...(metricToEvalMap ? [verdictIcon] : []),
-        reasoning as string,
-      ]);
+      table.push([name, score, ...(metricToEvalMap ? [verdictIcon] : []), reasoning as string]);
     }
 
     return table.toString();

@@ -5,7 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import { travelPlannerAgent } from '../../../src/agents/travelPlanner';
 import { travelPlannerCurveTrajectory } from './definitions';
-import { runCase } from '../../utils/harness';
+import { runCase, saveTallyReportToStore } from '../../utils/harness';
 import {
   createTally,
   createEvaluator,
@@ -32,7 +32,6 @@ describe('Travel Planner Agent - Curve Ball', () => {
     const { conversation } = await runCase({
       trajectory: travelPlannerCurveTrajectory,
       agent: travelPlannerAgent,
-      recordedPath: '_fixtures/recorded/travelPlanner/curve.jsonl',
       conversationId: 'travel-planner-curve',
       generateLogs: true,
     });
@@ -130,6 +129,7 @@ describe('Travel Planner Agent - Curve Ball', () => {
     });
 
     const report = await tally.run();
+    await saveTallyReportToStore({ conversationId: 'travel-planner-curve', report });
 
     formatReportAsTables(report, [conversation]);
 

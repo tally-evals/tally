@@ -6,10 +6,10 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
+    "jsx": "react-jsx",
     "baseUrl": ".",
     "types": ["node"]
   },
   "include": ["src/**/*"],
   "exclude": ["dist", "node_modules", "**/*.test.ts", "**/*.spec.ts"]
 }
-

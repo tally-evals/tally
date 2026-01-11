@@ -2,12 +2,12 @@
  * Summary view showing aggregate metrics
  */
 
-import React from 'react';
-import { Box, Text } from 'ink';
+import type { EvaluationReport } from '@tally-evals/core';
 import Table from 'cli-table3';
+import { Box, Text } from 'ink';
+import type React from 'react';
 import { colors } from 'src/utils/colors';
 import { score } from 'src/utils/colors';
-import { EvaluationReport } from '@tally-evals/tally';
 
 interface SummaryViewProps {
   report: EvaluationReport;
@@ -22,13 +22,14 @@ function formatScoreValue(value: number): string {
 
   if (value >= 0.8) {
     return score.excellent(formatted);
-  } else if (value >= 0.6) {
-    return score.good(formatted);
-  } else if (value >= 0.4) {
-    return score.fair(formatted);
-  } else {
-    return score.poor(formatted);
   }
+  if (value >= 0.6) {
+    return score.good(formatted);
+  }
+  if (value >= 0.4) {
+    return score.fair(formatted);
+  }
+  return score.poor(formatted);
 }
 
 export function SummaryView({ report }: SummaryViewProps): React.ReactElement {

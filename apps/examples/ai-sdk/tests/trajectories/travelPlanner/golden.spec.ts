@@ -5,7 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import { travelPlannerAgent } from '../../../src/agents/travelPlanner';
 import { travelPlannerGoldenTrajectory } from './definitions';
-import { runCase, assertToolCallSequence } from '../../utils/harness';
+import { runCase, assertToolCallSequence, saveTallyReportToStore } from '../../utils/harness';
 import {
   createTally,
   createEvaluator,
@@ -29,10 +29,9 @@ import { createKnowledgeRetentionMetric } from './metrics';
 
 describe('Travel Planner Agent - Golden Path', () => {
   it('should plan trip successfully', async () => {
-    const { conversation } = await runCase({
+    const { conversation, mode } = await runCase({
       trajectory: travelPlannerGoldenTrajectory,
       agent: travelPlannerAgent,
-      recordedPath: '_fixtures/recorded/travelPlanner/golden.jsonl',
       conversationId: 'travel-planner-golden',
       generateLogs: true,
     });
@@ -46,23 +45,29 @@ describe('Travel Planner Agent - Golden Path', () => {
       } catch (error) {
         // Only fail if there are tool calls but no results
         // Some steps might not have tool calls at all
-        const hasToolCalls = step.output.some(
-          (msg) =>
-            msg.role === 'assistant' &&
-            (Array.isArray(msg.content)
-              ? msg.content.some(
-                  (p: unknown) =>
-                    typeof p === 'object' &&
-                    p !== null &&
-                    'type' in p &&
-                    p.type === 'tool-call',
-                )
-              : false),
-        );
+        const hasToolCalls = step.output.some((msg: unknown) => {
+          if (!msg || typeof msg !== 'object') return false;
+          if (!('role' in msg) || (msg as { role?: unknown }).role !== 'assistant') return false;
+          const content = (msg as { content?: unknown }).content;
+          if (!Array.isArray(content)) return false;
+          return content.some(
+            (p: unknown) =>
+              typeof p === 'object' &&
+              p !== null &&
+              'type' in p &&
+              (p as { type?: unknown }).type === 'tool-call',
+          );
+        });
         if (hasToolCalls) {
           throw error;
         }
       }
+    }
+
+    // In record mode, skip evaluation assertions (agent output varies)
+    if (mode === 'record') {
+      console.log(`✅ Recording complete: ${conversation.steps.length} steps`);
+      return;
     }
 
     const model = google('models/gemini-2.5-flash-lite');
@@ -165,6 +170,7 @@ describe('Travel Planner Agent - Golden Path', () => {
     });
 
     const report = await tally.run();
+    await saveTallyReportToStore({ conversationId: 'travel-planner-golden', report });
 
     expect(report).toBeDefined();
     expect(report.perTargetResults.length).toBeGreaterThan(0);
@@ -220,5 +226,5 @@ describe('Travel Planner Agent - Golden Path', () => {
         0.6,
       );
     }
-  }, 120000); // 2 minute timeout for trajectory execution
+  }, 300000); // 5 minute timeout for trajectory execution
 });

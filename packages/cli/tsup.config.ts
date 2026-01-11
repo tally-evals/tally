@@ -7,6 +7,10 @@ export default defineConfig([
     dts: true,
     splitting: false,
     sourcemap: true,
+    esbuildOptions(options) {
+      options.jsx = 'automatic';
+      options.jsxImportSource = 'react';
+    },
   },
   {
     entry: ['src/bin.ts'],
@@ -17,6 +21,8 @@ export default defineConfig([
     sourcemap: false,
     // Ensure bin.js is executable
     esbuildOptions(options) {
+      options.jsx = 'automatic';
+      options.jsxImportSource = 'react';
       options.banner = {
         js: '#!/usr/bin/env node',
       };
