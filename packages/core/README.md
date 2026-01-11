@@ -16,7 +16,7 @@ This package provides the foundational building blocks for the tally ecosystem:
 ## Installation
 
 ```bash
-pnpm add @tally-evals/core
+bun add @tally-evals/core
 ```
 
 ## Usage

@@ -2,7 +2,7 @@
  * Travel Planner Agent - Golden Path Test
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 import { travelPlannerAgent } from '../../../src/agents/travelPlanner';
 import { travelPlannerGoldenTrajectory } from './definitions';
 import { runCase, assertToolCallSequence, saveTallyReportToStore } from '../../utils/harness';
@@ -97,7 +97,7 @@ describe('Travel Planner Agent - Golden Path', () => {
     });
 
     // Overall Quality: Combined score of all metrics
-    const overallQuality = defineBaseMetric({
+    const overallQuality = defineBaseMetric<number>({
       name: 'overallQuality',
       valueType: 'number',
     });

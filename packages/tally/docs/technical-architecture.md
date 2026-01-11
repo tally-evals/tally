@@ -606,5 +606,5 @@ interface EvaluationReport {
 ## 📦 Dependencies
 
 ```bash
-pnpm -w add ai
+bun add ai
 ```

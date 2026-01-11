@@ -50,7 +50,7 @@ const result = await demandLetterAgent.generate({
 ## Installation
 
 ```bash
-pnpm install
+bun install
 ```
 
 ## Usage
@@ -69,10 +69,10 @@ Or create a `.env.local` file in the root of the monorepo.
 
 ```bash
 # Build TypeScript
-pnpm build
+bun run build
 
 # Lint
-pnpm lint
+bun run lint
 ```
 
 ## Exports

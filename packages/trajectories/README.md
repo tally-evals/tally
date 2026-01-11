@@ -11,8 +11,7 @@ Framework-agnostic trajectory generation for multi-turn conversations. Simulate 
 ## Install
 
 ```bash
-pnpm add @tally-evals/trajectories
-# or npm/yarn
+bun add @tally-evals/trajectories
 ```
 
 ## Getting started
@@ -281,9 +280,9 @@ These show end-to-end runs and saving JSONL/Tally outputs.
 This package lives in the Tally monorepo: https://github.com/tally-evals/tally
 
 ```bash
-pnpm install
-pnpm build
-pnpm test
+bun install
+bun run build
+bun run test
 ```
 
 ## License

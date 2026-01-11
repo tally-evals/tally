@@ -1,0 +1,676 @@
+{
+  "runId": "run-1768174091108-mc9idl4",
+  "timestamp": "2026-01-11T23:28:11.108Z",
+  "perTargetResults": [
+    {
+      "targetId": "demand-letter-golden",
+      "rawMetrics": [
+        {
+          "metricDef": {
+            "name": "answerRelevance",
+            "valueType": "number",
+            "description": "Measures how relevant the output is to the input query using LLM-based statement-level relevance analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how relevant a response is to a given query.\n\nGiven the query and response below, analyze the response's relevance to the query using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate relevance based on:\n1. Direct answer to the query (full weight)\n2. Partial relevance with some unrelated content (partial weight: 0.3)\n3. No relevance to the query (zero weight)",
+              "scale": "0-5 scale where 5 = fully relevant, 0 = entirely unrelated",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response directly and completely answers the query with focused, relevant information"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response mostly answers the query but includes minor unrelated content"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response partially answers the query, mixing relevant and unrelated information"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response includes minimal relevant content and largely misses the intent"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response has very little relevance to the query"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response is entirely unrelated and does not answer the query"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.9,
+          "reasoning": "The response directly addresses the query by offering to help create a demand letter and then requests the specific information needed to do so. This aligns perfectly with the user's request.",
+          "executionTime": 1348,
+          "timestamp": "2026-01-11T23:28:12.457Z"
+        },
+        {
+          "metricDef": {
+            "name": "answerRelevance",
+            "valueType": "number",
+            "description": "Measures how relevant the output is to the input query using LLM-based statement-level relevance analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how relevant a response is to a given query.\n\nGiven the query and response below, analyze the response's relevance to the query using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate relevance based on:\n1. Direct answer to the query (full weight)\n2. Partial relevance with some unrelated content (partial weight: 0.3)\n3. No relevance to the query (zero weight)",
+              "scale": "0-5 scale where 5 = fully relevant, 0 = entirely unrelated",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response directly and completely answers the query with focused, relevant information"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response mostly answers the query but includes minor unrelated content"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response partially answers the query, mixing relevant and unrelated information"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response includes minimal relevant content and largely misses the intent"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response has very little relevance to the query"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response is entirely unrelated and does not answer the query"
+                }
+              ]
+            }
+          },
+          "value": 0,
+          "confidence": 0.9,
+          "reasoning": "The response ignores the information provided in the query (recipient's name and address) and instead asks for information that was already given. It does not answer or acknowledge the query in any way.",
+          "executionTime": 1246,
+          "timestamp": "2026-01-11T23:28:12.359Z"
+        },
+        {
+          "metricDef": {
+            "name": "completeness",
+            "valueType": "number",
+            "description": "Measures how complete an answer is relative to expected coverage using LLM-based analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how complete a response is relative to what is expected from the query.\n\nGiven the query and response below, analyze the response's completeness using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate completeness based on:\n1. Coverage of expected topics/points from the query\n2. Depth and thoroughness of coverage\n3. Presence of gaps or missing information",
+              "scale": "0-5 scale where 5 = fully complete, 0 = entirely incomplete",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response fully covers all expected topics comprehensively with thorough detail"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response covers most expected points but has minor gaps or incomplete coverage in some areas"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response covers some expected points but misses several important aspects"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response covers few expected points with significant gaps in coverage"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response covers minimal expected points and is largely incomplete"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response does not cover expected points and is entirely incomplete"
+                }
+              ]
+            }
+          },
+          "value": 4,
+          "confidence": 0.9,
+          "reasoning": "The response effectively identifies the necessary components for creating a demand letter for an unpaid invoice. It requests all the crucial information required to draft such a letter. While it doesn't *generate* the letter itself, it clearly outlines what is needed, making it highly complete in terms of guiding the user to the next step. The only reason it's not a 5 is that the user might have expected a template or a partially drafted letter, but the current response is a very good first step.",
+          "executionTime": 1199,
+          "timestamp": "2026-01-11T23:28:13.656Z"
+        },
+        {
+          "metricDef": {
+            "name": "completeness",
+            "valueType": "number",
+            "description": "Measures how complete an answer is relative to expected coverage using LLM-based analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how complete a response is relative to what is expected from the query.\n\nGiven the query and response below, analyze the response's completeness using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate completeness based on:\n1. Coverage of expected topics/points from the query\n2. Depth and thoroughness of coverage\n3. Presence of gaps or missing information",
+              "scale": "0-5 scale where 5 = fully complete, 0 = entirely incomplete",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response fully covers all expected topics comprehensively with thorough detail"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response covers most expected points but has minor gaps or incomplete coverage in some areas"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response covers some expected points but misses several important aspects"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response covers few expected points with significant gaps in coverage"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response covers minimal expected points and is largely incomplete"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response does not cover expected points and is entirely incomplete"
+                }
+              ]
+            }
+          },
+          "value": 0,
+          "confidence": 0.9,
+          "reasoning": "The response completely ignores the information provided in the query (recipient's name and address) and instead asks for new, unrelated information. It does not address any part of the expected information, making it entirely incomplete.",
+          "executionTime": 882,
+          "timestamp": "2026-01-11T23:28:13.339Z"
+        },
+        {
+          "metricDef": {
+            "name": "answerRelevance",
+            "valueType": "number",
+            "description": "Measures how relevant the output is to the input query using LLM-based statement-level relevance analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how relevant a response is to a given query.\n\nGiven the query and response below, analyze the response's relevance to the query using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate relevance based on:\n1. Direct answer to the query (full weight)\n2. Partial relevance with some unrelated content (partial weight: 0.3)\n3. No relevance to the query (zero weight)",
+              "scale": "0-5 scale where 5 = fully relevant, 0 = entirely unrelated",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response directly and completely answers the query with focused, relevant information"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response mostly answers the query but includes minor unrelated content"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response partially answers the query, mixing relevant and unrelated information"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response includes minimal relevant content and largely misses the intent"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response has very little relevance to the query"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response is entirely unrelated and does not answer the query"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.9,
+          "reasoning": "The response directly addresses the user's need to create a demand letter for an unpaid invoice by requesting the necessary information to do so. It is fully relevant.",
+          "executionTime": 1049,
+          "timestamp": "2026-01-11T23:28:14.706Z"
+        },
+        {
+          "metricDef": {
+            "name": "answerRelevance",
+            "valueType": "number",
+            "description": "Measures how relevant the output is to the input query using LLM-based statement-level relevance analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how relevant a response is to a given query.\n\nGiven the query and response below, analyze the response's relevance to the query using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate relevance based on:\n1. Direct answer to the query (full weight)\n2. Partial relevance with some unrelated content (partial weight: 0.3)\n3. No relevance to the query (zero weight)",
+              "scale": "0-5 scale where 5 = fully relevant, 0 = entirely unrelated",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response directly and completely answers the query with focused, relevant information"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response mostly answers the query but includes minor unrelated content"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response partially answers the query, mixing relevant and unrelated information"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response includes minimal relevant content and largely misses the intent"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response has very little relevance to the query"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response is entirely unrelated and does not answer the query"
+                }
+              ]
+            }
+          },
+          "value": 0,
+          "confidence": 1,
+          "reasoning": "The response asks for information that was already provided in the query, indicating it did not understand or process the given information. Therefore, it is entirely irrelevant to the query.",
+          "executionTime": 1090,
+          "timestamp": "2026-01-11T23:28:14.748Z"
+        },
+        {
+          "metricDef": {
+            "name": "completeness",
+            "valueType": "number",
+            "description": "Measures how complete an answer is relative to expected coverage using LLM-based analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how complete a response is relative to what is expected from the query.\n\nGiven the query and response below, analyze the response's completeness using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate completeness based on:\n1. Coverage of expected topics/points from the query\n2. Depth and thoroughness of coverage\n3. Presence of gaps or missing information",
+              "scale": "0-5 scale where 5 = fully complete, 0 = entirely incomplete",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response fully covers all expected topics comprehensively with thorough detail"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response covers most expected points but has minor gaps or incomplete coverage in some areas"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response covers some expected points but misses several important aspects"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response covers few expected points with significant gaps in coverage"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response covers minimal expected points and is largely incomplete"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response does not cover expected points and is entirely incomplete"
+                }
+              ]
+            }
+          },
+          "value": 3,
+          "confidence": 0.9,
+          "reasoning": "The response correctly identifies the need for specific information to create a demand letter and lists the essential details required. However, it doesn't actually *provide* a demand letter or even a template, which would be the most complete fulfillment of the query. It stops at the information gathering stage. Therefore, it covers some expected points (what's needed) but misses the core task of *creating* the letter itself.",
+          "executionTime": 813,
+          "timestamp": "2026-01-11T23:28:15.561Z"
+        },
+        {
+          "metricDef": {
+            "name": "completeness",
+            "valueType": "number",
+            "description": "Measures how complete an answer is relative to expected coverage using LLM-based analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how complete a response is relative to what is expected from the query.\n\nGiven the query and response below, analyze the response's completeness using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate completeness based on:\n1. Coverage of expected topics/points from the query\n2. Depth and thoroughness of coverage\n3. Presence of gaps or missing information",
+              "scale": "0-5 scale where 5 = fully complete, 0 = entirely incomplete",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response fully covers all expected topics comprehensively with thorough detail"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response covers most expected points but has minor gaps or incomplete coverage in some areas"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response covers some expected points but misses several important aspects"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response covers few expected points with significant gaps in coverage"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response covers minimal expected points and is largely incomplete"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response does not cover expected points and is entirely incomplete"
+                }
+              ]
+            }
+          },
+          "value": 0,
+          "confidence": 1,
+          "reasoning": "The response completely fails to acknowledge or use any of the information provided in the query (recipient's name and address). Instead, it asks for information already given, demonstrating a total lack of completeness relative to the query's content.",
+          "executionTime": 1163,
+          "timestamp": "2026-01-11T23:28:15.913Z"
+        }
+      ],
+      "derivedMetrics": [
+        {
+          "definition": {
+            "name": "Answer Relevance_score",
+            "valueType": "number",
+            "description": "Normalized score for Answer Relevance"
+          },
+          "value": 0
+        },
+        {
+          "definition": {
+            "name": "Completeness_score",
+            "valueType": "number",
+            "description": "Normalized score for Completeness"
+          },
+          "value": 0
+        },
+        {
+          "definition": {
+            "name": "overallQuality",
+            "valueType": "number"
+          },
+          "value": 0
+        }
+      ],
+      "verdicts": {
+        "Overall Quality": {
+          "verdict": "fail",
+          "score": 0
+        }
+      }
+    }
+  ],
+  "aggregateSummaries": [
+    {
+      "metric": {
+        "name": "Answer Relevance_score",
+        "valueType": "number",
+        "description": "Normalized score for Answer Relevance"
+      },
+      "aggregations": {
+        "mean": 0,
+        "percentiles": {
+          "p50": 0,
+          "p75": 0,
+          "p90": 0,
+          "p95": 0,
+          "p99": 0
+        }
+      },
+      "count": 1
+    },
+    {
+      "metric": {
+        "name": "Completeness_score",
+        "valueType": "number",
+        "description": "Normalized score for Completeness"
+      },
+      "aggregations": {
+        "mean": 0,
+        "percentiles": {
+          "p50": 0,
+          "p75": 0,
+          "p90": 0,
+          "p95": 0,
+          "p99": 0
+        }
+      },
+      "count": 1
+    },
+    {
+      "metric": {
+        "name": "overallQuality",
+        "valueType": "number"
+      },
+      "aggregations": {
+        "mean": 0,
+        "percentiles": {
+          "p50": 0,
+          "p75": 0,
+          "p90": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "passRate": 0,
+        "failRate": 1,
+        "passCount": 0,
+        "failCount": 1
+      },
+      "count": 1
+    }
+  ],
+  "evalSummaries": {
+    "Answer Relevance": {
+      "evalName": "Answer Relevance",
+      "evalKind": "singleTurn",
+      "aggregations": {
+        "mean": 0,
+        "percentiles": {
+          "p50": 0,
+          "p75": 0,
+          "p90": 0,
+          "p95": 0,
+          "p99": 0
+        }
+      }
+    },
+    "Completeness": {
+      "evalName": "Completeness",
+      "evalKind": "singleTurn",
+      "aggregations": {
+        "mean": 0,
+        "percentiles": {
+          "p50": 0,
+          "p75": 0,
+          "p90": 0,
+          "p95": 0,
+          "p99": 0
+        }
+      }
+    },
+    "Overall Quality": {
+      "evalName": "Overall Quality",
+      "evalKind": "scorer",
+      "aggregations": {
+        "mean": 0,
+        "percentiles": {
+          "p50": 0,
+          "p75": 0,
+          "p90": 0,
+          "p95": 0,
+          "p99": 0
+        },
+        "passRate": 0,
+        "failRate": 1,
+        "passCount": 0,
+        "failCount": 1
+      },
+      "verdictSummary": {
+        "passRate": 0,
+        "failRate": 1,
+        "passCount": 0,
+        "failCount": 1,
+        "totalCount": 1
+      }
+    }
+  },
+  "metricToEvalMap": {
+    "answerRelevance": "Overall Quality",
+    "completeness": "Overall Quality"
+  },
+  "metadata": {
+    "dataCount": 1,
+    "evaluatorCount": 1
+  }
+}

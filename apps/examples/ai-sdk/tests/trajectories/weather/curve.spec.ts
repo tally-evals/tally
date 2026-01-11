@@ -4,7 +4,7 @@
  * Tests the weather agent with edge cases and challenging scenarios.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 import { weatherAgent } from '../../../src/agents/weather';
 import { weatherCurveTrajectory } from './definitions';
 import { runCase, saveTallyReportToStore } from '../../utils/harness';
@@ -49,7 +49,7 @@ describe('Weather Agent - Curve Ball', () => {
 		});
 
 		// Create overall quality scorer
-		const overallQuality = defineBaseMetric({
+		const overallQuality = defineBaseMetric<number>({
 			name: 'overallQuality',
 			valueType: 'number',
 		});

@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'bun:test';
 import { decodeConversation, encodeConversation } from '../../src/codecs';
 import { RedisStorage } from '../../src/storage';
 
