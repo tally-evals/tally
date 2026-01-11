@@ -5,7 +5,7 @@
 import type { ConversationStep } from '@tally-evals/core';
 import { Box, Text } from 'ink';
 import type React from 'react';
-import { colors } from '../../utils/colors.js';
+import { colors } from '../../utils/colors';
 import {
   extractTextFromMessage,
   extractTextFromMessages,
@@ -13,8 +13,8 @@ import {
   type MetricScalar,
   sanitizeText,
   truncateText,
-} from '../../utils/formatters.js';
-import { MetricsTable } from './MetricsTable.js';
+} from '../../utils/formatters';
+import { MetricsTable } from './MetricsTable';
 import { ToolCallList } from './ToolCallList.jsx';
 
 export type CliMetric = {

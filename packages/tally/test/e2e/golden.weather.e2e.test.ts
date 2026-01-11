@@ -5,7 +5,7 @@
  * Requires LLM_API_KEY environment variable to be set.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 import { resolve } from 'node:path';
 import {
 	loadConversationStepsFromJSONL,

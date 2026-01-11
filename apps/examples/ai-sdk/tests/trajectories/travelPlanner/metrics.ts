@@ -21,7 +21,7 @@ export const createKnowledgeRetentionMetric = (
 ) => {
   const { parameters, provider } = options;
 
-  const base = defineBaseMetric({
+  const base = defineBaseMetric<number>({
     name: 'knowledgeRetention',
     valueType: 'number',
     description:

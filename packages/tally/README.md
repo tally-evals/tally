@@ -12,8 +12,7 @@ A TypeScript framework for evaluating LLM agents with datasets, metrics, scorers
 ## Install
 
 ```bash
-pnpm add tally
-# or npm/yarn
+bun add @tally-evals/tally
 ```
 
 ## Getting started
@@ -212,9 +211,9 @@ Now pass `conversation` into Tally as shown above.
 This package is part of the Tally monorepo.
 
 ```bash
-pnpm install
-pnpm build
-pnpm test
+bun install
+bun run build
+bun run test
 ```
 
 ## License

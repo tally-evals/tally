@@ -8,10 +8,10 @@ import { Box, Text, useInput } from 'ink';
 import SelectInput from 'ink-select-input';
 import type React from 'react';
 import { useEffect, useState } from 'react';
-import { colors } from '../utils/colors.js';
-import { CompareView } from './CompareView.js';
-import { ViewRouter } from './ViewRouter.js';
-import { KeyboardHelp } from './shared/KeyboardHelp.js';
+import { colors } from '../utils/colors';
+import { CompareView } from './CompareView';
+import { ViewRouter } from './ViewRouter';
+import { KeyboardHelp } from './shared/KeyboardHelp';
 
 interface BrowseViewProps {
   store: TallyStore;

@@ -41,10 +41,10 @@
 ## Getting Started
 
 ```bash
-pnpm add @tally-evals/tally
+bun add @tally-evals/tally
 # Optional: conversation generation
-pnpm add @tally-evals/trajectories
-pnpm add @tally-evals/core
+bun add @tally-evals/trajectories
+bun add @tally-evals/core
 ```
 
 ## Packages
@@ -297,43 +297,42 @@ The `EvaluationReport` includes:
 
 ## Development
 
-This is a monorepo managed with pnpm workspaces and Turbo.
+This is a monorepo managed with Bun workspaces and Turbo.
 
 ### Prerequisites
 
-- Node.js 18+
-- pnpm 8.15.0+
+- Bun 1.2+
 
 ### Setup
 
 ```bash
 # Install dependencies
-pnpm install
+bun install
 
 # Build all packages
-pnpm build
+bun run build
 
 # Run tests
-pnpm test
+bun run test
 
 # Run linting
-pnpm lint
+bun run lint
 
 # Start development mode
-pnpm dev
+bun run dev
 ```
 
 ### Working on Specific Packages
 
 ```bash
 # Build a specific package
-pnpm --filter=tally build
+bun run --filter=tally build
 
 # Run tests for a specific package
-pnpm --filter=tally test
+bun run --filter=tally test
 
 # Run in development mode
-pnpm --filter=tally dev
+bun run --filter=tally dev
 ```
 
 ## Project Structure
@@ -352,7 +351,7 @@ tally/
 │   ├── biome-config/      # Shared Biome configuration
 │   └── typescript-config/ # Shared TypeScript configurations
 ├── package.json           # Root workspace configuration
-├── pnpm-workspace.yaml    # pnpm workspace definition
+├── bun.lock               # Bun lockfile
 └── turbo.json            # Turbo pipeline configuration
 ```
 

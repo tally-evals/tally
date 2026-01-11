@@ -4,7 +4,7 @@
  * Tests the weather agent with straightforward, well-formed requests.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 import { weatherAgent } from '../../../src/agents/weather';
 import { weatherGoldenTrajectory } from './definitions';
 import { runCase, saveTallyReportToStore } from '../../utils/harness';
@@ -55,7 +55,7 @@ describe('Weather Agent - Golden Path', () => {
 		});
 
 		// Create overall quality scorer
-		const overallQuality = defineBaseMetric({
+		const overallQuality = defineBaseMetric<number>({
 			name: 'overallQuality',
 			valueType: 'number',
 		});
