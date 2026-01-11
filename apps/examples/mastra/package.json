@@ -35,6 +35,8 @@
     "mastra": "^0.18.0",
     "typescript": "^5.9.3",
     "vite-tsconfig-paths": "^6.0.3",
-    "vitest": "^1.1.0"
+    "@tally-evals/biome-config": "workspace:*",
+    "tsx": "^4.7.0",
+    "vitest": "^4.0.16"
   }
 }

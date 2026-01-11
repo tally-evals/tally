@@ -34,28 +34,27 @@ export function formatScore(value: number): string {
 
   if (normalized >= 0.8) {
     return score.excellent(formatted);
-  } else if (normalized >= 0.6) {
-    return score.good(formatted);
-  } else if (normalized >= 0.4) {
-    return score.fair(formatted);
-  } else {
-    return score.poor(formatted);
   }
+  if (normalized >= 0.6) {
+    return score.good(formatted);
+  }
+  if (normalized >= 0.4) {
+    return score.fair(formatted);
+  }
+  return score.poor(formatted);
 }
 
 /**
  * Format a verdict as colored icon
  */
-export function formatVerdict(
-  verdictValue: 'pass' | 'fail' | 'unknown' | undefined,
-): string {
+export function formatVerdict(verdictValue: 'pass' | 'fail' | 'unknown' | undefined): string {
   if (verdictValue === 'pass') {
     return verdict.pass();
-  } else if (verdictValue === 'fail') {
-    return verdict.fail();
-  } else {
-    return verdict.unknown();
   }
+  if (verdictValue === 'fail') {
+    return verdict.fail();
+  }
+  return verdict.unknown();
 }
 
 /**
@@ -74,7 +73,7 @@ export function sanitizeText(text: string): string {
  */
 export function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength - 3) + '...';
+  return `${text.substring(0, maxLength - 3)}...`;
 }
 
 /**
@@ -119,7 +118,7 @@ export function formatConversationText(input: string, output: string): string {
  * Extract tool calls from a single message
  */
 export function extractToolCallsFromMessage(
-  message: unknown,
+  message: unknown
 ): { toolName: string; toolCallId: string }[] {
   const toolCalls: { toolName: string; toolCallId: string }[] = [];
 
@@ -127,12 +126,7 @@ export function extractToolCallsFromMessage(
     const msg = message as { content?: unknown };
     if (Array.isArray(msg.content)) {
       for (const part of msg.content) {
-        if (
-          part &&
-          typeof part === 'object' &&
-          'type' in part &&
-          part.type === 'tool-call'
-        ) {
+        if (part && typeof part === 'object' && 'type' in part && part.type === 'tool-call') {
           const toolPart = part as { toolName?: string; toolCallId?: string };
           if (toolPart.toolName) {
             toolCalls.push({
@@ -152,14 +146,14 @@ export function extractToolCallsFromMessage(
  * Extract tool calls from multiple messages
  */
 export function extractToolCallsFromMessages(
-  messages: readonly unknown[],
+  messages: readonly unknown[]
 ): { toolName: string; toolCallId: string }[] {
   const allToolCalls = new Set<{ toolName: string; toolCallId: string }>();
   for (const message of messages) {
     const toolCalls = extractToolCallsFromMessage(message);
-    toolCalls.forEach((tc) =>
-      allToolCalls.add({ toolName: tc.toolName, toolCallId: tc.toolCallId }),
-    );
+    for (const tc of toolCalls) {
+      allToolCalls.add({ toolName: tc.toolName, toolCallId: tc.toolCallId });
+    }
   }
   return Array.from(allToolCalls);
 }

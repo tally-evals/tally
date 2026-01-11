@@ -8,7 +8,7 @@
 import { generateText } from 'ai';
 import type { Prompt, ModelMessage } from 'ai';
 import type { AgentHandle } from '../core/types.js';
-import { buildPromptFromHistory, historyToMessages } from '../utils/prompt.js';
+import { buildPromptFromMessages, messagesToMessages } from '../utils/prompt.js';
 
 type GenerateTextInput = Parameters<typeof generateText>[0];
 
@@ -50,9 +50,12 @@ export function withAISdkAgent(
 	) {
 		const agent = agentOrConfig as { generate: (input: Prompt) => Promise<{ response: { messages: ModelMessage[] } }> };
 		return {
-			async respond(history: readonly ModelMessage[]) {
+			async respond(agentMemoryMessages: readonly ModelMessage[]) {
 				// Use Prompt.messages for multi-turn support
-				const promptInput = buildPromptFromHistory({ history, useMessages: true });
+				const promptInput = buildPromptFromMessages({
+					messages: agentMemoryMessages,
+					useMessages: true,
+				});
 				const result = await agent.generate(promptInput);
 				return { messages: result.response.messages };
 			},
@@ -62,10 +65,10 @@ export function withAISdkAgent(
 	// generateText config pattern
 	const config = agentOrConfig as Omit<GenerateTextInput, 'messages' | 'prompt'>;
 	return {
-		async respond(history: readonly ModelMessage[]) {
+		async respond(agentMemoryMessages: readonly ModelMessage[]) {
 			const result = await generateText({
 				...config,
-				messages: historyToMessages(history),
+				messages: messagesToMessages(agentMemoryMessages),
 			});
 			
 			// Convert result to messages format
@@ -130,10 +133,10 @@ export function withMastraAgent(
 	}
 ): AgentHandle {
 	return {
-		async respond(history: readonly ModelMessage[]) {
+		async respond(agentMemoryMessages: readonly ModelMessage[]) {
 			// Mastra agents use messages array
 			const result = await agent.generate({
-				messages: [...history],
+				messages: [...agentMemoryMessages],
 			});
 
 			// Mastra returns messages directly, not nested in response

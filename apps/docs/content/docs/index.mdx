@@ -19,20 +19,31 @@ In simple terms:
 
 ### 🧩 The Big Picture
 
-- **Dataset** → individual examples like prompts, completions, or structured outputs
 - **Conversation** → multi-turn exchanges used to test dialogue or reasoning over time
-- **Evaluator** → connects Selector (chooses scope) and Scorer (applies measurement logic)
-- **Metric** → defines what kind of signal to record (Boolean, Number, Ordinal/Enum)
-- **Aggregator** → combines signals into meaningful summaries
-- **EvaluationReport** → final output with detailed and summary results
+- **Dataset** → collection of conversations or individual items to evaluate
+- **Metric** → defines what to measure (LLM-based or code-based)
+- **Eval** → combines a Metric with a Verdict policy (pass/fail criteria)
+- **Evaluator** → groups related Evals together with a run policy
+- **EvaluationReport** → final output with aggregated summaries and detailed results
 
 ## Quick Start
 
 ```typescript
-import { tally } from 'tally'
+import { createTally, createEvaluator } from '@tally-evals/tally'
 
-// Framework implementation coming soon
-console.log(tally)
+// Define your evaluation
+const evaluator = createEvaluator({
+  name: 'Quality Check',
+  evals: [/* your evals */]
+})
+
+// Run evaluation on your data
+const tally = createTally({
+  data: myConversations,
+  evaluators: [evaluator]
+})
+
+const report = await tally.run()
 ```
 
 ## Next Steps

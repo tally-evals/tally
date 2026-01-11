@@ -2,12 +2,28 @@
  * Turn-by-turn scrollable view for detailed metrics
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import type { Conversation, EvaluationReport } from '@tally-evals/core';
 import { Box, Text, useInput } from 'ink';
+import type React from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { colors } from 'src/utils/colors.js';
 import { ConversationTurn } from './shared/ConversationTurn.js';
 import { MetricsTable } from './shared/MetricsTable.js';
-import { colors } from 'src/utils/colors.js';
-import { Conversation, EvaluationReport } from '@tally-evals/tally';
+
+type MetricScope = 'single' | 'multi';
+type CliMetric = React.ComponentProps<typeof ConversationTurn>['metrics'][number];
+
+function getMetricScope(metric: CliMetric): MetricScope | undefined {
+  return (metric.metricDef as unknown as { scope?: MetricScope }).scope;
+}
+
+function asStringMap<V>(
+  value: Record<string, V> | Map<string, V> | undefined
+): Map<string, V> | undefined {
+  if (!value) return undefined;
+  if (value instanceof Map) return value;
+  return new Map(Object.entries(value));
+}
 
 interface TurnByTurnViewProps {
   conversation: Conversation;
@@ -49,13 +65,31 @@ export function TurnByTurnView({
     if (input === 'e' || input === 'E') {
       setExpanded(!expandedRef.current);
     }
-    if (key.upArrow || key.leftArrow) {
+
+    // Navigation:
+    // - Arrow keys (Ink)
+    // - Vim keys (j/k)
+    // - Raw ANSI sequences as a fallback for terminals where Ink doesn't detect `upArrow`
+    const isUp =
+      key.upArrow ||
+      key.leftArrow ||
+      input === 'k' ||
+      input === 'K' ||
+      input === '\u001b[A' ||
+      input === '\u001b[D';
+    const isDown =
+      key.downArrow ||
+      key.rightArrow ||
+      input === 'j' ||
+      input === 'J' ||
+      input === '\u001b[B' ||
+      input === '\u001b[C';
+
+    if (isUp) {
       setScrollPosition((prev) => Math.max(0, prev - 1));
     }
-    if (key.downArrow || key.rightArrow) {
-      setScrollPosition((prev) =>
-        Math.min(conversation.steps.length - 1, prev + 1),
-      );
+    if (isDown) {
+      setScrollPosition((prev) => Math.min(conversation.steps.length - 1, prev + 1));
     }
   });
 
@@ -64,29 +98,26 @@ export function TurnByTurnView({
     return <Text>{colors.error('No target results found in report')}</Text>;
   }
 
-  const singleTurnMetrics = perTargetResult.rawMetrics.filter(
-    (m: any) =>
-      (m.metricDef as unknown as { scope?: string }).scope === 'single',
-  );
+  const rawMetrics = perTargetResult.rawMetrics as unknown as CliMetric[];
 
-  const multiTurnMetrics = perTargetResult.rawMetrics.filter(
-    (m: any) =>
-      (m.metricDef as unknown as { scope?: string }).scope === 'multi',
-  );
+  const singleTurnMetrics = rawMetrics.filter((m) => getMetricScope(m) === 'single');
 
-  const metricsByName = new Map<string, any[]>();
+  const multiTurnMetrics = rawMetrics.filter((m) => getMetricScope(m) === 'multi');
+
+  const metricsByName = new Map<string, CliMetric[]>();
   for (const metric of singleTurnMetrics) {
     const name = metric.metricDef.name;
     if (!metricsByName.has(name)) {
       metricsByName.set(name, []);
     }
-    metricsByName.get(name)!.push(metric);
+    metricsByName.get(name)?.push(metric);
   }
 
-  const currentTurnMetrics: any[] = [];
-  for (const [_, metrics] of metricsByName) {
+  const currentTurnMetrics: CliMetric[] = [];
+  for (const metrics of metricsByName.values()) {
     if (scrollPosition < metrics.length) {
-      currentTurnMetrics.push(metrics[scrollPosition]);
+      const metric = metrics[scrollPosition];
+      if (metric) currentTurnMetrics.push(metric);
     }
   }
 
@@ -100,9 +131,7 @@ export function TurnByTurnView({
       <Box paddingX={1}>
         <Text>
           {colors.bold(`Conversation: ${conversation.id}`)}{' '}
-          {colors.muted(
-            `(Turn ${scrollPosition + 1}/${conversation.steps.length})`,
-          )}
+          {colors.muted(`(Turn ${scrollPosition + 1}/${conversation.steps.length})`)}
         </Text>
       </Box>
 
@@ -111,7 +140,7 @@ export function TurnByTurnView({
           stepIndex={scrollPosition}
           step={currentStep}
           metrics={currentTurnMetrics}
-          verdicts={perTargetResult.verdicts}
+          verdicts={asStringMap(perTargetResult.verdicts)}
           expanded={expanded}
         />
 
@@ -123,8 +152,8 @@ export function TurnByTurnView({
             <Box>
               <MetricsTable
                 metrics={multiTurnMetrics}
-                verdicts={perTargetResult.verdicts}
-                metricToEvalMap={report.metricToEvalMap}
+                verdicts={asStringMap(perTargetResult.verdicts)}
+                metricToEvalMap={asStringMap(report.metricToEvalMap)}
                 maxReasoningLength={expanded ? 100 : 40}
               />
             </Box>

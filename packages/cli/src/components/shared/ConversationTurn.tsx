@@ -2,25 +2,34 @@
  * Individual conversation turn display component
  */
 
-import React from 'react';
+import type { ConversationStep } from '@tally-evals/core';
 import { Box, Text } from 'ink';
+import type React from 'react';
 import { colors } from '../../utils/colors.js';
 import {
   extractTextFromMessage,
   extractTextFromMessages,
   extractToolCallsFromMessages,
+  type MetricScalar,
   sanitizeText,
   truncateText,
 } from '../../utils/formatters.js';
 import { MetricsTable } from './MetricsTable.js';
-import { ConversationStep, Metric } from '@tally-evals/tally';
 import { ToolCallList } from './ToolCallList.jsx';
+
+export type CliMetric = {
+  metricDef: { name: string } & Record<string, unknown>;
+  value: MetricScalar;
+  reasoning?: string;
+  executionTime?: number;
+  timestamp?: Date;
+} & Record<string, unknown>;
 
 interface ConversationTurnProps {
   stepIndex: number;
   step: ConversationStep;
-  metrics: Metric[];
-  verdicts?: Map<string, { verdict: 'pass' | 'fail' | 'unknown' }>;
+  metrics: CliMetric[];
+  verdicts?: Map<string, { verdict: 'pass' | 'fail' | 'unknown' }> | undefined;
   expanded?: boolean;
 }
 
@@ -47,8 +56,7 @@ export function ConversationTurn({
       paddingX={1}
     >
       <Text>
-        {colors.bold(`Turn ${stepIndex + 1}`)}{' '}
-        {colors.muted(`[${step.timestamp}]`)}
+        {colors.bold(`Turn ${stepIndex + 1}`)} {colors.muted(`[${step.timestamp}]`)}
       </Text>
 
       <Box marginTop={1} flexDirection="column">

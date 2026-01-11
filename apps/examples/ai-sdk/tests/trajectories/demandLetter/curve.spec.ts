@@ -5,7 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import { demandLetterAgent } from '../../../src/agents/demandLetter';
 import { demandLetterCurveTrajectory } from './definitions';
-import { runCase } from '../../utils/harness';
+import { runCase, saveTallyReportToStore } from '../../utils/harness';
 import {
 	createTally,
 	createEvaluator,
@@ -28,7 +28,6 @@ describe('Demand Letter Agent - Curve Ball', () => {
 		const { conversation } = await runCase({
 			trajectory: demandLetterCurveTrajectory,
 			agent: demandLetterAgent,
-			recordedPath: '_fixtures/recorded/demandLetter/curve.jsonl',
 			conversationId: 'demand-letter-curve',
 		});
 
@@ -88,6 +87,7 @@ describe('Demand Letter Agent - Curve Ball', () => {
 		});
 
 		const report = await tally.run();
+		await saveTallyReportToStore({ conversationId: 'demand-letter-curve', report });
 
 		expect(report).toBeDefined();
 		expect(report.perTargetResults.length).toBeGreaterThan(0);

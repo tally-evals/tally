@@ -248,7 +248,7 @@ describeE2E('Travel Planner E2E Tests', () => {
 						terminals: ['step-12'],
 					},
 					maxTurns: 20,
-					storage: { strategy: 'local', conversationId: 'travel-planner-e2e' },
+					conversationId: 'travel-planner-e2e',
 					userModel,
 					
 				},
@@ -348,7 +348,7 @@ describeE2E('Travel Planner E2E Tests', () => {
 						terminals: ['step-4'],
 					},
 					maxTurns: 10,
-					storage: { strategy: 'local', conversationId: 'travel-planner-preconditions' },
+					conversationId: 'travel-planner-preconditions',
 					userModel,
 				},
 				agent

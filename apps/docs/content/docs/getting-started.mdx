@@ -10,72 +10,79 @@ This guide will help you set up Tally and run your first evaluation.
 ## Installation
 
 ```bash
-npm install tally
-# or
-pnpm add tally
-# or
-yarn add tally
+pnpm add @tally-evals/tally
 ```
 
 ## Basic Usage
 
 ```typescript
-import { tally } from 'tally'
+import { createTally, createEvaluator, runAllTargets } from '@tally-evals/tally'
+import { createAnswerRelevanceMetric } from '@tally-evals/tally/metrics'
 
-// Your first evaluation
-const result = await tally.evaluate({
-  dataset: myDataset,
-  evaluators: [myEvaluator],
-  metrics: [myMetric]
+// 1. Define your metrics and evals
+const relevance = createAnswerRelevanceMetric({ provider: model })
+
+const evaluator = createEvaluator({
+  name: 'Agent Quality',
+  evals: [
+    defineSingleTurnEval({
+      name: 'Answer Relevance',
+      metric: relevance,
+      verdict: thresholdVerdict(0.7)
+    })
+  ],
+  context: runAllTargets()
 })
 
-console.log(result)
+// 2. Run evaluation
+const tally = createTally({ 
+  data: conversations, 
+  evaluators: [evaluator] 
+})
+const report = await tally.run()
+
+console.log(report.evalSummaries)
 ```
 
 ## Core Concepts
 
-### 1. Datasets and Conversations
+### 1. Conversations
 
-Datasets contain individual examples, while conversations handle multi-turn exchanges.
+Tally uses a canonical `Conversation` format for multi-turn exchanges.
 
 ```typescript
-// Dataset example
-const dataset = {
-  examples: [
-    { prompt: "What is AI?", expected: "Artificial Intelligence" },
-    { prompt: "Explain ML", expected: "Machine Learning" }
-  ]
-}
-
-// Conversation example
 const conversation = {
-  turns: [
-    { role: "user", content: "Hello" },
-    { role: "assistant", content: "Hi there!" }
+  id: "weather-1",
+  steps: [
+    { 
+      input: { role: "user", content: "Hello" }, 
+      output: [{ role: "assistant", content: "Hi there!" }] 
+    }
   ]
 }
 ```
 
-### 2. Evaluators
+### 2. Evaluators and Evals
 
-Evaluators define what to check and how to check it.
+Evals combine measurement logic (Metrics) with pass/fail criteria (Verdicts).
 
 ```typescript
-const evaluator = {
-  selector: "lastAssistantTurn",
-  scorer: "correctness"
-}
+const relevanceEval = defineSingleTurnEval({
+  name: 'Relevance',
+  metric: relevanceMetric,
+  verdict: thresholdVerdict(0.7)
+})
 ```
 
-### 3. Metrics
+### 3. Storage and Store
 
-Metrics define what to measure.
+Use `@tally-evals/core` for high-level storage operations through `TallyStore`.
 
 ```typescript
-const metric = {
-  type: "boolean",
-  name: "isCorrect"
-}
+import { TallyStore } from '@tally-evals/core'
+
+const store = await TallyStore.open({ cwd: process.cwd() })
+const conversation = await store.getConversation('conv-123').load()
 ```
 
 ## Next Steps

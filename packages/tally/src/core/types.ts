@@ -5,9 +5,17 @@
  * Types are organized by domain: Data, Metrics, Normalization, Scorers, Evaluators, Aggregators, Reports, and Container.
  */
 
-// Reuse AI SDK's ModelMessage for framework-agnostic conversation messages
-import type { ModelMessage } from 'ai';
 import type { Eval } from './evals/types';
+
+// Import shared types from core package
+import type {
+  Conversation as CoreConversation,
+  ConversationStep as CoreConversationStep,
+} from '@tally-evals/core';
+
+// Re-export core types for convenience
+export type Conversation = CoreConversation;
+export type ConversationStep = CoreConversationStep;
 
 // ============================================================================
 // Data Types
@@ -17,21 +25,6 @@ export interface DatasetItem {
   id: string;
   prompt: string;
   completion: string;
-  metadata?: Record<string, unknown>;
-}
-
-export interface ConversationStep {
-  stepIndex: number; // stable ordering within the conversation
-  input: ModelMessage; // user (or tool) request
-  output: readonly ModelMessage[]; // assistant response(s) - array to capture tool calls, tool results, and final response
-  id?: string; // provider message id if available
-  timestamp?: Date;
-  metadata?: Record<string, unknown>;
-}
-
-export interface Conversation {
-  id: string;
-  steps: readonly ConversationStep[];
   metadata?: Record<string, unknown>;
 }
 

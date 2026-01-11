@@ -2,15 +2,17 @@
  * Loading spinner component
  */
 
-import React from 'react';
 import { Box, Text } from 'ink';
 import Spinner from 'ink-spinner';
+import type React from 'react';
 
 interface LoadingSpinnerProps {
   message?: string;
 }
 
-export function LoadingSpinner({ message = 'Loading...' }: LoadingSpinnerProps): React.ReactElement {
+export function LoadingSpinner({
+  message = 'Loading...',
+}: LoadingSpinnerProps): React.ReactElement {
   return (
     <Box>
       <Box marginRight={1}>
@@ -20,4 +22,3 @@ export function LoadingSpinner({ message = 'Loading...' }: LoadingSpinnerProps):
     </Box>
   );
 }
-

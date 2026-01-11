@@ -21,6 +21,7 @@ pnpm add @tally-evals/trajectories
 import { createTrajectory, runTrajectory, withAISdkAgent, toConversation, toJSONL } from '@tally-evals/trajectories'
 import { weatherAgent } from '@tally-evals/examples-ai-sdk'
 import { google } from '@ai-sdk/google'
+import { TallyStore } from '@tally-evals/core'
 
 // 1) Wrap your agent
 const agent = withAISdkAgent(weatherAgent) // also supports LanguageModel directly
@@ -46,18 +47,34 @@ const trajectory = createTrajectory({
 }, agent)
 
 // 3) Run it
+const store = await TallyStore.open({ cwd: process.cwd() })
 const result = await runTrajectory(trajectory, {
   generateLogs: true,  // Optional: pretty console logging
+  store,               // Optional: persist artifacts via core store
+  trajectoryId: 'weather-trajectory',
 })
 
 // 4) Record outputs
+// If 'store' was provided, artifacts are already saved under:
+// .tally/conversations/weather-trajectory/
+//   ├── meta.json             # Basic metadata
+//   ├── conversation.jsonl    # Canonical history
+//   ├── trajectory.meta.json  # Trajectory definition
+//   └── stepTraces.json       # Rich StepTrace[] data
+
 const conversation = toConversation(result, 'weather-trajectory')  // Tally format
 const jsonlLines = toJSONL(result)                                 // one step per line
 ```
 
-## Step Selection
+## Step Selection & Tracing
 
-The system uses a unified step selection approach that combines deterministic and LLM-based selection:
+Each turn in a trajectory produces a `StepTrace`, which is the single source of truth for the execution history. Traces now include rich metadata:
+
+- **Selection Method**: Tracks if a step was picked via `start`, `preconditions-ordered`, `llm-ranked`, or if `none` matched.
+- **Candidates**: For LLM ranking, it stores the scores and reasons for all evaluated steps.
+- **End Marker**: The final step trace carries the `end` property with the stop reason and completion status.
+
+The system uses a unified step selection approach:
 
 1. **Precondition-First Selection**: Steps with satisfied preconditions are prioritized and selected in graph order (deterministic, no LLM required)
 2. **LLM Fallback**: If no next step with preconditions is found, the system falls back to LLM-based ranking of all eligible steps
@@ -118,9 +135,11 @@ preconditions: [
     type: 'custom',
     name: 'userProvidedLocation',
     evaluate: async (ctx) => {
-      const lastMessage = ctx.history[ctx.history.length - 1];
-      return lastMessage?.role === 'user' && 
-             lastMessage.content.includes('location');
+      const lastTrace = ctx.stepTraces[ctx.stepTraces.length - 1]
+      const lastUser = lastTrace?.userMessage
+      return lastUser?.role === 'user' &&
+        typeof lastUser.content === 'string' &&
+        lastUser.content.includes('location')
     }
   }
 ]
@@ -135,15 +154,13 @@ When no deterministic next step is available, the system uses LLM-based ranking:
 - If no high-confidence match is found, gracefully continues without a step
 - Uses step traces (not raw history) for richer context
 
-## Storage and user model
-- Built-in storage is on by default (`strategy: 'local'`)
-- You can disable or limit it
+## Persistence and user model
+- Agent invocation uses an internal in-memory buffer (AgentMemory) by default.
+- Durable persistence (StepTrace[] + TrajectoryMeta) is handled by passing a core `TallyStore` into `runTrajectory`.
 - Provide an AI SDK `LanguageModel` as `userModel` to simulate the user
 
 ```ts
-storage: { strategy: 'local', conversationId: 'my-run' }
-// or
-storage: { strategy: 'none' } // stateless generation
+conversationId: 'my-run'
 ```
 
 ## Loop Detection
@@ -203,8 +220,8 @@ createTrajectory(def, agent)             // -> Trajectory
 runTrajectory(trajectory, options?)      // -> TrajectoryResult
 
 // Prompt utilities
-buildPromptFromHistory(options)          // Build Prompt from history
-historyToMessages(history)               // Convert history to messages array
+buildPromptFromMessages(options)         // Build Prompt from messages (AgentMemory snapshot)
+messagesToMessages(messages)             // Clone messages array
 
 // Record
 toConversation(result, conversationId?)  // -> Tally Conversation
@@ -242,7 +259,7 @@ interface Trajectory {
   persona: { name?: string; description: string; guardrails?: readonly string[] }
   steps?: StepGraph
   maxTurns?: number
-  storage?: { strategy: 'local' | 'none'; ttlMs?: number; capacity?: number; conversationId?: string }
+  conversationId?: string
   userModel?: LanguageModel
   metadata?: Record<string, unknown>
   loopDetection?: {

@@ -44,6 +44,7 @@
 pnpm add @tally-evals/tally
 # Optional: conversation generation
 pnpm add @tally-evals/trajectories
+pnpm add @tally-evals/core
 ```
 
 ## Packages
@@ -67,6 +68,7 @@ import {
   withAISdkAgent,
   toConversation,
 } from '@tally-evals/trajectories'
+import { TallyStore } from '@tally-evals/core'
 import { weatherAgent } from '@tally-evals/examples-ai-sdk'
 import { google } from '@ai-sdk/google'
 
@@ -101,7 +103,11 @@ const trajectory = createTrajectory(
 )
 
 // Run the trajectory
-const result = await runTrajectory(trajectory)
+const store = await TallyStore.open({ cwd: process.cwd() })
+const result = await runTrajectory(trajectory, {
+  store,
+  trajectoryId: 'weather-trajectory',
+})
 
 // Convert to Tally Conversation format
 const conversation = toConversation(result, 'weather-trajectory')

@@ -1,5 +1,5 @@
-import React from 'react';
 import { Box, Text } from 'ink';
+import React from 'react';
 import { colors } from 'src/utils/colors';
 
 export function ToolCallList({
@@ -13,9 +13,7 @@ export function ToolCallList({
         {toolCalls.map(({ toolName, toolCallId }, index) => (
           <Text key={toolCallId}>
             {index === toolCalls.length - 1 ? '╰─' : '├─'}
-            {`🔧 ${colors.success(toolName)} ${colors.muted(
-              `(${toolCallId})`,
-            )}`}
+            {`🔧 ${colors.success(toolName)} ${colors.muted(`(${toolCallId})`)}`}
           </Text>
         ))}
       </Box>

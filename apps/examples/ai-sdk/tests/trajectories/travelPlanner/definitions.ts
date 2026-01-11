@@ -17,7 +17,7 @@ export const travelPlannerGoldenTrajectory: Trajectory = {
     guardrails: [
       'Provide information naturally and conversationally',
       'Answer clarifying questions when asked',
-      'Express preferences when relevant',
+      'Express preferences when relevant and select the best option',
     ],
   },
   steps: {
@@ -66,7 +66,7 @@ export const travelPlannerGoldenTrajectory: Trajectory = {
       },
       {
         id: 'step-11',
-        instruction: 'Review hotel options and express preference',
+        instruction: 'Review hotel options and select preference',
         preconditions: [
           {
             type: 'stepSatisfied',
@@ -84,7 +84,7 @@ export const travelPlannerGoldenTrajectory: Trajectory = {
       },
       {
         id: 'step-14',
-        instruction: 'Review vehicle rental options and express preference',
+        instruction: 'Review vehicle rental options and select preference',
         preconditions: [
           {
             type: 'stepSatisfied',
@@ -103,7 +103,7 @@ export const travelPlannerGoldenTrajectory: Trajectory = {
       },
       {
         id: 'step-17',
-        instruction: 'Review restaurant options and express preference',
+        instruction: 'Review restaurant options and select preference',
         preconditions: [
           {
             type: 'stepSatisfied',
@@ -126,12 +126,9 @@ export const travelPlannerGoldenTrajectory: Trajectory = {
     terminals: ['step-18'],
   },
   maxTurns: 25,
-  storage: {
-    strategy: 'local',
-    conversationId: 'travel-planner-golden',
-  },
+  conversationId: 'travel-planner-golden',
   loopDetection: {
-    maxConsecutiveSameStep: 3,
+    maxConsecutiveSameStep: 4,
   },
   userModel: google('models/gemini-2.5-flash-lite'),
 };
@@ -197,9 +194,9 @@ export const travelPlannerCurveTrajectory: Trajectory = {
     terminals: ['step-9'],
   },
   maxTurns: 15,
-  storage: {
-    strategy: 'local',
-    conversationId: 'travel-planner-curve',
+  loopDetection: {
+    maxConsecutiveSameStep: 4,
   },
+  conversationId: 'travel-planner-curve',
   userModel: google('models/gemini-2.5-flash-lite'),
 };

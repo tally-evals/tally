@@ -18,4 +18,3 @@ declare module 'cli-table3' {
 
   export = Table;
 }
-

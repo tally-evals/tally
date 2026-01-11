@@ -7,7 +7,7 @@
 import { describe, it, expect } from 'vitest';
 import { weatherAgent } from '../../../src/agents/weather';
 import { weatherCurveTrajectory } from './definitions';
-import { runCase } from '../../utils/harness';
+import { runCase, saveTallyReportToStore } from '../../utils/harness';
 import {
 	createTally,
 	createEvaluator,
@@ -31,7 +31,6 @@ describe('Weather Agent - Curve Ball', () => {
 		const { conversation } = await runCase({
 			trajectory: weatherCurveTrajectory,
 			agent: weatherAgent,
-			recordedPath: '_fixtures/recorded/weather/curve.jsonl',
 			conversationId: 'weather-curve',
 		});
 
@@ -96,6 +95,7 @@ describe('Weather Agent - Curve Ball', () => {
 		});
 
 		const report = await tally.run();
+		await saveTallyReportToStore({ conversationId: 'weather-curve', report });
 
 		// Assertions
 		expect(report).toBeDefined();
