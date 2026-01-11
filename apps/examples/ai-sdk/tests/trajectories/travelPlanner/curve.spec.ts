@@ -2,7 +2,7 @@
  * Travel Planner Agent - Curve Ball Test
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 import { travelPlannerAgent } from '../../../src/agents/travelPlanner';
 import { travelPlannerCurveTrajectory } from './definitions';
 import { runCase, saveTallyReportToStore } from '../../utils/harness';
@@ -58,7 +58,7 @@ describe('Travel Planner Agent - Curve Ball', () => {
       parameters: ['origin', 'destination', 'dates', 'preferences'],
     });
 
-    const overallQuality = defineBaseMetric({
+    const overallQuality = defineBaseMetric<number>({
       name: 'overallQuality',
       valueType: 'number',
     });

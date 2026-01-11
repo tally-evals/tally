@@ -18,7 +18,7 @@
  *         Type 'string' is not assignable to type 'number'.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 // NOTE: Importing from source files - the type error appears when importing from @tally-evals/tally package
 // This is because compiled .d.ts types are stricter than source types with path aliases
 import {

@@ -2,7 +2,7 @@
  * Demand Letter Agent - Golden Path Test
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 import { demandLetterAgent } from '../../../src/agents/demandLetter';
 import { demandLetterGoldenTrajectory } from './definitions';
 import { runCase, assertToolCallSequence, saveTallyReportToStore } from '../../utils/harness';
@@ -75,7 +75,7 @@ describe('Demand Letter Agent - Golden Path', () => {
 			provider: model,
 		});
 
-		const overallQuality = defineBaseMetric({
+		const overallQuality = defineBaseMetric<number>({
 			name: 'overallQuality',
 			valueType: 'number',
 		});

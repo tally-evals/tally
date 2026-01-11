@@ -1,0 +1,2724 @@
+{
+  "runId": "run-1768174068381-de95v58",
+  "timestamp": "2026-01-11T23:27:48.381Z",
+  "perTargetResults": [
+    {
+      "targetId": "weather-golden",
+      "rawMetrics": [
+        {
+          "metricDef": {
+            "name": "answerRelevance",
+            "valueType": "number",
+            "description": "Measures how relevant the output is to the input query using LLM-based statement-level relevance analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how relevant a response is to a given query.\n\nGiven the query and response below, analyze the response's relevance to the query using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate relevance based on:\n1. Direct answer to the query (full weight)\n2. Partial relevance with some unrelated content (partial weight: 0.3)\n3. No relevance to the query (zero weight)",
+              "scale": "0-5 scale where 5 = fully relevant, 0 = entirely unrelated",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response directly and completely answers the query with focused, relevant information"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response mostly answers the query but includes minor unrelated content"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response partially answers the query, mixing relevant and unrelated information"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response includes minimal relevant content and largely misses the intent"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response has very little relevance to the query"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response is entirely unrelated and does not answer the query"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.95,
+          "reasoning": "The response directly and completely answers the query by providing the current weather details for San Francisco, including temperature, humidity, and wind speed.",
+          "executionTime": 886,
+          "timestamp": "2026-01-11T23:27:49.267Z"
+        },
+        {
+          "metricDef": {
+            "name": "answerRelevance",
+            "valueType": "number",
+            "description": "Measures how relevant the output is to the input query using LLM-based statement-level relevance analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how relevant a response is to a given query.\n\nGiven the query and response below, analyze the response's relevance to the query using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate relevance based on:\n1. Direct answer to the query (full weight)\n2. Partial relevance with some unrelated content (partial weight: 0.3)\n3. No relevance to the query (zero weight)",
+              "scale": "0-5 scale where 5 = fully relevant, 0 = entirely unrelated",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response directly and completely answers the query with focused, relevant information"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response mostly answers the query but includes minor unrelated content"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response partially answers the query, mixing relevant and unrelated information"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response includes minimal relevant content and largely misses the intent"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response has very little relevance to the query"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response is entirely unrelated and does not answer the query"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.9,
+          "reasoning": "The response directly and completely answers the query by providing the weather for London, UK, and specifically in Celsius as requested.",
+          "executionTime": 989,
+          "timestamp": "2026-01-11T23:27:49.372Z"
+        },
+        {
+          "metricDef": {
+            "name": "answerRelevance",
+            "valueType": "number",
+            "description": "Measures how relevant the output is to the input query using LLM-based statement-level relevance analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how relevant a response is to a given query.\n\nGiven the query and response below, analyze the response's relevance to the query using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate relevance based on:\n1. Direct answer to the query (full weight)\n2. Partial relevance with some unrelated content (partial weight: 0.3)\n3. No relevance to the query (zero weight)",
+              "scale": "0-5 scale where 5 = fully relevant, 0 = entirely unrelated",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response directly and completely answers the query with focused, relevant information"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response mostly answers the query but includes minor unrelated content"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response partially answers the query, mixing relevant and unrelated information"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response includes minimal relevant content and largely misses the intent"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response has very little relevance to the query"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response is entirely unrelated and does not answer the query"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.95,
+          "reasoning": "The response directly and completely answers the query by providing the current weather in Tokyo, Japan, and specifically in Celsius as requested.",
+          "executionTime": 1090,
+          "timestamp": "2026-01-11T23:27:49.474Z"
+        },
+        {
+          "metricDef": {
+            "name": "answerRelevance",
+            "valueType": "number",
+            "description": "Measures how relevant the output is to the input query using LLM-based statement-level relevance analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how relevant a response is to a given query.\n\nGiven the query and response below, analyze the response's relevance to the query using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate relevance based on:\n1. Direct answer to the query (full weight)\n2. Partial relevance with some unrelated content (partial weight: 0.3)\n3. No relevance to the query (zero weight)",
+              "scale": "0-5 scale where 5 = fully relevant, 0 = entirely unrelated",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response directly and completely answers the query with focused, relevant information"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response mostly answers the query but includes minor unrelated content"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response partially answers the query, mixing relevant and unrelated information"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response includes minimal relevant content and largely misses the intent"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response has very little relevance to the query"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response is entirely unrelated and does not answer the query"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.95,
+          "reasoning": "The response directly answers the query by providing the weather for Paris, France, and specifies the temperature in Celsius as requested.",
+          "executionTime": 881,
+          "timestamp": "2026-01-11T23:27:49.266Z"
+        },
+        {
+          "metricDef": {
+            "name": "answerRelevance",
+            "valueType": "number",
+            "description": "Measures how relevant the output is to the input query using LLM-based statement-level relevance analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how relevant a response is to a given query.\n\nGiven the query and response below, analyze the response's relevance to the query using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate relevance based on:\n1. Direct answer to the query (full weight)\n2. Partial relevance with some unrelated content (partial weight: 0.3)\n3. No relevance to the query (zero weight)",
+              "scale": "0-5 scale where 5 = fully relevant, 0 = entirely unrelated",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response directly and completely answers the query with focused, relevant information"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response mostly answers the query but includes minor unrelated content"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response partially answers the query, mixing relevant and unrelated information"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response includes minimal relevant content and largely misses the intent"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response has very little relevance to the query"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response is entirely unrelated and does not answer the query"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.95,
+          "reasoning": "The response directly and completely answers the query by providing the weather in Rome, Italy, and includes the temperature in Celsius as requested.",
+          "executionTime": 1191,
+          "timestamp": "2026-01-11T23:27:49.576Z"
+        },
+        {
+          "metricDef": {
+            "name": "answerRelevance",
+            "valueType": "number",
+            "description": "Measures how relevant the output is to the input query using LLM-based statement-level relevance analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how relevant a response is to a given query.\n\nGiven the query and response below, analyze the response's relevance to the query using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate relevance based on:\n1. Direct answer to the query (full weight)\n2. Partial relevance with some unrelated content (partial weight: 0.3)\n3. No relevance to the query (zero weight)",
+              "scale": "0-5 scale where 5 = fully relevant, 0 = entirely unrelated",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response directly and completely answers the query with focused, relevant information"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response mostly answers the query but includes minor unrelated content"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response partially answers the query, mixing relevant and unrelated information"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response includes minimal relevant content and largely misses the intent"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response has very little relevance to the query"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response is entirely unrelated and does not answer the query"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.9,
+          "reasoning": "The response directly and completely answers the query by providing the weather for London, England, in Celsius, as requested.",
+          "executionTime": 987,
+          "timestamp": "2026-01-11T23:27:49.373Z"
+        },
+        {
+          "metricDef": {
+            "name": "answerRelevance",
+            "valueType": "number",
+            "description": "Measures how relevant the output is to the input query using LLM-based statement-level relevance analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how relevant a response is to a given query.\n\nGiven the query and response below, analyze the response's relevance to the query using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate relevance based on:\n1. Direct answer to the query (full weight)\n2. Partial relevance with some unrelated content (partial weight: 0.3)\n3. No relevance to the query (zero weight)",
+              "scale": "0-5 scale where 5 = fully relevant, 0 = entirely unrelated",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response directly and completely answers the query with focused, relevant information"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response mostly answers the query but includes minor unrelated content"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response partially answers the query, mixing relevant and unrelated information"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response includes minimal relevant content and largely misses the intent"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response has very little relevance to the query"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response is entirely unrelated and does not answer the query"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.9,
+          "reasoning": "The response directly and completely answers the query by providing the current weather in Tokyo, Japan, and specifically includes the temperature in Celsius as requested.",
+          "executionTime": 1088,
+          "timestamp": "2026-01-11T23:27:49.475Z"
+        },
+        {
+          "metricDef": {
+            "name": "answerRelevance",
+            "valueType": "number",
+            "description": "Measures how relevant the output is to the input query using LLM-based statement-level relevance analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how relevant a response is to a given query.\n\nGiven the query and response below, analyze the response's relevance to the query using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate relevance based on:\n1. Direct answer to the query (full weight)\n2. Partial relevance with some unrelated content (partial weight: 0.3)\n3. No relevance to the query (zero weight)",
+              "scale": "0-5 scale where 5 = fully relevant, 0 = entirely unrelated",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response directly and completely answers the query with focused, relevant information"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response mostly answers the query but includes minor unrelated content"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response partially answers the query, mixing relevant and unrelated information"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response includes minimal relevant content and largely misses the intent"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response has very little relevance to the query"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response is entirely unrelated and does not answer the query"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.95,
+          "reasoning": "The response directly and completely answers the query by providing the current weather for both Paris and Rome in Celsius, as requested.",
+          "executionTime": 1087,
+          "timestamp": "2026-01-11T23:27:49.474Z"
+        },
+        {
+          "metricDef": {
+            "name": "answerRelevance",
+            "valueType": "number",
+            "description": "Measures how relevant the output is to the input query using LLM-based statement-level relevance analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how relevant a response is to a given query.\n\nGiven the query and response below, analyze the response's relevance to the query using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate relevance based on:\n1. Direct answer to the query (full weight)\n2. Partial relevance with some unrelated content (partial weight: 0.3)\n3. No relevance to the query (zero weight)",
+              "scale": "0-5 scale where 5 = fully relevant, 0 = entirely unrelated",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response directly and completely answers the query with focused, relevant information"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response mostly answers the query but includes minor unrelated content"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response partially answers the query, mixing relevant and unrelated information"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response includes minimal relevant content and largely misses the intent"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response has very little relevance to the query"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response is entirely unrelated and does not answer the query"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.95,
+          "reasoning": "The response directly and completely answers the query by providing the current weather for both London, UK and Berlin, Germany in Celsius, as requested.",
+          "executionTime": 984,
+          "timestamp": "2026-01-11T23:27:49.372Z"
+        },
+        {
+          "metricDef": {
+            "name": "answerRelevance",
+            "valueType": "number",
+            "description": "Measures how relevant the output is to the input query using LLM-based statement-level relevance analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how relevant a response is to a given query.\n\nGiven the query and response below, analyze the response's relevance to the query using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate relevance based on:\n1. Direct answer to the query (full weight)\n2. Partial relevance with some unrelated content (partial weight: 0.3)\n3. No relevance to the query (zero weight)",
+              "scale": "0-5 scale where 5 = fully relevant, 0 = entirely unrelated",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response directly and completely answers the query with focused, relevant information"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response mostly answers the query but includes minor unrelated content"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response partially answers the query, mixing relevant and unrelated information"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response includes minimal relevant content and largely misses the intent"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response has very little relevance to the query"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response is entirely unrelated and does not answer the query"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.9,
+          "reasoning": "The response is a polite and appropriate acknowledgment of the user's statement, indicating the end of the current interaction and offering future assistance. While not directly answering a question, it perfectly fits the conversational context of the user's closing remark.",
+          "executionTime": 1291,
+          "timestamp": "2026-01-11T23:27:49.679Z"
+        },
+        {
+          "metricDef": {
+            "name": "completeness",
+            "valueType": "number",
+            "description": "Measures how complete an answer is relative to expected coverage using LLM-based analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how complete a response is relative to what is expected from the query.\n\nGiven the query and response below, analyze the response's completeness using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate completeness based on:\n1. Coverage of expected topics/points from the query\n2. Depth and thoroughness of coverage\n3. Presence of gaps or missing information",
+              "scale": "0-5 scale where 5 = fully complete, 0 = entirely incomplete",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response fully covers all expected topics comprehensively with thorough detail"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response covers most expected points but has minor gaps or incomplete coverage in some areas"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response covers some expected points but misses several important aspects"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response covers few expected points with significant gaps in coverage"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response covers minimal expected points and is largely incomplete"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response does not cover expected points and is entirely incomplete"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.9,
+          "reasoning": "The response directly addresses the query by providing the current weather for San Francisco. It includes key details such as temperature, humidity, and wind speed, fulfilling the request comprehensively.",
+          "executionTime": 1070,
+          "timestamp": "2026-01-11T23:27:50.749Z"
+        },
+        {
+          "metricDef": {
+            "name": "completeness",
+            "valueType": "number",
+            "description": "Measures how complete an answer is relative to expected coverage using LLM-based analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how complete a response is relative to what is expected from the query.\n\nGiven the query and response below, analyze the response's completeness using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate completeness based on:\n1. Coverage of expected topics/points from the query\n2. Depth and thoroughness of coverage\n3. Presence of gaps or missing information",
+              "scale": "0-5 scale where 5 = fully complete, 0 = entirely incomplete",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response fully covers all expected topics comprehensively with thorough detail"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response covers most expected points but has minor gaps or incomplete coverage in some areas"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response covers some expected points but misses several important aspects"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response covers few expected points with significant gaps in coverage"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response covers minimal expected points and is largely incomplete"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response does not cover expected points and is entirely incomplete"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.95,
+          "reasoning": "The response fully covers all expected topics: weather for London, UK, and the temperature in Celsius. The information provided is specific and directly answers the query.",
+          "executionTime": 968,
+          "timestamp": "2026-01-11T23:27:50.648Z"
+        },
+        {
+          "metricDef": {
+            "name": "completeness",
+            "valueType": "number",
+            "description": "Measures how complete an answer is relative to expected coverage using LLM-based analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how complete a response is relative to what is expected from the query.\n\nGiven the query and response below, analyze the response's completeness using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate completeness based on:\n1. Coverage of expected topics/points from the query\n2. Depth and thoroughness of coverage\n3. Presence of gaps or missing information",
+              "scale": "0-5 scale where 5 = fully complete, 0 = entirely incomplete",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response fully covers all expected topics comprehensively with thorough detail"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response covers most expected points but has minor gaps or incomplete coverage in some areas"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response covers some expected points but misses several important aspects"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response covers few expected points with significant gaps in coverage"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response covers minimal expected points and is largely incomplete"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response does not cover expected points and is entirely incomplete"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.9,
+          "reasoning": "The response fully addresses all aspects of the query: it provides the weather for Tokyo, Japan, and importantly, it specifies the temperature in Celsius as requested. The information provided is current and relevant.",
+          "executionTime": 1069,
+          "timestamp": "2026-01-11T23:27:50.749Z"
+        },
+        {
+          "metricDef": {
+            "name": "completeness",
+            "valueType": "number",
+            "description": "Measures how complete an answer is relative to expected coverage using LLM-based analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how complete a response is relative to what is expected from the query.\n\nGiven the query and response below, analyze the response's completeness using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate completeness based on:\n1. Coverage of expected topics/points from the query\n2. Depth and thoroughness of coverage\n3. Presence of gaps or missing information",
+              "scale": "0-5 scale where 5 = fully complete, 0 = entirely incomplete",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response fully covers all expected topics comprehensively with thorough detail"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response covers most expected points but has minor gaps or incomplete coverage in some areas"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response covers some expected points but misses several important aspects"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response covers few expected points with significant gaps in coverage"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response covers minimal expected points and is largely incomplete"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response does not cover expected points and is entirely incomplete"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.95,
+          "reasoning": "The response fully covers all expected topics comprehensively with thorough detail. The query asked for the weather in Paris, France, and specifically requested Celsius, all of which were provided in the response.",
+          "executionTime": 1071,
+          "timestamp": "2026-01-11T23:27:50.751Z"
+        },
+        {
+          "metricDef": {
+            "name": "completeness",
+            "valueType": "number",
+            "description": "Measures how complete an answer is relative to expected coverage using LLM-based analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how complete a response is relative to what is expected from the query.\n\nGiven the query and response below, analyze the response's completeness using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate completeness based on:\n1. Coverage of expected topics/points from the query\n2. Depth and thoroughness of coverage\n3. Presence of gaps or missing information",
+              "scale": "0-5 scale where 5 = fully complete, 0 = entirely incomplete",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response fully covers all expected topics comprehensively with thorough detail"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response covers most expected points but has minor gaps or incomplete coverage in some areas"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response covers some expected points but misses several important aspects"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response covers few expected points with significant gaps in coverage"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response covers minimal expected points and is largely incomplete"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response does not cover expected points and is entirely incomplete"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.95,
+          "reasoning": "The response fully covers all expected aspects of the query: it provides the current weather in Rome, Italy, and specifies the temperature in Celsius as requested. The information is presented clearly and concisely.",
+          "executionTime": 1213,
+          "timestamp": "2026-01-11T23:27:50.893Z"
+        },
+        {
+          "metricDef": {
+            "name": "completeness",
+            "valueType": "number",
+            "description": "Measures how complete an answer is relative to expected coverage using LLM-based analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how complete a response is relative to what is expected from the query.\n\nGiven the query and response below, analyze the response's completeness using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate completeness based on:\n1. Coverage of expected topics/points from the query\n2. Depth and thoroughness of coverage\n3. Presence of gaps or missing information",
+              "scale": "0-5 scale where 5 = fully complete, 0 = entirely incomplete",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response fully covers all expected topics comprehensively with thorough detail"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response covers most expected points but has minor gaps or incomplete coverage in some areas"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response covers some expected points but misses several important aspects"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response covers few expected points with significant gaps in coverage"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response covers minimal expected points and is largely incomplete"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response does not cover expected points and is entirely incomplete"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.9,
+          "reasoning": "The response fully covers all aspects of the query. It provides the weather for London, England, and specifies the temperature in Celsius as requested.",
+          "executionTime": 967,
+          "timestamp": "2026-01-11T23:27:50.648Z"
+        },
+        {
+          "metricDef": {
+            "name": "completeness",
+            "valueType": "number",
+            "description": "Measures how complete an answer is relative to expected coverage using LLM-based analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how complete a response is relative to what is expected from the query.\n\nGiven the query and response below, analyze the response's completeness using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate completeness based on:\n1. Coverage of expected topics/points from the query\n2. Depth and thoroughness of coverage\n3. Presence of gaps or missing information",
+              "scale": "0-5 scale where 5 = fully complete, 0 = entirely incomplete",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response fully covers all expected topics comprehensively with thorough detail"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response covers most expected points but has minor gaps or incomplete coverage in some areas"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response covers some expected points but misses several important aspects"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response covers few expected points with significant gaps in coverage"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response covers minimal expected points and is largely incomplete"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response does not cover expected points and is entirely incomplete"
+                }
+              ]
+            }
+          },
+          "value": 4,
+          "confidence": 0.9,
+          "reasoning": "The response provides the current weather for Tokyo, Japan, including temperature in Celsius as requested. It also includes humidity and wind speed, which were not explicitly asked for but are relevant. The main limitation is that the query asked for the weather 'next', implying a future forecast, but the response only provides current conditions. Thus, it's mostly complete but misses the future aspect.",
+          "executionTime": 1070,
+          "timestamp": "2026-01-11T23:27:50.751Z"
+        },
+        {
+          "metricDef": {
+            "name": "completeness",
+            "valueType": "number",
+            "description": "Measures how complete an answer is relative to expected coverage using LLM-based analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how complete a response is relative to what is expected from the query.\n\nGiven the query and response below, analyze the response's completeness using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate completeness based on:\n1. Coverage of expected topics/points from the query\n2. Depth and thoroughness of coverage\n3. Presence of gaps or missing information",
+              "scale": "0-5 scale where 5 = fully complete, 0 = entirely incomplete",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response fully covers all expected topics comprehensively with thorough detail"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response covers most expected points but has minor gaps or incomplete coverage in some areas"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response covers some expected points but misses several important aspects"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response covers few expected points with significant gaps in coverage"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response covers minimal expected points and is largely incomplete"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response does not cover expected points and is entirely incomplete"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.9,
+          "reasoning": "The response fully addresses the user's request by providing the current weather for both Paris, France, and Rome, Italy, in Celsius, as specified. All requested information (temperature, humidity, wind speed) is included for both locations.",
+          "executionTime": 1277,
+          "timestamp": "2026-01-11T23:27:50.958Z"
+        },
+        {
+          "metricDef": {
+            "name": "completeness",
+            "valueType": "number",
+            "description": "Measures how complete an answer is relative to expected coverage using LLM-based analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how complete a response is relative to what is expected from the query.\n\nGiven the query and response below, analyze the response's completeness using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate completeness based on:\n1. Coverage of expected topics/points from the query\n2. Depth and thoroughness of coverage\n3. Presence of gaps or missing information",
+              "scale": "0-5 scale where 5 = fully complete, 0 = entirely incomplete",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response fully covers all expected topics comprehensively with thorough detail"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response covers most expected points but has minor gaps or incomplete coverage in some areas"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response covers some expected points but misses several important aspects"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response covers few expected points with significant gaps in coverage"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response covers minimal expected points and is largely incomplete"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response does not cover expected points and is entirely incomplete"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.9,
+          "reasoning": "The response fully addresses the query by providing current weather information for both London, UK and Berlin, Germany, including temperature in Celsius as requested. All key pieces of information are present for both locations.",
+          "executionTime": 1316,
+          "timestamp": "2026-01-11T23:27:50.997Z"
+        },
+        {
+          "metricDef": {
+            "name": "completeness",
+            "valueType": "number",
+            "description": "Measures how complete an answer is relative to expected coverage using LLM-based analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how complete a response is relative to what is expected from the query.\n\nGiven the query and response below, analyze the response's completeness using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate completeness based on:\n1. Coverage of expected topics/points from the query\n2. Depth and thoroughness of coverage\n3. Presence of gaps or missing information",
+              "scale": "0-5 scale where 5 = fully complete, 0 = entirely incomplete",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response fully covers all expected topics comprehensively with thorough detail"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response covers most expected points but has minor gaps or incomplete coverage in some areas"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response covers some expected points but misses several important aspects"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response covers few expected points with significant gaps in coverage"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response covers minimal expected points and is largely incomplete"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response does not cover expected points and is entirely incomplete"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.9,
+          "reasoning": "The query explicitly states that the user has all the information they need ('that's all the locations I need for now'). The response correctly acknowledges this and offers future assistance, indicating completeness in addressing the user's declared state.",
+          "executionTime": 966,
+          "timestamp": "2026-01-11T23:27:50.647Z"
+        },
+        {
+          "metricDef": {
+            "name": "answerRelevance",
+            "valueType": "number",
+            "description": "Measures how relevant the output is to the input query using LLM-based statement-level relevance analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how relevant a response is to a given query.\n\nGiven the query and response below, analyze the response's relevance to the query using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate relevance based on:\n1. Direct answer to the query (full weight)\n2. Partial relevance with some unrelated content (partial weight: 0.3)\n3. No relevance to the query (zero weight)",
+              "scale": "0-5 scale where 5 = fully relevant, 0 = entirely unrelated",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response directly and completely answers the query with focused, relevant information"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response mostly answers the query but includes minor unrelated content"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response partially answers the query, mixing relevant and unrelated information"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response includes minimal relevant content and largely misses the intent"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response has very little relevance to the query"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response is entirely unrelated and does not answer the query"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.95,
+          "reasoning": "The response directly and completely answers the query by providing the current weather for San Francisco, including temperature, humidity, and wind speed. The information is highly relevant and focused on the user's request.",
+          "executionTime": 1004,
+          "timestamp": "2026-01-11T23:27:52.001Z"
+        },
+        {
+          "metricDef": {
+            "name": "answerRelevance",
+            "valueType": "number",
+            "description": "Measures how relevant the output is to the input query using LLM-based statement-level relevance analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how relevant a response is to a given query.\n\nGiven the query and response below, analyze the response's relevance to the query using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate relevance based on:\n1. Direct answer to the query (full weight)\n2. Partial relevance with some unrelated content (partial weight: 0.3)\n3. No relevance to the query (zero weight)",
+              "scale": "0-5 scale where 5 = fully relevant, 0 = entirely unrelated",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response directly and completely answers the query with focused, relevant information"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response mostly answers the query but includes minor unrelated content"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response partially answers the query, mixing relevant and unrelated information"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response includes minimal relevant content and largely misses the intent"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response has very little relevance to the query"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response is entirely unrelated and does not answer the query"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.9,
+          "reasoning": "The response directly answers the query by providing the weather for London, UK, and specifies the temperature in Celsius as requested.",
+          "executionTime": 1006,
+          "timestamp": "2026-01-11T23:27:52.004Z"
+        },
+        {
+          "metricDef": {
+            "name": "answerRelevance",
+            "valueType": "number",
+            "description": "Measures how relevant the output is to the input query using LLM-based statement-level relevance analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how relevant a response is to a given query.\n\nGiven the query and response below, analyze the response's relevance to the query using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate relevance based on:\n1. Direct answer to the query (full weight)\n2. Partial relevance with some unrelated content (partial weight: 0.3)\n3. No relevance to the query (zero weight)",
+              "scale": "0-5 scale where 5 = fully relevant, 0 = entirely unrelated",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response directly and completely answers the query with focused, relevant information"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response mostly answers the query but includes minor unrelated content"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response partially answers the query, mixing relevant and unrelated information"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response includes minimal relevant content and largely misses the intent"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response has very little relevance to the query"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response is entirely unrelated and does not answer the query"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.95,
+          "reasoning": "The response directly and completely answers the query by providing the weather in Tokyo, Japan, and specifies the temperature in Celsius as requested.",
+          "executionTime": 1207,
+          "timestamp": "2026-01-11T23:27:52.205Z"
+        },
+        {
+          "metricDef": {
+            "name": "answerRelevance",
+            "valueType": "number",
+            "description": "Measures how relevant the output is to the input query using LLM-based statement-level relevance analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how relevant a response is to a given query.\n\nGiven the query and response below, analyze the response's relevance to the query using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate relevance based on:\n1. Direct answer to the query (full weight)\n2. Partial relevance with some unrelated content (partial weight: 0.3)\n3. No relevance to the query (zero weight)",
+              "scale": "0-5 scale where 5 = fully relevant, 0 = entirely unrelated",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response directly and completely answers the query with focused, relevant information"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response mostly answers the query but includes minor unrelated content"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response partially answers the query, mixing relevant and unrelated information"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response includes minimal relevant content and largely misses the intent"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response has very little relevance to the query"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response is entirely unrelated and does not answer the query"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.95,
+          "reasoning": "The response directly answers the query by providing the weather for Paris, France, and includes the temperature in Celsius as requested.",
+          "executionTime": 1003,
+          "timestamp": "2026-01-11T23:27:52.001Z"
+        },
+        {
+          "metricDef": {
+            "name": "answerRelevance",
+            "valueType": "number",
+            "description": "Measures how relevant the output is to the input query using LLM-based statement-level relevance analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how relevant a response is to a given query.\n\nGiven the query and response below, analyze the response's relevance to the query using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate relevance based on:\n1. Direct answer to the query (full weight)\n2. Partial relevance with some unrelated content (partial weight: 0.3)\n3. No relevance to the query (zero weight)",
+              "scale": "0-5 scale where 5 = fully relevant, 0 = entirely unrelated",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response directly and completely answers the query with focused, relevant information"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response mostly answers the query but includes minor unrelated content"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response partially answers the query, mixing relevant and unrelated information"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response includes minimal relevant content and largely misses the intent"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response has very little relevance to the query"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response is entirely unrelated and does not answer the query"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.95,
+          "reasoning": "The response directly and completely answers the query by providing the weather in Rome, Italy, in Celsius as requested.",
+          "executionTime": 1004,
+          "timestamp": "2026-01-11T23:27:52.002Z"
+        },
+        {
+          "metricDef": {
+            "name": "answerRelevance",
+            "valueType": "number",
+            "description": "Measures how relevant the output is to the input query using LLM-based statement-level relevance analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how relevant a response is to a given query.\n\nGiven the query and response below, analyze the response's relevance to the query using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate relevance based on:\n1. Direct answer to the query (full weight)\n2. Partial relevance with some unrelated content (partial weight: 0.3)\n3. No relevance to the query (zero weight)",
+              "scale": "0-5 scale where 5 = fully relevant, 0 = entirely unrelated",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response directly and completely answers the query with focused, relevant information"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response mostly answers the query but includes minor unrelated content"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response partially answers the query, mixing relevant and unrelated information"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response includes minimal relevant content and largely misses the intent"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response has very little relevance to the query"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response is entirely unrelated and does not answer the query"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.95,
+          "reasoning": "The response directly and fully answers the query by providing the weather for London, England in Celsius, as requested.",
+          "executionTime": 1106,
+          "timestamp": "2026-01-11T23:27:52.104Z"
+        },
+        {
+          "metricDef": {
+            "name": "answerRelevance",
+            "valueType": "number",
+            "description": "Measures how relevant the output is to the input query using LLM-based statement-level relevance analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how relevant a response is to a given query.\n\nGiven the query and response below, analyze the response's relevance to the query using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate relevance based on:\n1. Direct answer to the query (full weight)\n2. Partial relevance with some unrelated content (partial weight: 0.3)\n3. No relevance to the query (zero weight)",
+              "scale": "0-5 scale where 5 = fully relevant, 0 = entirely unrelated",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response directly and completely answers the query with focused, relevant information"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response mostly answers the query but includes minor unrelated content"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response partially answers the query, mixing relevant and unrelated information"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response includes minimal relevant content and largely misses the intent"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response has very little relevance to the query"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response is entirely unrelated and does not answer the query"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.95,
+          "reasoning": "The response directly answers the query by providing the current weather in Tokyo, Japan, and importantly, it includes the temperature in Celsius as requested.",
+          "executionTime": 1002,
+          "timestamp": "2026-01-11T23:27:52.001Z"
+        },
+        {
+          "metricDef": {
+            "name": "answerRelevance",
+            "valueType": "number",
+            "description": "Measures how relevant the output is to the input query using LLM-based statement-level relevance analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how relevant a response is to a given query.\n\nGiven the query and response below, analyze the response's relevance to the query using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate relevance based on:\n1. Direct answer to the query (full weight)\n2. Partial relevance with some unrelated content (partial weight: 0.3)\n3. No relevance to the query (zero weight)",
+              "scale": "0-5 scale where 5 = fully relevant, 0 = entirely unrelated",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response directly and completely answers the query with focused, relevant information"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response mostly answers the query but includes minor unrelated content"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response partially answers the query, mixing relevant and unrelated information"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response includes minimal relevant content and largely misses the intent"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response has very little relevance to the query"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response is entirely unrelated and does not answer the query"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 1,
+          "reasoning": "The response directly and completely answers the query by providing the current weather for both Paris, France, and Rome, Italy, in Celsius as requested.",
+          "executionTime": 1002,
+          "timestamp": "2026-01-11T23:27:52.001Z"
+        },
+        {
+          "metricDef": {
+            "name": "answerRelevance",
+            "valueType": "number",
+            "description": "Measures how relevant the output is to the input query using LLM-based statement-level relevance analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how relevant a response is to a given query.\n\nGiven the query and response below, analyze the response's relevance to the query using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate relevance based on:\n1. Direct answer to the query (full weight)\n2. Partial relevance with some unrelated content (partial weight: 0.3)\n3. No relevance to the query (zero weight)",
+              "scale": "0-5 scale where 5 = fully relevant, 0 = entirely unrelated",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response directly and completely answers the query with focused, relevant information"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response mostly answers the query but includes minor unrelated content"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response partially answers the query, mixing relevant and unrelated information"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response includes minimal relevant content and largely misses the intent"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response has very little relevance to the query"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response is entirely unrelated and does not answer the query"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.95,
+          "reasoning": "The response directly and completely answers the query by providing the current weather for both London, UK and Berlin, Germany, and uses Celsius as preferred.",
+          "executionTime": 900,
+          "timestamp": "2026-01-11T23:27:51.899Z"
+        },
+        {
+          "metricDef": {
+            "name": "answerRelevance",
+            "valueType": "number",
+            "description": "Measures how relevant the output is to the input query using LLM-based statement-level relevance analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how relevant a response is to a given query.\n\nGiven the query and response below, analyze the response's relevance to the query using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate relevance based on:\n1. Direct answer to the query (full weight)\n2. Partial relevance with some unrelated content (partial weight: 0.3)\n3. No relevance to the query (zero weight)",
+              "scale": "0-5 scale where 5 = fully relevant, 0 = entirely unrelated",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response directly and completely answers the query with focused, relevant information"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response mostly answers the query but includes minor unrelated content"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response partially answers the query, mixing relevant and unrelated information"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response includes minimal relevant content and largely misses the intent"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response has very little relevance to the query"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response is entirely unrelated and does not answer the query"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.9,
+          "reasoning": "The response is a polite and appropriate closing statement following the user's indication that their query has been satisfied. It acknowledges the user's thanks and offers future assistance, which is highly relevant in a conversational context.",
+          "executionTime": 1147,
+          "timestamp": "2026-01-11T23:27:52.146Z"
+        },
+        {
+          "metricDef": {
+            "name": "completeness",
+            "valueType": "number",
+            "description": "Measures how complete an answer is relative to expected coverage using LLM-based analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how complete a response is relative to what is expected from the query.\n\nGiven the query and response below, analyze the response's completeness using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate completeness based on:\n1. Coverage of expected topics/points from the query\n2. Depth and thoroughness of coverage\n3. Presence of gaps or missing information",
+              "scale": "0-5 scale where 5 = fully complete, 0 = entirely incomplete",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response fully covers all expected topics comprehensively with thorough detail"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response covers most expected points but has minor gaps or incomplete coverage in some areas"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response covers some expected points but misses several important aspects"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response covers few expected points with significant gaps in coverage"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response covers minimal expected points and is largely incomplete"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response does not cover expected points and is entirely incomplete"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.9,
+          "reasoning": "The response fully covers all expected topics for the query. It provides the current weather conditions, including temperature, humidity, and wind speed, for the specified location (San Francisco).",
+          "executionTime": 849,
+          "timestamp": "2026-01-11T23:27:53.054Z"
+        },
+        {
+          "metricDef": {
+            "name": "completeness",
+            "valueType": "number",
+            "description": "Measures how complete an answer is relative to expected coverage using LLM-based analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how complete a response is relative to what is expected from the query.\n\nGiven the query and response below, analyze the response's completeness using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate completeness based on:\n1. Coverage of expected topics/points from the query\n2. Depth and thoroughness of coverage\n3. Presence of gaps or missing information",
+              "scale": "0-5 scale where 5 = fully complete, 0 = entirely incomplete",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response fully covers all expected topics comprehensively with thorough detail"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response covers most expected points but has minor gaps or incomplete coverage in some areas"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response covers some expected points but misses several important aspects"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response covers few expected points with significant gaps in coverage"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response covers minimal expected points and is largely incomplete"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response does not cover expected points and is entirely incomplete"
+                }
+              ]
+            }
+          },
+          "value": 4,
+          "confidence": 0.9,
+          "reasoning": "The response provides the weather for London, UK and gives the temperature in Celsius as requested. It also includes humidity and wind speed, which adds to the completeness. However, it doesn't explicitly mention if the forecast is for current weather or a future prediction, though 'current weather' is implied.",
+          "executionTime": 1066,
+          "timestamp": "2026-01-11T23:27:53.272Z"
+        },
+        {
+          "metricDef": {
+            "name": "completeness",
+            "valueType": "number",
+            "description": "Measures how complete an answer is relative to expected coverage using LLM-based analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how complete a response is relative to what is expected from the query.\n\nGiven the query and response below, analyze the response's completeness using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate completeness based on:\n1. Coverage of expected topics/points from the query\n2. Depth and thoroughness of coverage\n3. Presence of gaps or missing information",
+              "scale": "0-5 scale where 5 = fully complete, 0 = entirely incomplete",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response fully covers all expected topics comprehensively with thorough detail"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response covers most expected points but has minor gaps or incomplete coverage in some areas"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response covers some expected points but misses several important aspects"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response covers few expected points with significant gaps in coverage"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response covers minimal expected points and is largely incomplete"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response does not cover expected points and is entirely incomplete"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.9,
+          "reasoning": "The response completely fulfills the user's request by providing the weather for Tokyo, Japan, and specifically includes the temperature in Celsius as requested. All key pieces of information (weather condition, temperature, humidity, wind speed) are present and in the correct unit.",
+          "executionTime": 744,
+          "timestamp": "2026-01-11T23:27:52.950Z"
+        },
+        {
+          "metricDef": {
+            "name": "completeness",
+            "valueType": "number",
+            "description": "Measures how complete an answer is relative to expected coverage using LLM-based analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how complete a response is relative to what is expected from the query.\n\nGiven the query and response below, analyze the response's completeness using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate completeness based on:\n1. Coverage of expected topics/points from the query\n2. Depth and thoroughness of coverage\n3. Presence of gaps or missing information",
+              "scale": "0-5 scale where 5 = fully complete, 0 = entirely incomplete",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response fully covers all expected topics comprehensively with thorough detail"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response covers most expected points but has minor gaps or incomplete coverage in some areas"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response covers some expected points but misses several important aspects"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response covers few expected points with significant gaps in coverage"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response covers minimal expected points and is largely incomplete"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response does not cover expected points and is entirely incomplete"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.95,
+          "reasoning": "The response fully covers the requested information: weather for Paris, France, and specifies the temperature in Celsius. It also provides additional relevant details like humidity and wind speed, making it a complete answer.",
+          "executionTime": 953,
+          "timestamp": "2026-01-11T23:27:53.159Z"
+        },
+        {
+          "metricDef": {
+            "name": "completeness",
+            "valueType": "number",
+            "description": "Measures how complete an answer is relative to expected coverage using LLM-based analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how complete a response is relative to what is expected from the query.\n\nGiven the query and response below, analyze the response's completeness using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate completeness based on:\n1. Coverage of expected topics/points from the query\n2. Depth and thoroughness of coverage\n3. Presence of gaps or missing information",
+              "scale": "0-5 scale where 5 = fully complete, 0 = entirely incomplete",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response fully covers all expected topics comprehensively with thorough detail"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response covers most expected points but has minor gaps or incomplete coverage in some areas"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response covers some expected points but misses several important aspects"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response covers few expected points with significant gaps in coverage"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response covers minimal expected points and is largely incomplete"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response does not cover expected points and is entirely incomplete"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.9,
+          "reasoning": "The response directly answers the query by providing the current weather in Rome, Italy, and specifies the temperature in Celsius as requested. It includes relevant details such as sunshine, humidity, and wind speed, making it a complete and thorough answer.",
+          "executionTime": 964,
+          "timestamp": "2026-01-11T23:27:53.170Z"
+        },
+        {
+          "metricDef": {
+            "name": "completeness",
+            "valueType": "number",
+            "description": "Measures how complete an answer is relative to expected coverage using LLM-based analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how complete a response is relative to what is expected from the query.\n\nGiven the query and response below, analyze the response's completeness using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate completeness based on:\n1. Coverage of expected topics/points from the query\n2. Depth and thoroughness of coverage\n3. Presence of gaps or missing information",
+              "scale": "0-5 scale where 5 = fully complete, 0 = entirely incomplete",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response fully covers all expected topics comprehensively with thorough detail"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response covers most expected points but has minor gaps or incomplete coverage in some areas"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response covers some expected points but misses several important aspects"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response covers few expected points with significant gaps in coverage"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response covers minimal expected points and is largely incomplete"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response does not cover expected points and is entirely incomplete"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.9,
+          "reasoning": "The response fully addresses the user's request by providing the weather for London, England, and specifying the temperature in Celsius, as requested. All key elements of the query are covered with sufficient detail.",
+          "executionTime": 953,
+          "timestamp": "2026-01-11T23:27:53.159Z"
+        },
+        {
+          "metricDef": {
+            "name": "completeness",
+            "valueType": "number",
+            "description": "Measures how complete an answer is relative to expected coverage using LLM-based analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how complete a response is relative to what is expected from the query.\n\nGiven the query and response below, analyze the response's completeness using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate completeness based on:\n1. Coverage of expected topics/points from the query\n2. Depth and thoroughness of coverage\n3. Presence of gaps or missing information",
+              "scale": "0-5 scale where 5 = fully complete, 0 = entirely incomplete",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response fully covers all expected topics comprehensively with thorough detail"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response covers most expected points but has minor gaps or incomplete coverage in some areas"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response covers some expected points but misses several important aspects"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response covers few expected points with significant gaps in coverage"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response covers minimal expected points and is largely incomplete"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response does not cover expected points and is entirely incomplete"
+                }
+              ]
+            }
+          },
+          "value": 4,
+          "confidence": 0.9,
+          "reasoning": "The response provides the current weather in Tokyo, Japan, including temperature in Celsius as requested. It also includes humidity and wind speed, which are relevant details. However, the query implies a request for the *next* weather (potentially a forecast), and the response only gives current conditions. This is a minor gap in coverage.",
+          "executionTime": 963,
+          "timestamp": "2026-01-11T23:27:53.170Z"
+        },
+        {
+          "metricDef": {
+            "name": "completeness",
+            "valueType": "number",
+            "description": "Measures how complete an answer is relative to expected coverage using LLM-based analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how complete a response is relative to what is expected from the query.\n\nGiven the query and response below, analyze the response's completeness using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate completeness based on:\n1. Coverage of expected topics/points from the query\n2. Depth and thoroughness of coverage\n3. Presence of gaps or missing information",
+              "scale": "0-5 scale where 5 = fully complete, 0 = entirely incomplete",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response fully covers all expected topics comprehensively with thorough detail"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response covers most expected points but has minor gaps or incomplete coverage in some areas"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response covers some expected points but misses several important aspects"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response covers few expected points with significant gaps in coverage"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response covers minimal expected points and is largely incomplete"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response does not cover expected points and is entirely incomplete"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.95,
+          "reasoning": "The response fully addresses the user's request by providing the current weather for both Paris, France, and Rome, Italy, including the temperature in Celsius as specified. All requested information is present and accurate.",
+          "executionTime": 850,
+          "timestamp": "2026-01-11T23:27:53.057Z"
+        },
+        {
+          "metricDef": {
+            "name": "completeness",
+            "valueType": "number",
+            "description": "Measures how complete an answer is relative to expected coverage using LLM-based analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how complete a response is relative to what is expected from the query.\n\nGiven the query and response below, analyze the response's completeness using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate completeness based on:\n1. Coverage of expected topics/points from the query\n2. Depth and thoroughness of coverage\n3. Presence of gaps or missing information",
+              "scale": "0-5 scale where 5 = fully complete, 0 = entirely incomplete",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response fully covers all expected topics comprehensively with thorough detail"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response covers most expected points but has minor gaps or incomplete coverage in some areas"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response covers some expected points but misses several important aspects"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response covers few expected points with significant gaps in coverage"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response covers minimal expected points and is largely incomplete"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response does not cover expected points and is entirely incomplete"
+                }
+              ]
+            }
+          },
+          "value": 5,
+          "confidence": 0.95,
+          "reasoning": "The response fully addresses both locations requested (London and Berlin), provides current weather conditions (sunny), temperature in Celsius as preferred, humidity, and wind speed for each. All aspects of the query have been thoroughly covered.",
+          "executionTime": 964,
+          "timestamp": "2026-01-11T23:27:53.171Z"
+        },
+        {
+          "metricDef": {
+            "name": "completeness",
+            "valueType": "number",
+            "description": "Measures how complete an answer is relative to expected coverage using LLM-based analysis",
+            "normalization": {
+              "default": {
+                "type": "min-max",
+                "min": 0,
+                "max": 5,
+                "clip": true
+              }
+            },
+            "scope": "single",
+            "type": "llm-based",
+            "provider": {
+              "specificationVersion": "v2",
+              "modelId": "models/gemini-2.5-flash-lite",
+              "config": {
+                "provider": "google.generative-ai",
+                "baseURL": "https://generativelanguage.googleapis.com/v1beta"
+              }
+            },
+            "prompt": {
+              "instruction": "You are evaluating how complete a response is relative to what is expected from the query.\n\nGiven the query and response below, analyze the response's completeness using the provided rubric.\n\nRubric:\n{{rubric}}\n\nQuery: {{input}}\nResponse: {{output}}\n\nBased on your analysis and the rubric, provide your score as a number between 0 and 5.",
+              "variables": []
+            },
+            "rubric": {
+              "criteria": "Evaluate completeness based on:\n1. Coverage of expected topics/points from the query\n2. Depth and thoroughness of coverage\n3. Presence of gaps or missing information",
+              "scale": "0-5 scale where 5 = fully complete, 0 = entirely incomplete",
+              "examples": [
+                {
+                  "score": 5,
+                  "reasoning": "Response fully covers all expected topics comprehensively with thorough detail"
+                },
+                {
+                  "score": 4,
+                  "reasoning": "Response covers most expected points but has minor gaps or incomplete coverage in some areas"
+                },
+                {
+                  "score": 3,
+                  "reasoning": "Response covers some expected points but misses several important aspects"
+                },
+                {
+                  "score": 2,
+                  "reasoning": "Response covers few expected points with significant gaps in coverage"
+                },
+                {
+                  "score": 1,
+                  "reasoning": "Response covers minimal expected points and is largely incomplete"
+                },
+                {
+                  "score": 0,
+                  "reasoning": "Response does not cover expected points and is entirely incomplete"
+                }
+              ]
+            }
+          },
+          "value": 0,
+          "confidence": 0.9,
+          "reasoning": "The query indicates the user has received all necessary information and is concluding the interaction. The response acknowledges this and offers future assistance, which is appropriate. However, the rubric asks to evaluate the *completeness* of the response relative to the query. Since the query is a closing statement and not a request for information, there are no specific topics or points expected from the response beyond a polite acknowledgment. Therefore, evaluating 'completeness' in the traditional sense is difficult. If interpreted as 'appropriateness' or 'sufficiency' of the response given the query, it's high. But strictly on 'completeness of expected topics,' it's zero as no information was requested.",
+          "executionTime": 1394,
+          "timestamp": "2026-01-11T23:27:53.601Z"
+        }
+      ],
+      "derivedMetrics": [
+        {
+          "definition": {
+            "name": "Answer Relevance_score",
+            "valueType": "number",
+            "description": "Normalized score for Answer Relevance"
+          },
+          "value": 1
+        },
+        {
+          "definition": {
+            "name": "Completeness_score",
+            "valueType": "number",
+            "description": "Normalized score for Completeness"
+          },
+          "value": 0
+        },
+        {
+          "definition": {
+            "name": "overallQuality",
+            "valueType": "number"
+          },
+          "value": 0.5
+        }
+      ],
+      "verdicts": {
+        "Overall Quality": {
+          "verdict": "fail",
+          "score": 0.5
+        }
+      }
+    }
+  ],
+  "aggregateSummaries": [
+    {
+      "metric": {
+        "name": "Answer Relevance_score",
+        "valueType": "number",
+        "description": "Normalized score for Answer Relevance"
+      },
+      "aggregations": {
+        "mean": 1,
+        "percentiles": {
+          "p50": 1,
+          "p75": 1,
+          "p90": 1,
+          "p95": 1,
+          "p99": 1
+        }
+      },
+      "count": 1
+    },
+    {
+      "metric": {
+        "name": "Completeness_score",
+        "valueType": "number",
+        "description": "Normalized score for Completeness"
+      },
+      "aggregations": {
+        "mean": 0,
+        "percentiles": {
+          "p50": 0,
+          "p75": 0,
+          "p90": 0,
+          "p95": 0,
+          "p99": 0
+        }
+      },
+      "count": 1
+    },
+    {
+      "metric": {
+        "name": "overallQuality",
+        "valueType": "number"
+      },
+      "aggregations": {
+        "mean": 0.5,
+        "percentiles": {
+          "p50": 0.5,
+          "p75": 0.5,
+          "p90": 0.5,
+          "p95": 0.5,
+          "p99": 0.5
+        },
+        "passRate": 0,
+        "failRate": 1,
+        "passCount": 0,
+        "failCount": 1
+      },
+      "count": 1
+    }
+  ],
+  "evalSummaries": {
+    "Answer Relevance": {
+      "evalName": "Answer Relevance",
+      "evalKind": "singleTurn",
+      "aggregations": {
+        "mean": 1,
+        "percentiles": {
+          "p50": 1,
+          "p75": 1,
+          "p90": 1,
+          "p95": 1,
+          "p99": 1
+        }
+      }
+    },
+    "Completeness": {
+      "evalName": "Completeness",
+      "evalKind": "singleTurn",
+      "aggregations": {
+        "mean": 0,
+        "percentiles": {
+          "p50": 0,
+          "p75": 0,
+          "p90": 0,
+          "p95": 0,
+          "p99": 0
+        }
+      }
+    },
+    "Overall Quality": {
+      "evalName": "Overall Quality",
+      "evalKind": "scorer",
+      "aggregations": {
+        "mean": 0.5,
+        "percentiles": {
+          "p50": 0.5,
+          "p75": 0.5,
+          "p90": 0.5,
+          "p95": 0.5,
+          "p99": 0.5
+        },
+        "passRate": 0,
+        "failRate": 1,
+        "passCount": 0,
+        "failCount": 1
+      },
+      "verdictSummary": {
+        "passRate": 0,
+        "failRate": 1,
+        "passCount": 0,
+        "failCount": 1,
+        "totalCount": 1
+      }
+    }
+  },
+  "metricToEvalMap": {
+    "answerRelevance": "Overall Quality",
+    "completeness": "Overall Quality"
+  },
+  "metadata": {
+    "dataCount": 1,
+    "evaluatorCount": 1
+  }
+}

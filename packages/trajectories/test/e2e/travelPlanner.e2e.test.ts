@@ -8,7 +8,7 @@
  * Run with: pnpm --filter=@tally-evals/trajectories test:e2e travelPlanner
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll } from 'bun:test';
 import { google } from '@ai-sdk/google';
 import { Experimental_Agent as Agent, stepCountIs, tool } from 'ai';
 import { z } from 'zod';

@@ -738,7 +738,7 @@ All components are first-class values:
 
 **Installation:**
 ```bash
-pnpm -w add ai zod
+bun add ai zod
 ```
 
 **Note:** Types for LLM metrics are defined in Phase 1 (`core/types.ts`), but the actual runtime dependencies (`ai` and `zod`) are only needed when implementing the execution engine in Phase 7.

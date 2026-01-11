@@ -52,11 +52,10 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:ui": "vitest --ui",
+    "build": "bunup",
+    "dev": "bunup --watch",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "clean": "rm -rf dist"
@@ -78,12 +77,10 @@
     "@ai-sdk/google": "^2.0.29",
     "@tally-evals/biome-config": "workspace:*",
     "@tally-evals/typescript-config": "workspace:*",
+    "@types/bun": "latest",
     "@types/node": "24.6.2",
-    "@vitest/ui": "^4.0.16",
     "dotenv": "^17.2.3",
-    "tsup": "^8.0.1",
     "tsx": "^4.7.0",
-    "typescript": "^5.3.3",
-    "vitest": "^4.0.16"
+    "typescript": "^5.3.3"
   }
 }
