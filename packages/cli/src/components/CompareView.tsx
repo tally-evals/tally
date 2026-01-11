@@ -7,7 +7,7 @@ import Table from 'cli-table3';
 import { Box, Text, useInput } from 'ink';
 import type React from 'react';
 import { useState } from 'react';
-import { colors } from '../utils/colors.js';
+import { colors } from '../utils/colors';
 import {
   extractTextFromMessage,
   extractTextFromMessages,
@@ -15,8 +15,8 @@ import {
   formatScore,
   sanitizeText,
   truncateText,
-} from '../utils/formatters.js';
-import { KeyboardHelp } from './shared/KeyboardHelp.js';
+} from '../utils/formatters';
+import { KeyboardHelp } from './shared/KeyboardHelp';
 import { ToolCallList } from './shared/ToolCallList.jsx';
 
 interface CompareViewProps {
@@ -208,8 +208,17 @@ export function CompareView({
             colWidths: [20, 12, 12, 12],
           });
 
-          for (const [evalName, leftSummary] of leftReport.evalSummaries) {
-            const rightSummary = rightReport.evalSummaries.get(evalName);
+          const leftSummaries =
+            leftReport.evalSummaries instanceof Map
+              ? leftReport.evalSummaries
+              : new Map(Object.entries(leftReport.evalSummaries));
+          const rightSummaries =
+            rightReport.evalSummaries instanceof Map
+              ? rightReport.evalSummaries
+              : new Map(Object.entries(rightReport.evalSummaries));
+
+          for (const [evalName, leftSummary] of leftSummaries) {
+            const rightSummary = rightSummaries.get(evalName);
             if (!rightSummary) continue;
 
             const leftMean = leftSummary.aggregations.mean.toFixed(3);

@@ -6,8 +6,8 @@ import type { ConversationRef, RunRef } from '@tally-evals/core';
 import { Box, Text, useInput } from 'ink';
 import type React from 'react';
 import { useEffect, useState } from 'react';
-import { colors } from '../utils/colors.js';
-import { KeyboardHelp } from './shared/KeyboardHelp.js';
+import { colors } from '../utils/colors';
+import { KeyboardHelp } from './shared/KeyboardHelp';
 
 interface CompareSelectProps {
   conversation: ConversationRef;
