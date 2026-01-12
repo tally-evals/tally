@@ -44,8 +44,8 @@ export function ConversationTurn({
   const outputText = sanitizeText(extractTextFromMessages(step.output));
   const toolCalls = extractToolCallsFromMessages(step.output);
 
-  const displayInput = truncateText(inputText, expanded ? 200 : 80);
-  const displayOutput = truncateText(outputText, expanded ? 200 : 80);
+  const displayInput = expanded ? inputText : truncateText(inputText, 80);
+  const displayOutput = expanded ? outputText : truncateText(outputText, 80);
 
   return (
     <Box
@@ -56,7 +56,8 @@ export function ConversationTurn({
       paddingX={1}
     >
       <Text>
-        {colors.bold(`Turn ${stepIndex + 1}`)} {colors.muted(`[${step.timestamp}]`)}
+        {colors.bold(`Turn ${stepIndex + 1}`)}{' '}
+        {colors.muted(`[${step.timestamp}]`)}
       </Text>
 
       <Box marginTop={1} flexDirection="column">

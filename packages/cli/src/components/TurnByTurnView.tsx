@@ -3,22 +3,25 @@
  */
 
 import type { Conversation, EvaluationReport } from '@tally-evals/core';
-import { Box, Text, useInput } from 'ink';
+import { Box, Text, useInput, useStdout } from 'ink';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { colors } from 'src/utils/colors.js';
 import { ConversationTurn } from './shared/ConversationTurn';
 import { MetricsTable } from './shared/MetricsTable';
+import { Scrollable } from './shared/Scrollable';
 
 type MetricScope = 'single' | 'multi';
-type CliMetric = React.ComponentProps<typeof ConversationTurn>['metrics'][number];
+type CliMetric = React.ComponentProps<
+  typeof ConversationTurn
+>['metrics'][number];
 
 function getMetricScope(metric: CliMetric): MetricScope | undefined {
   return (metric.metricDef as unknown as { scope?: MetricScope }).scope;
 }
 
 function asStringMap<V>(
-  value: Record<string, V> | Map<string, V> | undefined
+  value: Record<string, V> | Map<string, V> | undefined,
 ): Map<string, V> | undefined {
   if (!value) return undefined;
   if (value instanceof Map) return value;
@@ -43,6 +46,13 @@ export function TurnByTurnView({
 
   const expandedRef = useRef(expanded);
   const scrollPositionRef = useRef(scrollPosition);
+
+  const { stdout } = useStdout();
+
+  const terminalHeight = stdout.rows;
+  const terminalWidth = stdout.columns;
+
+  const messageAreaHeight = terminalHeight - 8;
 
   useEffect(() => {
     expandedRef.current = expanded;
@@ -70,26 +80,26 @@ export function TurnByTurnView({
     // - Arrow keys (Ink)
     // - Vim keys (j/k)
     // - Raw ANSI sequences as a fallback for terminals where Ink doesn't detect `upArrow`
-    const isUp =
-      key.upArrow ||
+    const isLeft =
       key.leftArrow ||
       input === 'k' ||
       input === 'K' ||
       input === '\u001b[A' ||
       input === '\u001b[D';
-    const isDown =
-      key.downArrow ||
+    const isRight =
       key.rightArrow ||
       input === 'j' ||
       input === 'J' ||
       input === '\u001b[B' ||
       input === '\u001b[C';
 
-    if (isUp) {
+    if (isLeft) {
       setScrollPosition((prev) => Math.max(0, prev - 1));
     }
-    if (isDown) {
-      setScrollPosition((prev) => Math.min(conversation.steps.length - 1, prev + 1));
+    if (isRight) {
+      setScrollPosition((prev) =>
+        Math.min(conversation.steps.length - 1, prev + 1),
+      );
     }
   });
 
@@ -100,9 +110,13 @@ export function TurnByTurnView({
 
   const rawMetrics = perTargetResult.rawMetrics as unknown as CliMetric[];
 
-  const singleTurnMetrics = rawMetrics.filter((m) => getMetricScope(m) === 'single');
+  const singleTurnMetrics = rawMetrics.filter(
+    (m) => getMetricScope(m) === 'single',
+  );
 
-  const multiTurnMetrics = rawMetrics.filter((m) => getMetricScope(m) === 'multi');
+  const multiTurnMetrics = rawMetrics.filter(
+    (m) => getMetricScope(m) === 'multi',
+  );
 
   const metricsByName = new Map<string, CliMetric[]>();
   for (const metric of singleTurnMetrics) {
@@ -131,11 +145,13 @@ export function TurnByTurnView({
       <Box paddingX={1}>
         <Text>
           {colors.bold(`Conversation: ${conversation.id}`)}{' '}
-          {colors.muted(`(Turn ${scrollPosition + 1}/${conversation.steps.length})`)}
+          {colors.muted(
+            `(Turn ${scrollPosition + 1}/${conversation.steps.length})`,
+          )}
         </Text>
       </Box>
 
-      <Box flexDirection="column" marginBottom={1} marginTop={1}>
+      <Scrollable height={messageAreaHeight} width={terminalWidth}>
         <ConversationTurn
           stepIndex={scrollPosition}
           step={currentStep}
@@ -159,7 +175,7 @@ export function TurnByTurnView({
             </Box>
           </Box>
         )}
-      </Box>
+      </Scrollable>
     </Box>
   );
 }
