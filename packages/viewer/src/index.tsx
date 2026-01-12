@@ -78,6 +78,20 @@ const server = Bun.serve({
         if (!run) {
           return Response.json({ error: "Run not found" }, { status: 404 });
         }
+        // IMPORTANT:
+        // `run.load()` decodes tally reports into Maps/Sets for in-memory usage.
+        // When we `Response.json()` that object, Maps serialize to `{}` and we lose
+        // eval summaries, metricToEvalMap, verdicts, etc.
+        //
+        // For the web API we return the *raw JSON file* for tally runs so the viewer
+        // gets a JSON-serializable shape.
+        if (run.type === "tally") {
+          const content = await Bun.file(run.path).text();
+          return new Response(content, {
+            headers: { "content-type": "application/json; charset=utf-8" },
+          });
+        }
+
         const data = await run.load();
         return Response.json(data);
       },

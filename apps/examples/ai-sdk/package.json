@@ -16,7 +16,9 @@
     "build": "tsc",
     "test": "bun test",
     "test:watch": "bun test --watch",
-    "tui": "bun run --filter @tally-evals/cli build && bun ../../../packages/cli/dist/bin.js browse",
+    "cli:build": "bun run --filter @tally-evals/cli build",
+    "tui": "bun run cli:build && bunx tally browse",
+    "dev:server": "bun run cli:build && bunx tally dev server",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "clean": "rm -rf dist"
@@ -24,6 +26,7 @@
   "dependencies": {
     "ai": "^5.0.89",
     "@ai-sdk/google": "^2.0.29",
+    "@tally-evals/cli": "workspace:*",
     "zod": "^3.23.8",
     "@tally-evals/core": "workspace:*",
     "@tally-evals/tally": "workspace:*",

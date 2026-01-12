@@ -1,32 +1,6 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { ChevronLeft, GitBranch, Play, Wrench } from "lucide-react";
-
-interface ContentPart {
-  type: string;
-  text?: string;
-  toolCallId?: string;
-  toolName?: string;
-  input?: object;
-  output?: object;
-}
-
-interface Message {
-  role: string;
-  content: string | ContentPart[];
-}
-
-interface Step {
-  stepIndex: number;
-  input: Message;
-  output: Message[];
-  timestamp?: string;
-}
-
-interface Conversation {
-  id: string;
-  steps: Step[];
-}
+import { ChevronLeft, GitBranch, Play } from "lucide-react";
 
 interface Run {
   id: string;
@@ -37,72 +11,31 @@ interface ConversationViewProps {
   id: string;
 }
 
-function renderContent(content: string | ContentPart[]) {
-  if (typeof content === "string") {
-    return <p className="whitespace-pre-wrap">{content}</p>;
-  }
+type TrajectoryMeta = {
+  trajectoryId: string;
+  createdAt: string;
+  goal: string;
+  persona: { name?: string; description: string; guardrails?: string[] };
+  maxTurns?: number;
+};
 
-  return (
-    <div className="space-y-2">
-      {content.map((part, i) => {
-        if (part.type === "text" && part.text) {
-          return (
-            <p key={i} className="whitespace-pre-wrap">
-              {part.text}
-            </p>
-          );
-        }
-        if (part.type === "tool-call") {
-          return (
-            <div key={i} className="bg-background p-3 rounded border border-border">
-              <div className="flex items-center gap-2 mb-2">
-                <Wrench className="h-4 w-4 text-primary" />
-                <span className="font-mono text-sm font-medium text-primary">
-                  {part.toolName}
-                </span>
-              </div>
-              <pre className="code-block text-xs overflow-x-auto">
-                {JSON.stringify(part.input, null, 2)}
-              </pre>
-            </div>
-          );
-        }
-        if (part.type === "tool-result") {
-          return (
-            <div key={i} className="bg-background p-3 rounded border border-border">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs text-muted-foreground">Tool Result:</span>
-                <span className="font-mono text-sm">{part.toolName}</span>
-              </div>
-              <pre className="code-block text-xs overflow-x-auto">
-                {JSON.stringify(part.output, null, 2)}
-              </pre>
-            </div>
-          );
-        }
-        return (
-          <pre key={i} className="code-block text-xs overflow-x-auto">
-            {JSON.stringify(part, null, 2)}
-          </pre>
-        );
-      })}
-    </div>
-  );
-}
+type TrajectoryData = {
+  meta: TrajectoryMeta | null;
+};
 
 export function ConversationView({ id }: ConversationViewProps) {
-  const [conversation, setConversation] = useState<Conversation | null>(null);
+  const [trajectory, setTrajectory] = useState<TrajectoryData | null>(null);
   const [runs, setRuns] = useState<Run[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
-      fetch(`/api/conversations/${id}`).then((r) => r.json()),
+      fetch(`/api/conversations/${id}/trajectory`).then((r) => r.json()),
       fetch(`/api/conversations/${id}/runs`).then((r) => r.json()),
     ])
-      .then(([convData, runsData]) => {
-        setConversation(convData);
+      .then(([trajectoryData, runsData]) => {
+        setTrajectory(trajectoryData);
         setRuns(runsData);
         setLoading(false);
       })
@@ -128,6 +61,8 @@ export function ConversationView({ id }: ConversationViewProps) {
     );
   }
 
+  const meta = trajectory?.meta ?? null;
+
   return (
     <div className="space-y-6">
       {/* Breadcrumb */}
@@ -142,28 +77,63 @@ export function ConversationView({ id }: ConversationViewProps) {
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">{id}</h1>
-        <a
-          href={`#/conversations/${id}/trajectory`}
-          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium border border-border rounded-lg hover:bg-muted transition-colors"
-        >
-          <GitBranch className="h-4 w-4" />
-          View Trajectory
-        </a>
+        <div>
+          <h1 className="text-2xl font-bold">Conversation overview</h1>
+          <div className="text-sm text-muted-foreground">{id}</div>
+        </div>
       </div>
 
+      {/* Trajectory card */}
+      <Card>
+        <CardHeader className="flex flex-row items-start justify-between gap-4">
+          <div>
+            <CardTitle className="text-lg">Trajectory</CardTitle>
+            <div className="mt-1 text-sm text-muted-foreground">
+              {meta?.goal ? meta.goal : "No trajectory metadata available."}
+            </div>
+          </div>
+          <a
+            href={`#/conversations/${id}/trajectory`}
+            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium border border-border rounded-lg hover:bg-muted transition-colors"
+          >
+            <GitBranch className="h-4 w-4" />
+            View trajectory
+          </a>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <div className="text-xs font-semibold text-muted-foreground">Persona</div>
+            <div className="text-sm">
+              <div className="font-medium">{meta?.persona?.name ?? "—"}</div>
+              <div className="text-muted-foreground">{meta?.persona?.description ?? "—"}</div>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="text-xs font-semibold text-muted-foreground">Created</div>
+            <div className="text-sm">
+              {meta?.createdAt ? new Date(meta.createdAt).toLocaleString() : "—"}
+            </div>
+            <div className="text-xs font-semibold text-muted-foreground">Max turns</div>
+            <div className="text-sm">{meta?.maxTurns ?? "—"}</div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Runs */}
-      {runs.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Evaluation Runs</CardTitle>
-          </CardHeader>
-          <CardContent>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Tally runs ({runs.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {runs.length === 0 ? (
+            <div className="text-sm text-muted-foreground">No runs found for this conversation.</div>
+          ) : (
             <div className="space-y-2">
               {runs.map((run) => (
-                <div
+                <a
                   key={run.id}
-                  className="flex items-center justify-between p-3 bg-muted rounded-lg"
+                  href={`#/conversations/${id}/runs/${run.id}`}
+                  className="flex items-center justify-between p-3 bg-muted rounded-lg hover:bg-muted/70 transition-colors"
                 >
                   <div className="flex items-center gap-2">
                     <Play className="h-4 w-4 text-muted-foreground" />
@@ -172,61 +142,10 @@ export function ConversationView({ id }: ConversationViewProps) {
                   <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded">
                     {run.type}
                   </span>
-                </div>
+                </a>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Conversation Steps */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Conversation Steps</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            {conversation?.steps.map((step, i) => (
-              <div key={i} className="space-y-3">
-                {/* Step header */}
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span className="bg-primary text-primary-foreground text-xs font-medium px-2 py-0.5 rounded-full">
-                    Step {step.stepIndex + 1}
-                  </span>
-                  {step.timestamp && (
-                    <span className="text-xs">
-                      {new Date(step.timestamp).toLocaleString()}
-                    </span>
-                  )}
-                </div>
-
-                {/* User input */}
-                <div className="p-4 bg-muted/50 rounded-lg turn-user">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      {step.input.role}
-                    </span>
-                  </div>
-                  <div className="text-sm">{renderContent(step.input.content)}</div>
-                </div>
-
-                {/* Output messages */}
-                {step.output.map((msg, j) => (
-                  <div
-                    key={j}
-                    className={`p-4 bg-muted/50 rounded-lg turn-${msg.role}`}
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        {msg.role}
-                      </span>
-                    </div>
-                    <div className="text-sm">{renderContent(msg.content)}</div>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>

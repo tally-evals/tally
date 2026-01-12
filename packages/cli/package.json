@@ -45,6 +45,7 @@
   "dependencies": {
     "@byteland/ink-scroll-bar": "^0.1.1",
     "@tally-evals/core": "workspace:*",
+    "@tally-evals/viewer": "workspace:*",
     "chalk": "^5.3.0",
     "cli-table3": "^0.6.4",
     "commander": "^12.1.0",
