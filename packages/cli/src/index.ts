@@ -60,11 +60,14 @@ program
   });
 
 program
-  .command('serve')
-  .description('Start web viewer for browsing conversations and trajectories')
-  .option('-p, --port <port>', 'Port to listen on', '4321')
-  .option('--no-open', 'Do not open browser automatically')
-  .action(async (options: { port: string; open: boolean }) => {
+  .command('dev')
+  .description('Developer utilities (web viewer, etc.)')
+  .addCommand(
+    new Command('server')
+      .description('Start the Tally web viewer (dev server)')
+      .option('-p, --port <port>', 'Port to listen on', '4321')
+      .option('--no-open', 'Do not open browser automatically')
+      .action(async (options: { port: string; open: boolean }) => {
     try {
       const port = Number.parseInt(options.port, 10);
       if (Number.isNaN(port) || port < 1 || port > 65535) {
@@ -81,16 +84,19 @@ program
         console.error(chalk.gray(msg));
         console.error(
           chalk.gray(
-            `\nHint: run \`tally serve\` from a directory that contains a \`.tally/\` folder (or a \`tally.config.ts\`).\n` +
+            `\nHint: run \`tally dev server\` from a directory that contains a \`.tally/\` folder (or a \`tally.config.ts\`).\n` +
               `      Current directory: ${process.cwd()}`
           )
         );
         process.exit(1);
       }
 
-      // Find viewer package path (relative to this file in dist or src)
-      const __dirname = dirname(fileURLToPath(import.meta.url));
-      const viewerPath = resolve(__dirname, '../../viewer/src/index.tsx');
+      // Resolve viewer package location (works in monorepo via workspace deps).
+      // Note: viewer can remain "private" for now; this is about local wiring.
+      const viewerPkgJsonUrl = import.meta.resolve('@tally-evals/viewer/package.json');
+      const viewerPkgJsonPath = fileURLToPath(viewerPkgJsonUrl);
+      const viewerDir = dirname(viewerPkgJsonPath);
+      const viewerPath = resolve(viewerDir, 'src/index.tsx');
 
       console.log(chalk.green('✓ Starting Tally web viewer...'));
       console.log(chalk.gray(`  Local: ${chalk.cyan(`http://localhost:${port}`)}`));
@@ -98,7 +104,9 @@ program
 
       // Spawn the viewer using bun
       const proc = Bun.spawn(['bun', '--hot', viewerPath], {
-        cwd: process.cwd(),
+        // Important: run from the viewer package directory so Bun picks up
+        // packages/viewer/bunfig.toml (Tailwind plugin, etc).
+        cwd: viewerDir,
         env: {
           ...process.env,
           PORT: String(port),
@@ -128,7 +136,8 @@ program
       console.error(chalk.red(`✗ ${err instanceof Error ? err.message : 'Unknown error'}`));
       process.exit(1);
     }
-  });
+      })
+  );
 
 program.parse(process.argv);
 

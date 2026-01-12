@@ -53,6 +53,7 @@
       "dependencies": {
         "@byteland/ink-scroll-bar": "^0.1.1",
         "@tally-evals/core": "workspace:*",
+        "@tally-evals/viewer": "workspace:*",
         "chalk": "^5.3.0",
         "cli-table3": "^0.6.4",
         "commander": "^12.1.0",
@@ -68,6 +69,7 @@
         "@tally-evals/biome-config": "workspace:*",
         "@tally-evals/typescript-config": "workspace:*",
         "@types/bun": "^1.2.8",
+        "@types/react": "19.2.0",
         "typescript": "^5.3.3",
       },
       "peerDependencies": {
@@ -1236,7 +1238,7 @@
 
     "turbo-windows-arm64": ["turbo-windows-arm64@1.13.4", "", { "os": "win32", "cpu": "arm64" }, "sha512-u5A+VOKHswJJmJ8o8rcilBfU5U3Y1TTAfP9wX8bFh8teYF1ghP0EhtMRLjhtp6RPa+XCxHHVA2CiC3gbh5eg5g=="],
 
-    "type-fest": ["type-fest@5.3.1", "", { "dependencies": { "tagged-tag": "^1.0.0" } }, "sha512-VCn+LMHbd4t6sF3wfU/+HKT63C9OoyrSIf4b+vtWHpt2U7/4InZG467YDNMFMR70DdHjAdpPWmw2lzRdg0Xqqg=="],
+    "type-fest": ["type-fest@5.4.0", "", { "dependencies": { "tagged-tag": "^1.0.0" } }, "sha512-wfkA6r0tBpVfGiyO+zbf9e10QkRQSlK9F2UvyfnjoCmrvH2bjHyhPzhugSBOuq1dog3P0+FKckqe+Xf6WKVjwg=="],
 
     "typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 
