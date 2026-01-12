@@ -1,0 +1,64 @@
+---
+title: Evals
+description: Defining pass/fail criteria for your agents.
+---
+
+**Evals** are the primary way to define what you want to measure and how you determine if a measurement "passes" or "fails". An Eval combines a **Metric** (or Scorer) with a **Verdict Policy**.
+
+## Types of Evals
+
+Tally provides three specialized Eval types based on the scope of evaluation.
+
+### Single-Turn Evals
+
+Evaluates individual steps in a conversation. Useful for checking immediate responses, tool call accuracy, or safety.
+
+```ts
+import { defineSingleTurnEval, thresholdVerdict } from '@tally-evals/tally';
+
+const responseEval = defineSingleTurnEval({
+  name: 'Response Relevance',
+  metric: relevanceMetric,
+  verdict: thresholdVerdict(0.7), // Pass if score >= 0.7
+});
+```
+
+### Multi-Turn Evals
+
+Evaluates the entire conversation as a whole. Useful for checking goal completion, topic adherence, or overall user satisfaction.
+
+```ts
+import { defineMultiTurnEval, thresholdVerdict } from '@tally-evals/tally';
+
+const goalEval = defineMultiTurnEval({
+  name: 'Goal Completion',
+  metric: goalCompletionMetric,
+  verdict: thresholdVerdict(1.0), // Must be perfectly completed
+});
+```
+
+### Scorer Evals
+
+Combines multiple metrics into a single score using a **Scorer**, then applies a verdict.
+
+```ts
+import { defineScorerEval, thresholdVerdict } from '@tally-evals/tally';
+
+const qualityEval = defineScorerEval({
+  name: 'Overall Quality',
+  inputs: [relevance, completeness, toxicity],
+  scorer: qualityScorer,
+  verdict: thresholdVerdict(0.8),
+});
+```
+
+## Verdict Policies
+
+A verdict policy takes the normalized score (0-1) and returns a `pass`, `fail`, or `error` status.
+
+- `thresholdVerdict(val)`: Pass if score >= val.
+- `booleanVerdict()`: Pass if score is 1, fail if 0.
+- `rangeVerdict(min, max)`: Pass if score is between min and max.
+- `customVerdict(fn)`: Implement your own logic.
+
+Learn more about [Verdicts](/docs/tally/verdicts).

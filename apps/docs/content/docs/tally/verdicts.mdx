@@ -1,0 +1,67 @@
+---
+title: Verdicts
+description: Defining pass/fail criteria for evaluation results.
+---
+
+Verdicts transform a metric score (usually 0-1) into a binary `pass` or `fail` result. This is critical for CI/CD pipelines and automated regressions.
+
+## Available Verdicts
+
+### Threshold Verdict
+
+The most common verdict. It passes if the score meets or exceeds a specified value.
+
+```ts
+import { thresholdVerdict } from '@tally-evals/tally';
+
+// Pass if score is 0.7 or higher
+const verdict = thresholdVerdict(0.7);
+```
+
+### Boolean Verdict
+
+Equivalent to `thresholdVerdict(1.0)`. Used for binary metrics (true/false).
+
+```ts
+import { booleanVerdict } from '@tally-evals/tally';
+
+const verdict = booleanVerdict();
+```
+
+### Range Verdict
+
+Passes if the score falls within a specific range (inclusive).
+
+```ts
+import { rangeVerdict } from '@tally-evals/tally';
+
+// Pass if score is between 0.4 and 0.6
+const verdict = rangeVerdict(0.4, 0.6);
+```
+
+### Custom Verdict
+
+Implement custom logic to determine the verdict.
+
+```ts
+import { customVerdict } from '@tally-evals/tally';
+
+const verdict = customVerdict((score, context) => {
+  if (context.target.metadata.isCritical && score < 1.0) {
+    return 'fail';
+  }
+  return score > 0.5 ? 'pass' : 'fail';
+});
+```
+
+## Using Verdicts in Evals
+
+Verdicts are applied within Eval definitions:
+
+```ts
+const myEval = defineSingleTurnEval({
+  name: 'My Eval',
+  metric: myMetric,
+  verdict: thresholdVerdict(0.8),
+});
+```

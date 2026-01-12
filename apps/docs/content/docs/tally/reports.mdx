@@ -1,0 +1,54 @@
+---
+title: Reports
+description: Analyzing and exporting evaluation results.
+---
+
+Running `tally.run()` produces an `EvaluationReport`. This report contains comprehensive data about the entire evaluation run.
+
+## Report Structure
+
+An `EvaluationReport` includes:
+
+- `evalSummaries`: Aggregated statistics for each Eval (mean, pass rate, etc.).
+- `perTargetResults`: Detailed scores and verdicts for every individual conversation or step.
+- `metadata`: Run duration, timestamps, and environment info.
+
+## Exporting Results
+
+### Console Tables
+
+Tally provides a utility to format the report summary as a pretty table for the console.
+
+```ts
+import { formatReportAsTables } from '@tally-evals/tally';
+
+const tally = createTally({ ... });
+const report = await tally.run();
+
+console.log(formatReportAsTables(report));
+```
+
+### JSON Export
+
+For CI/CD or custom dashboards, you can export the entire report as JSON.
+
+```ts
+import { reportCodec } from '@tally-evals/core';
+
+const json = reportCodec.encode(report);
+await fs.writeFile('report.json', json);
+```
+
+## CI Integration
+
+A common pattern is to fail the CI build if the pass rate falls below a certain threshold.
+
+```ts
+const report = await tally.run();
+const summary = report.evalSummaries.find(s => s.evalName === 'Overall Quality');
+
+if (summary.passRate < 0.95) {
+  console.error(`Pass rate too low: ${summary.passRate * 100}%`);
+  process.exit(1);
+}
+```

@@ -1,0 +1,52 @@
+---
+title: Output Formats
+description: Exporting trajectory results for evaluation.
+---
+
+Once a trajectory run completes, you can export the results into different formats.
+
+## Tally Conversation
+
+The `toConversation` utility transforms the trajectory result into the canonical `Conversation` format used by `@tally-evals/tally`.
+
+```ts
+import { toConversation } from '@tally-evals/trajectories';
+
+const result = await runTrajectory(trajectory);
+const conversation = toConversation(result, 'run-unique-id');
+
+// Now you can evaluate this with Tally
+const report = await tally.run([conversation]);
+```
+
+## JSONL Format
+
+For external logging or training data, you can export to JSONL (one step per line).
+
+```ts
+import { toJSONL } from '@tally-evals/trajectories';
+
+const lines = toJSONL(result);
+// ["{...}", "{...}"]
+```
+
+## Persistence via TallyStore
+
+If you provide a `TallyStore` to `runTrajectory`, the results (including rich `StepTrace` data) are automatically saved to disk.
+
+```ts
+import { TallyStore } from '@tally-evals/core';
+
+const store = await TallyStore.open({ cwd: process.cwd() });
+
+await runTrajectory(trajectory, {
+  store,
+  trajectoryId: 'my-test-run',
+});
+
+// Files saved at:
+// .tally/conversations/my-test-run/
+//   ├── conversation.jsonl
+//   ├── stepTraces.json
+//   └── meta.json
+```

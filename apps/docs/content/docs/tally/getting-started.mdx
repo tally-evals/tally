@@ -1,0 +1,93 @@
+---
+title: Getting Started
+description: Installation and basic setup for Tally.
+---
+
+## Installation
+
+Install the `@tally-evals/tally` package along with its peer dependencies.
+
+```bash
+pnpm add @tally-evals/tally
+```
+
+### Peer Dependencies
+
+Tally requires [AI SDK](https://sdk.vercel.ai/docs) providers if you use LLM-based metrics.
+
+```bash
+pnpm add ai @ai-sdk/google # or @ai-sdk/openai, etc.
+```
+
+## Basic Configuration
+
+Tally works out of the box with default settings, but you can configure shared storage and evaluation parameters in your project.
+
+### TypeScript Setup
+
+Ensure your `tsconfig.json` has `skipLibCheck: true` and `moduleResolution: "bundler"` (or "node16"/"nodenext") to properly resolve Tally's exports.
+
+```json
+{
+  "compilerOptions": {
+    "moduleResolution": "bundler",
+    "skipLibCheck": true
+  }
+}
+```
+
+## Your First Evaluation
+
+Let's walk through a complete, minimal example of evaluating an agent's response relevance.
+
+```ts
+import { 
+  createTally, 
+  createEvaluator, 
+  runAllTargets,
+  defineSingleTurnEval,
+  thresholdVerdict
+} from '@tally-evals/tally';
+import { createAnswerRelevanceMetric } from '@tally-evals/tally/metrics';
+import { google } from '@ai-sdk/google';
+
+// 1. Define your evaluation model
+const model = google('models/gemini-2.0-flash');
+
+// 2. Setup metrics and evals
+const relevanceMetric = createAnswerRelevanceMetric({ provider: model });
+
+const relevanceEval = defineSingleTurnEval({
+  name: 'Answer Relevance',
+  metric: relevanceMetric,
+  verdict: thresholdVerdict(0.7),
+});
+
+// 3. Create the evaluator
+const evaluator = createEvaluator({
+  name: 'Agent Quality',
+  evals: [relevanceEval],
+  context: runAllTargets(),
+});
+
+// 4. Run on your data
+const conversations = [
+  {
+    id: 'conv-1',
+    steps: [
+      {
+        stepIndex: 0,
+        input: { role: 'user', content: 'What is Tally?' },
+        output: [{ role: 'assistant', content: 'Tally is an evaluation framework.' }],
+        timestamp: new Date(),
+      },
+    ],
+  },
+];
+
+const tally = createTally({ data: conversations, evaluators: [evaluator] });
+const report = await tally.run();
+
+// 5. Check results
+console.log(JSON.stringify(report.evalSummaries, null, 2));
+```
