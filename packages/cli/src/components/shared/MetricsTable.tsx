@@ -3,10 +3,14 @@
  */
 
 import Table from 'cli-table3';
-import { Box, Text } from 'ink';
+import { Box, Text, useStdout } from 'ink';
 import React, { useMemo } from 'react';
 import { colors } from '../../utils/colors';
-import { formatScore, formatVerdict, truncateText } from '../../utils/formatters';
+import {
+  formatScore,
+  formatVerdict,
+  truncateText,
+} from '../../utils/formatters';
 import type { CliMetric } from './ConversationTurn';
 
 interface MetricsTableProps {
@@ -22,13 +26,31 @@ function MetricsTableComponent({
   metricToEvalMap,
   maxReasoningLength = 40,
 }: MetricsTableProps): React.ReactElement {
+  const { stdout } = useStdout();
+  const viewportWidth = stdout.columns;
+
   const tableOutput = useMemo(() => {
     if (metrics.length === 0) {
       return colors.muted('No metrics');
     }
 
     const isExpanded = maxReasoningLength > 40;
-    const reasoningColWidth = isExpanded ? 100 : 38;
+
+    const metricColWidth = 20;
+    const scoreColWidth = 12;
+    const verdictColWidth = metricToEvalMap ? 10 : 0;
+
+    const numColumns = metricToEvalMap ? 4 : 3;
+    const borderOverhead = numColumns * 3 + 1;
+
+    const reasoningColWidth = Math.max(
+      30,
+      viewportWidth -
+        metricColWidth -
+        scoreColWidth -
+        verdictColWidth -
+        borderOverhead,
+    );
 
     const table = new Table({
       head: [
@@ -43,28 +65,43 @@ function MetricsTableComponent({
         compact: false,
       },
       wordWrap: isExpanded,
-      colWidths: [20, 12, ...(metricToEvalMap ? [10] : []), reasoningColWidth],
+      colWidths: [
+        metricColWidth,
+        scoreColWidth,
+        ...(metricToEvalMap ? [verdictColWidth] : []),
+        reasoningColWidth,
+      ],
     });
 
     for (const metric of metrics) {
       const name = truncateText(metric.metricDef.name, 20);
       const score =
-        typeof metric.value === 'number' ? formatScore(metric.value) : String(metric.value);
-      // Look up eval name using the metric-to-eval map, then get the verdict
-      const evalName = metricToEvalMap?.get(metric.metricDef.name) ?? metric.metricDef.name;
+        typeof metric.value === 'number'
+          ? formatScore(metric.value)
+          : String(metric.value);
+      const evalName =
+        metricToEvalMap?.get(metric.metricDef.name) ?? metric.metricDef.name;
       const verdict = verdicts?.get(evalName);
       const verdictIcon = formatVerdict(verdict?.verdict);
       const fullReasoning = metric.reasoning || '';
       const reasoning =
         maxReasoningLength > 40
           ? fullReasoning.split('\n')[0]
-          : truncateText(fullReasoning.split('\n')[0] as string, maxReasoningLength);
+          : truncateText(
+              fullReasoning.split('\n')[0] as string,
+              maxReasoningLength,
+            );
 
-      table.push([name, score, ...(metricToEvalMap ? [verdictIcon] : []), reasoning as string]);
+      table.push([
+        name,
+        score,
+        ...(metricToEvalMap ? [verdictIcon] : []),
+        reasoning as string,
+      ]);
     }
 
     return table.toString();
-  }, [metrics, verdicts, metricToEvalMap, maxReasoningLength]);
+  }, [metrics, verdicts, metricToEvalMap, maxReasoningLength, viewportWidth]);
 
   return (
     <Box>

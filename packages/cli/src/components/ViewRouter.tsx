@@ -18,7 +18,11 @@ interface ViewRouterProps {
   onBack?: () => void;
 }
 
-export function ViewRouter({ conversation, report, onBack }: ViewRouterProps): React.ReactElement {
+export function ViewRouter({
+  conversation,
+  report,
+  onBack,
+}: ViewRouterProps): React.ReactElement {
   const [viewMode, setViewMode] = useState<ViewMode>('summary');
 
   useInput((input, key) => {
@@ -38,8 +42,11 @@ export function ViewRouter({ conversation, report, onBack }: ViewRouterProps): R
       <Box paddingX={1} paddingTop={1}>
         <Text>
           {colors.bold('View Mode:')}{' '}
-          {colors.info(viewMode === 'summary' ? '◉ Summary' : '  Summary')} {colors.muted('|')}{' '}
-          {colors.info(viewMode === 'turn-by-turn' ? '◉ Turn-by-Turn' : '  Turn-by-Turn')}
+          {colors.info(viewMode === 'summary' ? '◉ Summary' : '  Summary')}{' '}
+          {colors.muted('|')}{' '}
+          {colors.info(
+            viewMode === 'turn-by-turn' ? '◉ Turn-by-Turn' : '  Turn-by-Turn',
+          )}
         </Text>
       </Box>
 
@@ -49,7 +56,11 @@ export function ViewRouter({ conversation, report, onBack }: ViewRouterProps): R
         <TurnByTurnView
           conversation={conversation}
           report={report}
-          onToggleView={() => setViewMode(viewMode === 'turn-by-turn' ? 'summary' : 'turn-by-turn')}
+          onToggleView={() =>
+            setViewMode(
+              viewMode === 'turn-by-turn' ? 'summary' : 'turn-by-turn',
+            )
+          }
           onBack={onBack}
         />
       )}
@@ -61,7 +72,7 @@ export function ViewRouter({ conversation, report, onBack }: ViewRouterProps): R
           { key: 'q', description: 'Quit' },
           ...(viewMode === 'turn-by-turn'
             ? [
-                { key: '↑↓', description: 'Navigate turns' },
+                { key: '⇄', description: 'Navigate turns' },
                 { key: 'e', description: 'Expand/Clip' },
               ]
             : []),
