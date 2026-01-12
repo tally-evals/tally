@@ -1,0 +1,50 @@
+---
+title: Tally
+description: The main evaluation framework for LLM agents.
+---
+
+Tally is a TypeScript framework for evaluating LLM agents with datasets, metrics, scorers, and automated reports. It emphasizes **composability by value**—you compose evaluations by wiring actual objects, not by juggling string identifiers.
+
+## Why Tally?
+
+- **Composable**: Build evaluations from real objects (metrics, scorers, evals).
+- **Multi-turn**: Evaluate single-turn and multi-turn behavior over datasets or conversations.
+- **Pass/Fail Criteria**: Define rigorous criteria with verdict policies.
+- **Aggregations**: Summarize results with built-in or custom aggregations.
+- **Rich Reports**: Produce structured `EvaluationReport` for analysis and CI.
+
+## Quick Start
+
+```ts
+import { createTally, createEvaluator, runAllTargets } from '@tally-evals/tally';
+import { createAnswerRelevanceMetric } from '@tally-evals/tally/metrics';
+import { google } from '@ai-sdk/google';
+
+// 1. Your data (e.g., from Trajectories)
+const conversations = [/* ... your conversation data ... */];
+
+// 2. Define metrics
+const model = google('models/gemini-2.0-flash');
+const relevance = createAnswerRelevanceMetric({ provider: model });
+
+// 3. Create evaluator
+const evaluator = createEvaluator({
+  name: 'Basic Quality',
+  evals: [
+    defineSingleTurnEval({
+      name: 'Relevance',
+      metric: relevance,
+      verdict: thresholdVerdict(0.7),
+    })
+  ],
+  context: runAllTargets(),
+});
+
+// 4. Run Tally
+const tally = createTally({ data: conversations, evaluators: [evaluator] });
+const report = await tally.run();
+
+console.log(report.evalSummaries);
+```
+
+Check out the [Getting Started](/docs/tally/getting-started) guide to set up your first evaluation.

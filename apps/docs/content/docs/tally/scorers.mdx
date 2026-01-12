@@ -1,0 +1,55 @@
+---
+title: Scorers
+description: Combining multiple metrics into a unified score.
+---
+
+Scorers allow you to combine several metrics into a single "composite" score. This is useful for defining high-level concepts like "Overall Quality" or "Safety Score".
+
+## Weighted Average Scorer
+
+The `WeightedAverageScorer` is the most common way to combine metrics. You assign a weight to each input metric, and the scorer calculates the weighted mean.
+
+```ts
+import { createWeightedAverageScorer, defineInput } from '@tally-evals/tally/scorers';
+
+const overallQualityScorer = createWeightedAverageScorer({
+  name: 'OverallQuality',
+  inputs: [
+    defineInput({ metric: relevance, weight: 0.5 }),
+    defineInput({ metric: completeness, weight: 0.3 }),
+    defineInput({ metric: style, weight: 0.2 }),
+  ],
+});
+```
+
+## Custom Scorers
+
+You can create custom scorers by implementing the `Scorer` interface.
+
+```ts
+import { defineScorer } from '@tally-evals/tally';
+
+const penaltyScorer = defineScorer({
+  name: 'SafetyPenalty',
+  evaluate: async (inputs) => {
+    const [quality, toxicity] = inputs;
+    // If toxicity is high, heavily penalize the quality score
+    if (toxicity > 0.5) return quality * 0.2;
+    return quality;
+  }
+});
+```
+
+## Normalization
+
+Scorers automatically handle score normalization. If your metrics produce raw values (like response time in ms), you can apply normalizers (like `minMax` or `zScore`) before the scorer combines them.
+
+```ts
+import { defineInput, minMaxNormalizer } from '@tally-evals/tally';
+
+const input = defineInput({
+  metric: responseTimeMetric,
+  normalizer: minMaxNormalizer(0, 5000), // Map 0-5s to 0-1
+  weight: 1.0
+});
+```
