@@ -55,21 +55,21 @@ IMPORTANT: You do not have the capability to book flights, accommodations, resta
 Always be friendly, helpful, and efficient in gathering information.`
 
 export const travelPlannerAgent = new Agent({
-  name: 'Travel Planner Agent',
-  instructions: TRAVEL_PLANNER_SYSTEM_PROMPT,
-  model: DEFAULT_MODEL_ID,
-  tools: {
-    searchAccommodationsTool,
-    searchFlightsTool,
-    searchDiningTool,
-    searchVehiclesTool,
-  },
-  defaultGenerateOptions: {
-    maxSteps: DEFAULT_MAX_STEPS,
-  },
-  memory: new Memory({
-    storage: new LibSQLStore({
-      url: 'file:../mastra.db', // path is relative to the .mastra/output directory
-    }),
-  }),
+   name: 'Travel Planner Agent',
+   instructions: TRAVEL_PLANNER_SYSTEM_PROMPT,
+   model: DEFAULT_MODEL_ID,
+   tools: {
+      searchAccommodationsTool,
+      searchFlightsTool,
+      searchDiningTool,
+      searchVehiclesTool,
+   },
+   defaultGenerateOptions: {
+      maxSteps: DEFAULT_MAX_STEPS,
+   },
+   //   memory: new Memory({
+   //     storage: new LibSQLStore({
+   //       url: 'file:../mastra.db', // path is relative to the .mastra/output directory
+   //     }),
+   //   }),
 });
