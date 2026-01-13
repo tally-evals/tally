@@ -1,0 +1,69 @@
+---
+title: Metrics
+description: Measuring agent behavior with LLM and code-based metrics.
+---
+
+Metrics are the "atoms" of evaluation in Tally. They represent a single, focused measurement of a specific quality—whether that's a simple technical check (like response time) or a complex human-like judgment (like tone or relevance).
+
+To promote maximum composability, Tally treats metrics as first-class objects that you define once and reuse across your entire evaluation pipeline.
+
+---
+
+## Blueprint vs. Result
+
+It is important to understand the distinction between a definition and its output:
+
+| Concept | Description |
+| :--- | :--- |
+| **`MetricDef`** | The **blueprint**. It defines the "how" (code or prompt), the metadata, and the expected value type. |
+| **`Metric`** | The **result**. This is the actual value (e.g., `4.5` or `true`) produced when a `MetricDef` is run against data. |
+
+---
+
+## Anatomy of a Metric
+
+Every metric in Tally is characterized by three primary dimensions:
+
+### 1. Value Type
+Metrics are not limited to 0–1 scores. They can produce any domain-relevant value:
+- **Numeric**: Continuous values like response latency (ms), token usage, or similarity scores.
+- **Boolean**: Binary checks like "did the tool run?" or "is the output valid JSON?"
+- **Ordinal**: Categorical results mapped from a rubric (e.g., `{ Poor, Fair, Good, Excellent }`).
+
+### 2. Scope
+Determines *what* the metric is measuring:
+- **Single-Turn**: Evaluates a single interaction (input query + assistant response).
+- **Multi-Turn**: Analyzes the entire conversation history to detect patterns like knowledge retention or topic drift.
+
+### 3. Implementation
+The engine that powers the measurement:
+- **Code-Based**: Deterministic logic written in TypeScript. Best for technical validation.
+- **LLM-Based**: Evaluated by a language model using a prompt and rubric. Best for semantic judgment.
+
+---
+
+## The Metric Lifecycle
+
+1.  **Define**: Create a `MetricDef` using the [factory APIs](/docs/tally/metrics/custom).
+2.  **Execute**: Tally runs the definition against your conversation data.
+3.  **Normalize (Optional)**: If the metric produces raw values (like 1-5 stars), a **Normalizer** can map it to 0–1.
+4.  **Compose**: The result is passed to [Scorers](/docs/tally/scorers) for combination or [Evals](/docs/tally/evals) for a final verdict.
+
+---
+
+## Next Steps
+
+Explore the two ways to get started with metrics in Tally:
+
+<Cards>
+  <Card 
+    title="Built-in Metrics" 
+    description="Use pre-built measurements for relevance, completeness, and more." 
+    href="/docs/tally/metrics/builtin" 
+  />
+  <Card 
+    title="Custom Metrics" 
+    description="Learn how to build domain-specific metrics using code or LLM prompts." 
+    href="/docs/tally/metrics/custom" 
+  />
+</Cards>

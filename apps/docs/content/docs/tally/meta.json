@@ -1,5 +1,14 @@
 {
   "title": "Tally",
   "root": true,
-  "pages": ["index", "getting-started", "concepts", "evals", "metrics", "verdicts", "scorers", "aggregators", "reports"]
+  "pages": [
+    "index",
+    "getting-started",
+    "concepts",
+    "metrics",
+    "scorers",
+    "evals",
+    "aggregators",
+    "reports"
+  ]
 }

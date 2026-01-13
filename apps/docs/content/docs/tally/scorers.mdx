@@ -1,55 +1,98 @@
 ---
 title: Scorers
-description: Combining multiple metrics into a unified score.
+description: Normalizing and combining metrics into unified scores.
 ---
 
-Scorers allow you to combine several metrics into a single "composite" score. This is useful for defining high-level concepts like "Overall Quality" or "Safety Score".
+While **Metrics** focus on capturing raw domain data (which can be numeric, boolean, or ordinal), **Scorers** are responsible for transforming those heterogeneous results into a unified, normalized format—usually a **0–1 Score**.
+
+Scorers act as the "normalization bridge" in Tally, allowing you to combine diverse measurements into high-level concepts like "Overall Quality," "Safety," or "Professionalism."
+
+---
+
+## Metrics vs. Scorers
+
+The primary difference between a Metric and a Scorer is their **output requirements** and **responsibility**:
+
+| Feature | Metric | Scorer |
+| :--- | :--- | :--- |
+| **Input** | Conversation data (Step or History). | Multiple Metric results. |
+| **Output Type** | Any (ms, boolean, stars, etc.). | **Always Numeric (normalized 0–1).** |
+| **Responsibility** | Domain-specific measurement. | Weighting, normalization, and combination. |
+| **Composability** | Atoms of measurement. | Molecules of evaluation. |
+
+---
+
+## Why Normalize to 0–1?
+
+Normalization is the process of mapping a raw value (like "500ms" or "4 stars") onto a standard 0–1 scale. This is a critical step for two reasons:
+
+1.  **Fair Weighting**: You cannot directly average "500ms" and "true." Normalizing both to a 0–1 scale allows you to apply meaningful weights (e.g., latency is 20% of the score, correctness is 80%).
+2.  **Consistent Verdicts**: By enforcing a 0–1 output, you can use standard **Verdict Policies** (like `thresholdVerdict(0.8)`) across any scorer, regardless of which metrics it combines.
+
+---
 
 ## Weighted Average Scorer
 
-The `WeightedAverageScorer` is the most common way to combine metrics. You assign a weight to each input metric, and the scorer calculates the weighted mean.
+The `WeightedAverageScorer` is the most common scorer. It takes a list of input metrics, normalizes each one, and calculates a weighted mean.
 
 ```ts
 import { createWeightedAverageScorer, defineInput } from '@tally-evals/tally/scorers';
+import { minMaxNormalizer } from '@tally-evals/tally/normalization';
 
-const overallQualityScorer = createWeightedAverageScorer({
+// 1. Define the Scorer
+const qualityScorer = createWeightedAverageScorer({
   name: 'OverallQuality',
   inputs: [
-    defineInput({ metric: relevance, weight: 0.5 }),
-    defineInput({ metric: completeness, weight: 0.3 }),
-    defineInput({ metric: style, weight: 0.2 }),
+    // Use defineInput to wire metrics with weights and normalizers
+    defineInput({ 
+      metric: relevanceMetric, 
+      weight: 0.6 
+    }),
+    defineInput({ 
+      metric: latencyMetric, 
+      weight: 0.4,
+      // Map 0-2000ms to 1-0 (inverted: lower is better)
+      normalizerOverride: minMaxNormalizer(2000, 0) 
+    }),
   ],
 });
 ```
 
+### `defineInput` Options
+- **`metric`**: The `MetricDef` to include.
+- **`weight`**: Relative importance of this metric.
+- **`normalizerOverride`**: (Optional) A specific normalizer for this input. If omitted, the scorer uses the metric's default normalizer.
+- **`required`**: (Default: `true`) If true, the scorer fails if this metric produces an error.
+
+---
+
 ## Custom Scorers
 
-You can create custom scorers by implementing the `Scorer` interface.
+For non-linear combinations (e.g., if any toxicity is detected, the entire quality score should be zero), you can define a custom scorer.
 
 ```ts
 import { defineScorer } from '@tally-evals/tally';
 
-const penaltyScorer = defineScorer({
-  name: 'SafetyPenalty',
-  evaluate: async (inputs) => {
-    const [quality, toxicity] = inputs;
-    // If toxicity is high, heavily penalize the quality score
-    if (toxicity > 0.5) return quality * 0.2;
+export const safetyPenaltyScorer = defineScorer({
+  name: 'SafetyAdjustedQuality',
+  inputs: [
+    defineInput({ metric: qualityMetric, weight: 1 }),
+    defineInput({ metric: toxicityMetric, weight: 1 })
+  ],
+  evaluate: async (scores) => {
+    const [quality, toxicity] = scores;
+    
+    // Non-linear logic: 
+    // If toxicity is high (> 0.2), ignore quality and return 0
+    if (toxicity > 0.2) return 0;
+    
     return quality;
   }
 });
 ```
 
-## Normalization
+---
 
-Scorers automatically handle score normalization. If your metrics produce raw values (like response time in ms), you can apply normalizers (like `minMax` or `zScore`) before the scorer combines them.
+## Summary
 
-```ts
-import { defineInput, minMaxNormalizer } from '@tally-evals/tally';
-
-const input = defineInput({
-  metric: responseTimeMetric,
-  normalizer: minMaxNormalizer(0, 5000), // Map 0-5s to 0-1
-  weight: 1.0
-});
-```
+Use **Metrics** to measure your domain. Use **Scorers** to bring those measurements into Tally's standardized 0–1 evaluation space. Once normalized, these scores can be passed to **Evals** for a final pass/fail decision.

@@ -1,54 +1,82 @@
 ---
 title: Reports
-description: Analyzing and exporting evaluation results.
+description: The comprehensive source of truth for evaluation runs.
 ---
 
-Running `tally.run()` produces an `EvaluationReport`. This report contains comprehensive data about the entire evaluation run.
+The **Evaluation Report** is the final output of the Tally engine. It is a structured, serializable "Source of Truth" that captures every measurement, every decision (verdict), and every summary from an evaluation run.
 
-## Report Structure
+A report is designed to serve two audiences:
+1.  **Stakeholders**: Through high-level aggregated summaries.
+2.  **Developers**: Through granular, turn-by-turn failure analysis.
 
-An `EvaluationReport` includes:
+---
 
-- `evalSummaries`: Aggregated statistics for each Eval (mean, pass rate, etc.).
-- `perTargetResults`: Detailed scores and verdicts for every individual conversation or step.
-- `metadata`: Run duration, timestamps, and environment info.
+## Anatomy of a Report
 
-## Exporting Results
+When you call `await tally.run()`, you receive a report object with three distinct sections:
 
-### Console Tables
+### 1. Eval Summaries (`evalSummaries`)
+The bird's-eye view. This section contains the output of your [Aggregators](/docs/tally/aggregators). It tells you how each Eval performed across the entire dataset.
 
-Tally provides a utility to format the report summary as a pretty table for the console.
+- **Example**: `Relevance: 85% Pass Rate, 0.78 Mean Score`.
+
+### 2. Per-Target Results (`perTargetResults`)
+The deep-dive data. For every single conversation or step in your dataset, Tally records:
+- The raw metric value (e.g., `500ms`).
+- The normalized score (e.g., `0.8`).
+- The final verdict (`pass` or `fail`).
+- Any error messages if the evaluation failed.
+
+### 3. Metadata (`metadata`)
+Contextual information about the run, including:
+- Total execution time.
+- Timestamp of the run.
+- Model names and versions used for evaluation.
+
+---
+
+## Visibility and Debugging
+
+Tally makes it easy to visualize these reports wherever you work.
+
+### CLI Tables
+For a quick check during development, Tally can format the report as a clean table in your terminal.
 
 ```ts
 import { formatReportAsTables } from '@tally-evals/tally';
 
-const tally = createTally({ ... });
 const report = await tally.run();
-
 console.log(formatReportAsTables(report));
 ```
 
-### JSON Export
-
-For CI/CD or custom dashboards, you can export the entire report as JSON.
+### Failure Analysis
+Because the report contains the full context for every `fail` verdict, you can quickly identify and fix the specific interactions that are dragging down your scores.
 
 ```ts
-import { reportCodec } from '@tally-evals/core';
+const failures = report.perTargetResults.filter(r => r.verdicts.some(v => v.status === 'fail'));
 
-const json = reportCodec.encode(report);
-await fs.writeFile('report.json', json);
+failures.forEach(f => {
+  console.log(`Failure in ${f.targetId}:`, f.verdicts);
+});
 ```
 
-## CI Integration
+---
 
-A common pattern is to fail the CI build if the pass rate falls below a certain threshold.
+## CI/CD Integration: "Fail Fast"
+
+Tally reports are first-class citizens in your automation pipeline. By parsing the `evalSummaries`, you can automatically block problematic code before it reaches production.
 
 ```ts
 const report = await tally.run();
-const summary = report.evalSummaries.find(s => s.evalName === 'Overall Quality');
+const relevance = report.evalSummaries.find(s => s.evalName === 'Answer Relevance');
 
-if (summary.passRate < 0.95) {
-  console.error(`Pass rate too low: ${summary.passRate * 100}%`);
-  process.exit(1);
+if (relevance.passRate < 0.95) {
+  throw new Error(`Evaluation Failed: Pass rate (${relevance.passRate}) is below 95%`);
 }
 ```
+
+---
+
+## Summary
+
+The report is not just an output; it is a **historical record** of your system's quality. By saving these reports over time, you build a comprehensive map of your agent's evolution and performance.

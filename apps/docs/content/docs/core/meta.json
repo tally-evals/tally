@@ -1,5 +1,10 @@
 {
   "title": "Core",
   "root": true,
-  "pages": ["index", "types", "storage", "configuration"]
+  "pages": [
+    "index",
+    "configuration",
+    "storage",
+    "types"
+  ]
 }

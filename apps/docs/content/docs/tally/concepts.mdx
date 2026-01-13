@@ -5,44 +5,54 @@ description: The mental model and core architecture of Tally.
 
 ## Mental Model
 
-Tally is built on the principle of **composability by value**. Unlike other frameworks that rely on string IDs for metrics and scorers, Tally uses actual JavaScript objects that you can pass around, wrap, and extend.
+Tally is primarily an **Evaluation Engine**. Instead of providing a rigid set of fixed tests, it provides the infrastructure to define and run your own domain-based evaluation logic. 
 
-| Concept | Purpose |
-| :--- | :--- |
-| **MetricDef** | Defines *what* to measure (e.g., an LLM prompt or a regex check). |
-| **Metric** | The actual result produced by a MetricDef (normalized to 0-1). |
-| **Scorer** | Combines multiple Metrics into a single derived score. |
-| **Eval** | Combines a Metric/Scorer with a **Verdict Policy** (pass/fail). |
-| **Evaluator** | Orchestrates a set of Evals against specific targets in a conversation. |
-| **Aggregator** | Summarizes results across the entire dataset (e.g., pass rate). |
+To promote maximum reusability and composability, Tally enforces a strict differentiation between measurement, combination, and decision-making.
 
-## Data Flow
+## Building Blocks
+
+Tally is composed of several fundamental building blocks that you wire together to form an evaluation pipeline.
+
+| Block | Analogy | Purpose |
+| :--- | :--- | :--- |
+| **MetricDef** | **Ruler & Blueprint** | Defines *what* to measure (e.g., an LLM prompt or a regex check). It is the definition/blueprint for a metric. |
+| **Metric** | **Measurement** | The actual result produced by a MetricDef (can be numeric, boolean, ordinal, etc.). |
+| **Scorer** | **Normalizer/Combiner** | Combines multiple metric results into a unified score (usually 0–1) based on weights. |
+| **Eval** | **Decision Rule** | Combines a Metric or Scorer with a **Verdict Policy** to determine if the result "passes" or "fails." |
+| **Evaluator** | **Orchestrator** | Groups related Evals together and defines the execution policy for targets. |
+| **Aggregator** | **Statistician** | Summarizes individual results into dataset-level statistics (e.g., Mean, Pass Rate). |
+| **Report** | **Scorecard** | The final structured output for analysis, visualization, and CI/CD. |
+
+## The Composability Trio
+
+The power of Tally comes from how the first three blocks (Metric, Scorer, Eval) separate their responsibilities.
+
+### 1. Metrics (Measurement)
+Focuses exclusively on capturing raw domain data. A metric only cares about measuring one specific quality (e.g., response time, keyword presence, or LLM-graded relevance).
+
+### 2. Scorers (Combination)
+Focuses exclusively on how to weigh and normalize multiple measurements. Because scorers are distinct from metrics, you can reuse the same metric in different scoring contexts.
+
+### 3. Evals (Decision)
+Focuses exclusively on the business rules. An eval takes the output of your logic and applies a **Verdict Policy**. You can use the same scoring logic but apply a strict verdict for production and a loose one for experiments.
+
+## Core Architecture
+
+Tally acts as the orchestrator that wires these building blocks together against your data.
 
 ```mermaid
 graph TD
-    Data[Conversation Data] --> Evaluator[Evaluator]
-    Evaluator --> Evals[Evals]
-    Evals --> Metrics[Metrics]
-    Metrics --> Scores[Normalized Scores 0-1]
-    Scores --> Verdicts[Verdict Policies]
+    Data[Conversation Data] --> Engine[Tally Engine]
+    Engine --> Evaluator[Evaluator]
+    
+    subgraph "Composition Layer"
+        Evaluator --> Evals[Evals]
+        Evals --> Verdicts[Verdict Policies]
+        Evals --> Logic[Metric or Scorer]
+        Logic --> RawMetrics[MetricDefs]
+    end
+
     Verdicts --> Results[Per-Target Results]
     Results --> Aggregators[Aggregators]
     Aggregators --> Report[Evaluation Report]
-```
-
-### Composability
-
-Because every component is a first-class object, you can easily share metrics across different evaluators or create higher-order evaluators that wrap existing ones.
-
-```ts
-const relevance = createAnswerRelevanceMetric({ provider });
-const completeness = createCompletenessMetric({ provider });
-
-// Re-use metrics in different evals
-const fastEval = defineSingleTurnEval({ name: 'Fast', metric: relevance });
-const deepEval = defineScorerEval({ 
-  name: 'Deep', 
-  inputs: [relevance, completeness],
-  scorer: weightedScorer 
-});
 ```
