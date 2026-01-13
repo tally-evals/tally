@@ -20,6 +20,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             urls: new Set([
               '/docs',
               '/docs/tally',
+              '/docs/tally/why-tally',
               '/docs/tally/getting-started',
               '/docs/tally/concepts',
               '/docs/tally/metrics',

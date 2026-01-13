@@ -2,8 +2,11 @@
   "title": "Tally",
   "root": true,
   "pages": [
+    "---Introduction---",
     "index",
+    "why-tally",
     "getting-started",
+    "---Mental Model---",
     "concepts",
     "metrics",
     "scorers",
