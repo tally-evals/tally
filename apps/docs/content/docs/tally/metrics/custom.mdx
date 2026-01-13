@@ -135,7 +135,7 @@ export const knowledgeRetentionMetric = createMultiTurnLLM({
 
 ## Reusability & Composability
 
-When you define a metric using these factories, you are creating a `MetricDef`. This object is **composable by value**:
+When you define a metric using these factories, you are creating a `MetricDef`. This object is **typesafe and composable**:
 
 - It can be passed into a **Scorer** to be weighted with other metrics.
 - It can be passed into an **Eval** to have a **Verdict Policy** applied.

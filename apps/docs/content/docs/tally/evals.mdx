@@ -17,14 +17,14 @@ Without Evals, you only have numbers. With Evals, you have a **judgment**.
 | :--- | :--- |
 | **Actionable Signal** | Instead of looking at a relevance score of `0.72` and wondering if it's "good enough," an Eval provides a definitive `Pass` or `Fail` status. |
 | **CI/CD Integration** | Evals are designed to be the gatekeepers of your development cycle. You can automatically block a PR if the **Pass Rate** falls below your required threshold. |
-| **Policy vs. Measurement** | By separating the *measurement* (Metric) from the *policy* (Verdict), you can change your standards (e.g., making a test stricter) without needing to change your domain logic. |
+| **Policy vs. Measurement** | By separating the *measurement* (Metric) from the *policy* (Verdict), you can change your standards (e.g., making a test stricter) without needing to change your domain measures. |
 
 ---
 
 ## The Anatomy of an Eval
 
 Every Eval is composed of two parts:
-1.  **The Logic**: A [Metric](/docs/tally/metrics) or a [Scorer](/docs/tally/scorers) that produces a value.
+1.  **The Measures**: A [Metric](/docs/tally/metrics) or a [Scorer](/docs/tally/scorers) that produces a value.
 2.  **The Verdict**: A **Verdict Policy** that decides if that value constitutes a "Pass."
 
 ---

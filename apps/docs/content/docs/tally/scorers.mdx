@@ -43,7 +43,7 @@ import { minMaxNormalizer } from '@tally-evals/tally/normalization';
 const qualityScorer = createWeightedAverageScorer({
   name: 'OverallQuality',
   inputs: [
-    // Use defineInput to wire metrics with weights and normalizers
+    // Use defineInput to combine metrics with weights and normalizers
     defineInput({ 
       metric: relevanceMetric, 
       weight: 0.6 
