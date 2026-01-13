@@ -52,7 +52,7 @@ export function TurnByTurnView({
   const terminalHeight = stdout.rows;
   const terminalWidth = stdout.columns;
 
-  const messageAreaHeight = terminalHeight - 8;
+  const messageAreaHeight = terminalHeight - 12;
 
   useEffect(() => {
     expandedRef.current = expanded;
