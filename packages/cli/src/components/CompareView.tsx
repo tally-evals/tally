@@ -18,6 +18,7 @@ import {
 } from '../utils/formatters';
 import { KeyboardHelp } from './shared/KeyboardHelp';
 import { ToolCallList } from './shared/ToolCallList.jsx';
+import { BreadCrumbs } from './shared/BreadCrumbs.js';
 
 interface CompareViewProps {
   conversation: Conversation;
@@ -45,7 +46,9 @@ export function CompareView({
       setScrollPosition(Math.max(0, scrollPosition - 1));
     }
     if (key.downArrow || key.rightArrow) {
-      setScrollPosition(Math.min(conversation.steps.length - 1, scrollPosition + 1));
+      setScrollPosition(
+        Math.min(conversation.steps.length - 1, scrollPosition + 1),
+      );
     }
   });
 
@@ -53,10 +56,15 @@ export function CompareView({
   const rightResult = rightReport.perTargetResults[0];
 
   if (!leftResult || !rightResult) {
-    return <Text>{colors.error('One or both reports missing target results')}</Text>;
+    return (
+      <Text>{colors.error('One or both reports missing target results')}</Text>
+    );
   }
 
-  const getMetricsForStep = (targetMetrics: typeof leftResult.rawMetrics, stepIdx: number) => {
+  const getMetricsForStep = (
+    targetMetrics: typeof leftResult.rawMetrics,
+    stepIdx: number,
+  ) => {
     const metricArray: typeof targetMetrics = [];
     let metricCount = 0;
 
@@ -78,12 +86,21 @@ export function CompareView({
     return <Text>{colors.error('No step at current position')}</Text>;
   }
 
-  const inputText = truncateText(sanitizeText(extractTextFromMessage(currentStep.input)), 60);
-  const outputText = truncateText(sanitizeText(extractTextFromMessages(currentStep.output)), 60);
+  const inputText = truncateText(
+    sanitizeText(extractTextFromMessage(currentStep.input)),
+    60,
+  );
+  const outputText = truncateText(
+    sanitizeText(extractTextFromMessages(currentStep.output)),
+    60,
+  );
   const toolCalls = extractToolCallsFromMessages(currentStep.output);
 
   const leftMetrics = getMetricsForStep(leftResult.rawMetrics, scrollPosition);
-  const rightMetrics = getMetricsForStep(rightResult.rawMetrics, scrollPosition);
+  const rightMetrics = getMetricsForStep(
+    rightResult.rawMetrics,
+    scrollPosition,
+  );
 
   const table = new Table({
     head: [
@@ -110,7 +127,9 @@ export function CompareView({
 
   for (const metricName of Array.from(allMetricNames).sort()) {
     const leftMetric = leftMetrics.find((m) => m.metricDef.name === metricName);
-    const rightMetric = rightMetrics.find((m) => m.metricDef.name === metricName);
+    const rightMetric = rightMetrics.find(
+      (m) => m.metricDef.name === metricName,
+    );
 
     let leftNormalized = 0;
     let rightNormalized = 0;
@@ -139,14 +158,17 @@ export function CompareView({
       : colors.muted('-');
 
     let deltaText = colors.muted('-');
-    if (typeof leftMetric?.value === 'number' && typeof rightMetric?.value === 'number') {
+    if (
+      typeof leftMetric?.value === 'number' &&
+      typeof rightMetric?.value === 'number'
+    ) {
       const delta = rightNormalized - leftNormalized;
       deltaText =
         delta > 0.01
           ? colors.success(`+${delta.toFixed(3)}`)
           : delta < -0.01
-            ? colors.error(delta.toFixed(3))
-            : colors.muted(delta.toFixed(3));
+          ? colors.error(delta.toFixed(3))
+          : colors.muted(delta.toFixed(3));
     }
 
     table.push([metricName, leftScore, rightScore, deltaText]);
@@ -154,10 +176,20 @@ export function CompareView({
 
   return (
     <Box flexDirection="column">
+      <BreadCrumbs
+        breadcrumbs={[
+          conversation.id,
+          'Runs',
+          'Comparison',
+          `${leftReport.runId} ${colors.muted('↔')} ${rightReport.runId}`,
+        ]}
+      />
+
       <Box paddingTop={1} paddingX={1}>
         <Text>
-          {colors.bold(`Comparing: ${conversation.id}`)}{' '}
-          {colors.muted(`(Turn ${scrollPosition + 1}/${conversation.steps.length})`)}
+          {colors.muted(
+            `(Turn ${scrollPosition + 1}/${conversation.steps.length})`,
+          )}
         </Text>
       </Box>
 
@@ -223,13 +255,14 @@ export function CompareView({
 
             const leftMean = leftSummary.aggregations.mean.toFixed(3);
             const rightMean = rightSummary.aggregations.mean.toFixed(3);
-            const delta = rightSummary.aggregations.mean - leftSummary.aggregations.mean;
+            const delta =
+              rightSummary.aggregations.mean - leftSummary.aggregations.mean;
             const deltaText =
               delta > 0.01
                 ? colors.success(`+${delta.toFixed(3)}`)
                 : delta < -0.01
-                  ? colors.error(delta.toFixed(3))
-                  : colors.muted(delta.toFixed(3));
+                ? colors.error(delta.toFixed(3))
+                : colors.muted(delta.toFixed(3));
 
             summaryTable.push([evalName, leftMean, rightMean, deltaText]);
           }

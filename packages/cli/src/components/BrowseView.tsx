@@ -4,20 +4,27 @@
 
 import type { ConversationRef, RunRef, TallyStore } from '@tally-evals/core';
 import type { Conversation, EvaluationReport } from '@tally-evals/core';
-import { Box, Text, useInput } from 'ink';
-import SelectInput from 'ink-select-input';
+import { Box, Text, useInput, useStdout } from 'ink';
+import { ScrollList, type ScrollListRef } from 'ink-scroll-list';
 import type React from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { colors } from '../utils/colors';
 import { CompareView } from './CompareView';
+import { TrajectoryView } from './TrajectoryView';
 import { ViewRouter } from './ViewRouter';
 import { KeyboardHelp } from './shared/KeyboardHelp';
+import { BreadCrumbs } from './shared/BreadCrumbs';
 
 interface BrowseViewProps {
   store: TallyStore;
 }
 
-type BrowseScreen = 'conversations' | 'runs' | 'view' | 'compare';
+type BrowseScreen =
+  | 'conversations'
+  | 'runs'
+  | 'view'
+  | 'compare'
+  | 'trajectory';
 
 export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
   const [screen, setScreen] = useState<BrowseScreen>('conversations');
@@ -25,20 +32,30 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [selectedConversation, setSelectedConversation] = useState<ConversationRef | null>(null);
+  const [selectedConversation, setSelectedConversation] =
+    useState<ConversationRef | null>(null);
   const [selectedRuns, setSelectedRuns] = useState<RunRef[]>([]);
   const [availableRuns, setAvailableRuns] = useState<RunRef[]>([]);
   const [runCounts, setRunCounts] = useState<Map<string, number>>(new Map());
+  const [hasTrajectory, setHasTrajectory] = useState<Map<string, boolean>>(
+    new Map(),
+  );
 
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [report, setReport] = useState<EvaluationReport | null>(null);
   const [leftReport, setLeftReport] = useState<EvaluationReport | null>(null);
   const [rightReport, setRightReport] = useState<EvaluationReport | null>(null);
 
-  const [cursorPosition, setCursorPosition] = useState(0);
-  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [selectedConversationIndex, setSelectedConversationIndex] = useState(0);
+  const [selectedRunsSet, setSelectedRunsSet] = useState<Set<number>>(
+    new Set(),
+  );
 
-  // Load conversations on mount
+  const { stdout } = useStdout();
+  const conversationListRef = useRef<ScrollListRef>(null);
+  const runsListRef = useRef<any>(null);
+
   useEffect(() => {
     const loadConversations = async () => {
       try {
@@ -47,7 +64,9 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
         const convRefs = await store.listConversations();
         setConversations(convRefs);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load conversations');
+        setError(
+          err instanceof Error ? err.message : 'Failed to load conversations',
+        );
       } finally {
         setLoading(false);
       }
@@ -55,7 +74,6 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
     loadConversations();
   }, [store]);
 
-  // Load run counts for all conversations (so the conversations list shows correct counts).
   useEffect(() => {
     if (conversations.length === 0) return;
 
@@ -70,20 +88,36 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
           } catch {
             return [conv.id, 0] as const;
           }
-        })
+        }),
       );
 
       if (cancelled) return;
       setRunCounts(new Map(results));
     };
 
+    const loadTrajectoryData = async () => {
+      const trajectoryResults = await Promise.all(
+        conversations.map(async (conv) => {
+          try {
+            const trajectoryMeta = await store.loadTrajectoryMeta(conv.id);
+            return [conv.id, trajectoryMeta !== null] as const;
+          } catch {
+            return [conv.id, false] as const;
+          }
+        }),
+      );
+
+      if (cancelled) return;
+      setHasTrajectory(new Map(trajectoryResults));
+    };
+
     loadCounts();
+    loadTrajectoryData();
     return () => {
       cancelled = true;
     };
-  }, [conversations]);
+  }, [conversations, store]);
 
-  // Load available runs when conversation is selected
   useEffect(() => {
     if (!selectedConversation) {
       setAvailableRuns([]);
@@ -94,6 +128,8 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
       try {
         const runs = await selectedConversation.listRuns();
         setAvailableRuns(runs);
+        setSelectedIndex(0);
+        setSelectedRunsSet(new Set());
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load runs');
       }
@@ -101,15 +137,19 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
     loadRuns();
   }, [selectedConversation]);
 
-  // Load conversation and report when entering view screen
   useEffect(() => {
-    if (screen === 'view' && selectedConversation && selectedRuns.length === 1) {
+    if (
+      screen === 'view' &&
+      selectedConversation &&
+      selectedRuns.length === 1
+    ) {
       const loadData = async () => {
         try {
           setLoading(true);
           setError(null);
           const convData = await selectedConversation.load();
-          const reportData = (await selectedRuns[0]?.load()) as EvaluationReport;
+          const reportData =
+            (await selectedRuns[0]?.load()) as EvaluationReport;
           setConversation(convData);
           setReport(reportData);
         } catch (err) {
@@ -122,9 +162,12 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
     }
   }, [screen, selectedConversation, selectedRuns]);
 
-  // Load conversation and reports when entering compare screen
   useEffect(() => {
-    if (screen === 'compare' && selectedConversation && selectedRuns.length === 2) {
+    if (
+      screen === 'compare' &&
+      selectedConversation &&
+      selectedRuns.length === 2
+    ) {
       const loadData = async () => {
         try {
           setLoading(true);
@@ -151,53 +194,85 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
     if (input === 'q') {
       process.exit(0);
     }
+
     if (key.escape && screen !== 'conversations') {
       if (screen === 'view' || screen === 'compare') {
         setScreen('runs');
         setSelectedRuns([]);
-        setSelectedIndices(new Set());
-        setCursorPosition(0);
+        setSelectedRunsSet(new Set());
+      } else if (screen === 'trajectory') {
+        setScreen('runs');
+        setSelectedRunsSet(new Set());
       } else if (screen === 'runs') {
         setScreen('conversations');
         setSelectedConversation(null);
         setSelectedRuns([]);
-        setSelectedIndices(new Set());
-        setCursorPosition(0);
+        setSelectedRunsSet(new Set());
+      }
+    }
+
+    if (screen === 'conversations') {
+      if (key.upArrow) {
+        setSelectedConversationIndex((prev) => Math.max(0, prev - 1));
+      } else if (key.downArrow) {
+        setSelectedConversationIndex((prev) =>
+          Math.min(conversations.length - 1, prev + 1),
+        );
+      } else if (input === '\r' || input === '\n') {
+        const conversation = conversations[selectedConversationIndex];
+        if (conversation) {
+          setSelectedConversation(conversation);
+          setScreen('runs');
+          setSelectedRunsSet(new Set());
+        }
       }
     }
 
     if (screen === 'runs' && selectedConversation) {
-      const runs = availableRuns;
+      const hasTrajectoryData = hasTrajectory.get(selectedConversation.id);
+      const trajectoryOffset = hasTrajectoryData ? 1 : 0;
+      const totalItems = trajectoryOffset + availableRuns.length;
 
       if (key.upArrow) {
-        setCursorPosition((prev) => Math.max(0, prev - 1));
+        setSelectedIndex((prev) => Math.max(0, prev - 1));
       } else if (key.downArrow) {
-        setCursorPosition((prev) => Math.min(runs.length - 1, prev + 1));
+        setSelectedIndex((prev) => Math.min(totalItems - 1, prev + 1));
       } else if (input === ' ') {
-        setSelectedIndices((prev) => {
-          const newSet = new Set(prev);
-          if (newSet.has(cursorPosition)) {
-            newSet.delete(cursorPosition);
-          } else {
-            newSet.add(cursorPosition);
-          }
-          return newSet;
-        });
+        if (selectedIndex >= trajectoryOffset) {
+          const runIdx = selectedIndex - trajectoryOffset;
+          setSelectedRunsSet((prev) => {
+            const newSet = new Set(prev);
+            if (newSet.has(runIdx)) {
+              newSet.delete(runIdx);
+            } else {
+              newSet.add(runIdx);
+            }
+            return newSet;
+          });
+        }
       } else if (input === '\r' || input === '\n') {
-        const selectedRuns = Array.from(selectedIndices)
-          .sort()
-          .map((idx) => runs[idx])
-          .filter((run): run is RunRef => run !== undefined);
+        if (selectedIndex === 0 && hasTrajectoryData) {
+          setScreen('trajectory');
+        } else {
+          const runIdx = selectedIndex - trajectoryOffset;
+          const runs = Array.from(selectedRunsSet)
+            .sort()
+            .map((idx) => availableRuns[idx])
+            .filter((run): run is RunRef => run !== undefined);
 
-        if (selectedRuns.length === 0) {
-          setSelectedRuns([runs[cursorPosition] as RunRef]);
-          setScreen('view');
-        } else if (selectedRuns.length === 1) {
-          setSelectedRuns(selectedRuns);
-          setScreen('view');
-        } else if (selectedRuns.length === 2) {
-          setSelectedRuns(selectedRuns);
-          setScreen('compare');
+          if (runs.length === 0) {
+            const run = availableRuns[runIdx];
+            if (run) {
+              setSelectedRuns([run]);
+              setScreen('view');
+            }
+          } else if (runs.length === 1) {
+            setSelectedRuns(runs);
+            setScreen('view');
+          } else if (runs.length === 2) {
+            setSelectedRuns(runs);
+            setScreen('compare');
+          }
         }
       }
     }
@@ -231,40 +306,61 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
   }
 
   if (screen === 'conversations') {
-    const conversationItems = conversations.map((conv) => {
-      // Show cached run counts for all conversations (updated in the background).
-      // Fallback: if currently selected, use loaded runs; otherwise default to 0 until cached.
-      const cached = runCounts.get(conv.id);
-      const runCount =
-        cached ?? (conv.id === selectedConversation?.id ? availableRuns.length : 0);
-      return {
-        key: conv.id,
-        label: `${colors.bold(conv.id)} ${colors.muted(`(${runCount} runs)`)}`,
-        value: conv,
-      };
-    });
+    const terminalHeight = stdout?.rows ?? 24;
 
     return (
-      <Box flexDirection="column">
-        <Text>{colors.bold('Select a Conversation')}</Text>
-        <Box marginTop={1} flexDirection="column">
-          <SelectInput
-            items={conversationItems}
-            onSelect={(item) => {
-              setSelectedConversation(item.value);
-              setScreen('runs');
-              setCursorPosition(0);
-              setSelectedIndices(new Set());
-            }}
-          />
+      <Box flexDirection="column" height={terminalHeight}>
+        <BreadCrumbs breadcrumbs={['Conversations']} />
+        <Box paddingX={1} paddingTop={1} flexShrink={0}>
+          <Text>{colors.bold('Select a Conversation')}</Text>
         </Box>
-        <KeyboardHelp shortcuts={[{ key: 'q', description: 'Quit' }]} />
+
+        <Box flexDirection="column" flexGrow={1}>
+          <ScrollList
+            ref={conversationListRef}
+            height={terminalHeight - 8}
+            width="100%"
+            selectedIndex={selectedConversationIndex}
+          >
+            {conversations.map((conv, index) => {
+              const cached = runCounts.get(conv.id);
+              const runCount =
+                cached ??
+                (conv.id === selectedConversation?.id
+                  ? availableRuns.length
+                  : 0);
+              const isFocused = selectedConversationIndex === index;
+              const prefix = isFocused ? colors.info('▶ ') : '  ';
+              const label = isFocused ? colors.info(`${conv.id}`) : conv.id;
+              return (
+                <Text key={conv.id}>
+                  {prefix}
+                  {label} {colors.muted(`(${runCount} runs)`)}
+                </Text>
+              );
+            })}
+          </ScrollList>
+        </Box>
+
+        <KeyboardHelp
+          shortcuts={[
+            { key: '↑↓', description: 'Navigate' },
+            { key: 'Enter', description: 'Select' },
+            { key: 'q', description: 'Quit' },
+          ]}
+        />
       </Box>
     );
   }
 
   if (screen === 'runs' && selectedConversation) {
-    if (availableRuns.length === 0) {
+    const hasTrajectoryData = hasTrajectory.get(selectedConversation.id);
+    const terminalHeight = stdout?.rows ?? 24;
+    const headerHeight = 5; // Approximate header space
+    const runsListHeight = Math.max(5, terminalHeight - headerHeight);
+    const trajectoryOffset = hasTrajectoryData ? 1 : 0;
+
+    if (availableRuns.length === 0 && !hasTrajectoryData) {
       return (
         <Box flexDirection="column">
           <Text>
@@ -281,43 +377,72 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
     }
 
     return (
-      <Box flexDirection="column">
-        <Box paddingX={1} paddingBottom={1}>
-          <Text>
-            {colors.bold('Select runs')} {colors.muted(`(${selectedIndices.size} selected)`)}
+      <Box flexDirection="column" height={terminalHeight}>
+        <BreadCrumbs breadcrumbs={[selectedConversation.id]} />
+        {hasTrajectoryData && (
+          <Box flexDirection="column" marginY={1}>
+            <Text
+              color={selectedIndex === 0 ? 'cyan' : 'white'}
+              bold={selectedIndex === 0}
+            >
+              {selectedIndex === 0 ? colors.info('▶ ') : '  '}
+              📹 Trajectory
+            </Text>
+          </Box>
+        )}
+
+        <Box flexDirection="column" marginBottom={1} marginLeft={2}>
+          <Text bold color="white">
+            📋 Runs {colors.muted(`(${selectedRunsSet.size} selected)`)}
           </Text>
         </Box>
 
-        <Box flexDirection="column" marginLeft={1} marginBottom={1}>
-          {availableRuns.map((run, index) => {
-            const isSelected = selectedIndices.has(index);
-            const isCursor = index === cursorPosition;
-            const checkbox = isSelected ? colors.success('◼') : '◻';
-            const prefix = isCursor ? colors.info('> ') : '  ';
-            const label = isCursor
-              ? colors.info(run.id ?? 'unknown')
-              : isSelected
+        <Box flexDirection="column" flexGrow={1}>
+          <ScrollList
+            ref={runsListRef}
+            height={runsListHeight}
+            width="100%"
+            selectedIndex={
+              selectedIndex >= trajectoryOffset
+                ? selectedIndex - trajectoryOffset
+                : 0
+            }
+          >
+            {availableRuns.map((run, index) => {
+              const isSelected = selectedRunsSet.has(index);
+              const isFocused = selectedIndex === index + trajectoryOffset;
+              const checkbox = isSelected ? colors.success('◼ ') : '◻ ';
+              const prefix = isFocused ? colors.info('▶ ') : '  ';
+              const label = isFocused
+                ? colors.info(run.id ?? 'unknown')
+                : isSelected
                 ? colors.success(run.id ?? 'unknown')
-                : (run.id ?? 'unknown');
-
-            return (
-              <Text key={run.id ?? `run-${index}`}>
-                {prefix}
-                {checkbox} {label}
-              </Text>
-            );
-          })}
+                : run.id ?? 'unknown';
+              return (
+                <Text key={run.id ?? `run-${index}`}>
+                  {prefix}
+                  {checkbox} {label}
+                </Text>
+              );
+            })}
+          </ScrollList>
         </Box>
 
         <KeyboardHelp
           shortcuts={[
-            { key: '↑↓', description: 'Navigate' },
-            { key: 'Space', description: 'Select' },
-            ...(selectedIndices.size <= 2
+            {
+              key: '↑↓',
+              description: hasTrajectoryData
+                ? 'Navigate (Trajectory/Runs)'
+                : 'Navigate runs',
+            },
+            { key: 'Space', description: 'Select run' },
+            ...(selectedRunsSet.size <= 2
               ? [
                   {
                     key: 'Enter',
-                    description: selectedIndices.size === 2 ? 'Compare' : 'View',
+                    description:
+                      selectedRunsSet.size === 2 ? 'Compare' : 'View',
                   },
                 ]
               : []),
@@ -361,8 +486,7 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
           onBack={() => {
             setScreen('runs');
             setSelectedRuns([]);
-            setSelectedIndices(new Set());
-            setCursorPosition(0);
+            setSelectedRunsSet(new Set());
             setConversation(null);
             setReport(null);
           }}
@@ -383,7 +507,11 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
     );
   }
 
-  if (screen === 'compare' && selectedConversation && selectedRuns.length === 2) {
+  if (
+    screen === 'compare' &&
+    selectedConversation &&
+    selectedRuns.length === 2
+  ) {
     if (loading) {
       return (
         <Box flexDirection="column" padding={1}>
@@ -416,8 +544,7 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
           onBack={() => {
             setScreen('runs');
             setSelectedRuns([]);
-            setSelectedIndices(new Set());
-            setCursorPosition(0);
+            setSelectedRunsSet(new Set());
             setConversation(null);
             setLeftReport(null);
             setRightReport(null);
@@ -436,6 +563,19 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
           ]}
         />
       </Box>
+    );
+  }
+
+  if (screen === 'trajectory' && selectedConversation) {
+    return (
+      <TrajectoryView
+        store={store}
+        conversationId={selectedConversation.id}
+        onBack={() => {
+          setScreen('runs');
+          setSelectedRunsSet(new Set());
+        }}
+      />
     );
   }
 

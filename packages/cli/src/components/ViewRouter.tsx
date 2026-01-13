@@ -11,6 +11,7 @@ import { colors } from '../utils/colors';
 import { SummaryView } from './SummaryView';
 import { TurnByTurnView } from './TurnByTurnView';
 import { KeyboardHelp } from './shared/KeyboardHelp';
+import { BreadCrumbs } from './shared/BreadCrumbs';
 
 interface ViewRouterProps {
   conversation: Conversation;
@@ -39,6 +40,7 @@ export function ViewRouter({
 
   return (
     <Box flexDirection="column">
+      <BreadCrumbs breadcrumbs={[conversation.id, 'Runs', report.runId]} />
       <Box paddingX={1} paddingTop={1}>
         <Text>
           {colors.bold('View Mode:')}{' '}
