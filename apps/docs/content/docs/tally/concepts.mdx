@@ -5,13 +5,13 @@ description: The mental model and core architecture of Tally.
 
 ## Mental Model
 
-Tally is primarily an **Evaluation Engine**. Instead of providing a rigid set of fixed tests, it provides the infrastructure to define and run your own domain-based evaluation logic. 
+Tally is primarily an **Evaluation Engine**. Instead of providing a rigid set of fixed tests, it provides the infrastructure to define and run your own domain-based evaluation measures. 
 
 To promote maximum reusability and composability, Tally enforces a strict differentiation between measurement, combination, and decision-making.
 
 ## Building Blocks
 
-Tally is composed of several fundamental building blocks that you wire together to form an evaluation pipeline.
+Tally is composed of several fundamental building blocks that you combine together to form an evaluation pipeline.
 
 | Block | Analogy | Purpose |
 | :--- | :--- | :--- |
@@ -34,11 +34,11 @@ Focuses exclusively on capturing raw domain data. A metric only cares about meas
 Focuses exclusively on how to weigh and normalize multiple measurements. Because scorers are distinct from metrics, you can reuse the same metric in different scoring contexts.
 
 ### 3. Evals (Decision)
-Focuses exclusively on the business rules. An eval takes the output of your logic and applies a **Verdict Policy**. You can use the same scoring logic but apply a strict verdict for production and a loose one for experiments.
+Focuses exclusively on the business rules. An eval takes the output of your measures and applies a **Verdict Policy**. You can use the same scoring measures but apply a strict verdict for production and a loose one for experiments.
 
 ## Core Architecture
 
-Tally acts as the orchestrator that wires these building blocks together against your data.
+Tally acts as the orchestrator that combines these building blocks together against your data.
 
 ```mermaid
 graph TD

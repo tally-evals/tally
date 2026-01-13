@@ -5,7 +5,7 @@
 This section provides a concise, implementation-accurate outline aligned with the current codebase. The detailed, legacy content below remains for reference and will be iteratively reconciled with this outline.
 
 ### Overview
-- Tally is a value-composed LLM evaluation framework: you wire actual objects (metrics, scorers, aggregators, evaluators), not string IDs.
+- Tally is a typesafe and composable LLM evaluation framework: you combine actual TypeScript objects (metrics, scorers, aggregators, evaluators), not string IDs.
 - Two container modes:
   - `Tally<DatasetItem[]>` for single-turn examples.
   - `Tally<Conversation[]>` for multi-turn conversations.
@@ -128,7 +128,7 @@ This section provides a concise, implementation-accurate outline aligned with th
 
 ---
 
-Tally’s technical design centers on **value-based composability**: configuration objects (metrics, scorers, aggregators, evaluators) move through the system as first-class values, eliminating the need for string identifiers or registries.
+Tally’s technical design centers on **typesafe and composable architecture**: configuration objects (metrics, scorers, aggregators, evaluators) move through the system as first-class values, eliminating the need for string identifiers or registries.
 
 ## 📝 Core Type Definitions (TypeScript)
 
@@ -561,7 +561,7 @@ interface EvaluationReport {
 
 ## 🎯 Key Design Principles
 
-* **Value-Based Composability** – Configuration objects circulate as values; no string identifiers required
+* **Typesafe and Composable** – Configuration objects circulate as values; no string identifiers required
 * **Type-Safe Architecture** – Discriminated unions and inheritance provide compile-time safety
 * **Functional Composition** – Direct metric composition in Scorers without ID indirection
 * **Unified Container** – Everything you need for evaluation in one `Tally<T>` instance
