@@ -47,7 +47,9 @@ export function formatScore(value: number): string {
 /**
  * Format a verdict as colored icon
  */
-export function formatVerdict(verdictValue: 'pass' | 'fail' | 'unknown' | undefined): string {
+export function formatVerdict(
+  verdictValue: 'pass' | 'fail' | 'unknown' | undefined,
+): string {
   if (verdictValue === 'pass') {
     return verdict.pass();
   }
@@ -118,20 +120,34 @@ export function formatConversationText(input: string, output: string): string {
  * Extract tool calls from a single message
  */
 export function extractToolCallsFromMessage(
-  message: unknown
-): { toolName: string; toolCallId: string }[] {
-  const toolCalls: { toolName: string; toolCallId: string }[] = [];
+  message: unknown,
+): { toolName: string; toolCallId: string; output?: unknown }[] {
+  const toolCalls: {
+    toolName: string;
+    toolCallId: string;
+    output?: unknown;
+  }[] = [];
 
   if (message && typeof message === 'object') {
     const msg = message as { content?: unknown };
     if (Array.isArray(msg.content)) {
       for (const part of msg.content) {
-        if (part && typeof part === 'object' && 'type' in part && part.type === 'tool-call') {
-          const toolPart = part as { toolName?: string; toolCallId?: string };
+        if (
+          part &&
+          typeof part === 'object' &&
+          'type' in part &&
+          part.type === 'tool-call'
+        ) {
+          const toolPart = part as {
+            toolName?: string;
+            toolCallId?: string;
+            output?: unknown;
+          };
           if (toolPart.toolName) {
             toolCalls.push({
               toolName: toolPart.toolName,
               toolCallId: toolPart.toolCallId ?? '',
+              output: toolPart.output,
             });
           }
         }
@@ -146,13 +162,21 @@ export function extractToolCallsFromMessage(
  * Extract tool calls from multiple messages
  */
 export function extractToolCallsFromMessages(
-  messages: readonly unknown[]
-): { toolName: string; toolCallId: string }[] {
-  const allToolCalls = new Set<{ toolName: string; toolCallId: string }>();
+  messages: readonly unknown[],
+): { toolName: string; toolCallId: string; output?: unknown }[] {
+  const allToolCalls = new Set<{
+    toolName: string;
+    toolCallId: string;
+    output?: unknown;
+  }>();
   for (const message of messages) {
     const toolCalls = extractToolCallsFromMessage(message);
     for (const tc of toolCalls) {
-      allToolCalls.add({ toolName: tc.toolName, toolCallId: tc.toolCallId });
+      allToolCalls.add({
+        toolName: tc.toolName,
+        toolCallId: tc.toolCallId,
+        output: tc.output,
+      });
     }
   }
   return Array.from(allToolCalls);
