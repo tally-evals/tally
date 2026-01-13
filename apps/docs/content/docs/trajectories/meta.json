@@ -1,5 +1,14 @@
 {
   "title": "Trajectories",
   "root": true,
-  "pages": ["index", "getting-started", "step-graphs", "preconditions", "personas", "agent-wrappers", "output-formats", "adversarial"]
+  "pages": [
+    "index",
+    "getting-started",
+    "agent-wrappers",
+    "personas",
+    "step-graphs",
+    "preconditions",
+    "output-formats",
+    "adversarial"
+  ]
 }

@@ -1,0 +1,79 @@
+---
+title: Aggregators
+description: Turning granular results into high-level trends.
+---
+
+In Tally, **Aggregators** represent the **Statistical Lens**. While individual [Evals](/docs/tally/evals) tell you how a single turn performed, Aggregators summarize thousands of those data points into high-level signals that help you make decisions about your model's readiness.
+
+---
+
+## Why Aggregators Matter
+
+Aggregators are the bridge between "debugging one conversation" and "shipping a production system."
+
+| Feature | The Value of Aggregators |
+| :--- | :--- |
+| **Benchmarking** | Compare model versions or prompt iterations using a single, comparable number. |
+| **Regression Detection** | Spot "tail" issues where 90% of cases are fine, but the worst 5% are significantly worse. |
+| **CI/CD Thresholds** | Define strict performance gates (e.g., "Must have 95% pass rate to deploy"). |
+
+---
+
+## The Three Pillars of Aggregation
+
+Tally provides built-in aggregators categorized by the type of signal they provide:
+
+### 1. Business Outcomes (`passRate`)
+The most important metric for stakeholders. It answers: *"What percentage of our data meets our quality bar?"*
+
+```ts
+import { passRate } from '@tally-evals/tally/aggregators';
+
+// Summary: "92% of responses passed the relevance check"
+const summary = passRate();
+```
+
+### 2. Descriptive Statistics (`mean`)
+The average performance. Useful for tracking general improvement or degradation across versions.
+
+```ts
+import { mean } from '@tally-evals/tally/aggregators';
+
+// Summary: "Average similarity score was 0.84"
+const summary = mean();
+```
+
+### 3. Robustness (`percentile`)
+Crucial for identifying edge cases and "bad" behaviors. p90 and p95 tell you how your system performs when things go wrong.
+
+```ts
+import { percentile } from '@tally-evals/tally/aggregators';
+
+// Summary: "The worst 10% of responses had a score below 0.45"
+const p10 = percentile(0.1); 
+```
+
+---
+
+## Custom Aggregators
+
+You can define your own aggregation logic to calculate domain-specific metrics, such as "Cost per interaction" or "Success by Category."
+
+```ts
+import { defineAggregator } from '@tally-evals/tally';
+
+export const categorySuccess = defineAggregator({
+  name: 'SuccessByCategory',
+  aggregate: (results) => {
+    // results is an array of individual Eval outputs
+    // custom logic to group and count...
+    return groupedResults;
+  }
+});
+```
+
+---
+
+## Summary
+
+Aggregators transform raw evaluation data into **actionable intelligence**. They ensure that your high-level decisions are backed by statistically significant evidence rather than a few cherry-picked examples.

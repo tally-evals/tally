@@ -6,5 +6,9 @@ export function baseOptions(): BaseLayoutProps {
       title: 'Tally',
     },
     githubUrl: 'https://github.com/tally-evals/tally',
+    themeSwitch: {
+      enabled: true,
+      mode: 'light-dark-system',
+    },
   };
 }
