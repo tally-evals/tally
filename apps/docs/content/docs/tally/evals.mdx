@@ -102,13 +102,25 @@ const verdict = rangeVerdict(0.4, 0.6);
 ```
 
 ### `customVerdict(fn)`
-When your business rules are complex. You can use metadata or other context to decide the outcome.
+When your business rules are complex.
+
+The callback signature is:
 
 ```ts
-const verdict = customVerdict((score, ctx) => {
-  // If the interaction is marked as "Critical," we require a perfect score.
-  if (ctx.target.metadata?.isCritical && score < 1.0) return 'fail';
-  return score >= 0.75 ? 'pass' : 'fail';
+customVerdict<T extends MetricScalar>(
+  fn: (score: Score, rawValue: T) => 'pass' | 'fail' | 'unknown'
+)
+```
+
+```ts
+const verdict = customVerdict((score, rawValue) => {
+  // Example: if this metric is being treated as a release gate,
+  // require a stronger score.
+  if (score >= 0.9) return 'pass';
+
+  // You can also branch on the raw value (boolean/number/string),
+  // depending on the metric's valueType.
+  return rawValue ? 'pass' : 'fail';
 });
 ```
 

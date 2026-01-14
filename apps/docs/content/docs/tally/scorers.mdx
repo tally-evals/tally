@@ -37,7 +37,7 @@ The `WeightedAverageScorer` is the most common scorer. It takes a list of input 
 
 ```ts
 import { createWeightedAverageScorer, defineInput } from '@tally-evals/tally/scorers';
-import { minMaxNormalizer } from '@tally-evals/tally/normalization';
+import { createMinMaxNormalizer } from '@tally-evals/tally/normalization';
 
 // 1. Define the Scorer
 const qualityScorer = createWeightedAverageScorer({
@@ -52,7 +52,7 @@ const qualityScorer = createWeightedAverageScorer({
       metric: latencyMetric, 
       weight: 0.4,
       // Map 0-2000ms to 1-0 (inverted: lower is better)
-      normalizerOverride: minMaxNormalizer(2000, 0) 
+      normalizerOverride: createMinMaxNormalizer({ min: 2000, max: 0, clip: true })
     }),
   ],
 });
@@ -70,18 +70,32 @@ const qualityScorer = createWeightedAverageScorer({
 
 For non-linear combinations (e.g., if any toxicity is detected, the entire quality score should be zero), you can define a custom scorer.
 
+### What gets passed to a custom scorer?
+
+`combineScores` receives a **map of normalized scores**, keyed by metric name. The shape is:
+
 ```ts
-import { defineScorer } from '@tally-evals/tally';
+type InputScores = Record<string, Score>;
+// In practice, it's strongly typed based on the metrics you pass to `inputs`.
+```
+
+Your function must return a **normalized `Score`** (0–1).
+
+```ts
+import { defineScorer, defineBaseMetric } from '@tally-evals/tally';
+import { defineInput } from '@tally-evals/tally/scorers';
 
 export const safetyPenaltyScorer = defineScorer({
   name: 'SafetyAdjustedQuality',
+  output: defineBaseMetric({ name: 'safetyAdjustedQuality', valueType: 'number' }),
   inputs: [
     defineInput({ metric: qualityMetric, weight: 1 }),
     defineInput({ metric: toxicityMetric, weight: 1 })
   ],
-  evaluate: async (scores) => {
-    const [quality, toxicity] = scores;
-    
+  combineScores: (scores) => {
+    const quality = scores[qualityMetric.name];
+    const toxicity = scores[toxicityMetric.name];
+
     // Non-linear logic: 
     // If toxicity is high (> 0.2), ignore quality and return 0
     if (toxicity > 0.2) return 0;

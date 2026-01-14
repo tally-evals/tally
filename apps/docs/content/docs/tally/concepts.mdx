@@ -184,13 +184,13 @@ Tally is composed of several fundamental building blocks that you combine togeth
 
 | Block | Analogy | Purpose | Code |
 | :--- | :--- | :--- | :---: |
-| **MetricDef** | **Ruler & Blueprint** | Defines *what* to measure (e.g., an LLM prompt or a regex check). It is the definition/blueprint for a metric. | <CodePopover title="MetricDef (core)" tsDef={metricDefTsDef} example={metricDefExample} /> |
-| **Metric** | **Measurement** | The actual result produced by a MetricDef (can be numeric, boolean, ordinal, etc.). | <CodePopover title="Metric (runtime result)" tsDef={metricTsDef} example={metricExample} /> |
-| **Scorer** | **Normalizer/Combiner** | Combines multiple metric results into a unified score (usually 0–1) based on weights. | <CodePopover title="Scorer (core)" tsDef={scorerTsDef} example={scorerExample} /> |
-| **Eval** | **Decision Rule** | Combines a Metric or Scorer with a **Verdict Policy** to determine if the result "passes" or "fails." | <CodePopover title="Eval (single-turn / multi-turn / scorer)" tsDef={evalTsDef} example={evalExample} /> |
-| **Evaluator** | **Orchestrator** | Groups related Evals together and defines the execution policy for targets. | <CodePopover title="Evaluator (core)" tsDef={evaluatorTsDef} example={evaluatorExample} /> |
-| **Aggregator** | **Statistician** | Summarizes individual results into dataset-level statistics (e.g., Mean, Pass Rate). | <CodePopover title="Aggregator (core)" tsDef={aggregatorTsDef} example={aggregatorExample} /> |
-| **Report** | **Scorecard** | The final structured output for analysis, visualization, and CI/CD. | <CodePopover title="EvaluationReport (core)" tsDef={reportTsDef} example={reportExample} /> |
+| [**MetricDef**](/docs/tally/metrics/custom) | **Ruler & Blueprint** | Defines *what* to measure (e.g., an LLM prompt or a regex check). It is the definition/blueprint for a metric. | <CodePopover title="MetricDef (core)" tsDef={metricDefTsDef} example={metricDefExample} /> |
+| [**Metric**](/docs/tally/metrics) | **Measurement** | The actual result produced by a MetricDef (can be numeric, boolean, ordinal, etc.). | <CodePopover title="Metric (runtime result)" tsDef={metricTsDef} example={metricExample} /> |
+| [**Scorer**](/docs/tally/scorers) | **Normalizer/Combiner** | Combines multiple metric results into a unified score (usually 0–1) based on weights. | <CodePopover title="Scorer (core)" tsDef={scorerTsDef} example={scorerExample} /> |
+| [**Eval**](/docs/tally/evals) | **Decision Rule** | Combines a Metric or Scorer with a **Verdict Policy** to determine if the result "passes" or "fails." | <CodePopover title="Eval (single-turn / multi-turn / scorer)" tsDef={evalTsDef} example={evalExample} /> |
+| [**Evaluator**](/docs/tally/evals) | **Orchestrator** | Groups related Evals together and defines the execution policy for targets. | <CodePopover title="Evaluator (core)" tsDef={evaluatorTsDef} example={evaluatorExample} /> |
+| [**Aggregator**](/docs/tally/aggregators) | **Statistician** | Summarizes individual results into dataset-level statistics (e.g., Mean, Pass Rate). | <CodePopover title="Aggregator (core)" tsDef={aggregatorTsDef} example={aggregatorExample} /> |
+| [**Report**](/docs/tally/reports) | **Scorecard** | The final structured output for analysis, visualization, and CI/CD. | <CodePopover title="EvaluationReport (core)" tsDef={reportTsDef} example={reportExample} /> |
 
 ## The Composability Trio
 

@@ -19,6 +19,7 @@ When you call `await tally.run()`, you receive a report object with three distin
 The bird's-eye view. This section contains the output of your [Aggregators](/docs/tally/aggregators). It tells you how each Eval performed across the entire dataset.
 
 - **Example**: `Relevance: 85% Pass Rate, 0.78 Mean Score`.
+- **Single-turn vs multi-turn**: each entry includes `evalKind: 'singleTurn' | 'multiTurn' | 'scorer'`.
 
 ### 2. Per-Target Results (`perTargetResults`)
 The deep-dive data. For every single conversation or step in your dataset, Tally records:
@@ -26,6 +27,8 @@ The deep-dive data. For every single conversation or step in your dataset, Tally
 - The normalized score (e.g., `0.8`).
 - The final verdict (`pass` or `fail`).
 - Any error messages if the evaluation failed.
+
+**How to differentiate single-turn vs multi-turn here:** `perTargetResults` is “one result per target container”. If you ran on a dataset of single-turn items, each entry is a turn/item. If you ran on a dataset of conversations, each entry is a conversation (multi-turn).
 
 ### 3. Metadata (`metadata`)
 Contextual information about the run, including:
@@ -53,7 +56,12 @@ console.log(formatReportAsTables(report));
 Because the report contains the full context for every `fail` verdict, you can quickly identify and fix the specific interactions that are dragging down your scores.
 
 ```ts
-const failures = report.perTargetResults.filter(r => r.verdicts.some(v => v.status === 'fail'));
+const failures = report.perTargetResults.filter((r) => {
+  for (const [, v] of r.verdicts) {
+    if (v.verdict === 'fail') return true;
+  }
+  return false;
+});
 
 failures.forEach(f => {
   console.log(`Failure in ${f.targetId}:`, f.verdicts);
@@ -68,10 +76,22 @@ Tally reports are first-class citizens in your automation pipeline. By parsing t
 
 ```ts
 const report = await tally.run();
-const relevance = report.evalSummaries.find(s => s.evalName === 'Answer Relevance');
+const relevance = report.evalSummaries.get('Answer Relevance');
+if (!relevance) throw new Error('Missing summary');
 
-if (relevance.passRate < 0.95) {
-  throw new Error(`Evaluation Failed: Pass rate (${relevance.passRate}) is below 95%`);
+const passRate = relevance.aggregations.passRate;
+if (passRate !== undefined && passRate < 0.95) {
+  throw new Error(`Evaluation Failed: Pass rate (${passRate}) is below 95%`);
+}
+```
+
+If you want to split summaries by single-turn vs multi-turn:
+
+```ts
+for (const [evalName, summary] of report.evalSummaries) {
+  if (summary.evalKind === 'multiTurn') {
+    console.log('multi-turn', evalName, summary.aggregations.mean);
+  }
 }
 ```
 

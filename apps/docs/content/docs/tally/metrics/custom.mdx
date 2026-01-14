@@ -28,16 +28,16 @@ Use this when you want to measure something that can be determined by a script (
 import { defineBaseMetric, createSingleTurnCode } from '@tally-evals/tally';
 
 const base = defineBaseMetric({
-  name: 'JSONResponse',
+  name: 'jsonResponse',
   valueType: 'boolean',
   description: 'Checks if the assistant output is valid JSON'
 });
 
 export const jsonResponseMetric = createSingleTurnCode({
   base,
-  compute: async (step) => {
+  compute: async ({ selected }) => {
     try {
-      const content = step.output[0].content;
+      const content = selected.output[0]?.content ?? '';
       JSON.parse(content);
       return true;
     } catch {
@@ -99,7 +99,7 @@ Multi-turn metrics use `runOnContainer` to prepare the entire conversation histo
 import { defineBaseMetric, createMultiTurnLLM } from '@tally-evals/tally';
 
 const base = defineBaseMetric({
-  name: 'KnowledgeRetention',
+  name: 'knowledgeRetention',
   valueType: 'number',
   description: 'Measures if the agent remembers user details provided in earlier turns'
 });
@@ -140,3 +140,10 @@ When you define a metric using these factories, you are creating a `MetricDef`. 
 - It can be passed into a **Scorer** to be weighted with other metrics.
 - It can be passed into an **Eval** to have a **Verdict Policy** applied.
 - It can be reused across different **Evaluators** without re-defining the logic.
+
+---
+
+## Common pitfalls
+
+- **Single-turn selection**: single-turn metrics run on selected targets. Configure which steps/items to evaluate via the evaluator context (e.g., `runAllTargets()`).
+- **Normalization vs verdicts**: normalize to 0–1 when you want consistent reporting/scoring. Verdict policies can then gate pass/fail at different thresholds depending on scenario.
