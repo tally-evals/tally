@@ -6,15 +6,19 @@
  */
 
 import type { Aggregator, BaseMetricDef, Score } from '@tally/core/types';
-import { validateScores, isEmpty, calculatePassRate } from '@tally/core/aggregators/base';
+import {
+  validateScores,
+  isEmpty,
+  calculatePassRate,
+} from '@tally/core/aggregators/base';
 
 /**
  * Options for pass rate aggregator
  */
 export interface PassRateAggregatorOptions {
-	threshold?: number; // Default: 0.5
-	description?: string;
-	metadata?: Record<string, unknown>;
+  threshold?: number; // Default: 0.5
+  description?: string;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -37,34 +41,33 @@ export interface PassRateAggregatorOptions {
  * ```
  */
 export function createPassRateAggregator(
-	metric: BaseMetricDef<number>,
-	options?: PassRateAggregatorOptions
+  metric: BaseMetricDef<number>,
+  options?: PassRateAggregatorOptions,
 ): Aggregator {
-	const threshold = options?.threshold ?? 0.5;
+  const threshold = options?.threshold ?? 0.5;
 
-	if (threshold < 0 || threshold > 1) {
-		throw new Error(
-			`Pass rate aggregator for ${metric.name}: threshold must be in [0, 1] range, got ${threshold}`
-		);
-	}
+  if (threshold < 0 || threshold > 1) {
+    throw new Error(
+      `Pass rate aggregator for ${metric.name}: threshold must be in [0, 1] range, got ${threshold}`,
+    );
+  }
 
-	return {
-		name: `passRate_${metric.name}`,
-		description:
-			options?.description ??
-			`Pass rate of ${metric.name} (threshold: ${threshold})`,
-		metric,
-		aggregate: (values: readonly Score[]) => {
-			if (isEmpty(values)) {
-				throw new Error(
-					`Pass rate aggregator for ${metric.name}: cannot aggregate empty array`
-				);
-			}
+  return {
+    name: `Pass Rate`,
+    description:
+      options?.description ??
+      `Pass rate of ${metric.name} (threshold: ${threshold})`,
+    metric,
+    aggregate: (values: readonly Score[]) => {
+      if (isEmpty(values)) {
+        throw new Error(
+          `Pass rate aggregator for ${metric.name}: cannot aggregate empty array`,
+        );
+      }
 
-			validateScores(values);
-			return calculatePassRate(values, threshold);
-		},
-		...(options?.metadata !== undefined && { metadata: options.metadata }),
-	};
+      validateScores(values);
+      return calculatePassRate(values, threshold);
+    },
+    ...(options?.metadata !== undefined && { metadata: options.metadata }),
+  };
 }
-
