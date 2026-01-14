@@ -270,26 +270,13 @@ function formatSummaryTable(report: EvaluationReport): void {
     // Add custom aggregations if available
     if (summary.aggregations.custom) {
       const customAggs = summary.aggregations.custom;
-      // Display common aggregators if they exist
-      if ('Mean' in customAggs) {
-        row['Mean'] = (customAggs.Mean as number).toFixed(3);
-      }
-      if ('P50' in customAggs) {
-        row['P50'] = (customAggs.P50 as number).toFixed(3);
-      }
-      if ('P75' in customAggs) {
-        row['P75'] = (customAggs.P75 as number).toFixed(3);
-      }
-      if ('P90' in customAggs) {
-        row['P90'] = (customAggs.P90 as number).toFixed(3);
-      }
-      // Show any other custom aggregations
+      // Display all custom aggregations with capitalized names
       for (const [aggName, aggValue] of Object.entries(customAggs)) {
-        if (
-          !['Mean', 'P50', 'P75', 'P90'].includes(aggName) &&
-          typeof aggValue === 'number'
-        ) {
-          row[aggName] = aggValue.toFixed(3);
+        if (typeof aggValue === 'number') {
+          // Capitalize the aggregator name for display
+          const displayName =
+            aggName.charAt(0).toUpperCase() + aggName.slice(1);
+          row[displayName] = aggValue.toFixed(3);
         }
       }
     }

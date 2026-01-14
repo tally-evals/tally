@@ -7,19 +7,19 @@
 
 import type { Aggregator, BaseMetricDef, Score } from '@tally/core/types';
 import {
-	validateScores,
-	isEmpty,
-	sortScores,
-	calculatePercentile,
+  validateScores,
+  isEmpty,
+  sortScores,
+  calculatePercentile,
 } from '@tally/core/aggregators/base';
 
 /**
  * Options for percentile aggregator
  */
 export interface PercentileAggregatorOptions {
-	percentile: number; // 0-100
-	description?: string;
-	metadata?: Record<string, unknown>;
+  percentile: number; // 0-100
+  description?: string;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -39,34 +39,33 @@ export interface PercentileAggregatorOptions {
  * ```
  */
 export function createPercentileAggregator(
-	metric: BaseMetricDef<number>,
-	options: PercentileAggregatorOptions
+  metric: BaseMetricDef<number>,
+  options: PercentileAggregatorOptions,
 ): Aggregator {
-	const { percentile } = options;
+  const { percentile } = options;
 
-	if (percentile < 0 || percentile > 100) {
-		throw new Error(
-			`Percentile aggregator for ${metric.name}: percentile must be in [0, 100] range, got ${percentile}`
-		);
-	}
+  if (percentile < 0 || percentile > 100) {
+    throw new Error(
+      `Percentile aggregator for ${metric.name}: percentile must be in [0, 100] range, got ${percentile}`,
+    );
+  }
 
-	return {
-		name: `p${percentile}_${metric.name}`,
-		description:
-			options.description ?? `${percentile}th percentile of ${metric.name}`,
-		metric,
-		aggregate: (values: readonly Score[]) => {
-			if (isEmpty(values)) {
-				throw new Error(
-					`Percentile aggregator for ${metric.name}: cannot aggregate empty array`
-				);
-			}
+  return {
+    name: `P${percentile}`,
+    description:
+      options.description ?? `${percentile}th percentile of ${metric.name}`,
+    metric,
+    aggregate: (values: readonly Score[]) => {
+      if (isEmpty(values)) {
+        throw new Error(
+          `Percentile aggregator for ${metric.name}: cannot aggregate empty array`,
+        );
+      }
 
-			validateScores(values);
-			const sorted = sortScores(values);
-			return calculatePercentile(sorted, percentile);
-		},
-		...(options.metadata !== undefined && { metadata: options.metadata }),
-	};
+      validateScores(values);
+      const sorted = sortScores(values);
+      return calculatePercentile(sorted, percentile);
+    },
+    ...(options.metadata !== undefined && { metadata: options.metadata }),
+  };
 }
-

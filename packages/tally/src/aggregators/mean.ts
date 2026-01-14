@@ -5,14 +5,18 @@
  */
 
 import type { Aggregator, BaseMetricDef, Score } from '@tally/core/types';
-import { validateScores, isEmpty, calculateMean } from '@tally/core/aggregators/base';
+import {
+  validateScores,
+  isEmpty,
+  calculateMean,
+} from '@tally/core/aggregators/base';
 
 /**
  * Options for mean aggregator
  */
 export interface MeanAggregatorOptions {
-	description?: string;
-	metadata?: Record<string, unknown>;
+  description?: string;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -30,27 +34,25 @@ export interface MeanAggregatorOptions {
  * ```
  */
 export function createMeanAggregator(args: {
-	metric: BaseMetricDef<number>;
-	options?: MeanAggregatorOptions;
+  metric: BaseMetricDef<number>;
+  options?: MeanAggregatorOptions;
 }): Aggregator {
-	return {
-		name: `mean_${args.metric.name}`,
-		description:
-			args.options?.description ?? `Mean of ${args.metric.name}`,
-		metric: args.metric,
-		aggregate: (values: readonly Score[]) => {
-			if (isEmpty(values)) {
-				throw new Error(
-					`Mean aggregator for ${args.metric.name}: cannot aggregate empty array`
-				);
-			}
+  return {
+    name: `Mean`,
+    description: args.options?.description ?? `Mean of ${args.metric.name}`,
+    metric: args.metric,
+    aggregate: (values: readonly Score[]) => {
+      if (isEmpty(values)) {
+        throw new Error(
+          `Mean aggregator for ${args.metric.name}: cannot aggregate empty array`,
+        );
+      }
 
-			validateScores(values);
-			return calculateMean(values);
-		},
-		...(args.options?.metadata !== undefined && {
-			metadata: args.options.metadata,
-		}),
-	};
+      validateScores(values);
+      return calculateMean(values);
+    },
+    ...(args.options?.metadata !== undefined && {
+      metadata: args.options.metadata,
+    }),
+  };
 }
-
