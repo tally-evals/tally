@@ -203,6 +203,11 @@ export interface SingleTurnMetricDef<
   preProcessor?: (
     selected: SingleTargetFor<TContainerData>,
   ) => Promise<unknown> | unknown;
+  /**
+   * Aggregators to compute summary statistics (mean, percentiles, etc.)
+   * Defaults to [mean, p50, p75, p90, p95, p99] if not specified
+   */
+  aggregators?: Aggregator[];
 }
 
 /**
@@ -480,8 +485,8 @@ export interface Evaluator<TContainer extends MetricContainer> {
 // ============================================================================
 
 /**
- * Aggregator definition
- * Summarizes derived metric values across all data points
+ * Aggregator definition for metric-level aggregation
+ * Computes a summary statistic from an array of scores
  */
 export interface Aggregator {
   name: string;
@@ -520,17 +525,19 @@ export interface PerTargetResult {
 }
 
 /**
- * Built-in aggregation metrics (always calculated)
+ * Custom aggregations computed from metric-level aggregators
+ * Each aggregator name maps to its computed Score value
+ */
+export interface CustomAggregations {
+  [aggregatorName: string]: Score;
+}
+
+/**
+ * Built-in aggregations (always calculated for verdict summaries)
+ * Includes pass/fail rates and distributions, but NOT custom aggregators
  */
 export interface BuiltInAggregations {
-  mean: Score;
-  percentiles: {
-    p50: Score; // median
-    p75: Score;
-    p90: Score;
-    p95: Score;
-    p99: Score;
-  };
+  custom?: CustomAggregations; // Custom aggregates from metric aggregators
   passRate?: Score; // Only if verdict policy exists
   failRate?: Score; // Only if verdict policy exists
   passCount?: number; // Only if verdict policy exists

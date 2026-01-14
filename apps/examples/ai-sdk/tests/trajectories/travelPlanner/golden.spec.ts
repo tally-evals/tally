@@ -5,7 +5,11 @@
 import { describe, it, expect } from 'bun:test';
 import { travelPlannerAgent } from '../../../src/agents/travelPlanner';
 import { travelPlannerGoldenTrajectory } from './definitions';
-import { runCase, assertToolCallSequence, saveTallyReportToStore } from '../../utils/harness';
+import {
+  runCase,
+  assertToolCallSequence,
+  saveTallyReportToStore,
+} from '../../utils/harness';
 import {
   createTally,
   createEvaluator,
@@ -47,7 +51,11 @@ describe('Travel Planner Agent - Golden Path', () => {
         // Some steps might not have tool calls at all
         const hasToolCalls = step.output.some((msg: unknown) => {
           if (!msg || typeof msg !== 'object') return false;
-          if (!('role' in msg) || (msg as { role?: unknown }).role !== 'assistant') return false;
+          if (
+            !('role' in msg) ||
+            (msg as { role?: unknown }).role !== 'assistant'
+          )
+            return false;
           const content = (msg as { content?: unknown }).content;
           if (!Array.isArray(content)) return false;
           return content.some(
@@ -170,7 +178,10 @@ describe('Travel Planner Agent - Golden Path', () => {
     });
 
     const report = await tally.run();
-    await saveTallyReportToStore({ conversationId: 'travel-planner-golden', report });
+    await saveTallyReportToStore({
+      conversationId: 'travel-planner-golden',
+      report,
+    });
 
     expect(report).toBeDefined();
     expect(report.perTargetResults.length).toBeGreaterThan(0);
@@ -221,10 +232,10 @@ describe('Travel Planner Agent - Golden Path', () => {
 
     // Overall Quality: Should pass for golden path (score >= 0.6)
     const overallQualitySummary = report.evalSummaries.get('Overall Quality');
-    if (overallQualitySummary?.aggregations?.mean !== undefined) {
-      expect(overallQualitySummary.aggregations.mean).toBeGreaterThanOrEqual(
-        0.6,
-      );
+    if (overallQualitySummary?.aggregations?.custom?.mean !== undefined) {
+      expect(
+        overallQualitySummary.aggregations.custom?.mean,
+      ).toBeGreaterThanOrEqual(0.6);
     }
   }, 300000); // 5 minute timeout for trajectory execution
 });
