@@ -19,57 +19,52 @@ Aggregators are the bridge between "debugging one conversation" and "shipping a 
 
 ---
 
-## The Three Pillars of Aggregation
+## What you get by default
 
-Tally provides built-in aggregators categorized by the type of signal they provide:
+With the current **Eval API**, you typically don’t “pick aggregators” up front. Tally automatically computes a standard set of built-in aggregations for each eval so the results are immediately usable in CI and in reports.
 
-### 1. Business Outcomes (`passRate`)
-The most important metric for stakeholders. It answers: *"What percentage of our data meets our quality bar?"*
+### Do aggregations only work for single-turn?
 
-```ts
-import { passRate } from '@tally-evals/tally/aggregators';
+No. Built-in aggregations are computed for every eval, including:
 
-// Summary: "92% of responses passed the relevance check"
-const summary = passRate();
-```
+- **single-turn evals**: aggregated across dataset targets (turns/items)
+- **multi-turn evals**: aggregated across conversations (each conversation contributes one result)
+- **scorer evals**: aggregated across targets using the scorer’s output score
 
-### 2. Descriptive Statistics (`mean`)
-The average performance. Useful for tracking general improvement or degradation across versions.
+The most common aggregations you’ll look at are:
 
-```ts
-import { mean } from '@tally-evals/tally/aggregators';
+- **Pass rate**: the percentage of targets that passed a verdict policy.
+- **Mean**: the average score across targets.
+- **Percentiles** (p50/p75/p90/p95/p99): how the system behaves in the tail (robustness / worst-case behavior).
+- **Distribution** (ordinal): category counts when an eval’s raw value is an ordinal label.
 
-// Summary: "Average similarity score was 0.84"
-const summary = mean();
-```
-
-### 3. Robustness (`percentile`)
-Crucial for identifying edge cases and "bad" behaviors. p90 and p95 tell you how your system performs when things go wrong.
+Example (reading eval summaries):
 
 ```ts
-import { percentile } from '@tally-evals/tally/aggregators';
+const summary = report.evalSummaries.get('Answer Relevance');
+if (!summary) throw new Error('Missing summary');
 
-// Summary: "The worst 10% of responses had a score below 0.45"
-const p10 = percentile(0.1); 
+console.log('mean', summary.aggregations.mean);
+console.log('p95', summary.aggregations.percentiles.p95);
+console.log('passRate', summary.aggregations.passRate);
 ```
 
 ---
 
-## Custom Aggregators
+## Custom aggregation (when you need it)
 
-You can define your own aggregation logic to calculate domain-specific metrics, such as "Cost per interaction" or "Success by Category."
+If you need a bespoke summary (e.g., “success rate by customer tier” or “average cost per successful run”), the most direct approach today is to **post-process the `EvaluationReport`** (e.g., group `perTargetResults` by metadata).
+
+Tally does not currently expose a first-class “register a custom aggregator” hook on the container/evaluator API.
+
+Tally also exports aggregator constructors (advanced):
 
 ```ts
-import { defineAggregator } from '@tally-evals/tally';
-
-export const categorySuccess = defineAggregator({
-  name: 'SuccessByCategory',
-  aggregate: (results) => {
-    // results is an array of individual Eval outputs
-    // custom logic to group and count...
-    return groupedResults;
-  }
-});
+import {
+  createMeanAggregator,
+  createPercentileAggregator,
+  createPassRateAggregator,
+} from '@tally-evals/tally/aggregators';
 ```
 
 ---

@@ -3,35 +3,204 @@ title: Built-in Metrics
 description: Pre-built metrics provided by Tally.
 ---
 
-Tally comes with a set of pre-built metrics that use LLMs to evaluate responses. These are designed to be used with AI SDK providers.
+import { CodePopover } from '@/components/CodePopover';
+
+export const answerRelevanceParams = String.raw`export interface AnswerRelevanceOptions {
+  provider: LanguageModel;
+  partialWeight?: number;
+}`;
+export const answerRelevanceExample = String.raw`import { createAnswerRelevanceMetric } from '@tally-evals/tally/metrics'
+import { google } from '@ai-sdk/google'
+
+const provider = google('models/gemini-2.0-flash')
+
+const relevance = createAnswerRelevanceMetric({
+  provider,
+  partialWeight: 0.3,
+})`;
+
+export const completenessParams = String.raw`export interface CompletenessOptions {
+  provider: LanguageModel;
+  expectedPoints?: string[];
+}`;
+export const completenessExample = String.raw`import { createCompletenessMetric } from '@tally-evals/tally/metrics'
+
+const completeness = createCompletenessMetric({
+  provider,
+  expectedPoints: ['Mention pricing', 'Mention timeline', 'Offer next steps'],
+})`;
+
+export const toxicityParams = String.raw`export interface ToxicityOptions {
+  provider: LanguageModel;
+  categories?: Array<'hate' | 'harassment' | 'violence' | 'self-harm' | 'sexual' | 'profanity'>;
+}`;
+export const toxicityExample = String.raw`import { createToxicityMetric } from '@tally-evals/tally/metrics'
+
+const toxicity = createToxicityMetric({
+  provider,
+  categories: ['hate', 'harassment', 'self-harm'],
+})`;
+
+export const answerSimilarityParams = String.raw`export interface AnswerSimilarityOptions {
+  embeddingModel?: EmbeddingModel;
+  targetResponse?: string;
+  minKeywords?: number;
+}`;
+export const answerSimilarityExample = String.raw`import { createAnswerSimilarityMetric } from '@tally-evals/tally/metrics'
+
+const similarity = createAnswerSimilarityMetric({
+  targetResponse: 'The capital of France is Paris.',
+  minKeywords: 2,
+})`;
+
+export const toolCallAccuracyParams = String.raw`export interface ToolCallAccuracyOptions {
+  expectedToolCalls: Array<{
+    toolName: string;
+    argsSchema?: z.ZodSchema;
+  }>;
+  toolCallOrder?: string[];
+  strictMode?: boolean;
+}`;
+export const toolCallAccuracyExample = String.raw`import { z } from 'zod'
+import { createToolCallAccuracyMetric } from '@tally-evals/tally/metrics'
+
+const toolAccuracy = createToolCallAccuracyMetric({
+  expectedToolCalls: [
+    { toolName: 'getWeather', argsSchema: z.object({ city: z.string() }) },
+  ],
+  toolCallOrder: ['getWeather'],
+  strictMode: true,
+})`;
+
+export const roleAdherenceParams = String.raw`export interface RoleAdherenceOptions {
+  expectedRole: string;
+  provider: LanguageModel;
+  checkConsistency?: boolean;
+}`;
+export const roleAdherenceExample = String.raw`import { createRoleAdherenceMetric } from '@tally-evals/tally/metrics'
+
+const roleAdherence = createRoleAdherenceMetric({
+  expectedRole: 'a concise, helpful customer support agent',
+  provider,
+  checkConsistency: true,
+})`;
+
+export const goalCompletionParams = String.raw`export interface GoalCompletionOptions {
+  goal: string;
+  provider: LanguageModel;
+  checkPartialCompletion?: boolean;
+  considerEfficiency?: boolean;
+}`;
+export const goalCompletionExample = String.raw`import { createGoalCompletionMetric } from '@tally-evals/tally/metrics'
+
+const goalCompletion = createGoalCompletionMetric({
+  goal: 'Help the user book a flight from SFO to NYC',
+  provider,
+  checkPartialCompletion: true,
+  considerEfficiency: false,
+})`;
+
+export const topicAdherenceParams = String.raw`export interface TopicAdherenceOptions {
+  topics: string[];
+  provider: LanguageModel;
+  allowTopicTransitions?: boolean;
+  strictMode?: boolean;
+}`;
+export const topicAdherenceExample = String.raw`import { createTopicAdherenceMetric } from '@tally-evals/tally/metrics'
+
+const topicAdherence = createTopicAdherenceMetric({
+  topics: ['billing', 'refunds'],
+  provider,
+  allowTopicTransitions: true,
+  strictMode: false,
+})`;
+
+Tally ships with a small set of pre-built metrics for common agent evaluation needs. Some are **LLM-based** (judgment) and some are **code-based** (deterministic).
+
+All built-in metrics are **MetricDefs** you can reuse across scorers and evals.
 
 ## Single-Turn Metrics
 
 These metrics evaluate individual steps or turns in a conversation.
 
-| Metric | Description |
-| :--- | :--- |
-| `answerRelevance` | How relevant is the response to the user's input? |
-| `completeness` | Does the response address all parts of the user's query? |
-| `toxicity` | Checks for harmful or offensive content in the response. |
-| `toolCallAccuracy` | Validates that the agent called the correct tools with correct params. |
+| Metric factory | Type | Output | Description | Code |
+| :--- | :--- | :--- | :--- | :---: |
+| `createAnswerRelevanceMetric` | LLM | number (0–5, normalized to 0–1) | How relevant is the response to the user's input? | <CodePopover title="AnswerRelevanceOptions" tsDef={answerRelevanceParams} example={answerRelevanceExample} /> |
+| `createCompletenessMetric` | LLM | number | Does the response address all parts of the user's query? | <CodePopover title="CompletenessOptions" tsDef={completenessParams} example={completenessExample} /> |
+| `createToxicityMetric` | LLM | number | Checks for harmful or offensive content in the response. | <CodePopover title="ToxicityOptions" tsDef={toxicityParams} example={toxicityExample} /> |
+| `createAnswerSimilarityMetric` | Code | number (0–1) | Measures similarity to a target answer (keyword-based; optional embeddings). | <CodePopover title="AnswerSimilarityOptions" tsDef={answerSimilarityParams} example={answerSimilarityExample} /> |
+| `createToolCallAccuracyMetric` | Code | number (0–1) | Measures tool call correctness (presence/args/order) against expectations. | <CodePopover title="ToolCallAccuracyOptions" tsDef={toolCallAccuracyParams} example={toolCallAccuracyExample} /> |
 
 ## Multi-Turn Metrics
 
 These metrics evaluate the entire conversation as a whole.
 
-| Metric | Description |
-| :--- | :--- |
-| `roleAdherence` | Does the agent maintain its assigned persona throughout? |
-| `goalCompletion` | Did the agent successfully achieve the user's goal? |
-| `topicAdherence` | Did the agent stay on topic across multiple turns? |
+| Metric factory | Type | Output | Description | Code |
+| :--- | :--- | :--- | :--- | :---: |
+| `createRoleAdherenceMetric` | LLM | number | Does the agent maintain its assigned persona throughout? | <CodePopover title="RoleAdherenceOptions" tsDef={roleAdherenceParams} example={roleAdherenceExample} /> |
+| `createGoalCompletionMetric` | LLM | number | Did the agent successfully achieve the user's goal? | <CodePopover title="GoalCompletionOptions" tsDef={goalCompletionParams} example={goalCompletionExample} /> |
+| `createTopicAdherenceMetric` | LLM | number | Did the agent stay on topic across multiple turns? | <CodePopover title="TopicAdherenceOptions" tsDef={topicAdherenceParams} example={topicAdherenceExample} /> |
 
 ## Usage Example
 
 ```ts
-import { createAnswerRelevanceMetric } from '@tally-evals/tally/metrics';
+import { z } from 'zod';
 import { google } from '@ai-sdk/google';
+import {
+  createAnswerRelevanceMetric,
+  createCompletenessMetric,
+  createToolCallAccuracyMetric,
+  createRoleAdherenceMetric,
+  createTopicAdherenceMetric,
+} from '@tally-evals/tally/metrics';
 
-const model = google('models/gemini-2.0-flash');
-const relevance = createAnswerRelevanceMetric({ provider: model });
+// Imagine a "travel planner" agent that should call `searchFlights({ origin, destination, departDate })`
+const provider = google('models/gemini-2.0-flash');
+
+// LLM-judged single-turn signals
+const relevance = createAnswerRelevanceMetric({
+  provider,
+  partialWeight: 0.3,
+});
+
+const completeness = createCompletenessMetric({
+  provider,
+  expectedPoints: [
+    'Ask for missing constraints (budget, dates, cabin class) if needed',
+    'Recommend a concrete itinerary option',
+    'Explain tradeoffs (price vs duration vs layovers)',
+    'Confirm before booking / purchasing',
+  ],
+});
+
+// Deterministic single-turn signal: tool calling correctness
+const toolCallAccuracy = createToolCallAccuracyMetric({
+  expectedToolCalls: [
+    {
+      toolName: 'searchFlights',
+      argsSchema: z.object({
+        origin: z.string(),
+        destination: z.string(),
+        departDate: z.string(),
+      }),
+    },
+  ],
+  toolCallOrder: ['searchFlights'],
+  strictMode: true,
+});
+
+// Multi-turn signals (conversation-level)
+const roleAdherence = createRoleAdherenceMetric({
+  expectedRole: 'a helpful travel planner who asks clarifying questions and avoids hallucinating prices',
+  provider,
+  checkConsistency: true,
+});
+
+const topicAdherence = createTopicAdherenceMetric({
+  topics: ['travel planning', 'flights', 'itinerary', 'budget', 'dates', 'layovers', 'airlines'],
+  provider,
+  allowTopicTransitions: true,
+  strictMode: false,
+});
 ```
+
