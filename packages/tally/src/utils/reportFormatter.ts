@@ -265,12 +265,36 @@ function formatSummaryTable(report: EvaluationReport): void {
     const row: Record<string, string | number> = {
       Eval: evalName,
       Kind: summary.evalKind,
-      Mean: summary.aggregations.mean.toFixed(3),
-      P50: summary.aggregations.percentiles.p50.toFixed(3),
-      P75: summary.aggregations.percentiles.p75.toFixed(3),
-      P90: summary.aggregations.percentiles.p90.toFixed(3),
     };
 
+    // Add custom aggregations if available
+    if (summary.aggregations.custom) {
+      const customAggs = summary.aggregations.custom;
+      // Display common aggregators if they exist
+      if ('Mean' in customAggs) {
+        row['Mean'] = (customAggs.Mean as number).toFixed(3);
+      }
+      if ('P50' in customAggs) {
+        row['P50'] = (customAggs.P50 as number).toFixed(3);
+      }
+      if ('P75' in customAggs) {
+        row['P75'] = (customAggs.P75 as number).toFixed(3);
+      }
+      if ('P90' in customAggs) {
+        row['P90'] = (customAggs.P90 as number).toFixed(3);
+      }
+      // Show any other custom aggregations
+      for (const [aggName, aggValue] of Object.entries(customAggs)) {
+        if (
+          !['Mean', 'P50', 'P75', 'P90'].includes(aggName) &&
+          typeof aggValue === 'number'
+        ) {
+          row[aggName] = aggValue.toFixed(3);
+        }
+      }
+    }
+
+    // Add verdict summary if available
     if (summary.verdictSummary) {
       row['Pass Rate'] = `${summary.verdictSummary.passRate.toFixed(3)}`;
       row[
