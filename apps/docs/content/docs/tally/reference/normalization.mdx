@@ -1,0 +1,135 @@
+---
+title: Normalization
+description: Convert raw metric values into normalized scores.
+---
+
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+# Normalization
+
+Normalizers convert raw metric values into normalized scores.
+
+## Import
+
+```ts
+import {
+  createMinMaxNormalizer,
+  createZScoreNormalizer,
+  createThresholdNormalizer,
+  createLinearNormalizer,
+  createOrdinalMapNormalizer,
+  createIdentityNormalizer,
+  createCustomNormalizer,
+  applyNormalization,
+  resolveContext,
+  computeDistributionStats,
+  computeRange,
+  clearContextCache,
+  getCachedContext,
+} from 'tally/normalization';
+```
+
+## `createMinMaxNormalizer`
+
+```ts
+createMinMaxNormalizer(args: {
+  min: number;
+  max: number;
+  clip?: boolean;
+  direction?: 'higher' | 'lower';
+}): NormalizerSpec<number, ScoringContext>
+```
+
+## `createZScoreNormalizer`
+
+```ts
+createZScoreNormalizer(args: {
+  mean: number;
+  stdDev: number;
+  clip?: boolean;
+  direction?: 'higher' | 'lower';
+  to?: '0-1' | '0-100';
+}): NormalizerSpec<number, ScoringContext>
+```
+
+## `createThresholdNormalizer`
+
+```ts
+createThresholdNormalizer(args: {
+  threshold: number;
+  above?: number;
+  below?: number;
+}): NormalizerSpec<number, ScoringContext>
+```
+
+## `createLinearNormalizer`
+
+```ts
+createLinearNormalizer(args: {
+  slope: number;
+  intercept: number;
+  clip?: [number, number];
+  direction?: 'higher' | 'lower';
+}): NormalizerSpec<number, ScoringContext>
+```
+
+## `createOrdinalMapNormalizer`
+
+```ts
+createOrdinalMapNormalizer(args: {
+  map: Record<string | number, number>;
+}): NormalizerSpec<string | number, ScoringContext>
+```
+
+## `createIdentityNormalizer`
+
+```ts
+createIdentityNormalizer<T = number>(): NormalizerSpec<T, ScoringContext>
+```
+
+## `createCustomNormalizer`
+
+```ts
+createCustomNormalizer<T>(args: {
+  normalize: (value: T, args: { context: ScoringContext; metric: MetricDef<T, MetricContainer> }) => Score;
+}): NormalizerSpec<T, ScoringContext>
+```
+
+## Low-level utilities
+
+These are intended for **manual normalization or custom pipelines**. Most users won’t need them.
+
+```ts
+applyNormalization<T>(...): Score
+resolveContext(...): ScoringContext
+computeDistributionStats(...): Record<string, number>
+computeRange(...): { min: number; max: number }
+clearContextCache(): void
+getCachedContext(metricName: string): ScoringContext | undefined
+```
+
+### Example: precompute context once, reuse across runs
+
+```ts
+import {
+  resolveContext,
+  applyNormalization,
+  createZScoreNormalizer,
+} from 'tally/normalization';
+
+const rawValues = [1, 2, 3, 4, 5];
+const normalizer = createZScoreNormalizer({ mean: 3, stdDev: 1, to: '0-1' });
+
+const context = resolveContext({
+  metricName: 'latencyScore',
+  rawValues,
+  normalizer,
+});
+
+const score = applyNormalization(2, {
+  metricName: 'latencyScore',
+  normalizer,
+  context,
+});
+```
+

@@ -1,0 +1,125 @@
+---
+title: Builtin Metrics
+description: Prebuilt metric definitions and metric utilities.
+---
+
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+# Builtin Metrics
+
+Prebuilt metrics are exported from the `tally/metrics` entrypoint.
+
+## Import
+
+```ts
+import {
+  createAnswerRelevanceMetric,
+  createAnswerSimilarityMetric,
+  createCompletenessMetric,
+  createToxicityMetric,
+  createToolCallAccuracyMetric,
+  createRoleAdherenceMetric,
+  createGoalCompletionMetric,
+  createTopicAdherenceMetric,
+  extractInputOutput,
+  extractTextFromMessage,
+  extractKeywords,
+  checkKeywordCoverage,
+  extractToolCalls,
+} from 'tally/metrics';
+```
+
+## `createAnswerRelevanceMetric`
+
+```ts
+createAnswerRelevanceMetric(options: {
+  provider: LanguageModel;
+  partialWeight?: number;
+}): SingleTurnMetricDef<number, TContainer>
+```
+
+## `createAnswerSimilarityMetric`
+
+```ts
+createAnswerSimilarityMetric(options?: {
+  embeddingModel?: EmbeddingModel;
+  targetResponse?: string;
+  minKeywords?: number;
+}): SingleTurnMetricDef<number, TContainer>
+```
+
+## `createCompletenessMetric`
+
+```ts
+createCompletenessMetric(options: {
+  provider: LanguageModel;
+  expectedPoints?: string[];
+}): SingleTurnMetricDef<number, TContainer>
+```
+
+## `createToxicityMetric`
+
+```ts
+createToxicityMetric(options: {
+  provider: LanguageModel;
+  categories?: Array<'hate' | 'harassment' | 'violence' | 'self-harm' | 'sexual' | 'profanity'>;
+}): SingleTurnMetricDef<number, TContainer>
+```
+
+## `createToolCallAccuracyMetric`
+
+```ts
+createToolCallAccuracyMetric(options: {
+  expectedToolCalls: Array<{ toolName: string; argsSchema?: z.ZodSchema }>;
+  toolCallOrder?: string[];
+  strictMode?: boolean;
+}): SingleTurnMetricDef<number, TContainer>
+```
+
+## `createRoleAdherenceMetric`
+
+```ts
+createRoleAdherenceMetric(options: {
+  expectedRole: string;
+  provider: LanguageModel;
+  checkConsistency?: boolean;
+}): MultiTurnMetricDef<number, MultiTurnContainer>
+```
+
+## `createGoalCompletionMetric`
+
+```ts
+createGoalCompletionMetric(options: {
+  goal: string;
+  provider: LanguageModel;
+  checkPartialCompletion?: boolean;
+  considerEfficiency?: boolean;
+}): MultiTurnMetricDef<number, MultiTurnContainer>
+```
+
+## `createTopicAdherenceMetric`
+
+```ts
+createTopicAdherenceMetric(options: {
+  topics: string[];
+  provider: LanguageModel;
+  allowTopicTransitions?: boolean;
+  strictMode?: boolean;
+}): MultiTurnMetricDef<number, MultiTurnContainer>
+```
+
+## Metric utilities
+
+<TypeTable
+  type={{
+    extractInputOutput: { description: 'Extract input/output text from model messages.', type: 'function', required: true },
+    extractTextFromMessage: { description: 'Extract plain text from a single model message.', type: 'function', required: true },
+    extractKeywords: { description: 'Extract keywords from text.', type: 'function', required: true },
+    checkKeywordCoverage: { description: 'Check whether keywords are covered.', type: 'function', required: true },
+    extractToolCalls: { description: 'Extract tool calls from model messages.', type: 'function', required: true },
+    KeywordExtractionOptions: { description: 'Options for keyword extraction.', type: 'type', required: true },
+    KeywordCoverageResult: { description: 'Result of keyword coverage checking.', type: 'type', required: true },
+    ExtractedToolCall: { description: 'Normalized tool call representation.', type: 'type', required: true },
+  }}
+/>
+

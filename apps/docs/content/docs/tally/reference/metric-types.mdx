@@ -1,0 +1,77 @@
+---
+title: Metric Types
+description: Core types for metrics, scoring, normalization, and reports.
+---
+
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+# Metric Types
+
+Core types live on the main `tally` entrypoint.
+
+## Import
+
+```ts
+import type {
+  DatasetItem,
+  Conversation,
+  ConversationStep,
+  MetricDef,
+  Metric,
+  Score,
+  EvaluationReport,
+} from 'tally';
+import { toScore } from 'tally';
+```
+
+## Data types
+
+<TypeTable
+  type={{
+    DatasetItem: { description: 'Single-turn dataset item container.', type: 'interface', required: true },
+    Conversation: { description: 'Multi-turn conversation container.', type: 'type', required: true },
+    ConversationStep: { description: 'A single step inside a conversation.', type: 'type', required: true },
+    SingleTurnContainer: { description: 'Valid single-turn containers.', type: 'type', required: true },
+    MultiTurnContainer: { description: 'Valid multi-turn containers.', type: 'type', required: true },
+    MetricContainer: { description: 'Union of valid metric containers.', type: 'type', required: true },
+  }}
+/>
+
+## Metric system
+
+<TypeTable
+  type={{
+    MetricScalar: { description: 'Allowed raw metric scalar value types.', type: 'type', required: true },
+    Score: { description: 'Branded score type (normalized in [0, 1]).', type: 'type', required: true },
+    toScore: { description: 'Create a Score from a number (validates [0, 1]).', type: '(n: number) => Score', required: true },
+    MetricDef: { description: 'Metric definition (code-based or LLM-based).', type: 'type', required: true },
+    Metric: { description: 'Metric execution output (value + metadata).', type: 'interface', required: true },
+    BaseMetricDef: { description: 'Base metric definition fields.', type: 'interface', required: true },
+    LLMMetricFields: { description: 'LLM metric-specific fields.', type: 'interface', required: true },
+    CodeMetricFields: { description: 'Code metric-specific fields.', type: 'interface', required: true },
+  }}
+/>
+
+## Normalization
+
+<TypeTable
+  type={{
+    NormalizeToScore: { description: 'Normalization function type.', type: 'type', required: true },
+    ScoringContext: { description: 'Context used by normalizers (distribution/range, etc.).', type: 'interface', required: true },
+    NormalizerSpec: { description: 'Declarative normalizer specification.', type: 'type', required: true },
+    MetricNormalization: { description: 'Normalization config attached to metric definitions.', type: 'interface', required: true },
+  }}
+/>
+
+## Reports
+
+<TypeTable
+  type={{
+    TargetVerdict: { description: 'Verdict result for a single target.', type: 'interface', required: true },
+    PerTargetResult: { description: 'All metrics/scores/verdicts for one target.', type: 'interface', required: true },
+    BuiltInAggregations: { description: 'Built-in aggregate stats.', type: 'interface', required: true },
+    AggregateSummary: { description: 'Aggregate stats per eval/metric.', type: 'interface', required: true },
+    EvaluationReport: { description: 'Final report returned by `TallyContainer.run()`.', type: 'interface', required: true },
+  }}
+/>
+

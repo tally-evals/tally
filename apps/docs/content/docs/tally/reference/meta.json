@@ -1,0 +1,18 @@
+{
+  "title": "API Reference",
+  "defaultOpen": true,
+  "pages": [
+    "index",
+    "metric-types",
+    "metric-factories",
+    "metrics",
+    "normalization",
+    "scorers",
+    "aggregators",
+    "evals",
+    "create-tally",
+    "data",
+    "utils"
+  ]
+}
+

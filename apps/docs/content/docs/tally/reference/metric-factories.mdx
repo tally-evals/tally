@@ -1,0 +1,158 @@
+---
+title: Metric Factories
+description: Create metrics bottom-up with plain-object factory APIs.
+---
+
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+# Metric Factories
+
+Factory APIs are the preferred way to create metrics (over builder objects).
+
+## Import
+
+```ts
+import {
+  defineBaseMetric,
+  withNormalization,
+  withMetadata,
+  createSingleTurnCode,
+  createSingleTurnLLM,
+  createMultiTurnCode,
+  createMultiTurnLLM,
+} from 'tally';
+```
+
+## `defineBaseMetric`
+
+```ts
+defineBaseMetric<T extends MetricScalar>(args: {
+  name: string;
+  valueType: BaseMetricDef<T>['valueType'];
+  description?: string;
+  metadata?: Record<string, unknown>;
+  normalization?: MetricNormalization<T, ScoringContext>;
+}): BaseMetricDef<T>
+```
+
+<TypeTable
+  type={{
+    name: { description: 'Metric name (unique identifier).', type: 'string', required: true },
+    valueType: { description: 'Metric value type (number | boolean | string | ordinal).', type: 'BaseMetricDef<T>["valueType"]', required: true },
+    description: { description: 'Optional description for UI/reporting.', type: 'string', required: false },
+    metadata: { description: 'Optional metadata bag.', type: 'Record<string, unknown>', required: false },
+    normalization: { description: 'Optional normalization config attached to the metric.', type: 'MetricNormalization<T, ScoringContext>', required: false },
+  }}
+/>
+
+## `withNormalization`
+
+```ts
+withNormalization<T, TMetric>(args: {
+  metric: TMetric;
+  default: NormalizerSpec<T, ScoringContext> | NormalizeToScore<T, ScoringContext>;
+  context?: ScoringContext | ((args: { dataset: readonly unknown[]; rawValues: readonly T[] }) => Promise<ScoringContext> | ScoringContext);
+}): TMetric
+```
+
+<TypeTable
+  type={{
+    metric: { description: 'Metric or base metric to attach normalization to.', type: 'BaseMetricDef<T> | MetricDef<T, MetricContainer>', required: true },
+    default: { description: 'Normalizer specification or function.', type: 'NormalizerSpec<T, ScoringContext> | NormalizeToScore<T, ScoringContext>', required: true },
+    context: { description: 'Optional context resolver for normalization.', type: 'ScoringContext | ((args: { dataset: readonly unknown[]; rawValues: readonly T[] }) => Promise<ScoringContext> | ScoringContext)', required: false },
+  }}
+/>
+
+## `withMetadata`
+
+```ts
+withMetadata<T, TMetric>(metric: TMetric, metadata: Record<string, unknown>): TMetric
+```
+
+<TypeTable
+  type={{
+    metric: { description: 'Metric or base metric to annotate.', type: 'BaseMetricDef<T> | MetricDef<T, MetricContainer>', required: true },
+    metadata: { description: 'Metadata to merge.', type: 'Record<string, unknown>', required: true },
+  }}
+/>
+
+## Single-turn code metric
+
+```ts
+createSingleTurnCode<T, TContainer = SingleTurnContainer>(args: {
+  base: BaseMetricDef<T>;
+  preProcessor?: SingleTurnMetricDef<T, TContainer>['preProcessor'];
+  compute: CodeMetricFields<T>['compute'];
+  dependencies?: CodeMetricFields<T>['dependencies'];
+  cacheable?: CodeMetricFields<T>['cacheable'];
+  normalization?: MetricNormalization<T, ScoringContext>;
+  metadata?: Record<string, unknown>;
+}): MetricDef<T, TContainer>
+```
+
+## Single-turn LLM metric
+
+```ts
+createSingleTurnLLM<T, TContainer = SingleTurnContainer, V = readonly []>(args: {
+  base: BaseMetricDef<T>;
+  preProcessor?: SingleTurnMetricDef<T, TContainer>['preProcessor'];
+  provider: LLMMetricFields<T, V>['provider'];
+  prompt: LLMMetricFields<T, V>['prompt'];
+  rubric?: LLMMetricFields<T, V>['rubric'];
+  postProcessing?: LLMMetricFields<T, V>['postProcessing'];
+  normalization?: MetricNormalization<T, ScoringContext>;
+  metadata?: Record<string, unknown>;
+}): MetricDef<T, TContainer>
+```
+
+## Multi-turn code metric
+
+```ts
+createMultiTurnCode<T>(args: {
+  base: BaseMetricDef<T>;
+  runOnContainer: MultiTurnMetricDef<T, MultiTurnContainer>['runOnContainer'];
+  compute: CodeMetricFields<T>['compute'];
+  dependencies?: CodeMetricFields<T>['dependencies'];
+  cacheable?: CodeMetricFields<T>['cacheable'];
+  normalization?: MetricNormalization<T, ScoringContext>;
+  metadata?: Record<string, unknown>;
+}): MetricDef<T, MultiTurnContainer>
+```
+
+## Multi-turn LLM metric
+
+```ts
+createMultiTurnLLM<T, TContainer = MultiTurnContainer, V = readonly []>(args: {
+  base: BaseMetricDef<T>;
+  runOnContainer: MultiTurnMetricDef<T, TContainer>['runOnContainer'];
+  provider: LLMMetricFields<T, V>['provider'];
+  prompt: LLMMetricFields<T, V>['prompt'];
+  rubric?: LLMMetricFields<T, V>['rubric'];
+  postProcessing?: LLMMetricFields<T, V>['postProcessing'];
+  normalization?: MetricNormalization<T, ScoringContext>;
+  metadata?: Record<string, unknown>;
+}): MetricDef<T, TContainer>
+```
+
+## Example
+
+```ts
+import { defineBaseMetric, createSingleTurnLLM, withNormalization } from 'tally';
+import { createMinMaxNormalizer } from 'tally/normalization';
+import { google } from '@ai-sdk/google';
+
+const base = defineBaseMetric<number>({
+  name: 'answerRelevance',
+  valueType: 'number',
+});
+
+const answerRelevance = createSingleTurnLLM({
+  base: withNormalization({
+    metric: base,
+    default: createMinMaxNormalizer({ min: 0, max: 5, clip: true }),
+  }),
+  provider: google('models/gemini-2.5-flash-lite'),
+  prompt: { instruction: 'Score relevance 0-5.', variables: [] as const },
+});
+```
+

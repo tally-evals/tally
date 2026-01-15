@@ -1,0 +1,76 @@
+---
+title: Aggregators
+description: Summarize per-target scores into dataset-level statistics.
+---
+
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+# Aggregators
+
+Prebuilt aggregators summarize score arrays into dataset-level stats.
+
+## Import
+
+```ts
+import {
+  createMeanAggregator,
+  createPercentileAggregator,
+  createPassRateAggregator,
+} from 'tally/aggregators';
+import type {
+  MeanAggregatorOptions,
+  PercentileAggregatorOptions,
+  PassRateAggregatorOptions,
+} from 'tally/aggregators';
+```
+
+## `createMeanAggregator`
+
+```ts
+createMeanAggregator(args: {
+  metric: BaseMetricDef<number>;
+  options?: MeanAggregatorOptions;
+}): Aggregator
+```
+
+<TypeTable
+  type={{
+    description: { description: 'Optional description for the aggregation.', type: 'string', required: false },
+    metadata: { description: 'Optional metadata for the aggregation.', type: 'Record<string, unknown>', required: false },
+  }}
+/>
+
+## `createPercentileAggregator`
+
+```ts
+createPercentileAggregator(
+  metric: BaseMetricDef<number>,
+  options: PercentileAggregatorOptions
+): Aggregator
+```
+
+<TypeTable
+  type={{
+    percentile: { description: 'Percentile to compute (0-100).', type: 'number', required: true },
+    description: { description: 'Optional description for the aggregation.', type: 'string', required: false },
+    metadata: { description: 'Optional metadata for the aggregation.', type: 'Record<string, unknown>', required: false },
+  }}
+/>
+
+## `createPassRateAggregator`
+
+```ts
+createPassRateAggregator(
+  metric: BaseMetricDef<number>,
+  options?: PassRateAggregatorOptions
+): Aggregator
+```
+
+<TypeTable
+  type={{
+    threshold: { description: 'Pass threshold in [0, 1] (default: 0.5).', type: 'number', required: false },
+    description: { description: 'Optional description for the aggregation.', type: 'string', required: false },
+    metadata: { description: 'Optional metadata for the aggregation.', type: 'Record<string, unknown>', required: false },
+  }}
+/>
+
