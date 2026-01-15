@@ -102,6 +102,11 @@ export interface BaseMetricDef<T extends MetricScalar = MetricScalar> {
   metadata?: Record<string, unknown>;
   // Normalization is owned by the metric definition
   normalization?: MetricNormalization<T, ScoringContext>;
+  /**
+   * Aggregators to compute summary statistics (mean, percentiles, etc.)
+   * Defaults to [mean, p50, p75, p90, p95, p99] if not specified
+   */
+  aggregators?: Aggregator[];
 }
 
 // ============================================================================
@@ -203,11 +208,6 @@ export interface SingleTurnMetricDef<
   preProcessor?: (
     selected: SingleTargetFor<TContainerData>,
   ) => Promise<unknown> | unknown;
-  /**
-   * Aggregators to compute summary statistics (mean, percentiles, etc.)
-   * Defaults to [mean, p50, p75, p90, p95, p99] if not specified
-   */
-  aggregators?: Aggregator[];
 }
 
 /**
@@ -538,6 +538,7 @@ export interface CustomAggregations {
  */
 export interface BuiltInAggregations {
   custom?: CustomAggregations; // Custom aggregates from metric aggregators
+  mean?: Score;
   passRate?: Score; // Only if verdict policy exists
   failRate?: Score; // Only if verdict policy exists
   passCount?: number; // Only if verdict policy exists

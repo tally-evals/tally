@@ -17,6 +17,7 @@ import type {
   InputScores,
   MetricDefFor,
   Evaluator,
+  Aggregator,
 } from '@tally/core/types';
 import { defineBaseMetric, defineInput, defineScorer } from '../factory';
 import type {
@@ -48,6 +49,7 @@ export interface InternalEvaluator<TContainer extends MetricContainer> {
   evalName: string; // Name of the eval this evaluator represents
   evalKind: 'singleTurn' | 'multiTurn' | 'scorer';
   verdictPolicy?: VerdictPolicy;
+  aggregators?: Aggregator[];
 }
 
 /**
@@ -108,7 +110,7 @@ export function buildFromEvals<TContainer extends MetricContainer>(
         sourceMetrics: internalEvaluator.metrics.map((m) => m.name),
       });
     } else if (eval_.kind === 'scorer') {
-      const scorerEval = eval_ as ScorerEval<TContainer>;
+      const scorerEval = eval_ as ScorerEval;
       const internalEvaluator = buildScorerEval(scorerEval);
       internalEvaluators.push(internalEvaluator);
       evalMetadata.set(eval_.name, {
@@ -175,6 +177,7 @@ function buildSingleTurnEval<TContainer extends SingleTurnContainer>(
     evalName: eval_.name,
     evalKind: 'singleTurn',
     verdictPolicy: eval_.verdict,
+    aggregators: eval_.aggregators,
   };
 }
 

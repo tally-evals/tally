@@ -178,19 +178,3 @@ export * from './utils/guards';
 export * from './utils/text';
 export * from './utils/time';
 export { formatReportAsTables } from './utils/reportFormatter';
-
-// ============================================================================
-// Aggregators
-// ============================================================================
-
-export {
-  createMeanAggregator,
-  createPercentileAggregator,
-  createPassRateAggregator,
-} from './aggregators';
-
-export type {
-  MeanAggregatorOptions,
-  PercentileAggregatorOptions,
-  PassRateAggregatorOptions,
-} from './aggregators';

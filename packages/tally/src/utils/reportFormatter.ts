@@ -260,25 +260,36 @@ function formatSummaryTable(report: EvaluationReport): void {
   console.log('-'.repeat(80));
 
   const summaryRows: Array<Record<string, string | number>> = [];
+  const allColumns = new Set<string>(['Eval', 'Kind']);
 
+  // First pass: collect all unique columns
+  for (const [, summary] of report.evalSummaries) {
+    if (summary.aggregations.mean !== undefined) {
+      allColumns.add('Mean/Value');
+    }
+    if (summary.verdictSummary) {
+      allColumns.add('Pass Rate');
+      allColumns.add('Pass/Fail');
+    }
+    if (summary.aggregations.custom) {
+      const customAggs = summary.aggregations.custom;
+      for (const aggName of Object.keys(customAggs)) {
+        const displayName = aggName.charAt(0).toUpperCase() + aggName.slice(1);
+        allColumns.add(displayName);
+      }
+    }
+  }
+
+  // Second pass: build rows with all columns
   for (const [evalName, summary] of report.evalSummaries) {
     const row: Record<string, string | number> = {
       Eval: evalName,
       Kind: summary.evalKind,
     };
 
-    // Add custom aggregations if available
-    if (summary.aggregations.custom) {
-      const customAggs = summary.aggregations.custom;
-      // Display all custom aggregations with capitalized names
-      for (const [aggName, aggValue] of Object.entries(customAggs)) {
-        if (typeof aggValue === 'number') {
-          // Capitalize the aggregator name for display
-          const displayName =
-            aggName.charAt(0).toUpperCase() + aggName.slice(1);
-          row[displayName] = aggValue.toFixed(3);
-        }
-      }
+    // Add mean if available
+    if (summary.aggregations.mean !== undefined) {
+      row['Mean/Value'] = summary.aggregations.mean.toFixed(3);
     }
 
     // Add verdict summary if available
@@ -287,6 +298,24 @@ function formatSummaryTable(report: EvaluationReport): void {
       row[
         'Pass/Fail'
       ] = `${summary.verdictSummary.passCount}/${summary.verdictSummary.failCount}`;
+    }
+
+    if (summary.aggregations.custom) {
+      const customAggs = summary.aggregations.custom;
+      for (const [aggName, aggValue] of Object.entries(customAggs)) {
+        if (typeof aggValue === 'number') {
+          const displayName =
+            aggName.charAt(0).toUpperCase() + aggName.slice(1);
+          row[displayName] = aggValue.toFixed(3);
+        }
+      }
+    }
+
+    // Fill in missing columns with hyphens
+    for (const col of allColumns) {
+      if (!(col in row)) {
+        row[col] = '-';
+      }
     }
 
     summaryRows.push(row);

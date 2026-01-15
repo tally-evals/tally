@@ -30,6 +30,10 @@ import {
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
 import { google } from '@ai-sdk/google';
 import { createKnowledgeRetentionMetric } from './metrics';
+import {
+  createMeanAggregator,
+  createPercentileAggregator,
+} from '@tally-evals/tally/aggregators';
 
 describe('Travel Planner Agent - Golden Path', () => {
   it('should plan trip successfully', async () => {
@@ -133,6 +137,12 @@ describe('Travel Planner Agent - Golden Path', () => {
       name: 'Answer Relevance',
       metric: answerRelevance,
       verdict: thresholdVerdict(0.5), // Golden path: agent should answer questions, but some turns may be questions
+      aggregators: [
+        createPercentileAggregator(answerRelevance, {
+          percentile: 67,
+          description: '67th percentile of the answer relevance metric',
+        }),
+      ],
     });
 
     const completenessEval = defineSingleTurnEval({
@@ -155,7 +165,12 @@ describe('Travel Planner Agent - Golden Path', () => {
 
     const overallQualityEval = defineScorerEval({
       name: 'Overall Quality',
-      inputs: [answerRelevance, completeness, roleAdherence],
+      inputs: [
+        answerRelevance,
+        completeness,
+        roleAdherence,
+        knowledgeRetention,
+      ],
       scorer: qualityScorer,
       verdict: thresholdVerdict(0.5), // Golden path: overall quality should be reasonable
     });
