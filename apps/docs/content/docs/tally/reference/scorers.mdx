@@ -1,0 +1,95 @@
+---
+title: Scorers
+description: Combine multiple inputs into derived scores.
+---
+
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+# Scorers
+
+Scorers combine multiple input metrics into a derived score.
+
+## Import
+
+```ts
+import { defineInput, defineScorer } from 'tally';
+import { createWeightedAverageScorer } from 'tally/scorers';
+import type { CreateWeightedAverageScorerOptions } from 'tally/scorers';
+```
+
+## `defineInput`
+
+```ts
+defineInput(args: {
+  metric: SingleTurnMetricDef | MultiTurnMetricDef;
+  weight: number;
+  normalizerOverride?: NormalizerSpec | NormalizeToScore;
+  required?: boolean;
+}): ScorerInput
+```
+
+<TypeTable
+  type={{
+    metric: { description: 'Metric definition used as input.', type: 'MetricDef', required: true },
+    weight: { description: 'Weight for this input when combining scores.', type: 'number', required: true },
+    normalizerOverride: { description: 'Optional normalizer override for this input.', type: 'NormalizerSpec | NormalizeToScore', required: false },
+    required: { description: 'If false, missing score is ignored.', type: 'boolean', required: false },
+  }}
+/>
+
+## `defineScorer`
+
+```ts
+defineScorer(args: {
+  name: string;
+  output: BaseMetricDef<number>;
+  inputs: readonly ScorerInput[];
+  normalizeWeights?: boolean;
+  combineScores?: (scores: InputScores) => Score;
+  fallbackScore?: Score;
+  metadata?: Record<string, unknown>;
+  description?: string;
+}): Scorer
+```
+
+## `createWeightedAverageScorer`
+
+```ts
+createWeightedAverageScorer(options: CreateWeightedAverageScorerOptions): Scorer
+```
+
+<TypeTable
+  type={{
+    name: { description: 'Scorer name (used in reports).', type: 'string', required: true },
+    output: { description: 'Base metric definition for the derived score.', type: 'BaseMetricDef<number>', required: true },
+    inputs: { description: 'Array of weighted inputs.', type: 'readonly ScorerInput[]', required: true },
+    normalizeWeights: { description: 'Normalize weights to sum to 1 (default: true).', type: 'boolean', required: false },
+    fallbackScore: { description: 'Optional fallback score when inputs are missing.', type: 'Score', required: false },
+    description: { description: 'Optional description for reports.', type: 'string', required: false },
+    metadata: { description: 'Optional metadata for reports.', type: 'Record<string, unknown>', required: false },
+  }}
+/>
+
+## Average scorer (equal weights)
+
+Use `createWeightedAverageScorer` with the same weight for each input.
+
+```ts
+import { defineBaseMetric, defineInput } from 'tally';
+import { createWeightedAverageScorer } from 'tally/scorers';
+
+const averageOutput = defineBaseMetric<number>({
+  name: 'averageQuality',
+  valueType: 'number',
+});
+
+const averageScorer = createWeightedAverageScorer({
+  name: 'AverageQuality',
+  output: averageOutput,
+  inputs: [
+    defineInput({ metric: answerRelevance, weight: 1 }),
+    defineInput({ metric: completeness, weight: 1 }),
+    defineInput({ metric: roleAdherence, weight: 1 }),
+  ],
+});
+```

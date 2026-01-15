@@ -1,0 +1,81 @@
+---
+title: createTally
+description: Create a Tally container and run evaluations.
+---
+
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+# `createTally()`
+
+Create a Tally container for running evaluations.
+
+## Import
+
+```ts
+import { createTally, createEvaluator, TallyContainer } from 'tally';
+```
+
+## `createEvaluator`
+
+```ts
+createEvaluator(args: {
+  name: string;
+  evals: readonly Eval[];
+  context: EvaluationContext;
+  description?: string;
+  metadata?: Record<string, unknown>;
+}): Evaluator
+```
+
+## `createTally`
+
+```ts
+createTally<TContainer>(args: {
+  data: readonly TContainer[];
+  evaluators: readonly Evaluator[];
+}): Tally<TContainer>
+```
+
+## `TallyContainer.run`
+
+```ts
+run(options?: {
+  cache?: MemoryCache<MetricScalar>;
+  llmOptions?: GenerateObjectOptions;
+  metadata?: Record<string, unknown>;
+}): Promise<EvaluationReport>
+```
+
+## Example
+
+```ts
+import { createTally, createEvaluator, runAllTargets, defineSingleTurnEval } from 'tally';
+import type { Conversation } from 'tally';
+import { createAnswerRelevanceMetric } from 'tally/metrics';
+import { google } from '@ai-sdk/google';
+
+const answerRelevance = createAnswerRelevanceMetric({
+  provider: google('models/gemini-2.5-flash-lite'),
+});
+
+const answerRelevanceEval = defineSingleTurnEval({
+  name: 'Answer Relevance',
+  metric: answerRelevance,
+});
+
+const evaluator = createEvaluator({
+  name: 'QA Eval',
+  evals: [answerRelevanceEval],
+  context: runAllTargets(),
+});
+
+const conversation = { id: 'conv-1', steps: [] } as Conversation;
+
+const tally = createTally({
+  data: [conversation],
+  evaluators: [evaluator],
+});
+
+const report = await tally.run();
+```
+

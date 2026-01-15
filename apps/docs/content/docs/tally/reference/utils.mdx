@@ -1,0 +1,104 @@
+---
+title: Utilities
+description: Helpers for ids, text, time, guards, and report formatting.
+---
+
+# Utilities
+
+Utility exports come from `tally` (root export).
+
+## Import
+
+```ts
+import {
+  generateId,
+  formatReportAsTables,
+  isDatasetItem,
+  isConversationStep,
+  isConversation,
+  isScore,
+  isMetricScalar,
+  isMetricDef,
+  assertDatasetItem,
+  assertConversation,
+  assertScore,
+  normalizeWhitespace,
+  truncate,
+  extractWords,
+  wordCount,
+  characterCount,
+  containsKeywords,
+  wordSimilarity,
+  escapeRegex,
+  isEmpty,
+  removePunctuation,
+  splitSentences,
+  Stopwatch,
+  createStopwatch,
+  measureAsync,
+  measureSync,
+  formatDuration,
+  getTimestamp,
+  getTimestampISO,
+  getTimestampUnix,
+} from 'tally';
+```
+
+## IDs
+
+```ts
+generateId(prefix: string): string
+```
+
+## Guards
+
+```ts
+isDatasetItem(value: unknown): value is DatasetItem
+isConversationStep(value: unknown): value is ConversationStep
+isConversation(value: unknown): value is Conversation
+isScore(value: unknown): value is Score
+isMetricScalar(value: unknown): value is MetricScalar
+isMetricDef(value: unknown): value is MetricDef
+```
+
+```ts
+assertDatasetItem(value: unknown, message?: string): asserts value is DatasetItem
+assertConversation(value: unknown, message?: string): asserts value is Conversation
+assertScore(value: unknown, message?: string): asserts value is Score
+```
+
+## Text
+
+```ts
+normalizeWhitespace(text: string): string
+truncate(text: string, maxLength: number, suffix = '...'): string
+extractWords(text: string): string[]
+wordCount(text: string): number
+characterCount(text: string, excludeWhitespace = false): number
+containsKeywords(text: string, keywords: readonly string[], caseSensitive = false): boolean
+wordSimilarity(text1: string, text2: string): number
+escapeRegex(text: string): string
+isEmpty(text: string): boolean
+removePunctuation(text: string): string
+splitSentences(text: string): string[]
+```
+
+## Time
+
+```ts
+class Stopwatch { elapsed(): number; stop(): number; reset(): void }
+createStopwatch(): Stopwatch
+measureAsync<T>(fn: () => Promise<T>): Promise<{ result: T; duration: number }>
+measureSync<T>(fn: () => T): { result: T; duration: number }
+formatDuration(ms: number): string
+getTimestamp(): Date
+getTimestampISO(): string
+getTimestampUnix(): number
+```
+
+## Reports
+
+```ts
+formatReportAsTables(report: EvaluationReport, conversations: readonly Conversation[]): void
+```
+

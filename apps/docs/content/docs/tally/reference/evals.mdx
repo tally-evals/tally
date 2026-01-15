@@ -1,0 +1,103 @@
+---
+title: Evals
+description: Define evals, select targets, and compute verdicts.
+---
+
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+
+# Evals
+
+The **Eval API** is the primary user-facing API for building evaluations.
+
+## Import
+
+```ts
+import {
+  defineSingleTurnEval,
+  defineMultiTurnEval,
+  defineScorerEval,
+  runAllTargets,
+  runSelectedSteps,
+  runSelectedItems,
+  booleanVerdict,
+  thresholdVerdict,
+  rangeVerdict,
+  ordinalVerdict,
+  customVerdict,
+} from 'tally';
+```
+
+## `defineSingleTurnEval`
+
+```ts
+defineSingleTurnEval(args: {
+  name: string;
+  description?: string;
+  metric: SingleTurnMetricDef;
+  verdict?: VerdictPolicyFor<TMetricValue>;
+  autoNormalize?: AutoNormalizer;
+  context?: EvaluationContext;
+  metadata?: Record<string, unknown>;
+}): SingleTurnEval
+```
+
+## `defineMultiTurnEval`
+
+```ts
+defineMultiTurnEval(args: {
+  name: string;
+  description?: string;
+  metric: MultiTurnMetricDef;
+  verdict?: VerdictPolicyFor<TMetricValue>;
+  autoNormalize?: AutoNormalizer;
+  context?: EvaluationContext;
+  metadata?: Record<string, unknown>;
+}): MultiTurnEval
+```
+
+## `defineScorerEval`
+
+```ts
+defineScorerEval(args: {
+  name: string;
+  description?: string;
+  inputs: readonly (SingleTurnMetricDef | MultiTurnMetricDef)[];
+  scorer: Scorer;
+  verdict?: VerdictPolicyFor<number>;
+  context?: EvaluationContext;
+  metadata?: Record<string, unknown>;
+}): ScorerEval
+```
+
+## Target selection policies
+
+```ts
+runAllTargets(): EvaluationContext
+runSelectedSteps(steps: number[]): EvaluationContext
+runSelectedItems(indices: number[]): EvaluationContext
+```
+
+## Verdict helpers
+
+```ts
+booleanVerdict(passWhen: boolean): VerdictPolicyFor<boolean>
+thresholdVerdict(passAt: number): VerdictPolicyFor<number>
+rangeVerdict(min?: number, max?: number): VerdictPolicyFor<number>
+ordinalVerdict(passWhenIn: readonly string[]): VerdictPolicyFor<string>
+customVerdict<T extends MetricScalar>(verdict: (score: Score, rawValue: T) => 'pass' | 'fail' | 'unknown'): VerdictPolicyFor<T>
+```
+
+## Types
+
+<TypeTable
+  type={{
+    Eval: { description: 'Union of all eval types.', type: 'type', required: true },
+    SingleTurnEval: { description: 'Single-turn eval type.', type: 'type', required: true },
+    MultiTurnEval: { description: 'Multi-turn eval type.', type: 'type', required: true },
+    ScorerEval: { description: 'Scorer eval type.', type: 'type', required: true },
+    VerdictPolicy: { description: 'Union of verdict policies.', type: 'type', required: true },
+    VerdictPolicyFor: { description: 'Verdict policy for a specific scalar type.', type: 'type', required: true },
+    AutoNormalizer: { description: 'Auto-normalization mode for boolean/ordinal metrics.', type: 'type', required: true },
+  }}
+/>
+
