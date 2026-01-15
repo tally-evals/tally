@@ -10,6 +10,7 @@ import type { BuiltInAggregations } from '@tally/core/types';
 import type { VerdictPolicy } from './types';
 import { toScore } from '@tally/core/types';
 import { computeVerdict } from './verdict';
+import { calculateMean } from '../aggregators/base';
 
 /**
  * Calculate built-in aggregations (pass/fail rates and distribution)
@@ -36,10 +37,12 @@ export function calculateBuiltInAggregations(
       return computeVerdict(score, rawValue, verdictPolicy);
     });
 
+    const mean = calculateMean(scores);
     const passCount = verdicts.filter((v) => v === 'pass').length;
     const failCount = verdicts.filter((v) => v === 'fail').length;
     const totalCount = scores.length;
 
+    aggregations.mean = mean;
     aggregations.passRate = toScore(passCount / totalCount);
     aggregations.failRate = toScore(failCount / totalCount);
     aggregations.passCount = passCount;

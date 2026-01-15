@@ -46,7 +46,7 @@ import type { InternalEvaluator } from './evals/builder';
 import type { VerdictPolicy } from './evals/types';
 import { computeVerdict } from './evals/verdict';
 import { calculateBuiltInAggregations } from './evals/aggregations';
-import { DEFAULT_AGGREGATORS } from '../aggregators';
+import { DEFAULT_AGGREGATORS } from '../aggregators/default';
 
 /**
  * Pipeline state - intermediate results between phases
@@ -545,17 +545,13 @@ function phaseAggregate<TContainer extends DatasetItem | Conversation>(
   >,
   state: PipelineState,
 ): void {
-  // Build a map from eval name to metric definition for aggregator lookup
-  const evalToMetricDef = new Map<
+  // Build a map from eval name to internal evaluator for aggregator lookup
+  const evalToInternalEvaluator = new Map<
     string,
-    MetricDef<MetricScalar, TContainer>
+    InternalEvaluator<TContainer>
   >();
   for (const evaluator of internalEvaluators) {
-    for (const metricDef of evaluator.metrics) {
-      if (evaluator.evalName) {
-        evalToMetricDef.set(evaluator.evalName, metricDef);
-      }
-    }
+    evalToInternalEvaluator.set(evaluator.evalName, evaluator);
   }
 
   // Group derived scores by eval name, maintaining order and flattening score arrays
@@ -630,28 +626,37 @@ function phaseAggregate<TContainer extends DatasetItem | Conversation>(
 
     const verdictPolicy = metadata.verdictPolicy;
 
-    // Build custom aggregates based on eval kind and metric aggregators
+    // Build custom aggregates based on eval-level aggregators
     let customAggregates: Record<string, Score> = {};
 
     if (metadata.evalKind === 'singleTurn') {
-      // For single-turn evals, use metric-level aggregators
-      const metricDef = evalToMetricDef.get(evalName);
+      // For single-turn evals, use eval-level aggregators
+      const internalEvaluator = evalToInternalEvaluator.get(evalName);
       const aggregators =
-        metricDef &&
-        'aggregators' in metricDef &&
-        (metricDef as any).aggregators !== undefined
-          ? (metricDef as any).aggregators
-          : DEFAULT_AGGREGATORS({ metric: metricDef as BaseMetricDef<number> });
+        internalEvaluator && internalEvaluator.aggregators !== undefined
+          ? [
+              ...internalEvaluator.aggregators,
+              ...DEFAULT_AGGREGATORS({
+                metric: outputMetric as BaseMetricDef<number>,
+              }),
+            ]
+          : DEFAULT_AGGREGATORS({
+              metric: outputMetric as BaseMetricDef<number>,
+            });
 
       for (const aggregator of aggregators) {
         customAggregates[aggregator.name] = aggregator.aggregate(scores);
       }
-    } else if (metadata.evalKind === 'multiTurn' && scores.length === 1) {
-      // For multi-turn evals with single value, skip aggregations (N=1)
-      // Just store the single value as 'value'
-      customAggregates['value'] = scores[0] as Score;
+    } else if (metadata.evalKind === 'multiTurn') {
+      // For multi-turn evals: no custom aggregations (each conversation = 1 data point)
+      // Just store the raw value for each conversation, don't aggregate
+      if (scores.length === 1) {
+        customAggregates['value'] = scores[0] as Score;
+      }
+      // If multiple conversations, we'll have multiple 'value' entries but built-in aggregations
+      // will handle pass/fail rates across them
     } else {
-      // For multi-turn or scorer evals with multiple values, use defaults
+      // For scorer evals with multiple values, use defaults
       const aggregators = DEFAULT_AGGREGATORS({
         metric: outputMetric as BaseMetricDef<number>,
       });
