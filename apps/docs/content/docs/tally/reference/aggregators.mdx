@@ -3,7 +3,7 @@ title: Aggregators
 description: Summarize per-target scores into dataset-level statistics.
 ---
 
-import { TypeTable } from 'fumadocs-ui/components/type-table';
+import { PropertyTable } from '@/components/PropertyTable';
 
 # Aggregators
 
@@ -24,53 +24,100 @@ import type {
 } from 'tally/aggregators';
 ```
 
-## `createMeanAggregator`
+### `createMeanAggregator()`
 
-```ts
-createMeanAggregator(args: {
-  metric: BaseMetricDef<number>;
-  options?: MeanAggregatorOptions;
-}): Aggregator
-```
-
-<TypeTable
-  type={{
-    description: { description: 'Optional description for the aggregation.', type: 'string', required: false },
-    metadata: { description: 'Optional metadata for the aggregation.', type: 'Record<string, unknown>', required: false },
-  }}
+<PropertyTable
+  content={[
+    {
+      name: 'metric',
+      type: 'BaseMetricDef<number>',
+      description: 'Base metric definition for the derived metric being aggregated.',
+    },
+    {
+      name: 'options',
+      type: '{ description?: string; metadata?: Record<string, unknown> }',
+      description: 'Optional configuration for the aggregator.',
+      isOptional: true,
+      properties: [
+        {
+          type: 'options',
+          parameters: [
+            {
+              name: 'description',
+              type: 'string',
+              description: 'Optional description for the aggregation.',
+              isOptional: true,
+            },
+            {
+              name: 'metadata',
+              type: 'Record<string, unknown>',
+              description: 'Optional metadata for the aggregation.',
+              isOptional: true,
+            },
+          ],
+        },
+      ],
+    },
+  ]}
 />
 
-## `createPercentileAggregator`
+### `createPercentileAggregator()`
 
-```ts
-createPercentileAggregator(
-  metric: BaseMetricDef<number>,
-  options: PercentileAggregatorOptions
-): Aggregator
-```
-
-<TypeTable
-  type={{
-    percentile: { description: 'Percentile to compute (0-100).', type: 'number', required: true },
-    description: { description: 'Optional description for the aggregation.', type: 'string', required: false },
-    metadata: { description: 'Optional metadata for the aggregation.', type: 'Record<string, unknown>', required: false },
-  }}
+<PropertyTable
+  content={[
+    {
+      name: 'metric',
+      type: 'BaseMetricDef<number>',
+      description: 'Base metric definition for the derived metric being aggregated.',
+    },
+    {
+      name: 'percentile',
+      type: 'number',
+      description: 'Percentile to compute (0-100).',
+    },
+    {
+      name: 'description',
+      type: 'string',
+      description: 'Optional description for the aggregation.',
+      isOptional: true,
+    },
+    {
+      name: 'metadata',
+      type: 'Record<string, unknown>',
+      description: 'Optional metadata for the aggregation.',
+      isOptional: true,
+    },
+  ]}
 />
 
-## `createPassRateAggregator`
+### `createPassRateAggregator()`
 
-```ts
-createPassRateAggregator(
-  metric: BaseMetricDef<number>,
-  options?: PassRateAggregatorOptions
-): Aggregator
-```
-
-<TypeTable
-  type={{
-    threshold: { description: 'Pass threshold in [0, 1] (default: 0.5).', type: 'number', required: false },
-    description: { description: 'Optional description for the aggregation.', type: 'string', required: false },
-    metadata: { description: 'Optional metadata for the aggregation.', type: 'Record<string, unknown>', required: false },
-  }}
+<PropertyTable
+  content={[
+    {
+      name: 'metric',
+      type: 'BaseMetricDef<number>',
+      description: 'Base metric definition for the derived metric being aggregated.',
+    },
+    {
+      name: 'threshold',
+      type: 'number',
+      description: 'Pass threshold in [0, 1].',
+      isOptional: true,
+      defaultValue: '0.5',
+    },
+    {
+      name: 'description',
+      type: 'string',
+      description: 'Optional description for the aggregation.',
+      isOptional: true,
+    },
+    {
+      name: 'metadata',
+      type: 'Record<string, unknown>',
+      description: 'Optional metadata for the aggregation.',
+      isOptional: true,
+    },
+  ]}
 />
 

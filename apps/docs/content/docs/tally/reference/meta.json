@@ -3,9 +3,8 @@
   "defaultOpen": true,
   "pages": [
     "index",
-    "metric-types",
-    "metric-factories",
-    "metrics",
+    "metric",
+    "builtin-metrics",
     "normalization",
     "scorers",
     "aggregators",

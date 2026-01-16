@@ -3,7 +3,7 @@ title: createTally
 description: Create a Tally container and run evaluations.
 ---
 
-import { TypeTable } from 'fumadocs-ui/components/type-table';
+import { PropertyTable } from '@/components/PropertyTable';
 
 # `createTally()`
 
@@ -15,36 +15,96 @@ Create a Tally container for running evaluations.
 import { createTally, createEvaluator, TallyContainer } from 'tally';
 ```
 
-## `createEvaluator`
+### `createEvaluator()`
 
-```ts
-createEvaluator(args: {
-  name: string;
-  evals: readonly Eval[];
-  context: EvaluationContext;
-  description?: string;
-  metadata?: Record<string, unknown>;
-}): Evaluator
-```
+<PropertyTable
+  content={[
+    { name: 'name', type: 'string', description: 'Evaluator name.' },
+    {
+      name: 'evals',
+      type: 'readonly Eval[]',
+      description: 'List of eval definitions.',
+    },
+    {
+      name: 'context',
+      type: 'EvaluationContext',
+      description: 'Execution context (required).',
+      properties: [
+        {
+          type: 'EvaluationContext',
+          parameters: [
+            {
+              name: 'singleTurn',
+              type: 'SingleTurnRunPolicy',
+              description: 'Single-turn run policy.',
+              isOptional: true,
+            },
+            {
+              name: 'metadata',
+              type: 'Record<string, unknown>',
+              description: 'Optional metadata for this run.',
+              isOptional: true,
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'description',
+      type: 'string',
+      description: 'Optional description for the evaluator.',
+      isOptional: true,
+    },
+    {
+      name: 'metadata',
+      type: 'Record<string, unknown>',
+      description: 'Optional metadata for the evaluator.',
+      isOptional: true,
+    },
+  ]}
+/>
 
-## `createTally`
+### `createTally()`
 
-```ts
-createTally<TContainer>(args: {
-  data: readonly TContainer[];
-  evaluators: readonly Evaluator[];
-}): Tally<TContainer>
-```
+<PropertyTable
+  content={[
+    {
+      name: 'data',
+      type: 'readonly TContainer[]',
+      description: 'Data containers to evaluate.',
+    },
+    {
+      name: 'evaluators',
+      type: 'readonly Evaluator[]',
+      description: 'Evaluator definitions.',
+    },
+  ]}
+/>
 
-## `TallyContainer.run`
+### `TallyContainer.run()`
 
-```ts
-run(options?: {
-  cache?: MemoryCache<MetricScalar>;
-  llmOptions?: GenerateObjectOptions;
-  metadata?: Record<string, unknown>;
-}): Promise<EvaluationReport>
-```
+<PropertyTable
+  content={[
+    {
+      name: 'cache',
+      type: 'MemoryCache<MetricScalar>',
+      description: 'Optional cache implementation.',
+      isOptional: true,
+    },
+    {
+      name: 'llmOptions',
+      type: 'GenerateObjectOptions',
+      description: 'Optional LLM execution options.',
+      isOptional: true,
+    },
+    {
+      name: 'metadata',
+      type: 'Record<string, unknown>',
+      description: 'Optional metadata to include in the report.',
+      isOptional: true,
+    },
+  ]}
+/>
 
 ## Example
 
