@@ -8,21 +8,21 @@
  * Supports both DatasetItem and ConversationStep containers.
  */
 
-import { defineBaseMetric, createSingleTurnCode } from '@tally/core/factory';
+import { createSingleTurnCode, defineBaseMetric } from '@tally/core/factory';
 import { createIdentityNormalizer } from '@tally/core/normalization/factory';
 import type {
-  SingleTurnMetricDef,
-  SingleTurnContainer,
-  DatasetItem,
   ConversationStep,
-  AggregatorDef,
+  DatasetItem,
+  NumericAggregatorDef,
+  SingleTurnContainer,
+  SingleTurnMetricDef,
 } from '@tally/core/types';
 import type { ModelMessage } from 'ai';
 import type { z } from 'zod';
 import {
+  type ExtractedToolCall,
   extractToolCalls,
   extractToolCallsFromMessages,
-  type ExtractedToolCall,
 } from '../common/utils';
 
 export interface ToolCallAccuracyOptions {
@@ -48,7 +48,7 @@ export interface ToolCallAccuracyOptions {
    * Aggregators to apply to the metric
    * @default Percentiles: 50, 75, 90
    */
-  aggregators?: AggregatorDef[];
+  aggregators?: NumericAggregatorDef[];
 }
 
 /**
@@ -72,12 +72,7 @@ export interface ToolCallAccuracyOptions {
 export function createToolCallAccuracyMetric<
   TContainer extends SingleTurnContainer = SingleTurnContainer,
 >(options: ToolCallAccuracyOptions): SingleTurnMetricDef<number, TContainer> {
-  const {
-    expectedToolCalls,
-    toolCallOrder,
-    strictMode = false,
-    aggregators,
-  } = options;
+  const { expectedToolCalls, toolCallOrder, strictMode = false, aggregators } = options;
 
   const base = defineBaseMetric({
     name: 'toolCallAccuracy',
@@ -133,17 +128,13 @@ export function createToolCallAccuracyMetric<
       // Calculate presence score
       const matchedCalls = new Set<string>();
       for (const expected of expectedToolCalls) {
-        const found = actualToolCalls.find(
-          (actual) => actual.toolName === expected.toolName,
-        );
+        const found = actualToolCalls.find((actual) => actual.toolName === expected.toolName);
         if (found) {
           matchedCalls.add(expected.toolName);
         }
       }
       const presenceScore =
-        expectedToolCalls.length > 0
-          ? matchedCalls.size / expectedToolCalls.length
-          : 1.0;
+        expectedToolCalls.length > 0 ? matchedCalls.size / expectedToolCalls.length : 1.0;
 
       // Calculate argument validation score
       let validatedCount = 0;
@@ -152,7 +143,7 @@ export function createToolCallAccuracyMetric<
         if (expected.argsSchema) {
           schemasCount++;
           const actualCall = actualToolCalls.find(
-            (actual) => actual.toolName === expected.toolName,
+            (actual) => actual.toolName === expected.toolName
           );
           if (actualCall) {
             try {
@@ -165,8 +156,7 @@ export function createToolCallAccuracyMetric<
           }
         }
       }
-      const argumentScore =
-        schemasCount > 0 ? validatedCount / schemasCount : 1.0;
+      const argumentScore = schemasCount > 0 ? validatedCount / schemasCount : 1.0;
 
       // Calculate order score
       let orderScore = 1.0;
@@ -177,22 +167,18 @@ export function createToolCallAccuracyMetric<
         // Filter to only expected calls (for non-strict mode)
         const filteredActualOrder = strictMode
           ? actualOrder
-          : actualOrder.filter((name) =>
-              expectedToolCalls.some((exp) => exp.toolName === name),
-            );
+          : actualOrder.filter((name) => expectedToolCalls.some((exp) => exp.toolName === name));
 
         // Filter expected order to only calls that exist in actual
         const filteredExpectedOrder = toolCallOrder.filter((name) =>
-          actualToolCalls.some((call) => call.toolName === name),
+          actualToolCalls.some((call) => call.toolName === name)
         );
 
         if (strictMode) {
           // Exact match required
           if (
             filteredActualOrder.length !== filteredExpectedOrder.length ||
-            !filteredActualOrder.every(
-              (name, index) => name === filteredExpectedOrder[index],
-            )
+            !filteredActualOrder.every((name, index) => name === filteredExpectedOrder[index])
           ) {
             return 0; // Strict mode fails immediately
           }
@@ -230,8 +216,7 @@ export function createToolCallAccuracyMetric<
 
       // Calculate final weighted score
       // Presence: 0.5, Arguments: 0.3, Order: 0.2
-      const finalScore =
-        presenceScore * 0.5 + argumentScore * 0.3 + orderScore * 0.2;
+      const finalScore = presenceScore * 0.5 + argumentScore * 0.3 + orderScore * 0.2;
 
       return Math.min(1, Math.max(0, finalScore));
     },

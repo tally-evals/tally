@@ -7,32 +7,32 @@
  */
 
 import type {
+  Aggregator,
   BaseMetricDef,
   CodeMetricFields,
-  LLMMetricFields,
-  MetricDef,
-  MetricScalar,
-  MetricContainer,
-  SingleTurnContainer,
-  MultiTurnContainer,
-  MultiTurnMetricDef,
-  NormalizerSpec,
-  NormalizeToScore,
-  Scorer,
-  ScorerInput,
-  Score,
-  ScoringContext,
-  SingleTurnMetricDef,
-  VarsTuple,
-  MetricNormalization,
-  InputScores,
+  CompatibleAggregator,
   EvaluationContext,
   Evaluator,
-  Aggregator,
-  AggregatorDef,
+  InputScores,
+  LLMMetricFields,
+  MetricContainer,
+  MetricDef,
+  MetricNormalization,
+  MetricScalar,
+  MultiTurnContainer,
+  MultiTurnMetricDef,
+  NormalizeToScore,
+  NormalizerSpec,
+  Score,
+  Scorer,
+  ScorerInput,
+  ScoringContext,
+  SingleTurnContainer,
+  SingleTurnMetricDef,
+  VarsTuple,
 } from '@tally/core/types';
+import { getDefaultAggregators } from 'src/aggregators/default';
 import type { Eval } from './evals/types';
-import { DEFAULT_AGGREGATORS } from 'src/aggregators/default';
 
 // -----------------------------------------------------------------------------
 // Base Metric Definition
@@ -57,12 +57,10 @@ export function defineBaseMetric<T extends MetricScalar>(args: {
 
 export function withNormalization<
   T extends MetricScalar,
-  TMetric extends BaseMetricDef<T> | MetricDef<T, MetricContainer>,
+  TMetric extends (BaseMetricDef<T> | MetricDef<T, MetricContainer>) & object,
 >(args: {
   metric: TMetric;
-  default:
-    | NormalizerSpec<T, ScoringContext>
-    | NormalizeToScore<T, ScoringContext>;
+  default: NormalizerSpec<T, ScoringContext> | NormalizeToScore<T, ScoringContext>;
   context?:
     | ScoringContext
     | ((args: {
@@ -93,17 +91,14 @@ export function withMetadata<
   } as TMetric;
 }
 
-export function withMetric<
-  T extends MetricScalar,
-  TContainer extends SingleTurnContainer,
->(
+export function withMetric<T extends MetricScalar, TContainer extends SingleTurnContainer>(
   metric: SingleTurnMetricDef<T, TContainer>,
-  aggregator: AggregatorDef,
+  aggregator: CompatibleAggregator<T>
 ): Aggregator<T, TContainer> {
   return {
     ...aggregator,
     metric,
-  };
+  } as Aggregator<T, TContainer>;
 }
 
 // -----------------------------------------------------------------------------
@@ -121,7 +116,7 @@ export function createSingleTurnCode<
   cacheable?: CodeMetricFields<T>['cacheable'];
   normalization?: MetricNormalization<T, ScoringContext>;
   metadata?: Record<string, unknown>;
-  aggregators?: AggregatorDef[];
+  aggregators?: CompatibleAggregator<T>[];
 }): MetricDef<T, TContainer> {
   const {
     base,
@@ -148,8 +143,8 @@ export function createSingleTurnCode<
     ...(dependencies !== undefined && { dependencies }),
     ...(cacheable !== undefined && { cacheable }),
     ...(preProcessor !== undefined && { preProcessor }),
-    aggregators: [...(aggregators || []), ...DEFAULT_AGGREGATORS].map(
-      (aggregator) => withMetric<T, TContainer>(mergedBase, aggregator),
+    aggregators: [...(aggregators ?? []), ...getDefaultAggregators<T>(base.valueType)].map(
+      (aggregator) => withMetric<T, TContainer>(mergedBase, aggregator)
     ),
   } as MetricDef<T, TContainer>;
 }
@@ -167,7 +162,7 @@ export function createSingleTurnLLM<
   postProcessing?: LLMMetricFields<T, V>['postProcessing'];
   normalization?: MetricNormalization<T, ScoringContext>;
   metadata?: Record<string, unknown>;
-  aggregators?: AggregatorDef[];
+  aggregators?: CompatibleAggregator<T>[];
 }): MetricDef<T, TContainer> {
   const {
     base,
@@ -199,8 +194,8 @@ export function createSingleTurnLLM<
     type: 'llm-based',
     ...llmFields,
     ...(preProcessor !== undefined && { preProcessor }),
-    aggregators: [...(aggregators || []), ...DEFAULT_AGGREGATORS].map(
-      (aggregator) => withMetric<T, TContainer>(mergedBase, aggregator),
+    aggregators: [...(aggregators ?? []), ...getDefaultAggregators<T>(base.valueType)].map(
+      (aggregator) => withMetric<T, TContainer>(mergedBase, aggregator)
     ),
   } as MetricDef<T, TContainer>;
 }
@@ -218,15 +213,7 @@ export function createMultiTurnCode<T extends MetricScalar>(args: {
   normalization?: MetricNormalization<T, ScoringContext>;
   metadata?: Record<string, unknown>;
 }): MetricDef<T, MultiTurnContainer> {
-  const {
-    base,
-    runOnContainer,
-    compute,
-    dependencies,
-    cacheable,
-    normalization,
-    metadata,
-  } = args;
+  const { base, runOnContainer, compute, dependencies, cacheable, normalization, metadata } = args;
   const mergedBase: BaseMetricDef<T> = {
     ...base,
     ...(normalization !== undefined && { normalization }),
@@ -303,9 +290,9 @@ export function defineInput<
   TRawValue extends MetricScalar = M extends SingleTurnMetricDef<infer T, any>
     ? T
     : // biome-ignore lint/suspicious/noExplicitAny: Infer TRawValue from MultiTurnMetricDef
-    M extends MultiTurnMetricDef<infer T, any>
-    ? T
-    : MetricScalar,
+      M extends MultiTurnMetricDef<infer T, any>
+      ? T
+      : MetricScalar,
 >(args: {
   metric: M;
   weight: number;
@@ -366,9 +353,7 @@ export function defineScorer<
  * Create an evaluator with evals (new API)
  * Accepts any eval types to allow mixing single-turn and multi-turn evals
  */
-export function createEvaluator<
-  TContainer extends MetricContainer = MetricContainer,
->(args: {
+export function createEvaluator<TContainer extends MetricContainer = MetricContainer>(args: {
   name: string;
   evals: readonly Eval<MetricContainer>[];
   context: EvaluationContext; // REQUIRED

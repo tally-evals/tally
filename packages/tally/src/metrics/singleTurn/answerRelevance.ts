@@ -8,12 +8,12 @@
  * Supports both DatasetItem and ConversationStep containers.
  */
 
-import { defineBaseMetric, createSingleTurnLLM } from '@tally/core/factory';
+import { createSingleTurnLLM, defineBaseMetric } from '@tally/core/factory';
 import { createMinMaxNormalizer } from '@tally/core/normalization/factory';
 import type {
-  SingleTurnMetricDef,
+  NumericAggregatorDef,
   SingleTurnContainer,
-  AggregatorDef,
+  SingleTurnMetricDef,
 } from '@tally/core/types';
 import type { LanguageModel } from 'ai';
 
@@ -28,10 +28,10 @@ export interface AnswerRelevanceOptions {
    */
   partialWeight?: number;
   /**
-   * Aggregators to apply to the metric
+   * Aggregators to apply to the metric (must be numeric aggregators)
    * @default Percentiles: 50, 75, 90
    */
-  aggregators?: AggregatorDef[];
+  aggregators?: NumericAggregatorDef[];
 }
 
 /**
@@ -102,8 +102,7 @@ Based on your analysis and the rubric, provide your score as a number between 0 
         },
         {
           score: 4,
-          reasoning:
-            'Response mostly answers the query but includes minor unrelated content',
+          reasoning: 'Response mostly answers the query but includes minor unrelated content',
         },
         {
           score: 3,
@@ -112,8 +111,7 @@ Based on your analysis and the rubric, provide your score as a number between 0 
         },
         {
           score: 2,
-          reasoning:
-            'Response includes minimal relevant content and largely misses the intent',
+          reasoning: 'Response includes minimal relevant content and largely misses the intent',
         },
         {
           score: 1,
@@ -121,8 +119,7 @@ Based on your analysis and the rubric, provide your score as a number between 0 
         },
         {
           score: 0,
-          reasoning:
-            'Response is entirely unrelated and does not answer the query',
+          reasoning: 'Response is entirely unrelated and does not answer the query',
         },
       ],
     },

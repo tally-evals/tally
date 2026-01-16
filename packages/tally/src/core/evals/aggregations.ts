@@ -1,86 +1,52 @@
 /**
- * Built-in Aggregation Utilities
+ * Verdict Summary Utilities
  *
- * Calculates built-in aggregations (mean, percentiles, pass/fail rates)
- * for eval results. These are always computed automatically.
+ * Calculates verdict summaries (pass/fail rates) from eval verdict policies.
+ * These are SEPARATE from statistical aggregations (mean, percentiles, etc.).
+ *
+ * Statistical aggregations come from metric.aggregators[].
+ * Verdict summaries come from eval.verdict policies.
  */
 
-import type { Score, MetricScalar } from '@tally/core/types';
-import type { BuiltInAggregations } from '@tally/core/types';
-import type { VerdictPolicy } from './types';
+import type { MetricScalar, Score } from '@tally/core/types';
 import { toScore } from '@tally/core/types';
+import type { VerdictPolicy } from './types';
 import { computeVerdict } from './verdict';
 
 /**
- * Calculate built-in aggregations (pass/fail rates and distribution)
- * Custom aggregates are computed separately in the pipeline
+ * Calculate verdict summary from scores and verdict policy
+ *
+ * This function computes pass/fail/unknown rates based on the eval's verdict policy.
+ * It is NOT the same as statistical aggregations (mean, percentiles, etc.).
+ *
+ * @param scores - Normalized scores (0-1)
+ * @param verdictPolicy - The verdict policy from the eval
+ * @param rawValues - Optional raw values for verdict computation
+ * @returns VerdictSummary with pass/fail rates and counts
  */
-export function calculateBuiltInAggregations(
-  scores: readonly Score[],
-  rawValues?: readonly MetricScalar[],
-  verdictPolicy?: VerdictPolicy,
-): BuiltInAggregations {
-  if (scores.length === 0) {
-    throw new Error('Cannot calculate aggregations for empty scores array');
-  }
-
-  const aggregations: BuiltInAggregations = {};
-
-  // Calculate pass/fail rates if verdict policy exists
-  if (verdictPolicy && verdictPolicy.kind !== 'none') {
-    const verdicts = scores.map((score, index) => {
-      const rawValue = rawValues?.[index];
-      if (rawValue === undefined) {
-        return 'unknown';
-      }
-      return computeVerdict(score, rawValue, verdictPolicy);
-    });
-    const passCount = verdicts.filter((v) => v === 'pass').length;
-    const failCount = verdicts.filter((v) => v === 'fail').length;
-    const totalCount = scores.length;
-    aggregations.passRate = toScore(passCount / totalCount);
-    aggregations.failRate = toScore(failCount / totalCount);
-    aggregations.passCount = passCount;
-    aggregations.failCount = failCount;
-  }
-
-  // Calculate distribution for ordinal metrics
-  if (rawValues && rawValues.length > 0) {
-    const firstValue = rawValues[0];
-    if (typeof firstValue === 'string') {
-      // Check if this looks like ordinal data
-      const distribution: Record<string, number> = {};
-      for (const value of rawValues) {
-        if (typeof value === 'string') {
-          distribution[value] = (distribution[value] ?? 0) + 1;
-        }
-      }
-      if (Object.keys(distribution).length > 0) {
-        aggregations.distribution = distribution;
-      }
-    }
-  }
-
-  return aggregations;
-}
-
-/**
- * Calculate pass rate from scores and verdict policy
- */
-export function calculatePassRate(
+export function calculateVerdictSummary(
   scores: readonly Score[],
   verdictPolicy: VerdictPolicy,
-  rawValues?: readonly MetricScalar[],
-): Score {
+  rawValues?: readonly MetricScalar[]
+): import('@tally/core/types').VerdictSummary {
   if (scores.length === 0) {
-    throw new Error('Cannot calculate pass rate for empty scores array');
+    throw new Error('Cannot calculate verdict summary for empty scores array');
   }
 
   if (verdictPolicy.kind === 'none') {
-    throw new Error('Cannot calculate pass rate without verdict policy');
+    // No verdict policy - all unknown
+    return {
+      passRate: toScore(0),
+      failRate: toScore(0),
+      unknownRate: toScore(1),
+      passCount: 0,
+      failCount: 0,
+      unknownCount: scores.length,
+      totalCount: scores.length,
+    };
   }
 
-  const { computeVerdict } = require('./verdict');
+  // Compute verdicts for each score
   const verdicts = scores.map((score, index) => {
     const rawValue = rawValues?.[index];
     if (rawValue === undefined) {
@@ -90,15 +56,49 @@ export function calculatePassRate(
   });
 
   const passCount = verdicts.filter((v) => v === 'pass').length;
-  return toScore(passCount / scores.length);
+  const failCount = verdicts.filter((v) => v === 'fail').length;
+  const unknownCount = verdicts.filter((v) => v === 'unknown').length;
+  const totalCount = scores.length;
+
+  return {
+    passRate: toScore(passCount / totalCount),
+    failRate: toScore(failCount / totalCount),
+    unknownRate: toScore(unknownCount / totalCount),
+    passCount,
+    failCount,
+    unknownCount,
+    totalCount,
+  };
 }
 
 /**
- * Calculate distribution of ordinal values
+ * Calculate pass rate from scores and verdict policy
+ *
+ * Convenience function that returns just the pass rate.
+ *
+ * @param scores - Normalized scores (0-1)
+ * @param verdictPolicy - The verdict policy from the eval
+ * @param rawValues - Optional raw values for verdict computation
+ * @returns Pass rate as a Score (0-1)
  */
-export function calculateDistribution(
-  rawValues: readonly MetricScalar[],
-): Record<string, number> {
+export function calculateVerdictPassRate(
+  scores: readonly Score[],
+  verdictPolicy: VerdictPolicy,
+  rawValues?: readonly MetricScalar[]
+): Score {
+  const summary = calculateVerdictSummary(scores, verdictPolicy, rawValues);
+  return summary.passRate;
+}
+
+/**
+ * Calculate distribution of ordinal/categorical values
+ *
+ * This is useful for string/ordinal metrics to see the breakdown of values.
+ *
+ * @param rawValues - Array of raw values (typically strings)
+ * @returns Record mapping each unique value to its count
+ */
+export function calculateDistribution(rawValues: readonly MetricScalar[]): Record<string, number> {
   const distribution: Record<string, number> = {};
   for (const value of rawValues) {
     const key = String(value);

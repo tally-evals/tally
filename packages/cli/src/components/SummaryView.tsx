@@ -2,12 +2,41 @@
  * Summary view showing aggregate metrics
  */
 
-import type { EvaluationReport } from '@tally-evals/core';
+import type { EvaluationReport, EvalSummary } from '@tally-evals/core';
 import Table from 'cli-table3';
 import { Box, Text } from 'ink';
 import type React from 'react';
 import { colors } from 'src/utils/colors';
 import { score } from 'src/utils/colors';
+
+/**
+ * Convert evalSummaries to a properly typed Map
+ * Handles both Map instances (in-memory) and plain objects (after JSON serialization)
+ */
+function getEvalSummariesMap(
+  evalSummaries: EvaluationReport['evalSummaries'],
+): Map<string, EvalSummary> {
+  if (evalSummaries instanceof Map) {
+    return evalSummaries;
+  }
+  // After JSON serialization, Map becomes a plain object
+  return new Map(
+    Object.entries(evalSummaries as unknown as Record<string, EvalSummary>),
+  );
+}
+
+/**
+ * Safely get a numeric aggregation value from an Aggregations object
+ * Returns undefined if the value doesn't exist or isn't a number
+ */
+function getNumericAggregation(
+  aggregations: Record<string, number | Record<string, number>> | undefined,
+  key: string,
+): number | undefined {
+  if (!aggregations) return undefined;
+  const value = aggregations[key];
+  return typeof value === 'number' ? value : undefined;
+}
 
 interface SummaryViewProps {
   report: EvaluationReport;
@@ -56,10 +85,7 @@ export function SummaryView({ report }: SummaryViewProps): React.ReactElement {
     colWidths: [20, 15, 10, 10, 10, 10, 12],
   });
 
-  const summaries =
-    report.evalSummaries instanceof Map
-      ? report.evalSummaries
-      : new Map(Object.entries(report.evalSummaries));
+  const summaries = getEvalSummariesMap(report.evalSummaries);
 
   for (const [evalName, summary] of summaries) {
     const percentiles = summary.aggregations.score.percentiles;
@@ -69,10 +95,11 @@ export function SummaryView({ report }: SummaryViewProps): React.ReactElement {
       !Array.isArray(percentiles)
         ? (percentiles as { p50?: number; p75?: number; p90?: number })
         : null;
+    const meanValue = getNumericAggregation(summary.aggregations.score, 'mean');
     const row = [
       evalName,
       summary.evalKind,
-      formatScoreValue(summary.aggregations.score.mean),
+      meanValue !== undefined ? formatScoreValue(meanValue) : colors.muted('-'),
       p?.p50 !== undefined ? formatScoreValue(p.p50) : colors.muted('-'),
       p?.p75 !== undefined ? formatScoreValue(p.p75) : colors.muted('-'),
       p?.p90 !== undefined ? formatScoreValue(p.p90) : colors.muted('-'),

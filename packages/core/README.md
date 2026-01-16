@@ -6,7 +6,7 @@ Core types, configuration, and utilities for the Tally evaluation framework.
 
 This package provides the foundational building blocks for the tally ecosystem:
 
-- **Shared Types** — Canonical definitions for `Conversation`, `ConversationStep`, `StepTrace`, and run metadata types
+- **Shared Types** — Canonical type definitions for the entire evaluation system
 - **Configuration** — Load `tally.config.ts` with type-safe `defineConfig()` helper
 - **Storage** — Unified `IStorage` interface with Local, S2, and Redis adapters
 - **Codecs** — Zod-based serialization for Conversation (JSONL) and EvaluationReport (JSON)
@@ -23,14 +23,56 @@ bun add @tally-evals/core
 
 ### Types
 
+The core package exports all canonical type definitions:
+
 ```typescript
 import type {
+  // Primitives
+  MetricScalar,
+  Score,
+  DatasetItem,
+  
+  // Conversation types
   Conversation,
   ConversationStep,
-  StepTrace,
   ModelMessage,
+  
+  // Trajectory types
+  StepTrace,
+  TrajectoryMeta,
+  
+  // Metric types
+  MetricDef,
+  SingleTurnMetricDef,
+  MultiTurnMetricDef,
+  Metric,
+  
+  // Aggregator types
+  NumericAggregatorDef,
+  BooleanAggregatorDef,
+  CategoricalAggregatorDef,
+  Aggregator,
+  
+  // Evaluator types
+  Eval,
+  Evaluator,
+  VerdictPolicy,
+  
+  // Report types
+  EvaluationReport,
+  EvalSummary,
+  VerdictSummary,
+  Aggregations,
+  PerTargetResult,
+  
+  // Utility types
   ExtractedToolCall,
+  NormalizerSpec,
+  ScoringContext,
 } from '@tally-evals/core';
+
+// Helper function
+import { toScore } from '@tally-evals/core';
 ```
 
 ### Configuration

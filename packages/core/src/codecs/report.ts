@@ -135,11 +135,11 @@ const EvaluationReportSchema = z
   })
   .passthrough();
 
-/**
- * Evaluation report
- * Final output containing per-target results and aggregate summaries
- */
-export type EvaluationReport = z.infer<typeof EvaluationReportSchema>;
+// Import the canonical EvaluationReport type from types
+import type { EvaluationReport } from '../types/report';
+
+// Re-export for backwards compatibility
+export type { EvaluationReport };
 
 /**
  * Decode JSON content to EvaluationReport

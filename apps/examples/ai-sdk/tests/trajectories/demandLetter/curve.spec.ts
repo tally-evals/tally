@@ -95,7 +95,10 @@ describe('Demand Letter Agent - Curve Ball', () => {
 
 		const overallQualitySummary = report.evalSummaries.get('Overall Quality');
 		if (overallQualitySummary) {
-			expect(overallQualitySummary.aggregations.mean).toBeGreaterThan(0.4);
+			const mean = overallQualitySummary.aggregations.score['Mean'];
+			if (typeof mean === 'number') {
+				expect(mean).toBeGreaterThan(0.4);
+			}
 		}
 	});
 });

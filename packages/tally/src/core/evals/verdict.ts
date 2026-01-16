@@ -4,7 +4,7 @@
  * Type-safe verdict computation based on verdict policies
  */
 
-import type { Score, MetricScalar } from '@tally/core/types';
+import type { MetricScalar, Score } from '@tally/core/types';
 import type { VerdictPolicy } from './types';
 
 /**
@@ -13,7 +13,7 @@ import type { VerdictPolicy } from './types';
 export function computeVerdict(
   score: Score,
   rawValue: MetricScalar,
-  policy: VerdictPolicy,
+  policy: VerdictPolicy
 ): 'pass' | 'fail' | 'unknown' {
   if (policy.kind === 'none') {
     return 'unknown';
@@ -27,9 +27,7 @@ export function computeVerdict(
   if (policy.kind === 'number') {
     if (policy.type === 'threshold') {
       if (typeof rawValue !== 'number') {
-        throw new Error(
-          'Raw value must be a number with threshold verdict policy',
-        );
+        throw new Error('Raw value must be a number with threshold verdict policy');
       } else {
         return rawValue >= policy.passAt ? 'pass' : 'fail';
       }

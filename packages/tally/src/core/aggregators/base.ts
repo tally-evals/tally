@@ -17,19 +17,11 @@ import { toScore } from '@tally/core/types';
 export function validateScores(values: readonly Score[]): void {
   for (let i = 0; i < values.length; i++) {
     const value = values[i];
-    if (
-      typeof value !== 'number' ||
-      Number.isNaN(value) ||
-      !Number.isFinite(value)
-    ) {
-      throw new Error(
-        `Invalid Score at index ${i}: must be a finite number, got ${value}`,
-      );
+    if (typeof value !== 'number' || Number.isNaN(value) || !Number.isFinite(value)) {
+      throw new Error(`Invalid Score at index ${i}: must be a finite number, got ${value}`);
     }
     if (value < 0 || value > 1) {
-      throw new Error(
-        `Invalid Score at index ${i}: must be in [0, 1] range, got ${value}`,
-      );
+      throw new Error(`Invalid Score at index ${i}: must be in [0, 1] range, got ${value}`);
     }
   }
 }
@@ -81,10 +73,7 @@ export function sortNumbers(values: readonly number[]): number[] {
  * @param percentile - Percentile value (0-100)
  * @returns Score value at the specified percentile
  */
-export function calculatePercentile(
-  sortedValues: readonly number[],
-  percentile: number,
-): number {
+export function calculatePercentile(sortedValues: readonly number[], percentile: number): number {
   if (sortedValues.length === 0) {
     throw new Error('Cannot calculate percentile of empty array');
   }
@@ -126,9 +115,7 @@ export function calculatePercentile(
   const lowerValue = sortedValues[lowerIndex];
   const upperValue = sortedValues[upperIndex];
   if (lowerValue === undefined || upperValue === undefined) {
-    throw new Error(
-      `Cannot access elements at indices ${lowerIndex} or ${upperIndex}`,
-    );
+    throw new Error(`Cannot access elements at indices ${lowerIndex} or ${upperIndex}`);
   }
   const interpolated = lowerValue + weight * (upperValue - lowerValue);
 
@@ -146,14 +133,13 @@ export function calculatePercentile(
 export function countThreshold(
   values: readonly Score[],
   threshold: number,
-  above: boolean,
+  above: boolean
 ): number {
   if (threshold < 0 || threshold > 1) {
     throw new Error(`Threshold must be in [0, 1] range, got ${threshold}`);
   }
 
-  return values.filter((val) => (above ? val >= threshold : val < threshold))
-    .length;
+  return values.filter((val) => (above ? val >= threshold : val < threshold)).length;
 }
 
 /**
@@ -163,10 +149,7 @@ export function countThreshold(
  * @param threshold - Pass threshold (default: 0.5)
  * @returns Pass rate as a Score [0, 1]
  */
-export function calculatePassRate(
-  values: readonly Score[],
-  threshold = 0.5,
-): Score {
+export function calculatePassRate(values: readonly Score[], threshold = 0.5): Score {
   if (values.length === 0) {
     throw new Error('Cannot calculate pass rate of empty array');
   }

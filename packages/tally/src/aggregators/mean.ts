@@ -1,11 +1,12 @@
 /**
  * Mean Aggregator
  *
- * Calculates the arithmetic mean (average) of Score values across all data points.
+ * Calculates the arithmetic mean (average) of numeric values across all data points.
+ * This is a numeric aggregator - works on scores and numeric raw values.
  */
 
-import type { AggregatorDef } from '@tally/core/types';
-import { isEmpty, calculateMean } from '@tally/core/aggregators/base';
+import { calculateMean, isEmpty } from '@tally/core/aggregators/base';
+import type { NumericAggregatorDef } from '@tally/core/types';
 
 /**
  * Options for mean aggregator
@@ -19,7 +20,7 @@ export interface MeanAggregatorOptions {
  * Create a mean aggregator
  *
  * @param options - Optional configuration
- * @returns Aggregator that calculates the mean of Score values
+ * @returns NumericAggregatorDef that calculates the mean of numeric values
  *
  * @example
  * ```ts
@@ -28,17 +29,15 @@ export interface MeanAggregatorOptions {
  * });
  * ```
  */
-export function createMeanAggregator(
-  options?: MeanAggregatorOptions,
-): AggregatorDef {
+export function createMeanAggregator(options?: MeanAggregatorOptions): NumericAggregatorDef {
   return {
-    name: `Mean`,
-    description: options?.description ?? `Mean`,
+    kind: 'numeric',
+    name: 'Mean',
+    description: options?.description ?? 'Arithmetic mean',
     aggregate: (values: readonly number[]) => {
       if (isEmpty(values)) {
-        throw new Error(`Mean aggregator: cannot aggregate empty array`);
+        throw new Error('Mean aggregator: cannot aggregate empty array');
       }
-
       return calculateMean(values);
     },
     ...(options?.metadata !== undefined && {

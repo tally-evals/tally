@@ -255,9 +255,18 @@ formatReportAsTables(report, conversations)
 console.log('Eval summaries:', report.evalSummaries)
 console.log('Per-target results:', report.perTargetResults)
 
-// Check verdicts for each conversation
+// Check eval summaries
+report.evalSummaries.forEach((summary, evalName) => {
+  console.log(`${evalName}:`)
+  console.log(`  Mean score: ${summary.aggregations.score.mean}`)
+  if (summary.verdictSummary) {
+    console.log(`  Pass rate: ${summary.verdictSummary.passRate}`)
+  }
+})
+
+// Check verdicts for each target
 report.perTargetResults.forEach((result) => {
-  console.log(`Conversation ${result.targetId}:`)
+  console.log(`Target ${result.targetId}:`)
   result.verdicts.forEach((verdict, evalName) => {
     console.log(`  ${evalName}: ${verdict.verdict} (score: ${verdict.score})`)
   })
@@ -284,16 +293,44 @@ Verdict policies define pass/fail criteria:
 - `ordinalVerdict(categories)` - Pass if value matches allowed categories
 - `customVerdict(fn)` - Custom pass/fail logic function
 
+### Aggregators
+
+Aggregators compute summary statistics across evaluation results. They are type-safe and discriminated by `kind`:
+
+```typescript
+import {
+  // Custom aggregator definitions
+  defineNumericAggregator,
+  defineBooleanAggregator,
+  defineCategoricalAggregator,
+  // Prebuilt aggregators
+  createMeanAggregator,
+  createPercentileAggregator,
+  createThresholdAggregator,
+  createTrueRateAggregator,
+  createDistributionAggregator,
+  // Default aggregators by value type
+  getDefaultAggregators,
+} from '@tally-evals/tally'
+```
+
+- **Numeric**: `createMeanAggregator()`, `createPercentileAggregator()`, `createThresholdAggregator()`
+- **Boolean**: `createTrueRateAggregator()`, `createFalseRateAggregator()`
+- **Categorical**: `createDistributionAggregator()`, `createModeAggregator()`
+
 ### Report Structure
 
 The `EvaluationReport` includes:
 
-- `evalSummaries` - Aggregated statistics per eval (mean, percentiles, pass rates)
+- `evalSummaries` - Per-eval summaries with:
+  - `aggregations.score` - Statistical aggregations on normalized scores (mean, percentiles)
+  - `aggregations.raw` - Statistical aggregations on raw metric values (optional)
+  - `verdictSummary` - Pass/fail rates from verdict policies (separate from statistical aggregations)
 - `perTargetResults` - Detailed results per conversation/dataset item
   - `rawMetrics` - Raw metric values
   - `derivedMetrics` - Scorer outputs
   - `verdicts` - Pass/fail verdicts per eval
-- `aggregateSummaries` - Legacy aggregator results (deprecated, use evalSummaries)
+- `aggregateSummaries` - Aggregate statistics across all derived metrics
 
 ## Development
 

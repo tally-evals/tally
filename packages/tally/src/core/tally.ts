@@ -6,18 +6,50 @@
  */
 
 import type {
-  Tally,
-  Evaluator,
-  EvaluationReport,
-  DatasetItem,
   Conversation,
+  DatasetItem,
+  EvaluationReport,
+  Evaluator,
+  MetricContainer,
   MetricScalar,
+  Tally,
 } from '@tally/core/types';
-import { executePipeline, type PipelineOptions } from './pipeline';
-import type { MemoryCache } from './execution/cache/memoryCache';
-import type { GenerateObjectOptions } from './execution/llm/generateObject';
+import { match, P } from 'ts-pattern';
 import { generateRunId } from '../utils/ids';
 import { buildFromEvals } from './evals/builder';
+import type { MemoryCache } from './execution/cache/memoryCache';
+import type { GenerateObjectOptions } from './execution/llm/generateObject';
+import { type PipelineOptions, executePipeline } from './pipeline';
+
+/**
+ * Validate evaluator has required fields
+ */
+const validateEvaluator = (evaluator: Evaluator<MetricContainer>): void =>
+  match(evaluator)
+    .with({ evals: P.when((e) => !e || e.length === 0) }, ({ name }) => {
+      throw new Error(`Tally: evaluator "${name}" must have at least one eval`);
+    })
+    .with({ context: P.nullish }, ({ name }) => {
+      throw new Error(`Tally: evaluator "${name}" must have a context`);
+    })
+    .otherwise(() => undefined);
+
+/**
+ * Validate constructor inputs
+ */
+const validateInputs = (data: unknown, evaluators: unknown): void => {
+  match({ data, evaluators })
+    .with({ data: P.when((d) => !Array.isArray(d)) }, () => {
+      throw new Error('Tally: data must be an array');
+    })
+    .with({ evaluators: P.when((e) => !Array.isArray(e)) }, () => {
+      throw new Error('Tally: evaluators must be an array');
+    })
+    .with({ evaluators: P.when((e) => Array.isArray(e) && e.length === 0) }, () => {
+      throw new Error('Tally: at least one evaluator is required');
+    })
+    .otherwise(() => undefined);
+};
 
 /**
  * Tally container implementation
@@ -26,40 +58,11 @@ export class TallyContainer<TContainer extends DatasetItem | Conversation>
   implements Tally<TContainer>
 {
   public readonly data: readonly TContainer[];
-  public readonly evaluators: readonly Evaluator<
-    import('@tally/core/types').MetricContainer
-  >[];
+  public readonly evaluators: readonly Evaluator<MetricContainer>[];
 
-  constructor(
-    data: readonly TContainer[],
-    evaluators: readonly Evaluator<
-      import('@tally/core/types').MetricContainer
-    >[],
-  ) {
-    // Validate inputs
-    if (!Array.isArray(data)) {
-      throw new Error('Tally: data must be an array');
-    }
-    if (!Array.isArray(evaluators)) {
-      throw new Error('Tally: evaluators must be an array');
-    }
-    if (evaluators.length === 0) {
-      throw new Error('Tally: at least one evaluator is required');
-    }
-
-    // Validate evaluators have evals
-    for (const evaluator of evaluators) {
-      if (!evaluator.evals || evaluator.evals.length === 0) {
-        throw new Error(
-          `Tally: evaluator "${evaluator.name}" must have at least one eval`,
-        );
-      }
-      if (!evaluator.context) {
-        throw new Error(
-          `Tally: evaluator "${evaluator.name}" must have a context`,
-        );
-      }
-    }
+  constructor(data: readonly TContainer[], evaluators: readonly Evaluator<MetricContainer>[]) {
+    validateInputs(data, evaluators);
+    evaluators.forEach(validateEvaluator);
 
     this.data = data;
     this.evaluators = evaluators;
@@ -85,37 +88,27 @@ export class TallyContainer<TContainer extends DatasetItem | Conversation>
     const { internalEvaluators, evalMetadata } = buildFromEvals(allEvals);
 
     // Execute pipeline
-    const pipelineOptions: PipelineOptions = {};
-    if (options?.cache !== undefined) {
-      pipelineOptions.cache = options.cache;
-    }
-    if (options?.llmOptions !== undefined) {
-      pipelineOptions.llmOptions = options.llmOptions;
-    }
-    if (options?.metadata !== undefined) {
-      pipelineOptions.metadata = options.metadata;
-    }
+    const pipelineOptions: PipelineOptions = {
+      ...(options?.cache !== undefined && { cache: options.cache }),
+      ...(options?.llmOptions !== undefined && { llmOptions: options.llmOptions }),
+      ...(options?.metadata !== undefined && { metadata: options.metadata }),
+    };
 
-    const {
-      perTargetResults,
-      aggregateSummaries,
-      evalSummaries,
-      metricToEvalMap,
-    } = await executePipeline(
+    const pipelineResult = await executePipeline(
       this.data,
       internalEvaluators,
       evalMetadata,
-      pipelineOptions,
+      pipelineOptions
     );
 
-    // Build evaluation report
+    // Build evaluation report (convert readonly to mutable for report interface)
     const report: EvaluationReport = {
       runId,
       timestamp,
-      perTargetResults,
-      aggregateSummaries,
-      evalSummaries,
-      metricToEvalMap,
+      perTargetResults: [...pipelineResult.perTargetResults],
+      aggregateSummaries: [...pipelineResult.aggregateSummaries],
+      evalSummaries: new Map(pipelineResult.evalSummaries),
+      metricToEvalMap: new Map(pipelineResult.metricToEvalMap),
       metadata: {
         ...(options?.metadata ?? {}),
         dataCount: this.data.length,
@@ -136,11 +129,9 @@ export class TallyContainer<TContainer extends DatasetItem | Conversation>
  * @param evaluators - Array of evaluators (with evals)
  * @returns Tally container instance
  */
-export function createTally<
-  TContainer extends DatasetItem | Conversation,
->(args: {
+export function createTally<TContainer extends DatasetItem | Conversation>(args: {
   data: readonly TContainer[];
-  evaluators: readonly Evaluator<import('@tally/core/types').MetricContainer>[];
+  evaluators: readonly Evaluator<MetricContainer>[];
 }): Tally<TContainer> {
   return new TallyContainer(args.data, args.evaluators);
 }

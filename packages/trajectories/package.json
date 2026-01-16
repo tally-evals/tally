@@ -2,14 +2,9 @@
   "name": "@tally-evals/trajectories",
   "version": "0.0.0",
   "description": "A framework-agnostic trajectory generation package for building multi-turn conversation trajectories",
-  "main": "./dist/index.js",
+  "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
-  "typesVersions": {
-    "*": {
-      "*": ["./dist/index.d.ts"]
-    }
-  },
+  "types": "./dist/index.d.mts",
   "repository": {
     "type": "git",
     "url": "https://github.com/tally-evals/tally.git",
@@ -17,17 +12,22 @@
   },
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "bunup",
-    "dev": "bunup --watch",
+    "build": "tsdown",
+    "dev": "tsdown --watch",
     "test": "bun test",
     "test:watch": "bun test --watch",
     "test:e2e": "E2E_TRAJECTORIES=1 bun test test/e2e",
@@ -59,8 +59,8 @@
     "@types/bun": "latest",
     "@types/node": "24.6.2",
     "dotenv": "^17.2.3",
+    "tsdown": "^0.20.0-beta.3",
     "typescript": "^5.3.3",
     "zod": "^3.25.76"
   }
 }
-

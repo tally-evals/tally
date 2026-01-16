@@ -6,7 +6,7 @@ A TypeScript framework for evaluating LLM agents with datasets, metrics, scorers
 - Compose evaluations from real objects (metrics, scorers, evals) — not string IDs
 - Evaluate single-turn and multi-turn behavior over datasets or conversations
 - Define pass/fail criteria with verdict policies
-- Summarize results with built-in aggregations (mean, percentile, pass-rate, etc.)
+- Type-safe aggregators (numeric, boolean, categorical) for summary statistics
 - Produce a structured `EvaluationReport` for analysis and CI
 
 ## Install
@@ -113,10 +113,20 @@ const evaluator = createEvaluator({
 const tally = createTally({ data: conversations, evaluators: [evaluator] })
 const report = await tally.run()
 
-// Access results
-console.log('Eval summaries:', report.evalSummaries)
-console.log('Per-target results:', report.perTargetResults)
-console.log('Verdicts:', report.perTargetResults[0]?.verdicts)
+// Access eval summaries
+report.evalSummaries.forEach((summary, evalName) => {
+  console.log(`${evalName}: mean=${summary.aggregations.score.mean}`)
+  if (summary.verdictSummary) {
+    console.log(`  Pass rate: ${summary.verdictSummary.passRate}`)
+  }
+})
+
+// Access per-target verdicts
+report.perTargetResults.forEach((result) => {
+  result.verdicts.forEach((verdict, evalName) => {
+    console.log(`${result.targetId} - ${evalName}: ${verdict.verdict}`)
+  })
+})
 ```
 
 ## Evals API
@@ -172,6 +182,45 @@ Define pass/fail criteria using verdict helpers:
 - `ordinalVerdict(categories)` - Pass if value matches categories
 - `customVerdict(fn)` - Custom pass/fail logic
 
+### Aggregators
+
+Aggregators compute summary statistics. They are type-discriminated by `kind`:
+
+```ts
+import {
+  createMeanAggregator,
+  createPercentileAggregator,
+  createTrueRateAggregator,
+  createDistributionAggregator,
+  getDefaultAggregators,
+} from '@tally-evals/tally'
+
+// Default aggregators based on metric value type
+const aggregators = getDefaultAggregators('number') // mean, p50, p75, p90
+const boolAggregators = getDefaultAggregators('boolean') // + trueRate
+const catAggregators = getDefaultAggregators('string') // + distribution
+```
+
+### Report Structure
+
+The `EvaluationReport` provides:
+
+```ts
+// Per-eval summary
+const summary = report.evalSummaries.get('Answer Relevance')
+summary.aggregations.score.mean  // Mean of normalized scores
+summary.aggregations.score.p90   // 90th percentile
+summary.aggregations.raw?.mean   // Mean of raw values (if applicable)
+summary.verdictSummary?.passRate // Pass rate (separate from aggregations)
+
+// Per-target results
+report.perTargetResults.forEach((result) => {
+  result.rawMetrics     // Metric values for this target
+  result.derivedMetrics // Scorer outputs
+  result.verdicts       // Map<evalName, {verdict, score}>
+})
+```
+
 ## Generate data with trajectories (optional)
 Use `@tally-evals/trajectories` to create multi-turn conversations automatically, then convert to Tally format:
 
@@ -198,13 +247,36 @@ const conversation = toConversation(result, 'weather-trajectory')
 Now pass `conversation` into Tally as shown above.
 
 ## API at a glance
-- **Metrics**: `createAnswerRelevanceMetric`, `createCompletenessMetric`, `createToxicityMetric`, `createRoleAdherenceMetric`, `defineBaseMetric`
-- **Scorers**: `createWeightedAverageScorer`, `defineInput`
-- **Evals**: `defineSingleTurnEval`, `defineMultiTurnEval`, `defineScorerEval`
-- **Verdicts**: `thresholdVerdict`, `booleanVerdict`, `rangeVerdict`, `ordinalVerdict`, `customVerdict`
-- **Evaluator**: `createEvaluator`, `runAllTargets`
-- **Core**: `createTally`
-- **Report Formatting**: `formatReportAsTables`
+
+### Metrics
+- **Single-Turn**: `createAnswerRelevanceMetric`, `createCompletenessMetric`, `createToxicityMetric`, `createAnswerSimilarityMetric`, `createToolCallAccuracyMetric`
+- **Multi-Turn**: `createRoleAdherenceMetric`, `createGoalCompletionMetric`, `createTopicAdherenceMetric`
+- **Custom**: `defineBaseMetric`, `defineSingleTurnMetric`, `defineMultiTurnMetric`
+
+### Scorers
+- `createWeightedAverageScorer`, `defineInput`
+
+### Evals
+- `defineSingleTurnEval`, `defineMultiTurnEval`, `defineScorerEval`
+
+### Verdicts
+- `thresholdVerdict`, `booleanVerdict`, `rangeVerdict`, `ordinalVerdict`, `customVerdict`
+
+### Aggregators
+- **Define Custom**: `defineNumericAggregator`, `defineBooleanAggregator`, `defineCategoricalAggregator`
+- **Numeric**: `createMeanAggregator`, `createPercentileAggregator`, `createThresholdAggregator`
+- **Boolean**: `createTrueRateAggregator`, `createFalseRateAggregator`
+- **Categorical**: `createDistributionAggregator`, `createModeAggregator`
+- **Defaults**: `getDefaultAggregators(valueType)`, `DEFAULT_NUMERIC_AGGREGATORS`
+
+### Evaluator
+- `createEvaluator`, `runAllTargets`
+
+### Core
+- `createTally`
+
+### Report Formatting
+- `formatReportAsTables`
 
 ## Development
 

@@ -4,7 +4,7 @@
 
 import type { StepTrace, TrajectoryMeta, TallyStore } from '@tally-evals/core';
 import { Box, Text, useInput, useStdout } from 'ink';
-import { ScrollList, type ScrollListRef } from 'ink-scroll-list';
+import { ScrollList, type ScrollListRef } from './shared/TypedScrollList';
 import Table from 'cli-table3';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
