@@ -6,7 +6,6 @@
  */
 
 import type {
-  MetricDef,
   MetricContainer,
   SingleTurnContainer,
   MultiTurnContainer,
@@ -16,8 +15,6 @@ import type {
   Score,
   InputScores,
   MetricDefFor,
-  Evaluator,
-  Aggregator,
 } from '@tally/core/types';
 import { defineBaseMetric, defineInput, defineScorer } from '../factory';
 import type {
@@ -49,7 +46,6 @@ export interface InternalEvaluator<TContainer extends MetricContainer> {
   evalName: string; // Name of the eval this evaluator represents
   evalKind: 'singleTurn' | 'multiTurn' | 'scorer';
   verdictPolicy?: VerdictPolicy;
-  aggregators?: Aggregator[];
 }
 
 /**
@@ -177,7 +173,6 @@ function buildSingleTurnEval<TContainer extends SingleTurnContainer>(
     evalName: eval_.name,
     evalKind: 'singleTurn',
     verdictPolicy: eval_.verdict,
-    aggregators: eval_.aggregators,
   };
 }
 

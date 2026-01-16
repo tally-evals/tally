@@ -16,7 +16,6 @@ import type {
   Score,
   EvaluationContext,
   Scorer,
-  Aggregator,
 } from '@tally/core/types';
 
 /**
@@ -126,7 +125,6 @@ export interface SingleTurnEval<
   metric: MetricDef<TMetricValue, TContainer>; // Single metric - type inferred
   verdict?: VerdictPolicyFor<TMetricValue>; // Type-safe verdict (inferred from metric)
   autoNormalize?: AutoNormalizer; // Override auto-normalization for boolean/ordinal
-  aggregators?: Aggregator[];
 }
 
 /**

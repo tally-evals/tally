@@ -5,12 +5,11 @@
  * Uses linear interpolation for percentile calculation.
  */
 
-import type { Aggregator, BaseMetricDef, Score } from '@tally/core/types';
+import type { AggregatorDef, Score } from '@tally/core/types';
 import {
-  validateScores,
   isEmpty,
-  sortScores,
   calculatePercentile,
+  sortNumbers,
 } from '@tally/core/aggregators/base';
 
 /**
@@ -25,7 +24,6 @@ export interface PercentileAggregatorOptions {
 /**
  * Create a percentile aggregator
  *
- * @param metric - Base metric definition for the derived metric being aggregated
  * @param options - Configuration including percentile value (0-100)
  * @returns Aggregator that calculates the specified percentile of Score values
  *
@@ -39,31 +37,24 @@ export interface PercentileAggregatorOptions {
  * ```
  */
 export function createPercentileAggregator(
-  metric: BaseMetricDef<number>,
   options: PercentileAggregatorOptions,
-): Aggregator {
+): AggregatorDef {
   const { percentile } = options;
 
   if (percentile < 0 || percentile > 100) {
     throw new Error(
-      `Percentile aggregator for ${metric.name}: percentile must be in [0, 100] range, got ${percentile}`,
+      `Percentile aggregator: percentile must be in [0, 100] range, got ${percentile}`,
     );
   }
 
   return {
     name: `P${percentile}`,
-    description:
-      options.description ?? `${percentile}th percentile of ${metric.name}`,
-    metric,
-    aggregate: (values: readonly Score[]) => {
-      if (isEmpty(values)) {
-        throw new Error(
-          `Percentile aggregator for ${metric.name}: cannot aggregate empty array`,
-        );
+    description: options.description ?? `${percentile}th percentile`,
+    aggregate: (values: readonly number[]) => {
+      if (isEmpty(values as readonly Score[])) {
+        throw new Error(`Percentile aggregator: cannot aggregate empty array`);
       }
-
-      validateScores(values);
-      const sorted = sortScores(values);
+      const sorted = sortNumbers(values);
       return calculatePercentile(sorted, percentile);
     },
     ...(options.metadata !== undefined && { metadata: options.metadata }),

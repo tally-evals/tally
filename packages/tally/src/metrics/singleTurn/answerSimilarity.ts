@@ -1,116 +1,134 @@
 /**
  * Answer Similarity Metric
- * 
+ *
  * A single-turn metric that measures how similar an answer is to a target response.
  * Supports both embedding-based similarity (using cosine similarity) and keyword-based matching.
- * 
+ *
  * Supports both DatasetItem and ConversationStep containers.
  */
 
 import { defineBaseMetric, createSingleTurnCode } from '@tally/core/factory';
 import { createIdentityNormalizer } from '@tally/core/normalization/factory';
-import type { SingleTurnMetricDef, SingleTurnContainer } from '@tally/core/types';
+import type {
+  SingleTurnMetricDef,
+  SingleTurnContainer,
+  AggregatorDef,
+} from '@tally/core/types';
 import type { EmbeddingModel } from 'ai';
 import { extractWords } from '@tally/utils/text';
 
 export interface AnswerSimilarityOptions {
-	/**
-	 * Embedding model for semantic similarity calculation (optional)
-	 * If provided, uses cosine similarity between embeddings
-	 * If not provided, falls back to keyword-based matching
-	 */
-	embeddingModel?: EmbeddingModel;
-	/**
-	 * Target response to compare against (optional)
-	 * If not provided, extracts from metadata.targetResponse
-	 */
-	targetResponse?: string;
-	/**
-	 * Minimum number of matching keywords required for similarity (only used for keyword-based)
-	 * @default 1
-	 */
-	minKeywords?: number;
+  /**
+   * Embedding model for semantic similarity calculation (optional)
+   * If provided, uses cosine similarity between embeddings
+   * If not provided, falls back to keyword-based matching
+   */
+  embeddingModel?: EmbeddingModel;
+  /**
+   * Target response to compare against (optional)
+   * If not provided, extracts from metadata.targetResponse
+   */
+  targetResponse?: string;
+  /**
+   * Minimum number of matching keywords required for similarity (only used for keyword-based)
+   * @default 1
+   */
+  minKeywords?: number;
+  /**
+   * Aggregators to apply to the metric
+   * @default Percentiles: 50, 75, 90
+   */
+  aggregators?: AggregatorDef[];
 }
 
 /**
  * Create an answer similarity metric
- * 
+ *
  * This metric computes similarity between the output and a target response.
  * If an embedding model is provided, uses cosine similarity between embeddings.
  * Otherwise, falls back to keyword-based matching.
- * 
+ *
  * Supports both DatasetItem and ConversationStep containers.
- * 
+ *
  * @param options - Configuration options
  * @returns A single-turn metric definition for answer similarity
  */
-export function createAnswerSimilarityMetric<TContainer extends SingleTurnContainer = SingleTurnContainer>(
-	options: AnswerSimilarityOptions = {}
+export function createAnswerSimilarityMetric<
+  TContainer extends SingleTurnContainer = SingleTurnContainer,
+>(
+  options: AnswerSimilarityOptions = {},
 ): SingleTurnMetricDef<number, TContainer> {
-	const { embeddingModel, targetResponse, minKeywords = 1 } = options;
+  const {
+    embeddingModel,
+    targetResponse,
+    minKeywords = 1,
+    aggregators,
+  } = options;
 
-	const base = defineBaseMetric({
-		name: 'answerSimilarity',
-		valueType: 'number',
-		description: embeddingModel
-			? 'Measures semantic similarity between answer and target response using embeddings'
-			: 'Measures similarity between answer and target response using keyword matching',
-	});
+  const base = defineBaseMetric({
+    name: 'answerSimilarity',
+    valueType: 'number',
+    description: embeddingModel
+      ? 'Measures semantic similarity between answer and target response using embeddings'
+      : 'Measures similarity between answer and target response using keyword matching',
+  });
 
-	const metric = createSingleTurnCode<number, TContainer>({
-		base,
-		compute: ({ data }) => {
-			// Prepared payload provides normalized { input, output }
-			const payload = data as { input?: string; output?: string } | undefined;
-			const output = (payload?.output ?? '').toString();
-			
-			// Get target response
-			let targetResp = targetResponse;
-			if (!targetResp) {
-				// Try to extract from metadata
-				const metadata = (data as { metadata?: Record<string, unknown> }).metadata;
-				if (metadata && typeof metadata.targetResponse === 'string') {
-					targetResp = metadata.targetResponse;
-				}
-			}
+  const metric = createSingleTurnCode<number, TContainer>({
+    ...(aggregators !== undefined && { aggregators }),
+    base,
+    compute: ({ data }) => {
+      // Prepared payload provides normalized { input, output }
+      const payload = data as { input?: string; output?: string } | undefined;
+      const output = (payload?.output ?? '').toString();
 
-			// If no target response, return 0
-			if (!targetResp) {
-				return 0;
-			}
+      // Get target response
+      let targetResp = targetResponse;
+      if (!targetResp) {
+        // Try to extract from metadata
+        const metadata = (data as { metadata?: Record<string, unknown> })
+          .metadata;
+        if (metadata && typeof metadata.targetResponse === 'string') {
+          targetResp = metadata.targetResponse;
+        }
+      }
 
-			// compute() is synchronous, so use keyword-based matching
-			const outputWords = new Set(extractWords(output));
-			const targetWords = new Set(extractWords(targetResp));
+      // If no target response, return 0
+      if (!targetResp) {
+        return 0;
+      }
 
-			// Count matching keywords
-			let matches = 0;
-			for (const word of targetWords) {
-				if (outputWords.has(word)) {
-					matches++;
-				}
-			}
+      // compute() is synchronous, so use keyword-based matching
+      const outputWords = new Set(extractWords(output));
+      const targetWords = new Set(extractWords(targetResp));
 
-			// Calculate similarity score
-			if (targetWords.size === 0) {
-				return 0.5;
-			}
+      // Count matching keywords
+      let matches = 0;
+      for (const word of targetWords) {
+        if (outputWords.has(word)) {
+          matches++;
+        }
+      }
 
-			const similarity = matches / targetWords.size;
+      // Calculate similarity score
+      if (targetWords.size === 0) {
+        return 0.5;
+      }
 
-			// Apply minimum keyword threshold
-			if (matches < minKeywords) {
-				return 0;
-			}
+      const similarity = matches / targetWords.size;
 
-			return Math.min(1, Math.max(0, similarity));
-		},
-		cacheable: true,
-		normalization: {
-			default: createIdentityNormalizer(),
-		},
-	});
+      // Apply minimum keyword threshold
+      if (matches < minKeywords) {
+        return 0;
+      }
 
-	// Type assertion: createSingleTurnCode always returns a single-turn metric
-	return metric as SingleTurnMetricDef<number, TContainer>;
+      return Math.min(1, Math.max(0, similarity));
+    },
+    cacheable: true,
+    normalization: {
+      default: createIdentityNormalizer(),
+    },
+  });
+
+  // Type assertion: createSingleTurnCode always returns a single-turn metric
+  return metric as SingleTurnMetricDef<number, TContainer>;
 }

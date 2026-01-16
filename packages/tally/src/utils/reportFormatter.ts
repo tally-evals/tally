@@ -256,7 +256,7 @@ function printTableWithNewlines(
  */
 function formatSummaryTable(report: EvaluationReport): void {
   console.log('\n' + '-'.repeat(80));
-  console.log('EVAL SUMMARIES');
+  console.log('EVAL SUMMARIES (SCORES)');
   console.log('-'.repeat(80));
 
   const summaryRows: Array<Record<string, string | number>> = [];
@@ -264,16 +264,13 @@ function formatSummaryTable(report: EvaluationReport): void {
 
   // First pass: collect all unique columns
   for (const [, summary] of report.evalSummaries) {
-    if (summary.aggregations.mean !== undefined) {
-      allColumns.add('Mean/Value');
-    }
     if (summary.verdictSummary) {
       allColumns.add('Pass Rate');
       allColumns.add('Pass/Fail');
     }
-    if (summary.aggregations.custom) {
-      const customAggs = summary.aggregations.custom;
-      for (const aggName of Object.keys(customAggs)) {
+    if (summary.aggregations.score) {
+      const aggs = summary.aggregations.score;
+      for (const aggName of Object.keys(aggs)) {
         const displayName = aggName.charAt(0).toUpperCase() + aggName.slice(1);
         allColumns.add(displayName);
       }
@@ -287,11 +284,6 @@ function formatSummaryTable(report: EvaluationReport): void {
       Kind: summary.evalKind,
     };
 
-    // Add mean if available
-    if (summary.aggregations.mean !== undefined) {
-      row['Mean/Value'] = summary.aggregations.mean.toFixed(3);
-    }
-
     // Add verdict summary if available
     if (summary.verdictSummary) {
       row['Pass Rate'] = `${summary.verdictSummary.passRate.toFixed(3)}`;
@@ -300,9 +292,9 @@ function formatSummaryTable(report: EvaluationReport): void {
       ] = `${summary.verdictSummary.passCount}/${summary.verdictSummary.failCount}`;
     }
 
-    if (summary.aggregations.custom) {
-      const customAggs = summary.aggregations.custom;
-      for (const [aggName, aggValue] of Object.entries(customAggs)) {
+    if (summary.aggregations.score) {
+      const aggs = summary.aggregations.score;
+      for (const [aggName, aggValue] of Object.entries(aggs)) {
         if (typeof aggValue === 'number') {
           const displayName =
             aggName.charAt(0).toUpperCase() + aggName.slice(1);
@@ -322,6 +314,54 @@ function formatSummaryTable(report: EvaluationReport): void {
   }
 
   console.table(summaryRows);
+
+  console.log('\n' + '-'.repeat(80));
+  console.log('EVAL SUMMARIES (RAW VALUES)');
+  console.log('-'.repeat(80));
+
+  const summaryRowsRaw: Array<Record<string, string | number>> = [];
+  const allColumnsRaw = new Set<string>(['Eval', 'Kind']);
+
+  // First pass: collect all unique columns
+  for (const [, summary] of report.evalSummaries) {
+    if (summary.aggregations.raw) {
+      const aggs = summary.aggregations.raw;
+      for (const aggName of Object.keys(aggs)) {
+        const displayName = aggName.charAt(0).toUpperCase() + aggName.slice(1);
+        allColumnsRaw.add(displayName);
+      }
+    }
+  }
+
+  // Second pass: build rows with all columns
+  for (const [evalName, summary] of report.evalSummaries) {
+    const row: Record<string, string | number> = {
+      Eval: evalName,
+      Kind: summary.evalKind,
+    };
+
+    if (summary.aggregations.raw) {
+      const aggs = summary.aggregations.raw;
+      for (const [aggName, aggValue] of Object.entries(aggs)) {
+        if (typeof aggValue === 'number') {
+          const displayName =
+            aggName.charAt(0).toUpperCase() + aggName.slice(1);
+          row[displayName] = aggValue.toFixed(3);
+        }
+      }
+    }
+
+    // Fill in missing columns with hyphens
+    for (const col of allColumnsRaw) {
+      if (!(col in row)) {
+        row[col] = '-';
+      }
+    }
+
+    summaryRowsRaw.push(row);
+  }
+
+  console.table(summaryRowsRaw);
 }
 
 /**

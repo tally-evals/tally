@@ -30,10 +30,7 @@ import {
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
 import { google } from '@ai-sdk/google';
 import { createKnowledgeRetentionMetric } from './metrics';
-import {
-  createMeanAggregator,
-  createPercentileAggregator,
-} from '@tally-evals/tally/aggregators';
+import { createPercentileAggregator } from '@tally-evals/tally/aggregators';
 
 describe('Travel Planner Agent - Golden Path', () => {
   it('should plan trip successfully', async () => {
@@ -88,6 +85,12 @@ describe('Travel Planner Agent - Golden Path', () => {
     // Answer Relevance: Agent should answer user questions appropriately
     const answerRelevance = createAnswerRelevanceMetric({
       provider: model,
+      aggregators: [
+        createPercentileAggregator({
+          percentile: 67,
+          description: '67th percentile of the answer relevance metric',
+        }),
+      ],
     });
 
     // Completeness: Agent should provide complete information when needed
@@ -136,31 +139,25 @@ describe('Travel Planner Agent - Golden Path', () => {
     const answerRelevanceEval = defineSingleTurnEval({
       name: 'Answer Relevance',
       metric: answerRelevance,
-      verdict: thresholdVerdict(0.5), // Golden path: agent should answer questions, but some turns may be questions
-      aggregators: [
-        createPercentileAggregator(answerRelevance, {
-          percentile: 67,
-          description: '67th percentile of the answer relevance metric',
-        }),
-      ],
+      verdict: thresholdVerdict(2.5), // Golden path: agent should answer questions, but some turns may be questions
     });
 
     const completenessEval = defineSingleTurnEval({
       name: 'Completeness',
       metric: completeness,
-      verdict: thresholdVerdict(0.3), // Lower threshold: agent asks questions, so some turns are incomplete
+      verdict: thresholdVerdict(2), // Lower threshold: agent asks questions, so some turns are incomplete
     });
 
     const roleAdherenceEval = defineMultiTurnEval({
       name: 'Role Adherence',
       metric: roleAdherence,
-      verdict: thresholdVerdict(0.7), // Golden path: agent should consistently act as travel assistant
+      verdict: thresholdVerdict(3.5), // Golden path: agent should consistently act as travel assistant
     });
 
     const knowledgeRetentionEval = defineMultiTurnEval({
       name: 'Knowledge Retention',
       metric: knowledgeRetention,
-      verdict: thresholdVerdict(0.7), // Golden path: agent should remember the user's preferences well since they are unchanging
+      verdict: thresholdVerdict(3.5), // Golden path: agent should remember the user's preferences well since they are unchanging
     });
 
     const overallQualityEval = defineScorerEval({
@@ -247,9 +244,9 @@ describe('Travel Planner Agent - Golden Path', () => {
 
     // Overall Quality: Should pass for golden path (score >= 0.6)
     const overallQualitySummary = report.evalSummaries.get('Overall Quality');
-    if (overallQualitySummary?.aggregations?.custom?.mean !== undefined) {
+    if (overallQualitySummary?.aggregations?.score.custom?.mean !== undefined) {
       expect(
-        overallQualitySummary.aggregations.custom?.mean,
+        overallQualitySummary.aggregations.score.custom?.mean,
       ).toBeGreaterThanOrEqual(0.6);
     }
   }, 300000); // 5 minute timeout for trajectory execution
