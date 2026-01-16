@@ -3,7 +3,7 @@ title: Normalization
 description: Convert raw metric values into normalized scores.
 ---
 
-import { TypeTable } from 'fumadocs-ui/components/type-table';
+import { PropertyTable } from '@/components/PropertyTable';
 
 # Normalization
 
@@ -29,84 +29,194 @@ import {
 } from 'tally/normalization';
 ```
 
-## `createMinMaxNormalizer`
+### Example
 
 ```ts
-createMinMaxNormalizer(args: {
-  min: number;
-  max: number;
-  clip?: boolean;
-  direction?: 'higher' | 'lower';
-}): NormalizerSpec<number, ScoringContext>
+import { defineBaseMetric, createSingleTurnLLM } from 'tally';
+import { createMinMaxNormalizer } from 'tally/normalization';
+import { google } from '@ai-sdk/google';
+
+const base = defineBaseMetric<number>({
+  name: 'answerRelevance',
+  valueType: 'number',
+});
+
+const answerRelevance = createSingleTurnLLM({
+  base,
+  provider: google('models/gemini-2.5-flash-lite'),
+  prompt: { instruction: 'Score relevance 0-5.', variables: [] as const },
+  normalization: {
+    default: createMinMaxNormalizer({ min: 0, max: 5, clip: true }),
+  },
+});
 ```
 
-## `createZScoreNormalizer`
+### `createMinMaxNormalizer()`
 
-```ts
-createZScoreNormalizer(args: {
-  mean: number;
-  stdDev: number;
-  clip?: boolean;
-  direction?: 'higher' | 'lower';
-  to?: '0-1' | '0-100';
-}): NormalizerSpec<number, ScoringContext>
-```
+<PropertyTable
+  content={[
+    { name: 'min', type: 'number', description: 'Minimum value in the range.' },
+    { name: 'max', type: 'number', description: 'Maximum value in the range.' },
+    { name: 'clip', type: 'boolean', description: 'Whether to clip output to [0,1].', isOptional: true },
+    {
+      name: 'direction',
+      type: "'higher' | 'lower'",
+      description: 'Preferred direction for scoring.',
+      isOptional: true,
+    },
+  ]}
+/>
 
-## `createThresholdNormalizer`
+### `createZScoreNormalizer()`
 
-```ts
-createThresholdNormalizer(args: {
-  threshold: number;
-  above?: number;
-  below?: number;
-}): NormalizerSpec<number, ScoringContext>
-```
+<PropertyTable
+  content={[
+    { name: 'mean', type: 'number', description: 'Mean value for z-score calculation.' },
+    { name: 'stdDev', type: 'number', description: 'Standard deviation for z-score calculation.' },
+    { name: 'clip', type: 'boolean', description: 'Whether to clip output to [0,1].', isOptional: true },
+    {
+      name: 'direction',
+      type: "'higher' | 'lower'",
+      description: 'Preferred direction for scoring.',
+      isOptional: true,
+    },
+    {
+      name: 'to',
+      type: "'0-1' | '0-100'",
+      description: 'Target scale for z-score normalization.',
+      isOptional: true,
+    },
+  ]}
+/>
 
-## `createLinearNormalizer`
+### `createThresholdNormalizer()`
 
-```ts
-createLinearNormalizer(args: {
-  slope: number;
-  intercept: number;
-  clip?: [number, number];
-  direction?: 'higher' | 'lower';
-}): NormalizerSpec<number, ScoringContext>
-```
+<PropertyTable
+  content={[
+    { name: 'threshold', type: 'number', description: 'Threshold value.' },
+    {
+      name: 'above',
+      type: 'number',
+      description: 'Score for values >= threshold.',
+      isOptional: true,
+      defaultValue: '1.0',
+    },
+    {
+      name: 'below',
+      type: 'number',
+      description: 'Score for values < threshold.',
+      isOptional: true,
+      defaultValue: '0.0',
+    },
+  ]}
+/>
 
-## `createOrdinalMapNormalizer`
+### `createLinearNormalizer()`
 
-```ts
-createOrdinalMapNormalizer(args: {
-  map: Record<string | number, number>;
-}): NormalizerSpec<string | number, ScoringContext>
-```
+<PropertyTable
+  content={[
+    { name: 'slope', type: 'number', description: 'Slope of the linear transformation.' },
+    { name: 'intercept', type: 'number', description: 'Intercept of the linear transformation.' },
+    {
+      name: 'clip',
+      type: '[number, number]',
+      description: 'Optional clamp range.',
+      isOptional: true,
+    },
+    {
+      name: 'direction',
+      type: "'higher' | 'lower'",
+      description: 'Preferred direction for scoring.',
+      isOptional: true,
+    },
+  ]}
+/>
 
-## `createIdentityNormalizer`
+### `createOrdinalMapNormalizer()`
 
-```ts
-createIdentityNormalizer<T = number>(): NormalizerSpec<T, ScoringContext>
-```
+<PropertyTable
+  content={[
+    {
+      name: 'map',
+      type: 'Record<string | number, number>',
+      description: 'Mapping of ordinal values to normalized scores.',
+    },
+  ]}
+/>
 
-## `createCustomNormalizer`
+### `createIdentityNormalizer()`
 
-```ts
-createCustomNormalizer<T>(args: {
-  normalize: (value: T, args: { context: ScoringContext; metric: MetricDef<T, MetricContainer> }) => Score;
-}): NormalizerSpec<T, ScoringContext>
-```
+No options.
+
+### `createCustomNormalizer()`
+
+<PropertyTable
+  content={[
+    {
+      name: 'normalize',
+      type: '(value: T, args: { context: ScoringContext; metric: MetricDef<T, MetricContainer> }) => Score',
+      description: 'Custom normalization function (must return a Score in [0,1]).',
+    },
+  ]}
+/>
 
 ## Low-level utilities
 
 These are intended for **manual normalization or custom pipelines**. Most users won’t need them.
 
-```ts
-applyNormalization<T>(...): Score
-resolveContext(...): ScoringContext
-computeDistributionStats(...): Record<string, number>
-computeRange(...): { min: number; max: number }
-clearContextCache(): void
-getCachedContext(metricName: string): ScoringContext | undefined
-```
+### `applyNormalization()`
+
+<PropertyTable
+  content={[
+    { name: 'value', type: 'T', description: 'Raw metric value to normalize.' },
+    {
+      name: 'normalizerSpec',
+      type: 'NormalizerSpec<T, ScoringContext> | NormalizeToScore<T, ScoringContext>',
+      description: 'Normalizer specification or function.',
+    },
+    { name: 'context', type: 'ScoringContext', description: 'Scoring context for normalization.' },
+    { name: 'metric', type: 'MetricDef<T, MetricContainer>', description: 'Metric definition (used by custom normalizers).' },
+  ]}
+/>
+
+### `resolveContext()`
+
+<PropertyTable
+  content={[
+    { name: 'normalization', type: 'MetricNormalization<T, ScoringContext> | undefined', description: 'Metric normalization config.' },
+    { name: 'dataset', type: 'readonly unknown[]', description: 'Full dataset for context resolution.' },
+    { name: 'rawValues', type: 'readonly T[]', description: 'Raw values for the metric.' },
+    { name: 'metricName', type: 'string', description: 'Metric name used for caching.' },
+  ]}
+/>
+
+### `computeDistributionStats()`
+
+<PropertyTable
+  content={[
+    { name: 'rawValues', type: 'readonly number[]', description: 'Raw values to compute mean/stdDev from.' },
+  ]}
+/>
+
+### `computeRange()`
+
+<PropertyTable
+  content={[
+    { name: 'rawValues', type: 'readonly number[]', description: 'Raw values to compute min/max from.' },
+  ]}
+/>
+
+### `clearContextCache()`
+
+No options.
+
+### `getCachedContext()`
+
+<PropertyTable
+  content={[
+    { name: 'metricName', type: 'string', description: 'Metric name whose context was cached.' },
+  ]}
+/>
 
 ### Example: precompute context once, reuse across runs
 

@@ -3,7 +3,7 @@ title: Evals
 description: Define evals, select targets, and compute verdicts.
 ---
 
-import { TypeTable } from 'fumadocs-ui/components/type-table';
+import { PropertyTable } from '@/components/PropertyTable';
 
 # Evals
 
@@ -27,77 +27,318 @@ import {
 } from 'tally';
 ```
 
-## `defineSingleTurnEval`
+### `defineSingleTurnEval()`
 
-```ts
-defineSingleTurnEval(args: {
-  name: string;
-  description?: string;
-  metric: SingleTurnMetricDef;
-  verdict?: VerdictPolicyFor<TMetricValue>;
-  autoNormalize?: AutoNormalizer;
-  context?: EvaluationContext;
-  metadata?: Record<string, unknown>;
-}): SingleTurnEval
-```
+<PropertyTable
+  content={[
+    { name: 'name', type: 'string', description: 'Eval name.' },
+    {
+      name: 'description',
+      type: 'string',
+      description: 'Optional description for this eval.',
+      isOptional: true,
+    },
+    {
+      name: 'metric',
+      type: 'SingleTurnMetricDef',
+      description: 'Single-turn metric definition to evaluate.',
+    },
+    {
+      name: 'verdict',
+      type: 'VerdictPolicyFor<TMetricValue>',
+      description: 'Optional verdict policy inferred from the metric value type.',
+      isOptional: true,
+    },
+    {
+      name: 'autoNormalize',
+      type: 'AutoNormalizer',
+      description: 'Optional auto-normalization for boolean/ordinal metrics.',
+      isOptional: true,
+      properties: [
+        {
+          type: 'AutoNormalizer',
+          parameters: [
+            {
+              name: 'kind',
+              type: "'boolean' | 'ordinal' | 'number'",
+              description: 'Auto-normalization mode.',
+            },
+            {
+              name: 'trueScore',
+              type: 'number',
+              description: 'Score for true (boolean mode).',
+              isOptional: true,
+            },
+            {
+              name: 'falseScore',
+              type: 'number',
+              description: 'Score for false (boolean mode).',
+              isOptional: true,
+            },
+            {
+              name: 'weights',
+              type: 'Record<string | number, number>',
+              description: 'Ordinal weight map (ordinal mode).',
+              isOptional: true,
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'context',
+      type: 'EvaluationContext',
+      description: 'Optional evaluation context (run policy for single-turn).',
+      isOptional: true,
+      properties: [
+        {
+          type: 'EvaluationContext',
+          parameters: [
+            {
+              name: 'singleTurn',
+              type: 'SingleTurnRunPolicy',
+              description: 'Single-turn run policy.',
+              isOptional: true,
+            },
+            {
+              name: 'metadata',
+              type: 'Record<string, unknown>',
+              description: 'Optional metadata for this run.',
+              isOptional: true,
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'metadata',
+      type: 'Record<string, unknown>',
+      description: 'Optional metadata for this eval.',
+      isOptional: true,
+    },
+  ]}
+/>
 
-## `defineMultiTurnEval`
+### `defineMultiTurnEval()`
 
-```ts
-defineMultiTurnEval(args: {
-  name: string;
-  description?: string;
-  metric: MultiTurnMetricDef;
-  verdict?: VerdictPolicyFor<TMetricValue>;
-  autoNormalize?: AutoNormalizer;
-  context?: EvaluationContext;
-  metadata?: Record<string, unknown>;
-}): MultiTurnEval
-```
+<PropertyTable
+  content={[
+    { name: 'name', type: 'string', description: 'Eval name.' },
+    {
+      name: 'description',
+      type: 'string',
+      description: 'Optional description for this eval.',
+      isOptional: true,
+    },
+    {
+      name: 'metric',
+      type: 'MultiTurnMetricDef',
+      description: 'Multi-turn metric definition to evaluate.',
+    },
+    {
+      name: 'verdict',
+      type: 'VerdictPolicyFor<TMetricValue>',
+      description: 'Optional verdict policy inferred from the metric value type.',
+      isOptional: true,
+    },
+    {
+      name: 'autoNormalize',
+      type: 'AutoNormalizer',
+      description: 'Optional auto-normalization for boolean/ordinal metrics.',
+      isOptional: true,
+      properties: [
+        {
+          type: 'AutoNormalizer',
+          parameters: [
+            {
+              name: 'kind',
+              type: "'boolean' | 'ordinal' | 'number'",
+              description: 'Auto-normalization mode.',
+            },
+            {
+              name: 'trueScore',
+              type: 'number',
+              description: 'Score for true (boolean mode).',
+              isOptional: true,
+            },
+            {
+              name: 'falseScore',
+              type: 'number',
+              description: 'Score for false (boolean mode).',
+              isOptional: true,
+            },
+            {
+              name: 'weights',
+              type: 'Record<string | number, number>',
+              description: 'Ordinal weight map (ordinal mode).',
+              isOptional: true,
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'context',
+      type: 'EvaluationContext',
+      description: 'Optional evaluation context (run policy for single-turn).',
+      isOptional: true,
+      properties: [
+        {
+          type: 'EvaluationContext',
+          parameters: [
+            {
+              name: 'singleTurn',
+              type: 'SingleTurnRunPolicy',
+              description: 'Single-turn run policy.',
+              isOptional: true,
+            },
+            {
+              name: 'metadata',
+              type: 'Record<string, unknown>',
+              description: 'Optional metadata for this run.',
+              isOptional: true,
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'metadata',
+      type: 'Record<string, unknown>',
+      description: 'Optional metadata for this eval.',
+      isOptional: true,
+    },
+  ]}
+/>
 
-## `defineScorerEval`
+### `defineScorerEval()`
 
-```ts
-defineScorerEval(args: {
-  name: string;
-  description?: string;
-  inputs: readonly (SingleTurnMetricDef | MultiTurnMetricDef)[];
-  scorer: Scorer;
-  verdict?: VerdictPolicyFor<number>;
-  context?: EvaluationContext;
-  metadata?: Record<string, unknown>;
-}): ScorerEval
-```
+<PropertyTable
+  content={[
+    { name: 'name', type: 'string', description: 'Eval name.' },
+    {
+      name: 'description',
+      type: 'string',
+      description: 'Optional description for this eval.',
+      isOptional: true,
+    },
+    {
+      name: 'inputs',
+      type: 'readonly (SingleTurnMetricDef | MultiTurnMetricDef)[]',
+      description: 'Input metrics to score.',
+    },
+    {
+      name: 'scorer',
+      type: 'Scorer',
+      description: 'Scorer definition to combine input metrics.',
+    },
+    {
+      name: 'verdict',
+      type: 'VerdictPolicyFor<number>',
+      description: 'Optional verdict policy for the derived score.',
+      isOptional: true,
+    },
+    {
+      name: 'context',
+      type: 'EvaluationContext',
+      description: 'Optional evaluation context (run policy for single-turn).',
+      isOptional: true,
+      properties: [
+        {
+          type: 'EvaluationContext',
+          parameters: [
+            {
+              name: 'singleTurn',
+              type: 'SingleTurnRunPolicy',
+              description: 'Single-turn run policy.',
+              isOptional: true,
+            },
+            {
+              name: 'metadata',
+              type: 'Record<string, unknown>',
+              description: 'Optional metadata for this run.',
+              isOptional: true,
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'metadata',
+      type: 'Record<string, unknown>',
+      description: 'Optional metadata for this eval.',
+      isOptional: true,
+    },
+  ]}
+/>
 
 ## Target selection policies
 
-```ts
-runAllTargets(): EvaluationContext
-runSelectedSteps(steps: number[]): EvaluationContext
-runSelectedItems(indices: number[]): EvaluationContext
-```
+### `runAllTargets()`
+
+No options.
+
+### `runSelectedSteps()`
+
+<PropertyTable
+  content={[
+    { name: 'steps', type: 'number[]', description: 'Step indices to evaluate.' },
+  ]}
+/>
+
+### `runSelectedItems()`
+
+<PropertyTable
+  content={[
+    { name: 'indices', type: 'number[]', description: 'Dataset item indices to evaluate.' },
+  ]}
+/>
 
 ## Verdict helpers
 
-```ts
-booleanVerdict(passWhen: boolean): VerdictPolicyFor<boolean>
-thresholdVerdict(passAt: number): VerdictPolicyFor<number>
-rangeVerdict(min?: number, max?: number): VerdictPolicyFor<number>
-ordinalVerdict(passWhenIn: readonly string[]): VerdictPolicyFor<string>
-customVerdict<T extends MetricScalar>(verdict: (score: Score, rawValue: T) => 'pass' | 'fail' | 'unknown'): VerdictPolicyFor<T>
-```
+### `booleanVerdict()`
 
-## Types
-
-<TypeTable
-  type={{
-    Eval: { description: 'Union of all eval types.', type: 'type', required: true },
-    SingleTurnEval: { description: 'Single-turn eval type.', type: 'type', required: true },
-    MultiTurnEval: { description: 'Multi-turn eval type.', type: 'type', required: true },
-    ScorerEval: { description: 'Scorer eval type.', type: 'type', required: true },
-    VerdictPolicy: { description: 'Union of verdict policies.', type: 'type', required: true },
-    VerdictPolicyFor: { description: 'Verdict policy for a specific scalar type.', type: 'type', required: true },
-    AutoNormalizer: { description: 'Auto-normalization mode for boolean/ordinal metrics.', type: 'type', required: true },
-  }}
+<PropertyTable
+  content={[
+    { name: 'passWhen', type: 'boolean', description: 'Pass when raw value matches this boolean.' },
+  ]}
 />
+
+### `thresholdVerdict()`
+
+<PropertyTable
+  content={[
+    { name: 'passAt', type: 'number', description: 'Pass when score >= passAt.' },
+  ]}
+/>
+
+### `rangeVerdict()`
+
+<PropertyTable
+  content={[
+    { name: 'min', type: 'number', description: 'Optional minimum pass threshold.', isOptional: true },
+    { name: 'max', type: 'number', description: 'Optional maximum pass threshold.', isOptional: true },
+  ]}
+/>
+
+### `ordinalVerdict()`
+
+<PropertyTable
+  content={[
+    { name: 'passWhenIn', type: 'readonly string[]', description: 'Allowed ordinal values for pass.' },
+  ]}
+/>
+
+### `customVerdict()`
+
+<PropertyTable
+  content={[
+    {
+      name: 'verdict',
+      type: "(score: Score, rawValue: T) => 'pass' | 'fail' | 'unknown'",
+      description: 'Custom verdict function.',
+    },
+  ]}
+/>
+
 

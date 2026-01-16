@@ -58,11 +58,7 @@ const qualityScorer = createWeightedAverageScorer({
 });
 ```
 
-### `defineInput` Options
-- **`metric`**: The `MetricDef` to include.
-- **`weight`**: Relative importance of this metric.
-- **`normalizerOverride`**: (Optional) A specific normalizer for this input. If omitted, the scorer uses the metric's default normalizer.
-- **`required`**: (Default: `true`) If true, the scorer fails if this metric produces an error.
+See the full `defineInput()` API reference in [`/docs/tally/reference/scorers`](../reference/scorers.mdx#defineinput) for options and defaults.
 
 ---
 
