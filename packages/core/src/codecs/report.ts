@@ -33,7 +33,9 @@ const TargetVerdictSchema = z
   .object({
     verdict: z.enum(['pass', 'fail', 'unknown']),
     score: z.number().min(0).max(1),
-    rawValue: z.union([z.number(), z.boolean(), z.string(), z.null()]).optional(),
+    rawValue: z
+      .union([z.number(), z.boolean(), z.string(), z.null()])
+      .optional(),
   })
   .passthrough();
 
@@ -81,7 +83,10 @@ const BuiltInAggregationsSchema = z
 const AggregateSummarySchema = z
   .object({
     metric: BaseMetricDefSchema,
-    aggregations: BuiltInAggregationsSchema,
+    aggregations: z.object({
+      score: BuiltInAggregationsSchema,
+      raw: BuiltInAggregationsSchema.optional(),
+    }),
     count: z.number(),
     average: z.number().min(0).max(1).optional(),
     percentile: z.record(z.number(), z.number()).optional(),
@@ -102,7 +107,10 @@ const EvalSummaryEntrySchema = z
   .object({
     evalName: z.string(),
     evalKind: z.enum(['singleTurn', 'multiTurn', 'scorer']),
-    aggregations: BuiltInAggregationsSchema,
+    aggregations: z.object({
+      score: BuiltInAggregationsSchema,
+      raw: BuiltInAggregationsSchema.optional(),
+    }),
     verdictSummary: VerdictSummarySchema.optional(),
   })
   .passthrough();
@@ -127,7 +135,10 @@ const EvaluationReportSchema = z
   })
   .passthrough();
 
-// Infer the type from the schema
+/**
+ * Evaluation report
+ * Final output containing per-target results and aggregate summaries
+ */
 export type EvaluationReport = z.infer<typeof EvaluationReportSchema>;
 
 /**
@@ -226,7 +237,9 @@ export function encodeReport(report: EvaluationReport): string {
     perTargetResults: report.perTargetResults.map((result) => ({
       ...result,
       verdicts:
-        result.verdicts instanceof Map ? Object.fromEntries(result.verdicts) : result.verdicts,
+        result.verdicts instanceof Map
+          ? Object.fromEntries(result.verdicts)
+          : result.verdicts,
     })),
   };
 
@@ -241,8 +254,10 @@ export const EvaluationReportCodec = {
    * Safely decode JSON to EvaluationReport
    */
   safeDecode(
-    content: string
-  ): { success: true; data: EvaluationReport } | { success: false; error: Error } {
+    content: string,
+  ):
+    | { success: true; data: EvaluationReport }
+    | { success: false; error: Error } {
     try {
       const data = decodeReport(content);
       return { success: true, data };
@@ -255,7 +270,7 @@ export const EvaluationReportCodec = {
    * Safely encode EvaluationReport to JSON
    */
   safeEncode(
-    report: EvaluationReport
+    report: EvaluationReport,
   ): { success: true; data: string } | { success: false; error: Error } {
     try {
       const data = encodeReport(report);

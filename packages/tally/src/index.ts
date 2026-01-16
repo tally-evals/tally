@@ -58,8 +58,8 @@ export type {
   // Report types (ENHANCED)
   TargetVerdict,
   PerTargetResult,
-  BuiltInAggregations,
   AggregateSummary,
+  Aggregations,
   EvaluationReport,
 
   // Main container

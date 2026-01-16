@@ -106,7 +106,6 @@ export interface BaseMetricDef<T extends MetricScalar = MetricScalar> {
    * Aggregators to compute summary statistics (mean, percentiles, etc.)
    * Defaults to [mean, p50, p75, p90, p95, p99] if not specified
    */
-  aggregators?: Aggregator[];
 }
 
 // ============================================================================
@@ -208,6 +207,7 @@ export interface SingleTurnMetricDef<
   preProcessor?: (
     selected: SingleTargetFor<TContainerData>,
   ) => Promise<unknown> | unknown;
+  aggregators?: Aggregator<TRawValue, TContainerData>[];
 }
 
 /**
@@ -488,19 +488,25 @@ export interface Evaluator<TContainer extends MetricContainer> {
  * Aggregator definition for metric-level aggregation
  * Computes a summary statistic from an array of scores
  */
-export interface Aggregator {
+export interface AggregatorDef {
   name: string;
   description?: string;
-  metric: BaseMetricDef<number>; // Derived metric produced by a scorer
-  aggregate: (values: readonly Score[]) => Score;
+  aggregate: (values: readonly number[]) => number;
   metadata?: Record<string, unknown>;
 }
+
+export type Aggregator<
+  T extends MetricScalar,
+  TContainer extends SingleTurnContainer,
+> = AggregatorDef & {
+  metric: SingleTurnMetricDef<T, TContainer>;
+};
 
 // ============================================================================
 // Report Types
 // ============================================================================
 
-/**
+/**With
  * Per-target verdict (pass/fail result)
  */
 export interface TargetVerdict {
@@ -528,23 +534,22 @@ export interface PerTargetResult {
  * Custom aggregations computed from metric-level aggregators
  * Each aggregator name maps to its computed Score value
  */
-export interface CustomAggregations {
-  [aggregatorName: string]: Score;
+export interface Aggregations {
+  [aggregatorName: string]: number;
 }
 
-/**
- * Built-in aggregations (always calculated for verdict summaries)
- * Includes pass/fail rates and distributions, but NOT custom aggregators
- */
-export interface BuiltInAggregations {
-  custom?: CustomAggregations; // Custom aggregates from metric aggregators
-  mean?: Score;
-  passRate?: Score; // Only if verdict policy exists
-  failRate?: Score; // Only if verdict policy exists
-  passCount?: number; // Only if verdict policy exists
-  failCount?: number; // Only if verdict policy exists
-  distribution?: Record<string, number>; // For ordinal metrics: category counts
-}
+// /**
+//  * Built-in aggregations (always calculated for verdict summaries)
+//  * Includes pass/fail rates and distributions, but NOT custom aggregators
+//  */
+// export interface BuiltInAggregations {
+//   custom?: CustomAggregations; // Custom aggregates from metric aggregators
+//   passRate?: Score; // Only if verdict policy exists
+//   failRate?: Score; // Only if verdict policy exists
+//   passCount?: number; // Only if verdict policy exists
+//   failCount?: number; // Only if verdict policy exists
+//   distribution?: Record<string, number>; // For ordinal metrics: category counts
+// }
 
 /**
  * Aggregate summary
@@ -552,7 +557,10 @@ export interface BuiltInAggregations {
  */
 export interface AggregateSummary {
   metric: BaseMetricDef<number>;
-  aggregations: BuiltInAggregations; // Always present
+  aggregations: {
+    score: Aggregations;
+    raw?: Aggregations;
+  }; // Always present
   count: number;
   // Legacy field removed - use aggregations.mean instead
   average?: Score; // Deprecated: use aggregations.mean
@@ -574,7 +582,10 @@ export interface EvaluationReport {
     {
       evalName: string;
       evalKind: 'singleTurn' | 'multiTurn' | 'scorer';
-      aggregations: BuiltInAggregations;
+      aggregations: {
+        score: Aggregations;
+        raw?: Aggregations;
+      };
       verdictSummary?: {
         passRate: Score;
         failRate: Score;

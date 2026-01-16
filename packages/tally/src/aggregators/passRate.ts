@@ -5,7 +5,7 @@
  * across all data points. Useful for binary classification metrics.
  */
 
-import type { Aggregator, BaseMetricDef, Score } from '@tally/core/types';
+import type { AggregatorDef, Score } from '@tally/core/types';
 import {
   validateScores,
   isEmpty,
@@ -24,49 +24,42 @@ export interface PassRateAggregatorOptions {
 /**
  * Create a pass rate aggregator
  *
- * @param metric - Base metric definition for the derived metric being aggregated
  * @param options - Optional configuration including pass threshold (default: 0.5)
  * @returns Aggregator that calculates the pass rate of Score values
  *
  * @example
  * ```ts
  * // Pass rate with default 0.5 threshold
- * const passRateAggregator = createPassRateAggregator(qualityMetric);
+ * const passRateAggregator = createPassRateAggregator();
  *
  * // Pass rate with custom threshold (0.7 = 70%)
- * const strictPassRate = createPassRateAggregator(qualityMetric, {
+ * const strictPassRate = createPassRateAggregator({
  *   threshold: 0.7,
  *   description: 'Pass rate at 70% threshold'
  * });
  * ```
  */
 export function createPassRateAggregator(
-  metric: BaseMetricDef<number>,
   options?: PassRateAggregatorOptions,
-): Aggregator {
+): AggregatorDef {
   const threshold = options?.threshold ?? 0.5;
 
   if (threshold < 0 || threshold > 1) {
     throw new Error(
-      `Pass rate aggregator for ${metric.name}: threshold must be in [0, 1] range, got ${threshold}`,
+      `Pass rate aggregator: threshold must be in [0, 1] range, got ${threshold}`,
     );
   }
 
   return {
     name: `Pass Rate`,
-    description:
-      options?.description ??
-      `Pass rate of ${metric.name} (threshold: ${threshold})`,
-    metric,
-    aggregate: (values: readonly Score[]) => {
+    description: options?.description ?? `Pass rate (threshold: ${threshold})`,
+    aggregate: (values: readonly number[]) => {
       if (isEmpty(values)) {
-        throw new Error(
-          `Pass rate aggregator for ${metric.name}: cannot aggregate empty array`,
-        );
+        throw new Error(`Pass rate aggregator: cannot aggregate empty array`);
       }
 
-      validateScores(values);
-      return calculatePassRate(values, threshold);
+      validateScores(values as readonly Score[]);
+      return calculatePassRate(values as readonly Score[], threshold);
     },
     ...(options?.metadata !== undefined && { metadata: options.metadata }),
   };

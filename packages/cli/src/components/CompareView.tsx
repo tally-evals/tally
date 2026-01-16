@@ -253,10 +253,11 @@ export function CompareView({
             const rightSummary = rightSummaries.get(evalName);
             if (!rightSummary) continue;
 
-            const leftMean = leftSummary.aggregations.mean.toFixed(3);
-            const rightMean = rightSummary.aggregations.mean.toFixed(3);
+            const leftMean = leftSummary.aggregations.score.mean.toFixed(3);
+            const rightMean = rightSummary.aggregations.score.mean.toFixed(3);
             const delta =
-              rightSummary.aggregations.mean - leftSummary.aggregations.mean;
+              rightSummary.aggregations.score.mean -
+              leftSummary.aggregations.score.mean;
             const deltaText =
               delta > 0.01
                 ? colors.success(`+${delta.toFixed(3)}`)

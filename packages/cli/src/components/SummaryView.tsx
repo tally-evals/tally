@@ -62,15 +62,17 @@ export function SummaryView({ report }: SummaryViewProps): React.ReactElement {
       : new Map(Object.entries(report.evalSummaries));
 
   for (const [evalName, summary] of summaries) {
-    const percentiles = summary.aggregations.percentiles;
+    const percentiles = summary.aggregations.score.percentiles;
     const p =
-      percentiles && typeof percentiles === 'object' && !Array.isArray(percentiles)
+      percentiles &&
+      typeof percentiles === 'object' &&
+      !Array.isArray(percentiles)
         ? (percentiles as { p50?: number; p75?: number; p90?: number })
         : null;
     const row = [
       evalName,
       summary.evalKind,
-      formatScoreValue(summary.aggregations.mean),
+      formatScoreValue(summary.aggregations.score.mean),
       p?.p50 !== undefined ? formatScoreValue(p.p50) : colors.muted('-'),
       p?.p75 !== undefined ? formatScoreValue(p.p75) : colors.muted('-'),
       p?.p90 !== undefined ? formatScoreValue(p.p90) : colors.muted('-'),

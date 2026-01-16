@@ -12,7 +12,6 @@ import type {
   EvaluationContext,
   SingleTurnMetricDef,
   MultiTurnMetricDef,
-  Aggregator,
 } from '@tally/core/types';
 import type {
   SingleTurnEval,
@@ -47,7 +46,6 @@ export function defineSingleTurnEval<
   autoNormalize?: AutoNormalizer;
   context?: EvaluationContext;
   metadata?: Record<string, unknown>;
-  aggregators?: Aggregator[];
 }): SingleTurnEval<TContainer, TMetricValue> {
   return {
     kind: 'singleTurn',
@@ -63,9 +61,6 @@ export function defineSingleTurnEval<
       : {}),
     ...(args.context !== undefined ? { context: args.context } : {}),
     ...(args.metadata !== undefined ? { metadata: args.metadata } : {}),
-    ...(args.aggregators !== undefined
-      ? { aggregators: args.aggregators }
-      : {}),
   };
 }
 
