@@ -125,7 +125,7 @@ describe('Demand Letter Agent - Golden Path', () => {
 		const overallQualitySummary = report.evalSummaries.get('Overall Quality');
 		console.log('📊 Evaluation Results:');
 		console.log(`   Steps evaluated: ${conversation.steps.length}`);
-		console.log(`   Overall Quality mean: ${overallQualitySummary?.aggregations.mean}`);
+		console.log(`   Overall Quality mean: ${overallQualitySummary?.aggregations.score['Mean']}`);
 
 		expect(report).toBeDefined();
 		expect(report.perTargetResults.length).toBeGreaterThan(0);
@@ -135,7 +135,10 @@ describe('Demand Letter Agent - Golden Path', () => {
 		// Note: demandLetter trajectory was recorded with agent-loop (3 steps)
 		// so quality may be lower than a complete trajectory
 		if (overallQualitySummary) {
-			expect(overallQualitySummary.aggregations.mean).toBeGreaterThan(0.2);
+			const mean = overallQualitySummary.aggregations.score['Mean'];
+			if (typeof mean === 'number') {
+				expect(mean).toBeGreaterThan(0.2);
+			}
 		}
 	});
 });

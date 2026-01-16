@@ -244,10 +244,9 @@ describe('Travel Planner Agent - Golden Path', () => {
 
     // Overall Quality: Should pass for golden path (score >= 0.6)
     const overallQualitySummary = report.evalSummaries.get('Overall Quality');
-    if (overallQualitySummary?.aggregations?.score.custom?.mean !== undefined) {
-      expect(
-        overallQualitySummary.aggregations.score.custom?.mean,
-      ).toBeGreaterThanOrEqual(0.6);
+    const mean = overallQualitySummary?.aggregations?.score['Mean'];
+    if (typeof mean === 'number') {
+      expect(mean).toBeGreaterThanOrEqual(0.6);
     }
   }, 300000); // 5 minute timeout for trajectory execution
 });

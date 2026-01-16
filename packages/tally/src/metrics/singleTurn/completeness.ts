@@ -7,12 +7,12 @@
  * Supports both DatasetItem and ConversationStep containers.
  */
 
-import { defineBaseMetric, createSingleTurnLLM } from '@tally/core/factory';
+import { createSingleTurnLLM, defineBaseMetric } from '@tally/core/factory';
 import { createMinMaxNormalizer } from '@tally/core/normalization/factory';
 import type {
-  SingleTurnMetricDef,
+  NumericAggregatorDef,
   SingleTurnContainer,
-  AggregatorDef,
+  SingleTurnMetricDef,
 } from '@tally/core/types';
 import type { LanguageModel } from 'ai';
 
@@ -30,7 +30,7 @@ export interface CompletenessOptions {
    * Aggregators to apply to the metric
    * @default Percentiles: 50, 75, 90
    */
-  aggregators?: AggregatorDef[];
+  aggregators?: NumericAggregatorDef[];
 }
 
 /**
@@ -115,23 +115,19 @@ Based on your analysis and the rubric, provide your score as a number between 0 
         },
         {
           score: 3,
-          reasoning:
-            'Response covers some expected points but misses several important aspects',
+          reasoning: 'Response covers some expected points but misses several important aspects',
         },
         {
           score: 2,
-          reasoning:
-            'Response covers few expected points with significant gaps in coverage',
+          reasoning: 'Response covers few expected points with significant gaps in coverage',
         },
         {
           score: 1,
-          reasoning:
-            'Response covers minimal expected points and is largely incomplete',
+          reasoning: 'Response covers minimal expected points and is largely incomplete',
         },
         {
           score: 0,
-          reasoning:
-            'Response does not cover expected points and is entirely incomplete',
+          reasoning: 'Response does not cover expected points and is entirely incomplete',
         },
       ],
     },

@@ -20,7 +20,6 @@ export type {
   SingleTurnContainer,
   MultiTurnContainer,
   MetricContainer,
-
   // Metric system
   MetricScalar,
   Score,
@@ -35,33 +34,34 @@ export type {
   MetricDef,
   MetricDefFor,
   Metric,
-
   // Normalization types
   NormalizeToScore,
   ScoringContext,
   NormalizerSpec,
   MetricNormalization,
-
   // Scorer types
   ScorerInput,
   InputScores,
   Scorer,
-
   // Aggregator types
+  NumericAggregatorDef,
+  BooleanAggregatorDef,
+  CategoricalAggregatorDef,
+  AggregatorDef,
+  CompatibleAggregator,
   Aggregator,
-
   // Evaluator types (REFACTORED - now accepts evals)
   SingleTurnRunPolicy,
   EvaluationContext,
   Evaluator,
-
   // Report types (ENHANCED)
   TargetVerdict,
   PerTargetResult,
   AggregateSummary,
   Aggregations,
+  VerdictSummary,
+  EvalSummary,
   EvaluationReport,
-
   // Main container
   Tally,
 } from './core/types';
@@ -168,6 +168,44 @@ export type {
   CacheEntry,
   CacheStats,
 } from './core/execution/cache/memoryCache';
+
+// ============================================================================
+// Aggregators
+// ============================================================================
+
+export {
+  // Custom aggregator definitions (define*)
+  defineNumericAggregator,
+  defineBooleanAggregator,
+  defineCategoricalAggregator,
+  // Prebuilt numeric aggregators (create*)
+  createMeanAggregator,
+  createPercentileAggregator,
+  createThresholdAggregator,
+  // Prebuilt boolean aggregators (create*)
+  createTrueRateAggregator,
+  createFalseRateAggregator,
+  // Prebuilt categorical aggregators (create*)
+  createDistributionAggregator,
+  createModeAggregator,
+  // Default aggregators
+  DEFAULT_AGGREGATORS,
+  DEFAULT_NUMERIC_AGGREGATORS,
+  getDefaultAggregators,
+} from './aggregators';
+
+export type {
+  // Custom aggregator definition args
+  DefineNumericAggregatorArgs,
+  DefineBooleanAggregatorArgs,
+  DefineCategoricalAggregatorArgs,
+  // Prebuilt aggregator options
+  MeanAggregatorOptions,
+  PercentileAggregatorOptions,
+  ThresholdAggregatorOptions,
+  TrueRateAggregatorOptions,
+  DistributionAggregatorOptions,
+} from './aggregators';
 
 // ============================================================================
 // Utilities

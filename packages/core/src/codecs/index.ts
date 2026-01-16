@@ -16,7 +16,6 @@ export {
   EvaluationReportCodec,
   decodeReport,
   encodeReport,
-  type EvaluationReport,
 } from './report';
 
 export {

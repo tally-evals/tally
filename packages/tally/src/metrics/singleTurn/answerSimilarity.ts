@@ -7,15 +7,15 @@
  * Supports both DatasetItem and ConversationStep containers.
  */
 
-import { defineBaseMetric, createSingleTurnCode } from '@tally/core/factory';
+import { createSingleTurnCode, defineBaseMetric } from '@tally/core/factory';
 import { createIdentityNormalizer } from '@tally/core/normalization/factory';
 import type {
-  SingleTurnMetricDef,
+  NumericAggregatorDef,
   SingleTurnContainer,
-  AggregatorDef,
+  SingleTurnMetricDef,
 } from '@tally/core/types';
-import type { EmbeddingModel } from 'ai';
 import { extractWords } from '@tally/utils/text';
+import type { EmbeddingModel } from 'ai';
 
 export interface AnswerSimilarityOptions {
   /**
@@ -38,7 +38,7 @@ export interface AnswerSimilarityOptions {
    * Aggregators to apply to the metric
    * @default Percentiles: 50, 75, 90
    */
-  aggregators?: AggregatorDef[];
+  aggregators?: NumericAggregatorDef[];
 }
 
 /**
@@ -55,15 +55,8 @@ export interface AnswerSimilarityOptions {
  */
 export function createAnswerSimilarityMetric<
   TContainer extends SingleTurnContainer = SingleTurnContainer,
->(
-  options: AnswerSimilarityOptions = {},
-): SingleTurnMetricDef<number, TContainer> {
-  const {
-    embeddingModel,
-    targetResponse,
-    minKeywords = 1,
-    aggregators,
-  } = options;
+>(options: AnswerSimilarityOptions = {}): SingleTurnMetricDef<number, TContainer> {
+  const { embeddingModel, targetResponse, minKeywords = 1, aggregators } = options;
 
   const base = defineBaseMetric({
     name: 'answerSimilarity',
@@ -85,8 +78,7 @@ export function createAnswerSimilarityMetric<
       let targetResp = targetResponse;
       if (!targetResp) {
         // Try to extract from metadata
-        const metadata = (data as { metadata?: Record<string, unknown> })
-          .metadata;
+        const metadata = (data as { metadata?: Record<string, unknown> }).metadata;
         if (metadata && typeof metadata.targetResponse === 'string') {
           targetResp = metadata.targetResponse;
         }

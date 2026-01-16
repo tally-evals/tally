@@ -8,5 +8,3 @@
   "include": ["src/**/*", "tests/**/*"],
   "exclude": ["dist", "node_modules"]
 }
-
-

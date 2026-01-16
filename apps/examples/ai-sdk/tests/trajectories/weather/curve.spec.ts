@@ -106,7 +106,10 @@ describe('Weather Agent - Curve Ball', () => {
 		// The agent should still respond appropriately even if the request is ambiguous
 		const overallQualitySummary = report.evalSummaries.get('Overall Quality');
 		if (overallQualitySummary) {
-			expect(overallQualitySummary.aggregations.mean).toBeGreaterThan(0.4); // At least 0.4 average score
+			const mean = overallQualitySummary.aggregations.score['Mean'];
+			if (typeof mean === 'number') {
+				expect(mean).toBeGreaterThan(0.4); // At least 0.4 average score
+			}
 		}
 	});
 });

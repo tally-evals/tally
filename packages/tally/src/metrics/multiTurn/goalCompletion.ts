@@ -8,18 +8,11 @@
  * Works with Conversation containers only.
  */
 
-import { defineBaseMetric, createMultiTurnLLM } from '@tally/core/factory';
+import { createMultiTurnLLM, defineBaseMetric } from '@tally/core/factory';
 import { createMinMaxNormalizer } from '@tally/core/normalization/factory';
-import type {
-  MultiTurnMetricDef,
-  MultiTurnContainer,
-  Conversation,
-} from '@tally/core/types';
+import type { Conversation, MultiTurnContainer, MultiTurnMetricDef } from '@tally/core/types';
 import type { LanguageModel } from 'ai';
-import {
-  extractTextFromMessage,
-  extractTextFromMessages,
-} from '../common/utils';
+import { extractTextFromMessage, extractTextFromMessages } from '../common/utils';
 
 export interface GoalCompletionOptions {
   /**
@@ -69,14 +62,9 @@ export interface GoalCompletionOptions {
  * @returns A multi-turn metric definition for goal completion
  */
 export function createGoalCompletionMetric(
-  options: GoalCompletionOptions,
+  options: GoalCompletionOptions
 ): MultiTurnMetricDef<number, MultiTurnContainer> {
-  const {
-    goal,
-    provider,
-    checkPartialCompletion = true,
-    considerEfficiency = false,
-  } = options;
+  const { goal, provider, checkPartialCompletion = true, considerEfficiency = false } = options;
 
   const base = defineBaseMetric({
     name: 'goalCompletion',
@@ -100,9 +88,7 @@ export function createGoalCompletionMetric(
         .map((step, index) => {
           const userText = extractTextFromMessage(step.input);
           const assistantText = extractTextFromMessages(step.output);
-          return `Turn ${
-            index + 1
-          }:\nUser: ${userText}\nAssistant: ${assistantText}`;
+          return `Turn ${index + 1}:\nUser: ${userText}\nAssistant: ${assistantText}`;
         })
         .join('\n\n');
 
@@ -143,12 +129,9 @@ Based on your analysis and the rubric, provide your score as a number between 0 
           ? '\n3. Progress made toward the goal (even if not fully achieved)'
           : ''
       }${
-        considerEfficiency
-          ? '\n4. Efficiency in achieving the goal (fewer turns is better)'
-          : ''
+        considerEfficiency ? '\n4. Efficiency in achieving the goal (fewer turns is better)' : ''
       }`,
-      scale:
-        '0-5 scale where 5 = fully achieves goal efficiently, 0 = no progress toward goal',
+      scale: '0-5 scale where 5 = fully achieves goal efficiently, 0 = no progress toward goal',
       examples: [
         {
           score: 5,
@@ -157,18 +140,15 @@ Based on your analysis and the rubric, provide your score as a number between 0 
         },
         {
           score: 4,
-          reasoning:
-            'Assistant achieves the goal with minor issues or slight inefficiencies',
+          reasoning: 'Assistant achieves the goal with minor issues or slight inefficiencies',
         },
         {
           score: 3,
-          reasoning:
-            'Assistant partially achieves the goal or achieves it with significant issues',
+          reasoning: 'Assistant partially achieves the goal or achieves it with significant issues',
         },
         {
           score: 2,
-          reasoning:
-            "Assistant makes some progress toward the goal but doesn't achieve it",
+          reasoning: "Assistant makes some progress toward the goal but doesn't achieve it",
         },
         {
           score: 1,
@@ -176,8 +156,7 @@ Based on your analysis and the rubric, provide your score as a number between 0 
         },
         {
           score: 0,
-          reasoning:
-            'Assistant does not make any meaningful progress toward the goal',
+          reasoning: 'Assistant does not make any meaningful progress toward the goal',
         },
       ],
     },

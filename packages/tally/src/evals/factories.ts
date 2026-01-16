@@ -5,22 +5,22 @@
  */
 
 import type {
+  EvaluationContext,
   MetricDef,
   MetricScalar,
-  SingleTurnContainer,
   MultiTurnContainer,
-  EvaluationContext,
-  SingleTurnMetricDef,
   MultiTurnMetricDef,
+  SingleTurnContainer,
+  SingleTurnMetricDef,
 } from '@tally/core/types';
+import type { Scorer } from '@tally/core/types';
 import type {
-  SingleTurnEval,
+  AutoNormalizer,
   MultiTurnEval,
   ScorerEval,
+  SingleTurnEval,
   VerdictPolicyFor,
-  AutoNormalizer,
 } from '../core/evals/types';
-import type { Scorer } from '@tally/core/types';
 
 /**
  * Define a single-turn eval with type inference
@@ -32,10 +32,7 @@ export function defineSingleTurnEval<
   TMetric extends SingleTurnMetricDef<any, TContainer>,
   // Infer raw value type from the provided metric, mirroring defineInput pattern
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  TMetricValue extends MetricScalar = TMetric extends SingleTurnMetricDef<
-    infer T,
-    any
-  >
+  TMetricValue extends MetricScalar = TMetric extends SingleTurnMetricDef<infer T, any>
     ? T
     : MetricScalar,
 >(args: {
@@ -50,15 +47,11 @@ export function defineSingleTurnEval<
   return {
     kind: 'singleTurn',
     name: args.name,
-    ...(args.description !== undefined
-      ? { description: args.description }
-      : {}),
+    ...(args.description !== undefined ? { description: args.description } : {}),
     // Cast to MetricDef to avoid generic variance issues (pattern mirrors defineInput)
     metric: args.metric as unknown as MetricDef<TMetricValue, TContainer>,
     ...(args.verdict !== undefined ? { verdict: args.verdict } : {}),
-    ...(args.autoNormalize !== undefined
-      ? { autoNormalize: args.autoNormalize }
-      : {}),
+    ...(args.autoNormalize !== undefined ? { autoNormalize: args.autoNormalize } : {}),
     ...(args.context !== undefined ? { context: args.context } : {}),
     ...(args.metadata !== undefined ? { metadata: args.metadata } : {}),
   };
@@ -74,10 +67,7 @@ export function defineMultiTurnEval<
   TMetric extends MultiTurnMetricDef<any, TContainer>,
   // Infer raw value type from the provided metric, mirroring defineInput pattern
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  TMetricValue extends MetricScalar = TMetric extends MultiTurnMetricDef<
-    infer T,
-    any
-  >
+  TMetricValue extends MetricScalar = TMetric extends MultiTurnMetricDef<infer T, any>
     ? T
     : MetricScalar,
 >(args: {
@@ -92,15 +82,11 @@ export function defineMultiTurnEval<
   return {
     kind: 'multiTurn',
     name: args.name,
-    ...(args.description !== undefined
-      ? { description: args.description }
-      : {}),
+    ...(args.description !== undefined ? { description: args.description } : {}),
     // Cast to MetricDef to avoid generic variance issues (pattern mirrors defineInput)
     metric: args.metric as unknown as MetricDef<TMetricValue, TContainer>,
     ...(args.verdict !== undefined ? { verdict: args.verdict } : {}),
-    ...(args.autoNormalize !== undefined
-      ? { autoNormalize: args.autoNormalize }
-      : {}),
+    ...(args.autoNormalize !== undefined ? { autoNormalize: args.autoNormalize } : {}),
     ...(args.context !== undefined ? { context: args.context } : {}),
     ...(args.metadata !== undefined ? { metadata: args.metadata } : {}),
   };
@@ -115,10 +101,7 @@ export function defineScorerEval(args: {
   description?: string;
   // Accept any metric defs regardless of container/value generics to avoid variance issues
   // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  inputs: readonly (
-    | SingleTurnMetricDef<any, any>
-    | MultiTurnMetricDef<any, any>
-  )[];
+  inputs: readonly (SingleTurnMetricDef<any, any> | MultiTurnMetricDef<any, any>)[];
   scorer: Scorer;
   verdict?: VerdictPolicyFor<number>;
   context?: EvaluationContext;
@@ -127,9 +110,7 @@ export function defineScorerEval(args: {
   return {
     kind: 'scorer',
     name: args.name,
-    ...(args.description !== undefined
-      ? { description: args.description }
-      : {}),
+    ...(args.description !== undefined ? { description: args.description } : {}),
     inputs: args.inputs,
     scorer: args.scorer,
     ...(args.verdict !== undefined ? { verdict: args.verdict } : {}),

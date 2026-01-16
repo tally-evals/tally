@@ -5,11 +5,11 @@
  */
 
 import type {
-  EvaluationReport,
-  PerTargetResult,
   Conversation,
+  EvaluationReport,
   Metric,
   MetricScalar,
+  PerTargetResult,
 } from '@tally/core/types';
 
 /**
@@ -18,7 +18,7 @@ import type {
  */
 export function formatReportAsTables(
   report: EvaluationReport,
-  conversations: readonly Conversation[],
+  conversations: readonly Conversation[]
 ): void {
   console.log('\n' + '='.repeat(80));
   console.log('EVALUATION REPORT');
@@ -50,7 +50,7 @@ function formatConversationTable(
   result: PerTargetResult,
   conversation: Conversation,
   report: EvaluationReport,
-  conversationNumber: number,
+  conversationNumber: number
 ): void {
   console.log('\n' + '-'.repeat(80));
   console.log(`CONVERSATION ${conversationNumber}: ${conversation.id}`);
@@ -58,14 +58,10 @@ function formatConversationTable(
 
   // Separate single-turn and multi-turn metrics
   const singleTurnMetrics = result.rawMetrics.filter(
-    (m) =>
-      (m.metricDef as unknown as { scope: 'single' | 'multi' }).scope ===
-      'single',
+    (m) => (m.metricDef as unknown as { scope: 'single' | 'multi' }).scope === 'single'
   );
   const multiTurnMetrics = result.rawMetrics.filter(
-    (m) =>
-      (m.metricDef as unknown as { scope: 'single' | 'multi' }).scope ===
-      'multi',
+    (m) => (m.metricDef as unknown as { scope: 'single' | 'multi' }).scope === 'multi'
   );
 
   // Group single-turn metrics by metric name, then match to steps by order
@@ -113,8 +109,8 @@ function formatConversationTable(
             ? verdict.verdict === 'pass'
               ? '✓'
               : verdict.verdict === 'fail'
-              ? '✗'
-              : '?'
+                ? '✗'
+                : '?'
             : '';
           row[evalName] = `${normalized.toFixed(3)} ${verdictIcon}`;
         } else {
@@ -145,8 +141,8 @@ function formatConversationTable(
       ? verdict.verdict === 'pass'
         ? '✓'
         : verdict.verdict === 'fail'
-        ? '✗'
-        : '?'
+          ? '✗'
+          : '?'
       : '';
 
     const multiTurnRow: Record<string, string | number> = {
@@ -159,17 +155,13 @@ function formatConversationTable(
     // We'll use the first single-turn eval column if available, otherwise just show in Conversation
     if (singleTurnEvalNames.length > 0) {
       // Put value in first metric column, fill others with dashes
-      multiTurnRow[singleTurnEvalNames[0]!] = `${normalized.toFixed(
-        3,
-      )} ${verdictIcon}`;
+      multiTurnRow[singleTurnEvalNames[0]!] = `${normalized.toFixed(3)} ${verdictIcon}`;
       for (let i = 1; i < singleTurnEvalNames.length; i++) {
         multiTurnRow[singleTurnEvalNames[i]!] = '-';
       }
     } else {
       // No single-turn metrics, just show in conversation column
-      multiTurnRow.Conversation = `${evalName}: ${normalized.toFixed(
-        3,
-      )} ${verdictIcon}`;
+      multiTurnRow.Conversation = `${evalName}: ${normalized.toFixed(3)} ${verdictIcon}`;
     }
 
     tableRows.push(multiTurnRow);
@@ -187,7 +179,7 @@ function formatConversationTable(
  */
 function printTableWithNewlines(
   rows: Array<Record<string, string | number>>,
-  columnOrder: string[],
+  columnOrder: string[]
 ): void {
   if (rows.length === 0) return;
 
@@ -214,16 +206,10 @@ function printTableWithNewlines(
   }
 
   // Print header
-  const headerRow = columnOrder
-    .map((col) => col.padEnd(columnWidths.get(col) ?? 0))
-    .join('│');
+  const headerRow = columnOrder.map((col) => col.padEnd(columnWidths.get(col) ?? 0)).join('│');
   console.log('│' + headerRow + '│');
   console.log(
-    '├' +
-      columnOrder
-        .map((col) => '─'.repeat(columnWidths.get(col) ?? 0))
-        .join('┼') +
-      '┤',
+    '├' + columnOrder.map((col) => '─'.repeat(columnWidths.get(col) ?? 0)).join('┼') + '┤'
   );
 
   // Print rows
@@ -287,17 +273,14 @@ function formatSummaryTable(report: EvaluationReport): void {
     // Add verdict summary if available
     if (summary.verdictSummary) {
       row['Pass Rate'] = `${summary.verdictSummary.passRate.toFixed(3)}`;
-      row[
-        'Pass/Fail'
-      ] = `${summary.verdictSummary.passCount}/${summary.verdictSummary.failCount}`;
+      row['Pass/Fail'] = `${summary.verdictSummary.passCount}/${summary.verdictSummary.failCount}`;
     }
 
     if (summary.aggregations.score) {
       const aggs = summary.aggregations.score;
       for (const [aggName, aggValue] of Object.entries(aggs)) {
         if (typeof aggValue === 'number') {
-          const displayName =
-            aggName.charAt(0).toUpperCase() + aggName.slice(1);
+          const displayName = aggName.charAt(0).toUpperCase() + aggName.slice(1);
           row[displayName] = aggValue.toFixed(3);
         }
       }
@@ -344,8 +327,7 @@ function formatSummaryTable(report: EvaluationReport): void {
       const aggs = summary.aggregations.raw;
       for (const [aggName, aggValue] of Object.entries(aggs)) {
         if (typeof aggValue === 'number') {
-          const displayName =
-            aggName.charAt(0).toUpperCase() + aggName.slice(1);
+          const displayName = aggName.charAt(0).toUpperCase() + aggName.slice(1);
           row[displayName] = aggValue.toFixed(3);
         }
       }

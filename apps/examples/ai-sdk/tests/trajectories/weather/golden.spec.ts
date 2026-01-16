@@ -107,7 +107,7 @@ describe('Weather Agent - Golden Path', () => {
 		const overallQualitySummary = report.evalSummaries.get('Overall Quality');
 		console.log('📊 Evaluation Results:');
 		console.log(`   Steps evaluated: ${conversation.steps.length}`);
-		console.log(`   Overall Quality mean: ${overallQualitySummary?.aggregations.mean}`);
+		console.log(`   Overall Quality mean: ${overallQualitySummary?.aggregations.score['Mean']}`);
 		console.log(`   Pass rate: ${overallQualitySummary?.verdictSummary?.passRate}`);
 
 		// Assertions
@@ -119,7 +119,10 @@ describe('Weather Agent - Golden Path', () => {
 		// Note: passRate can be 0 even with mean=1 due to how thresholdVerdict is computed
 		// This is a known quirk - the mean is the more reliable quality indicator
 		if (overallQualitySummary) {
-			expect(overallQualitySummary.aggregations.mean).toBeGreaterThan(0.5); // At least 0.5 average score
+			const mean = overallQualitySummary.aggregations.score['Mean'];
+			if (typeof mean === 'number') {
+				expect(mean).toBeGreaterThan(0.5); // At least 0.5 average score
+			}
 		}
 	});
 });

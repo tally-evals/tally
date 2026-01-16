@@ -5,7 +5,7 @@
 import type { ConversationRef, RunRef, TallyStore } from '@tally-evals/core';
 import type { Conversation, EvaluationReport } from '@tally-evals/core';
 import { Box, Text, useInput, useStdout } from 'ink';
-import { ScrollList, type ScrollListRef } from 'ink-scroll-list';
+import { ScrollList, type ScrollListRef } from './shared/TypedScrollList';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { colors } from '../utils/colors';

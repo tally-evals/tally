@@ -1,6 +1,6 @@
 /**
  * ID generation utilities
- * 
+ *
  * Provides functions for generating unique identifiers for runs, targets, and other entities.
  */
 
@@ -9,9 +9,9 @@
  * Format: run-{timestamp}-{random}
  */
 export function generateRunId(): string {
-	const timestamp = Date.now();
-	const random = Math.random().toString(36).substring(2, 9);
-	return `run-${timestamp}-${random}`;
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 9);
+  return `run-${timestamp}-${random}`;
 }
 
 /**
@@ -19,9 +19,9 @@ export function generateRunId(): string {
  * Format: target-{timestamp}-{random}
  */
 export function generateTargetId(): string {
-	const timestamp = Date.now();
-	const random = Math.random().toString(36).substring(2, 9);
-	return `target-${timestamp}-${random}`;
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 9);
+  return `target-${timestamp}-${random}`;
 }
 
 /**
@@ -29,24 +29,23 @@ export function generateTargetId(): string {
  * Format: metric-{timestamp}-{random}
  */
 export function generateMetricId(): string {
-	const timestamp = Date.now();
-	const random = Math.random().toString(36).substring(2, 9);
-	return `metric-${timestamp}-${random}`;
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 9);
+  return `metric-${timestamp}-${random}`;
 }
 
 /**
  * Generate a unique ID with a custom prefix
  */
 export function generateId(prefix: string): string {
-	const timestamp = Date.now();
-	const random = Math.random().toString(36).substring(2, 9);
-	return `${prefix}-${timestamp}-${random}`;
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 9);
+  return `${prefix}-${timestamp}-${random}`;
 }
 
 /**
  * Validate that an ID follows the expected format
  */
 export function isValidId(id: string): boolean {
-	return typeof id === 'string' && id.length > 0 && /^[a-z0-9-]+$/.test(id);
+  return typeof id === 'string' && id.length > 0 && /^[a-z0-9-]+$/.test(id);
 }
-

@@ -7,4 +7,3 @@ export * from '../src/scorers';
 export * from '../src/aggregators';
 export * from '../src/normalization';
 export * from '../src/data';
-

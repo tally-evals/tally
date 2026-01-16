@@ -2,7 +2,36 @@
  * Side-by-side comparison view for two reports
  */
 
-import type { Conversation, EvaluationReport } from '@tally-evals/core';
+import type { Conversation, EvaluationReport, EvalSummary } from '@tally-evals/core';
+
+/**
+ * Convert evalSummaries to a properly typed Map
+ * Handles both Map instances (in-memory) and plain objects (after JSON serialization)
+ */
+function getEvalSummariesMap(
+  evalSummaries: EvaluationReport['evalSummaries'],
+): Map<string, EvalSummary> {
+  if (evalSummaries instanceof Map) {
+    return evalSummaries;
+  }
+  // After JSON serialization, Map becomes a plain object
+  return new Map(
+    Object.entries(evalSummaries as unknown as Record<string, EvalSummary>),
+  );
+}
+
+/**
+ * Safely get a numeric aggregation value from an Aggregations object
+ * Returns undefined if the value doesn't exist or isn't a number
+ */
+function getNumericAggregation(
+  aggregations: Record<string, number | Record<string, number>> | undefined,
+  key: string,
+): number | undefined {
+  if (!aggregations) return undefined;
+  const value = aggregations[key];
+  return typeof value === 'number' ? value : undefined;
+}
 import Table from 'cli-table3';
 import { Box, Text, useInput } from 'ink';
 import type React from 'react';
@@ -240,24 +269,24 @@ export function CompareView({
             colWidths: [20, 12, 12, 12],
           });
 
-          const leftSummaries =
-            leftReport.evalSummaries instanceof Map
-              ? leftReport.evalSummaries
-              : new Map(Object.entries(leftReport.evalSummaries));
-          const rightSummaries =
-            rightReport.evalSummaries instanceof Map
-              ? rightReport.evalSummaries
-              : new Map(Object.entries(rightReport.evalSummaries));
+          const leftSummaries = getEvalSummariesMap(leftReport.evalSummaries);
+          const rightSummaries = getEvalSummariesMap(rightReport.evalSummaries);
 
           for (const [evalName, leftSummary] of leftSummaries) {
             const rightSummary = rightSummaries.get(evalName);
             if (!rightSummary) continue;
 
-            const leftMean = leftSummary.aggregations.score.mean.toFixed(3);
-            const rightMean = rightSummary.aggregations.score.mean.toFixed(3);
-            const delta =
-              rightSummary.aggregations.score.mean -
-              leftSummary.aggregations.score.mean;
+            const leftMeanValue = getNumericAggregation(leftSummary.aggregations.score, 'mean');
+            const rightMeanValue = getNumericAggregation(rightSummary.aggregations.score, 'mean');
+
+            if (leftMeanValue === undefined || rightMeanValue === undefined) {
+              summaryTable.push([evalName, colors.muted('-'), colors.muted('-'), colors.muted('-')]);
+              continue;
+            }
+
+            const leftMean = leftMeanValue.toFixed(3);
+            const rightMean = rightMeanValue.toFixed(3);
+            const delta = rightMeanValue - leftMeanValue;
             const deltaText =
               delta > 0.01
                 ? colors.success(`+${delta.toFixed(3)}`)

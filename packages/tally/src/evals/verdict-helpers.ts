@@ -4,15 +4,13 @@
  * Convenience functions for creating verdict policies
  */
 
-import type { Score, MetricScalar } from '@tally/core/types';
+import type { MetricScalar, Score } from '@tally/core/types';
 import type { VerdictPolicyFor } from '../core/evals/types';
 
 /**
  * Create a boolean verdict policy
  */
-export function booleanVerdict(
-  passWhen: true | false,
-): VerdictPolicyFor<boolean> {
+export function booleanVerdict(passWhen: true | false): VerdictPolicyFor<boolean> {
   return { kind: 'boolean', passWhen };
 }
 
@@ -26,10 +24,7 @@ export function thresholdVerdict(passAt: number): VerdictPolicyFor<number> {
 /**
  * Create a range verdict policy (pass when score is in range)
  */
-export function rangeVerdict(
-  min?: number,
-  max?: number,
-): VerdictPolicyFor<number> {
+export function rangeVerdict(min?: number, max?: number): VerdictPolicyFor<number> {
   return {
     kind: 'number',
     type: 'range',
@@ -41,9 +36,7 @@ export function rangeVerdict(
 /**
  * Create an ordinal verdict policy (pass when value is in allowed list)
  */
-export function ordinalVerdict(
-  passWhenIn: readonly string[],
-): VerdictPolicyFor<string> {
+export function ordinalVerdict(passWhenIn: readonly string[]): VerdictPolicyFor<string> {
   if (passWhenIn.length === 0) {
     throw new Error('ordinalVerdict: passWhenIn array cannot be empty');
   }
@@ -54,7 +47,7 @@ export function ordinalVerdict(
  * Create a custom verdict policy
  */
 export function customVerdict<T extends MetricScalar>(
-  fn: (score: Score, rawValue: T) => 'pass' | 'fail' | 'unknown',
+  fn: (score: Score, rawValue: T) => 'pass' | 'fail' | 'unknown'
 ): VerdictPolicyFor<T> {
   return {
     kind: 'custom',
