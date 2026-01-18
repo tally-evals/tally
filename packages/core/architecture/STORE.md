@@ -70,10 +70,10 @@ interface RunRef {
   readonly type: RunType;
 
   // Load run data
-  load(): Promise<EvaluationReport | TrajectoryRunMeta>;
+  load(): Promise<TallyRunArtifact | TrajectoryRunMeta>;
 
   // Save run data
-  save(data: EvaluationReport | TrajectoryRunMeta): Promise<void>;
+  save(data: TallyRunArtifact | TrajectoryRunMeta): Promise<void>;
 }
 ```
 

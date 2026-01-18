@@ -129,18 +129,40 @@ export type {
 } from './evaluators';
 
 // ============================================================================
-// Report types
+// Run artifact types (stored runs)
 // ============================================================================
 
 export type {
-  TargetVerdict,
-  PerTargetResult,
-  Aggregations,
-  VerdictSummary,
-  AggregateSummary,
-  EvalSummary,
-  EvaluationReport,
-} from './report';
+  MetricName,
+  EvalName,
+  RunId,
+  ConversationId,
+  Verdict,
+  MetricScalarOrNull,
+  Measurement,
+  VerdictPolicyInfo,
+  EvalOutcome,
+  StepEvalResult,
+  ConversationEvalResult,
+  SingleTurnEvalSeries,
+  ConversationResult,
+  MetricDefSnap,
+  EvalDefSnap,
+  RunDefs,
+  AggregationValue,
+  Aggregations as ArtifactAggregations,
+  VerdictSummary as ArtifactVerdictSummary,
+  EvalSummarySnap,
+  Summaries,
+  TallyRunArtifact,
+} from './runArtifact';
+
+// ============================================================================
+// SDK report + view types
+// ============================================================================
+
+export type { TargetRunView } from './runView';
+export type { TallyRunReport } from './runReport';
 
 // ============================================================================
 // Tally container type

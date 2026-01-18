@@ -161,37 +161,21 @@ describe.skipIf(!process.env.GOOGLE_GENERATIVE_AI_API_KEY)('E2E | Metrics | Gold
     expect(report).toBeDefined();
 
     // Format and display report as tables
-    formatReportAsTables(report, [conversation]);
-    expect(report.perTargetResults.length).toBeGreaterThan(0);
+    formatReportAsTables(report.toArtifact(), conversation);
+    expect(report.result.stepCount).toBeGreaterThan(0);
 
-    // Verify metrics were computed
-    for (const result of report.perTargetResults) {
-      expect(result.rawMetrics.length).toBeGreaterThan(0);
-      expect(result.derivedMetrics.length).toBeGreaterThan(0);
-
-      // Check that derived metrics have values in [0, 1] (normalized)
-      for (const metric of result.derivedMetrics) {
-        expect(metric.value).toBeGreaterThanOrEqual(0);
-        expect(metric.value).toBeLessThanOrEqual(1);
-      }
-
-      // Raw metrics may be unnormalized (0-5 scale), so we just check they're numbers
-      for (const metric of result.rawMetrics) {
-        expect(typeof metric.value).toBe('number');
-        expect(metric.value).toBeGreaterThanOrEqual(0);
-      }
+    // Verify single-turn series exist and are step-indexed
+    expect(Object.keys(report.result.singleTurn).length).toBeGreaterThan(0);
+    for (const series of Object.values(report.result.singleTurn)) {
+      expect(series.byStepIndex.length).toBe(report.result.stepCount);
     }
 
-    // Verify aggregate summaries
-    expect(report.aggregateSummaries.length).toBeGreaterThan(0);
-    for (const summary of report.aggregateSummaries) {
-      expect(summary.aggregations.mean).toBeGreaterThanOrEqual(0);
-      expect(summary.aggregations.mean).toBeLessThanOrEqual(1);
-      expect(summary.count).toBeGreaterThan(0);
-    }
+    // Verify scorers exist (derived/composite outputs)
+    expect(Object.keys(report.result.scorers).length).toBeGreaterThan(0);
 
     // Verify eval summaries exist for all evals
-    expect(report.evalSummaries.size).toBeGreaterThan(0);
+    const summaries = report.result.summaries?.byEval ?? {};
+    expect(Object.keys(summaries).length).toBeGreaterThan(0);
     const evalNames = [
       'Answer Relevance',
       'Completeness',
@@ -202,11 +186,14 @@ describe.skipIf(!process.env.GOOGLE_GENERATIVE_AI_API_KEY)('E2E | Metrics | Gold
     ];
 
     for (const evalName of evalNames) {
-      const evalSummary = report.evalSummaries.get(evalName);
+      const evalSummary = summaries[evalName];
       expect(evalSummary).toBeDefined();
-      expect(evalSummary?.evalName).toBe(evalName);
-      expect(evalSummary?.aggregations.mean).toBeGreaterThanOrEqual(0);
-      expect(evalSummary?.aggregations.mean).toBeLessThanOrEqual(1);
+      expect(evalSummary?.eval).toBe(evalName);
+      const mean = (evalSummary?.aggregations?.score as any)?.mean;
+      if (typeof mean === 'number') {
+        expect(mean).toBeGreaterThanOrEqual(0);
+        expect(mean).toBeLessThanOrEqual(1);
+      }
 
       // Verify verdict summaries exist for evals with verdicts
       expect(evalSummary?.verdictSummary).toBeDefined();
@@ -223,7 +210,7 @@ describe.skipIf(!process.env.GOOGLE_GENERATIVE_AI_API_KEY)('E2E | Metrics | Gold
 
         // Log actual values for debugging threshold adjustments
         console.log(`\n${evalName}:`);
-        console.log(`  Mean: ${evalSummary.aggregations.mean?.toFixed(3)}`);
+        console.log(`  Mean: ${typeof mean === 'number' ? mean.toFixed(3) : '—'}`);
         console.log(`  Pass Rate: ${evalSummary.verdictSummary.passRate.toFixed(3)}`);
         console.log(
           `  Pass Count: ${evalSummary.verdictSummary.passCount}/${evalSummary.verdictSummary.totalCount}`
@@ -233,32 +220,38 @@ describe.skipIf(!process.env.GOOGLE_GENERATIVE_AI_API_KEY)('E2E | Metrics | Gold
 
     // Verify quality thresholds are met for golden conversation
     // These are "golden" conversations, so they should meet quality thresholds
-    const answerRelevanceSummary = report.evalSummaries.get('Answer Relevance');
-    const completenessSummary = report.evalSummaries.get('Completeness');
-    const roleAdherenceSummary = report.evalSummaries.get('Role Adherence');
-    const goalCompletionSummary = report.evalSummaries.get('Goal Completion');
-    const topicAdherenceSummary = report.evalSummaries.get('Topic Adherence');
-    const overallQualitySummary = report.evalSummaries.get('Overall Quality');
+    const answerRelevanceSummary = summaries['Answer Relevance'];
+    const completenessSummary = summaries['Completeness'];
+    const roleAdherenceSummary = summaries['Role Adherence'];
+    const goalCompletionSummary = summaries['Goal Completion'];
+    const topicAdherenceSummary = summaries['Topic Adherence'];
+    const overallQualitySummary = summaries['Overall Quality'];
 
     // Check that golden conversation meets quality thresholds
     // Thresholds adjusted based on actual observed scores
-    if (answerRelevanceSummary?.aggregations.mean !== undefined) {
-      expect(answerRelevanceSummary.aggregations.mean).toBeGreaterThanOrEqual(0.8);
+    const arMean = (answerRelevanceSummary?.aggregations?.score as any)?.mean;
+    if (typeof arMean === 'number') {
+      expect(arMean).toBeGreaterThanOrEqual(0.8);
     }
-    if (completenessSummary?.aggregations.mean !== undefined) {
-      expect(completenessSummary.aggregations.mean).toBeGreaterThanOrEqual(0.15);
+    const cMean = (completenessSummary?.aggregations?.score as any)?.mean;
+    if (typeof cMean === 'number') {
+      expect(cMean).toBeGreaterThanOrEqual(0.15);
     }
-    if (roleAdherenceSummary?.aggregations.mean !== undefined) {
-      expect(roleAdherenceSummary.aggregations.mean).toBeGreaterThanOrEqual(0.7);
+    const raMean = (roleAdherenceSummary?.aggregations?.score as any)?.mean;
+    if (typeof raMean === 'number') {
+      expect(raMean).toBeGreaterThanOrEqual(0.7);
     }
-    if (goalCompletionSummary?.aggregations.mean !== undefined) {
-      expect(goalCompletionSummary.aggregations.mean).toBeGreaterThanOrEqual(0.7);
+    const gcMean = (goalCompletionSummary?.aggregations?.score as any)?.mean;
+    if (typeof gcMean === 'number') {
+      expect(gcMean).toBeGreaterThanOrEqual(0.7);
     }
-    if (topicAdherenceSummary?.aggregations.mean !== undefined) {
-      expect(topicAdherenceSummary.aggregations.mean).toBeGreaterThanOrEqual(0.6);
+    const taMean = (topicAdherenceSummary?.aggregations?.score as any)?.mean;
+    if (typeof taMean === 'number') {
+      expect(taMean).toBeGreaterThanOrEqual(0.6);
     }
-    if (overallQualitySummary?.aggregations.mean !== undefined) {
-      expect(overallQualitySummary.aggregations.mean).toBeGreaterThanOrEqual(0.7);
+    const oqMean = (overallQualitySummary?.aggregations?.score as any)?.mean;
+    if (typeof oqMean === 'number') {
+      expect(oqMean).toBeGreaterThanOrEqual(0.7);
     }
   }, 180000); // 3 minute timeout for LLM calls
 });

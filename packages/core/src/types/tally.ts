@@ -6,7 +6,22 @@
 
 import type { MetricContainer } from './metrics';
 import type { Evaluator } from './evaluators';
-import type { EvaluationReport } from './report';
+import type { TallyRunReport } from './runReport';
+
+/**
+ * Options for `tally.run()`.
+ *
+ * Note: This lives in `@tally-evals/core` because consumers type against the `Tally` interface.
+ * The exact cache type is intentionally left as `unknown` (implementation detail of the SDK).
+ */
+export interface TallyRunOptions {
+  cache?: unknown;
+  llmOptions?: {
+    maxRetries?: number;
+    temperature?: number;
+  };
+  metadata?: Record<string, unknown>;
+}
 
 /**
  * Tally container
@@ -17,5 +32,5 @@ export interface Tally<TContainer extends MetricContainer> {
   data: readonly TContainer[];
   // Allow evaluators over any metric container to avoid variance issues between data and eval targets
   evaluators: readonly Evaluator<MetricContainer>[]; // Changed: no aggregators parameter
-  run(): Promise<EvaluationReport>;
+  run(options?: TallyRunOptions): Promise<TallyRunReport>;
 }

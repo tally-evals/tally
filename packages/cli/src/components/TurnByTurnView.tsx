@@ -2,7 +2,7 @@
  * Turn-by-turn scrollable view for detailed metrics
  */
 
-import type { Conversation, EvaluationReport } from '@tally-evals/core';
+import type { Conversation, TallyRunArtifact } from '@tally-evals/core';
 import { Box, Text, useInput, useStdout } from 'ink';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
@@ -11,26 +11,11 @@ import { ConversationTurn } from './shared/ConversationTurn';
 import { MetricsTable } from './shared/MetricsTable';
 import { Scrollable } from './shared/Scrollable';
 
-type MetricScope = 'single' | 'multi';
-type CliMetric = React.ComponentProps<
-  typeof ConversationTurn
->['metrics'][number];
-
-function getMetricScope(metric: CliMetric): MetricScope | undefined {
-  return (metric.metricDef as unknown as { scope?: MetricScope }).scope;
-}
-
-function asStringMap<V>(
-  value: Record<string, V> | Map<string, V> | undefined,
-): Map<string, V> | undefined {
-  if (!value) return undefined;
-  if (value instanceof Map) return value;
-  return new Map(Object.entries(value));
-}
+type CliMetricRow = React.ComponentProps<typeof ConversationTurn>['metrics'][number];
 
 interface TurnByTurnViewProps {
   conversation: Conversation;
-  report: EvaluationReport;
+  report: TallyRunArtifact;
   onToggleView?: () => void;
   onBack?: (() => void) | undefined;
 }
@@ -103,41 +88,39 @@ export function TurnByTurnView({
     }
   });
 
-  const perTargetResult = report.perTargetResults[0];
-  if (!perTargetResult) {
-    return <Text>{colors.error('No target results found in report')}</Text>;
-  }
-
-  const rawMetrics = perTargetResult.rawMetrics as unknown as CliMetric[];
-
-  const singleTurnMetrics = rawMetrics.filter(
-    (m) => getMetricScope(m) === 'single',
-  );
-
-  const multiTurnMetrics = rawMetrics.filter(
-    (m) => getMetricScope(m) === 'multi',
-  );
-
-  const metricsByName = new Map<string, CliMetric[]>();
-  for (const metric of singleTurnMetrics) {
-    const name = metric.metricDef.name;
-    if (!metricsByName.has(name)) {
-      metricsByName.set(name, []);
-    }
-    metricsByName.get(name)?.push(metric);
-  }
-
-  const currentTurnMetrics: CliMetric[] = [];
-  for (const metrics of metricsByName.values()) {
-    if (scrollPosition < metrics.length) {
-      const metric = metrics[scrollPosition];
-      if (metric) currentTurnMetrics.push(metric);
-    }
+  const singleTurnEvalNames = Object.keys(report.result.singleTurn ?? {}).sort();
+  const currentTurnMetrics: CliMetricRow[] = [];
+  for (const evalName of singleTurnEvalNames) {
+    const stepRes =
+      report.result.singleTurn?.[evalName]?.byStepIndex?.[scrollPosition] ?? null;
+    if (!stepRes) continue;
+    currentTurnMetrics.push({
+      name: evalName,
+      ...(stepRes.measurement.score !== undefined
+        ? { score: Number(stepRes.measurement.score) }
+        : {}),
+      ...(stepRes.outcome?.verdict !== undefined
+        ? { verdict: stepRes.outcome.verdict }
+        : {}),
+      ...(stepRes.measurement.reasoning !== undefined
+        ? { reasoning: stepRes.measurement.reasoning }
+        : {}),
+    });
   }
 
   const currentStep = conversation.steps[scrollPosition];
   if (!currentStep) {
     return <Text>{colors.error('No step found at current position')}</Text>;
+  }
+
+  const multiTurnRows: CliMetricRow[] = [];
+  for (const [evalName, res] of Object.entries(report.result.multiTurn ?? {})) {
+    multiTurnRows.push({
+      name: evalName,
+      ...(res.measurement.score !== undefined ? { score: Number(res.measurement.score) } : {}),
+      ...(res.outcome?.verdict !== undefined ? { verdict: res.outcome.verdict } : {}),
+      ...(res.measurement.reasoning !== undefined ? { reasoning: res.measurement.reasoning } : {}),
+    });
   }
 
   return (
@@ -156,20 +139,17 @@ export function TurnByTurnView({
           stepIndex={scrollPosition}
           step={currentStep}
           metrics={currentTurnMetrics}
-          verdicts={asStringMap(perTargetResult.verdicts)}
           expanded={expanded}
         />
 
-        {multiTurnMetrics.length > 0 && (
+        {multiTurnRows.length > 0 && (
           <Box flexDirection="column" marginTop={1}>
             <Box paddingX={1}>
               <Text>{colors.bold('Multi-turn Metrics')}</Text>
             </Box>
             <Box>
               <MetricsTable
-                metrics={multiTurnMetrics}
-                verdicts={asStringMap(perTargetResult.verdicts)}
-                metricToEvalMap={asStringMap(report.metricToEvalMap)}
+                metrics={multiTurnRows}
                 maxReasoningLength={expanded ? 100 : 40}
               />
             </Box>

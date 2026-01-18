@@ -3,7 +3,7 @@
  */
 
 import type { ConversationRef, RunRef, TallyStore } from '@tally-evals/core';
-import type { Conversation, EvaluationReport } from '@tally-evals/core';
+import type { Conversation, TallyRunArtifact } from '@tally-evals/core';
 import { Box, Text, useInput, useStdout } from 'ink';
 import { ScrollList, type ScrollListRef } from './shared/TypedScrollList';
 import type React from 'react';
@@ -42,9 +42,9 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
   );
 
   const [conversation, setConversation] = useState<Conversation | null>(null);
-  const [report, setReport] = useState<EvaluationReport | null>(null);
-  const [leftReport, setLeftReport] = useState<EvaluationReport | null>(null);
-  const [rightReport, setRightReport] = useState<EvaluationReport | null>(null);
+  const [report, setReport] = useState<TallyRunArtifact | null>(null);
+  const [leftReport, setLeftReport] = useState<TallyRunArtifact | null>(null);
+  const [rightReport, setRightReport] = useState<TallyRunArtifact | null>(null);
 
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [selectedConversationIndex, setSelectedConversationIndex] = useState(0);
@@ -148,8 +148,7 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
           setLoading(true);
           setError(null);
           const convData = await selectedConversation.load();
-          const reportData =
-            (await selectedRuns[0]?.load()) as EvaluationReport;
+          const reportData = (await selectedRuns[0]?.load()) as TallyRunArtifact;
           setConversation(convData);
           setReport(reportData);
         } catch (err) {
@@ -178,8 +177,8 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
             selectedRuns[1]?.load(),
           ]);
           setConversation(convData);
-          setLeftReport(leftData as EvaluationReport);
-          setRightReport(rightData as EvaluationReport);
+          setLeftReport(leftData as TallyRunArtifact);
+          setRightReport(rightData as TallyRunArtifact);
         } catch (err) {
           setError(err instanceof Error ? err.message : 'Failed to load data');
         } finally {

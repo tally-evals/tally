@@ -17,17 +17,17 @@
     "node": ">=22.13.0"
   },
   "dependencies": {
-    "@ai-sdk/google": "^2.0.29",
     "@faker-js/faker": "^10.2.0",
-    "@mastra/core": "^0.24.9",
     "@mastra/evals": "^0.14.4",
     "@mastra/libsql": "^0.16.4",
     "@mastra/loggers": "^0.10.19",
     "@mastra/memory": "^0.15.13",
-    "@tally-evals/tally": "workspace:*",
     "@tally-evals/trajectories": "workspace:*",
     "dotenv": "^17.2.3",
-    "zod": "^4"
+    "zod": "^4",
+    "@mastra/core": "latest",
+    "@ai-sdk/google": "^2.0.52",
+    "@tally-evals/tally": "workspace:*"
   },
   "devDependencies": {
     "@tally-evals/typescript-config": "workspace:*",

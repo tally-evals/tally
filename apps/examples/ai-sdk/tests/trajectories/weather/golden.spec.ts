@@ -101,25 +101,25 @@ describe('Weather Agent - Golden Path', () => {
 		});
 
 		const report = await tally.run();
-		await saveTallyReportToStore({ conversationId: 'weather-golden', report });
+		await saveTallyReportToStore({ conversationId: 'weather-golden', report: report.toArtifact() });
 
 		// Debug output
-		const overallQualitySummary = report.evalSummaries.get('Overall Quality');
+		const overallQualitySummary = report.result.summaries?.byEval?.['Overall Quality'];
 		console.log('📊 Evaluation Results:');
 		console.log(`   Steps evaluated: ${conversation.steps.length}`);
-		console.log(`   Overall Quality mean: ${overallQualitySummary?.aggregations.score['Mean']}`);
-		console.log(`   Pass rate: ${overallQualitySummary?.verdictSummary?.passRate}`);
+		console.log(`   Overall Quality mean: ${(overallQualitySummary?.aggregations?.score as any)?.mean}`);
+		console.log(`   Pass rate: ${overallQualitySummary?.verdictSummary && (overallQualitySummary.verdictSummary as any).passRate}`);
 
 		// Assertions
 		expect(report).toBeDefined();
-		expect(report.perTargetResults.length).toBeGreaterThan(0);
-		expect(report.evalSummaries.size).toBeGreaterThan(0);
+		expect(report.result.stepCount).toBeGreaterThan(0);
+		expect(Object.keys(report.result.summaries?.byEval ?? {}).length).toBeGreaterThan(0);
 
 		// Check mean score (should be reasonable for golden path)
 		// Note: passRate can be 0 even with mean=1 due to how thresholdVerdict is computed
 		// This is a known quirk - the mean is the more reliable quality indicator
 		if (overallQualitySummary) {
-			const mean = overallQualitySummary.aggregations.score['Mean'];
+			const mean = (overallQualitySummary.aggregations?.score as any)?.mean;
 			if (typeof mean === 'number') {
 				expect(mean).toBeGreaterThan(0.5); // At least 0.5 average score
 			}

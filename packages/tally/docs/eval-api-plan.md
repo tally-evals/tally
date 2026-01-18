@@ -41,8 +41,8 @@ export type VerdictPolicyFor<T extends MetricScalar> =
     ? { kind: 'boolean'; passWhen: true | false }
     : T extends number
     ? 
-      | { kind: 'number'; type: 'threshold'; passAt: number }  // Score >= passAt
-      | { kind: 'number'; type: 'range'; min?: number; max?: number }  // min <= Score <= max
+      | { kind: 'number'; type: 'threshold'; passAt: number }  // rawValue >= passAt (often rawValue is already normalized)
+      | { kind: 'number'; type: 'range'; min?: number; max?: number }  // min <= rawValue <= max
       | { kind: 'custom'; verdict: (score: Score, rawValue: number) => 'pass' | 'fail' | 'unknown' }
     : T extends string
     ? 
@@ -202,7 +202,7 @@ export function runSelectedItems(
 export interface Tally<TContainer extends MetricContainer> {
   data: readonly TContainer[];
   evaluators: readonly Evaluator<TContainer>[];  // Changed: no aggregators parameter
-  run(): Promise<EvaluationReport>;
+  run(options?: TallyRunOptions): Promise<TallyRunReport>;
 }
 ```
 
@@ -263,85 +263,14 @@ export function defineScorerEval<TContainer extends MetricContainer>(args: {
 }): ScorerEval<TContainer>;
 ```
 
-### 7. Enhanced Report Types
+### 7. Run output (current)
 
-```typescript
-/**
- * Per-target verdict (pass/fail result)
- */
-export interface TargetVerdict {
-  verdict: 'pass' | 'fail' | 'unknown';
-  score: Score;  // Normalized score used for verdict
-  rawValue?: MetricScalar;  // Original raw value (if available)
-}
+This repo has adopted a canonical reporting schema:
 
-/**
- * Enhanced per-target result with verdict
- */
-export interface PerTargetResult {
-  targetId: string;
-  rawMetrics: Metric[];
-  derivedMetrics: Array<{
-    definition: BaseMetricDef<number>;
-    value: Score;
-  }>;
-  // NEW: Verdicts per eval
-  verdicts: Map<string, TargetVerdict>;  // key: eval name
-}
+- **`TallyRunReport`**: returned from `tally.run()` (SDK-facing; includes `view()` and `toArtifact()`).
+- **`TallyRunArtifact`**: persisted JSON shape for read-only tooling (store/CLI/viewer).
 
-/**
- * Built-in aggregation metrics (always calculated)
- */
-export interface BuiltInAggregations {
-  mean: Score;
-  percentiles: {
-    p50: Score;  // median
-    p75: Score;
-    p90: Score;
-    p95: Score;
-    p99: Score;
-  };
-  passRate?: Score;  // Only if verdict policy exists
-  failRate?: Score;  // Only if verdict policy exists
-  passCount?: number;  // Only if verdict policy exists
-  failCount?: number;  // Only if verdict policy exists
-  distribution?: Record<string, number>;  // For ordinal metrics: category counts
-}
-
-/**
- * Enhanced aggregate summary with built-in metrics
- */
-export interface AggregateSummary {
-  metric: BaseMetricDef<number>;
-  aggregations: BuiltInAggregations;  // Always present
-  count: number;
-  // Legacy field removed - use aggregations.mean instead
-}
-
-/**
- * Enhanced evaluation report
- */
-export interface EvaluationReport {
-  runId: string;
-  timestamp: Date;
-  perTargetResults: PerTargetResult[];
-  aggregateSummaries: AggregateSummary[];
-  // NEW: Eval-level summaries (one per eval)
-  evalSummaries: Map<string, {
-    evalName: string;
-    evalKind: 'singleTurn' | 'multiTurn' | 'scorer';
-    aggregations: BuiltInAggregations;
-    verdictSummary?: {
-      passRate: Score;
-      failRate: Score;
-      passCount: number;
-      failCount: number;
-      totalCount: number;
-    };
-  }>;
-  metadata: Record<string, unknown>;
-}
-```
+See the canonical spec: `packages/core/architecture/REPORTING.md`.
 
 ---
 
@@ -362,11 +291,8 @@ export interface EvaluationReport {
 
 #### Files to UPDATE:
 1. `packages/tally/src/core/types.ts`
-   - Add `TargetVerdict` interface
-   - Update `PerTargetResult` to include `verdicts: Map<string, TargetVerdict>`
-   - Update `AggregateSummary` to include `aggregations: BuiltInAggregations`
-   - Add `BuiltInAggregations` interface
-   - Update `EvaluationReport` to include `evalSummaries: Map<string, ...>`
+   - Update run output exports (`TallyRunReport`, `TallyRunArtifact`, `TargetRunView`)
+   - Keep eval types focused on `Measurement` (what was measured) vs `EvalOutcome` (verdict + policy info)
 
 #### Files to CREATE:
 1. `packages/tally/src/core/evals/context.ts` (or update existing helpers)
@@ -506,12 +432,9 @@ const tally = createTally({
 
 const report = await tally.run();
 
-const report = await tally.run();
-// report.evalSummaries.get('Accuracy') contains:
-// - aggregations.mean (e.g., 0.85 = 85% accuracy)
-// - aggregations.passRate (e.g., 0.85 = 85% passed)
-// - aggregations.failRate (e.g., 0.15 = 15% failed)
-// - aggregations.passCount, failCount
+// report.result.summaries.byEval['Accuracy'] contains:
+// - aggregations.score.mean (e.g., 0.85)
+// - verdictSummary.passRate / failRate / counts (when a verdict policy exists)
 ```
 
 ### Example 2: Single-Turn Eval with Number Metric and Threshold Verdict (Type-Safe)
@@ -587,9 +510,9 @@ const tally = createTally({
 
 const report = await tally.run();
 // Each conversation gets a verdict
-// report.evalSummaries.get('Goal Completion') contains:
-// - aggregations.mean (average completion score across conversations)
-// - aggregations.passRate (percentage of conversations that passed)
+// report.result.summaries.byEval['Goal Completion'] contains:
+// - aggregations.score.mean (average score across conversations)
+// - verdictSummary.passRate (when a verdict policy exists)
 ```
 
 ### Example 4: Scorer Eval (Combines Multiple Metrics)
@@ -736,9 +659,8 @@ const customEval = defineSingleTurnEval({
    - `packages/tally/src/core/types.ts`
      - Add `TargetVerdict` interface
      - Update `PerTargetResult` to include `verdicts: Map<string, TargetVerdict>`
-     - Add `BuiltInAggregations` interface
-     - Update `AggregateSummary` to include `aggregations: BuiltInAggregations`
-     - Update `EvaluationReport` to include `evalSummaries: Map<string, ...>`
+     - Add summary types (`Summaries`, `EvalSummarySnap`) keyed by eval name
+     - Update run outputs to `TallyRunReport` / `TallyRunArtifact` (see `REPORTING.md`)
 
 2. **Pipeline:**
    - `packages/tally/src/core/pipeline.ts`
@@ -791,10 +713,10 @@ const customEval = defineSingleTurnEval({
    - `executePipeline` no longer accepts aggregators parameter
    - Built-in aggregations computed directly in pipeline
 
-4. **Report structure changed**:
-   - `AggregateSummary.average` removed - use `aggregations.mean` instead
-   - New `evalSummaries` field added to `EvaluationReport`
-   - `PerTargetResult` now includes `verdicts` field
+4. **Run output structure changed**:
+   - Run outputs are now `TallyRunReport` (SDK) + `TallyRunArtifact` (persisted)
+   - Summaries live at `result.summaries.byEval[evalName]`
+   - Single-turn results are step-indexed at `result.singleTurn[eval].byStepIndex`
 
 ---
 

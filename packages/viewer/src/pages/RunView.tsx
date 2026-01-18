@@ -29,47 +29,81 @@ type ConversationData = {
   steps: ConversationStep[];
 };
 
-type RawMetric = {
-  metricDef?: { name?: string; valueType?: string; description?: string; scope?: string };
-  value?: unknown;
-  confidence?: number;
-  reasoning?: string;
-  executionTime?: number;
-  timestamp?: string;
-};
-
-type DerivedMetric = {
-  definition?: { name?: string; valueType?: string; description?: string };
-  value?: unknown;
-};
-
-type PerTargetResult = {
-  targetId?: string;
-  rawMetrics?: RawMetric[];
-  derivedMetrics?: DerivedMetric[];
-  verdicts?: Record<string, { verdict?: string; score?: number }>;
-};
-
-type EvalSummary = {
-  evalName?: string;
-  evalKind?: string; // "singleTurn" | "multiTurn" | "scorer" | ...
-  aggregations?: Record<string, unknown>;
-  verdictSummary?: Record<string, unknown>;
-};
-
-type AggregateSummary = {
-  metric?: { name?: string; valueType?: string; description?: string };
-  aggregations?: Record<string, unknown>;
-  count?: number;
-};
-
 type RunData = {
+  schemaVersion?: number;
   runId?: string;
-  timestamp?: string;
-  perTargetResults?: PerTargetResult[];
-  aggregateSummaries?: AggregateSummary[];
-  evalSummaries?: Record<string, EvalSummary>;
-  metricToEvalMap?: Record<string, string>;
+  createdAt?: string;
+  defs?: {
+    evals?: Record<string, { metric?: string; kind?: string }>;
+    metrics?: Record<string, { description?: string; valueType?: string; scope?: string }>;
+  };
+  result?: {
+    singleTurn?: Record<
+      string,
+      {
+        byStepIndex?: Array<{
+          eval?: string;
+          measurement?: {
+            score?: number;
+            rawValue?: unknown;
+            confidence?: number;
+            reasoning?: string;
+            executionTimeMs?: number;
+            timestamp?: string;
+          };
+          outcome?: { verdict?: string };
+        } | null>;
+      }
+    >;
+    multiTurn?: Record<
+      string,
+      {
+        eval?: string;
+        measurement?: {
+          score?: number;
+          rawValue?: unknown;
+          confidence?: number;
+          reasoning?: string;
+          executionTimeMs?: number;
+          timestamp?: string;
+        };
+        outcome?: { verdict?: string };
+      }
+    >;
+    scorers?: Record<
+      string,
+      | {
+          shape?: "scalar";
+          result?: {
+            eval?: string;
+            measurement?: { score?: number; rawValue?: unknown; reasoning?: string };
+            outcome?: { verdict?: string };
+          };
+        }
+      | {
+          shape?: "seriesByStepIndex";
+          series?: {
+            byStepIndex?: Array<{
+              eval?: string;
+              measurement?: { score?: number; rawValue?: unknown; reasoning?: string };
+              outcome?: { verdict?: string };
+            } | null>;
+          };
+        }
+    >;
+    summaries?: {
+      byEval?: Record<
+        string,
+        {
+          eval?: string;
+          kind?: string;
+          count?: number;
+          aggregations?: { score?: Record<string, unknown>; raw?: Record<string, unknown> };
+          verdictSummary?: Record<string, unknown>;
+        }
+      >;
+    };
+  };
   metadata?: Record<string, unknown>;
 };
 
@@ -186,45 +220,16 @@ function buildStepUIMessages(step: ConversationStep): UIMessage[] {
   return msgs;
 }
 
-function buildPerStepMetrics(args: { stepsCount: number; rawMetrics: RawMetric[] }) {
-  const { stepsCount, rawMetrics } = args;
-  const byStep: Array<RawMetric[]> = Array.from({ length: stepsCount }, () => []);
-
-  if (stepsCount <= 0 || rawMetrics.length === 0) return byStep;
-
-  // Heuristic A: group by metricDef.name; if each group length == stepsCount, index-align.
-  const groups = new Map<string, RawMetric[]>();
-  for (const rm of rawMetrics) {
-    const name = rm.metricDef?.name;
-    if (!name) continue;
-    const arr = groups.get(name) ?? [];
-    arr.push(rm);
-    groups.set(name, arr);
-  }
-  const groupNames = [...groups.keys()];
-  if (
-    groupNames.length > 0 &&
-    groupNames.every((n) => (groups.get(n)?.length ?? 0) === stepsCount)
-  ) {
-    for (let i = 0; i < stepsCount; i++) {
-      for (const n of groupNames) {
-        const rm = groups.get(n)?.[i];
-        if (rm) byStep[i].push(rm);
-      }
-    }
-    return byStep;
-  }
-
-  // Heuristic B: sequential chunking if evenly divisible
-  if (rawMetrics.length % stepsCount === 0) {
-    const chunk = rawMetrics.length / stepsCount;
-    for (let i = 0; i < stepsCount; i++) {
-      byStep[i] = rawMetrics.slice(i * chunk, (i + 1) * chunk);
-    }
-  }
-
-  return byStep;
-}
+type StepEvalRow = {
+  evalName: string;
+  metricName?: string;
+  verdict: string;
+  score?: number;
+  rawValue?: unknown;
+  confidence?: number;
+  timeMs?: number;
+  reasoning?: string;
+};
 
 export function RunView({ convId, runId }: RunViewProps) {
   const [run, setRun] = useState<RunData | null>(null);
@@ -251,36 +256,53 @@ export function RunView({ convId, runId }: RunViewProps) {
   }, [convId, runId]);
 
   // IMPORTANT: Hooks must run unconditionally on every render (avoid hook-order errors).
-  const target =
-    run?.perTargetResults?.find((t) => t.targetId === convId) ?? run?.perTargetResults?.[0];
   const steps = conversation?.steps ?? [];
-  const metricToEvalMap = run?.metricToEvalMap ?? {};
-  const verdicts = target?.verdicts ?? {};
+  const singleTurn = run?.result?.singleTurn ?? {};
 
-  const perStepMetrics = useMemo(() => {
-    const rms = target?.rawMetrics ?? [];
-    return buildPerStepMetrics({ stepsCount: steps.length, rawMetrics: rms });
-  }, [target?.rawMetrics, steps.length]);
+  const perStepEvals: StepEvalRow[][] = useMemo(() => {
+    const byStep: StepEvalRow[][] = Array.from({ length: steps.length }, () => []);
+    for (const [evalName, series] of Object.entries(singleTurn)) {
+      const arr = series?.byStepIndex ?? [];
+      for (let stepIndex = 0; stepIndex < Math.min(arr.length, steps.length); stepIndex++) {
+        const r = arr[stepIndex];
+        if (!r) continue;
+        const m = r.measurement ?? {};
+        const metricName = run?.defs?.evals?.[evalName]?.metric;
+        byStep[stepIndex]?.push({
+          evalName,
+          ...(metricName ? { metricName } : {}),
+          verdict: r.outcome?.verdict ?? "unknown",
+          ...(typeof m.score === "number" ? { score: m.score } : {}),
+          ...(m.rawValue !== undefined ? { rawValue: m.rawValue } : {}),
+          ...(typeof m.confidence === "number" ? { confidence: m.confidence } : {}),
+          ...(typeof m.executionTimeMs === "number" ? { timeMs: m.executionTimeMs } : {}),
+          ...(typeof m.reasoning === "string" ? { reasoning: m.reasoning } : {}),
+        });
+      }
+    }
+    for (const rows of byStep) rows.sort((a, b) => a.evalName.localeCompare(b.evalName));
+    return byStep;
+  }, [singleTurn, steps.length, run?.defs?.evals]);
 
   const evalSummariesEntries = useMemo(() => {
-    const summaries = run?.evalSummaries ?? {};
+    const summaries = run?.result?.summaries?.byEval ?? {};
     return Object.entries(summaries);
-  }, [run?.evalSummaries]);
+  }, [run?.result?.summaries?.byEval]);
 
   const endOfConversationEvals = useMemo(() => {
     // "multi turn metrics" in practice includes multiTurn AND scorer-style evals.
-    return evalSummariesEntries.filter(([, v]) => v.evalKind !== "singleTurn");
+    return evalSummariesEntries.filter(([, v]) => v.kind !== "singleTurn");
   }, [evalSummariesEntries]);
 
   const evalSummaryRows = useMemo(() => {
     const rows = endOfConversationEvals.map(([name, ev]) => {
-      const evalName = ev.evalName ?? name;
-      const kind = ev.evalKind ?? "unknown";
-      const aggs = ev.aggregations ?? {};
-      const mean = typeof aggs.mean === "number" ? aggs.mean : undefined;
+      const evalName = ev.eval ?? name;
+      const kind = ev.kind ?? "unknown";
+      const aggs = ev.aggregations?.score ?? {};
+      const mean = typeof (aggs as any).mean === "number" ? ((aggs as any).mean as number) : undefined;
       const percentiles =
-        aggs.percentiles && typeof aggs.percentiles === "object" && !Array.isArray(aggs.percentiles)
-          ? (aggs.percentiles as Record<string, unknown>)
+        (aggs as any).percentiles && typeof (aggs as any).percentiles === "object" && !Array.isArray((aggs as any).percentiles)
+          ? ((aggs as any).percentiles as Record<string, unknown>)
           : undefined;
       const p50 = typeof percentiles?.p50 === "number" ? (percentiles.p50 as number) : undefined;
       const p75 = typeof percentiles?.p75 === "number" ? (percentiles.p75 as number) : undefined;
@@ -295,31 +317,6 @@ export function RunView({ convId, runId }: RunViewProps) {
 
     return rows;
   }, [endOfConversationEvals]);
-
-  const aggregateSummaryRows = useMemo(() => {
-    const agg = run?.aggregateSummaries ?? [];
-    return agg.map((a) => {
-      const name = a.metric?.name ?? "metric";
-      const valueType = a.metric?.valueType ?? "";
-      const mean = typeof a.aggregations?.mean === "number" ? (a.aggregations.mean as number) : undefined;
-      const percentiles =
-        a.aggregations?.percentiles &&
-        typeof a.aggregations.percentiles === "object" &&
-        !Array.isArray(a.aggregations.percentiles)
-          ? (a.aggregations.percentiles as Record<string, unknown>)
-          : undefined;
-      const p50 = typeof percentiles?.p50 === "number" ? (percentiles.p50 as number) : undefined;
-      const p75 = typeof percentiles?.p75 === "number" ? (percentiles.p75 as number) : undefined;
-      const p90 = typeof percentiles?.p90 === "number" ? (percentiles.p90 as number) : undefined;
-      const passRate =
-        a.aggregations && typeof (a.aggregations as any).passRate === "number"
-          ? ((a.aggregations as any).passRate as number)
-          : undefined;
-      const count = a.count;
-
-      return { name, valueType, mean, p50, p75, p90, passRate, count };
-    });
-  }, [run?.aggregateSummaries]);
 
   if (loading) {
     return (
@@ -383,7 +380,7 @@ export function RunView({ convId, runId }: RunViewProps) {
                 <ConversationContent className="p-4">
                   {steps.map((step) => {
                     const uiMessages = buildStepUIMessages(step);
-                    const stepMetrics = perStepMetrics[step.stepIndex] ?? [];
+                    const stepMetrics = perStepEvals[step.stepIndex] ?? [];
                     return (
                       <div key={step.stepIndex} className="space-y-3">
                         {uiMessages.map((message) => (
@@ -428,11 +425,11 @@ export function RunView({ convId, runId }: RunViewProps) {
                           </Message>
                         ))}
 
-                        {/* Per-turn metrics/evals attached to the assistant response */}
+                        {/* Per-step evals */}
                         {stepMetrics.length > 0 ? (
                           <details className="rounded-md border border-border bg-muted/20">
                             <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium">
-                              Turn metrics ({stepMetrics.length})
+                              Step evals ({stepMetrics.length})
                             </summary>
                             <div className="border-t border-border px-4 py-3 space-y-3">
                               <div className="overflow-x-auto rounded-md border border-border bg-background">
@@ -440,16 +437,19 @@ export function RunView({ convId, runId }: RunViewProps) {
                                   <thead className="bg-muted/40">
                                     <tr className="border-b border-border">
                                       <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">
+                                        Eval
+                                      </th>
+                                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">
                                         Metric
                                       </th>
                                       <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">
                                         Verdict
                                       </th>
                                       <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">
-                                        Value
+                                        Score
                                       </th>
                                       <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">
-                                        Confidence
+                                        Raw
                                       </th>
                                       <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">
                                         Time (ms)
@@ -461,25 +461,19 @@ export function RunView({ convId, runId }: RunViewProps) {
                                   </thead>
                                   <tbody>
                                     {stepMetrics.map((m, idx) => {
-                                      const name = m.metricDef?.name ?? "metric";
-                                      const evalName = metricToEvalMap[name] ?? name;
-                                      const verdict = verdicts[evalName]?.verdict ?? "unknown";
-                                      const value =
-                                        m.value === undefined ? "—" : JSON.stringify(m.value);
-                                      const confidence =
-                                        typeof m.confidence === "number" ? m.confidence : undefined;
+                                      const verdict = m.verdict ?? "unknown";
+                                      const raw =
+                                        m.rawValue === undefined ? "—" : JSON.stringify(m.rawValue);
                                       const time =
-                                        typeof m.executionTime === "number" ? m.executionTime : undefined;
+                                        typeof m.timeMs === "number" ? m.timeMs : undefined;
 
                                       return (
                                         <tr key={idx} className="border-b border-border/60 last:border-0">
                                           <td className="px-3 py-2 align-top">
-                                            <div className="font-medium">{name}</div>
-                                            {m.metricDef?.description ? (
-                                              <div className="text-xs text-muted-foreground">
-                                                {m.metricDef.description}
-                                              </div>
-                                            ) : null}
+                                            <div className="font-medium">{m.evalName}</div>
+                                          </td>
+                                          <td className="px-3 py-2 align-top text-xs text-muted-foreground">
+                                            {m.metricName ?? "—"}
                                           </td>
                                           <td className="px-3 py-2 align-top">
                                             <span
@@ -491,16 +485,15 @@ export function RunView({ convId, runId }: RunViewProps) {
                                                     ? "bg-red-500/10 text-red-700 dark:text-red-300"
                                                     : "bg-muted text-muted-foreground",
                                               ].join(" ")}
-                                              title={evalName !== name ? `Eval: ${evalName}` : undefined}
                                             >
                                               {String(verdict)}
                                             </span>
                                           </td>
                                           <td className="px-3 py-2 align-top font-mono text-xs">
-                                            {value}
+                                            {typeof m.score === "number" ? m.score.toFixed(3) : "—"}
                                           </td>
                                           <td className="px-3 py-2 align-top font-mono text-xs">
-                                            {confidence ?? "—"}
+                                            {raw}
                                           </td>
                                           <td className="px-3 py-2 align-top font-mono text-xs">
                                             {time ?? "—"}
@@ -583,66 +576,9 @@ export function RunView({ convId, runId }: RunViewProps) {
             <div className="text-sm text-muted-foreground">No end-of-conversation eval summaries.</div>
           )}
 
-          {aggregateSummaryRows.length ? (
-            <div className="space-y-2">
-              <div className="text-xs font-semibold text-muted-foreground">Aggregate summaries</div>
-              <div className="overflow-x-auto rounded-md border border-border bg-background">
-                <table className="w-full text-sm">
-                  <thead className="bg-muted/40">
-                    <tr className="border-b border-border">
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Metric</th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Type</th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Mean</th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">P50</th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">P75</th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">P90</th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Pass rate</th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Count</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {aggregateSummaryRows.map((r) => (
-                      <tr key={r.name} className="border-b border-border/60 last:border-0">
-                        <td className="px-3 py-2 align-top font-medium">{r.name}</td>
-                        <td className="px-3 py-2 align-top text-xs text-muted-foreground">{r.valueType || "—"}</td>
-                        <td className="px-3 py-2 align-top font-mono text-xs">{r.mean ?? "—"}</td>
-                        <td className="px-3 py-2 align-top font-mono text-xs">{r.p50 ?? "—"}</td>
-                        <td className="px-3 py-2 align-top font-mono text-xs">{r.p75 ?? "—"}</td>
-                        <td className="px-3 py-2 align-top font-mono text-xs">{r.p90 ?? "—"}</td>
-                        <td className="px-3 py-2 align-top font-mono text-xs">
-                          {typeof r.passRate === "number" ? r.passRate : "—"}
-                        </td>
-                        <td className="px-3 py-2 align-top font-mono text-xs">{r.count ?? "—"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ) : null}
-
-          {target?.derivedMetrics?.length ? (
-            <div>
-              <div className="text-xs font-semibold text-muted-foreground mb-2">Derived metrics</div>
-              <div className="space-y-2">
-                {target.derivedMetrics.map((m, i) => (
-                  <div key={i} className="flex items-center justify-between rounded bg-muted/30 px-3 py-2">
-                    <div className="text-sm">{m.definition?.name ?? "metric"}</div>
-                    <div className="font-mono text-sm">{JSON.stringify(m.value)}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          {target?.verdicts ? (
-            <div>
-              <div className="text-xs font-semibold text-muted-foreground mb-2">Verdicts</div>
-              <pre className="code-block overflow-x-auto rounded bg-muted p-3 text-xs">
-                {JSON.stringify(target.verdicts, null, 2)}
-              </pre>
-            </div>
-          ) : null}
+          {/* NOTE: Legacy sections (aggregateSummaries/derivedMetrics/verdicts) were removed.
+              The new run artifact exposes summaries under `result.summaries` and per-step/per-conversation
+              outcomes directly on each eval result. */}
 
           {/* Keep raw payload available for debugging */}
           <details className="rounded-md border border-border bg-background">

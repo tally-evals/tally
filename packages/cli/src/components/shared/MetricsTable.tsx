@@ -11,19 +11,15 @@ import {
   formatVerdict,
   truncateText,
 } from '../../utils/formatters';
-import type { CliMetric } from './ConversationTurn';
+import type { CliMetricRow } from './ConversationTurn';
 
 interface MetricsTableProps {
-  metrics: CliMetric[];
-  verdicts?: Map<string, { verdict: 'pass' | 'fail' | 'unknown' }> | undefined;
-  metricToEvalMap?: Map<string, string> | undefined;
+  metrics: CliMetricRow[];
   maxReasoningLength?: number;
 }
 
 function MetricsTableComponent({
   metrics,
-  verdicts,
-  metricToEvalMap,
   maxReasoningLength = 40,
 }: MetricsTableProps): React.ReactElement {
   const { stdout } = useStdout();
@@ -38,9 +34,9 @@ function MetricsTableComponent({
 
     const metricColWidth = 20;
     const scoreColWidth = 12;
-    const verdictColWidth = metricToEvalMap ? 10 : 0;
+    const verdictColWidth = 10;
 
-    const numColumns = metricToEvalMap ? 4 : 3;
+    const numColumns = 4;
     const borderOverhead = numColumns * 3 + 1;
 
     const reasoningColWidth = Math.max(
@@ -54,9 +50,9 @@ function MetricsTableComponent({
 
     const table = new Table({
       head: [
-        colors.bold('Metric'),
+        colors.bold('Eval'),
         colors.bold('Score'),
-        ...(metricToEvalMap ? [colors.bold('Verdict')] : []),
+        colors.bold('Verdict'),
         colors.bold('Reasoning'),
       ].map((h) => colors.info(h)),
       style: {
@@ -68,21 +64,15 @@ function MetricsTableComponent({
       colWidths: [
         metricColWidth,
         scoreColWidth,
-        ...(metricToEvalMap ? [verdictColWidth] : []),
+        verdictColWidth,
         reasoningColWidth,
       ],
     });
 
     for (const metric of metrics) {
-      const name = truncateText(metric.metricDef.name, 20);
-      const score =
-        typeof metric.value === 'number'
-          ? formatScore(metric.value)
-          : String(metric.value);
-      const evalName =
-        metricToEvalMap?.get(metric.metricDef.name) ?? metric.metricDef.name;
-      const verdict = verdicts?.get(evalName);
-      const verdictIcon = formatVerdict(verdict?.verdict);
+      const name = truncateText(metric.name, 20);
+      const score = metric.score !== undefined ? formatScore(metric.score) : colors.muted('-');
+      const verdictIcon = formatVerdict(metric.verdict);
       const fullReasoning = metric.reasoning || '';
       const reasoning =
         maxReasoningLength > 40
@@ -95,13 +85,13 @@ function MetricsTableComponent({
       table.push([
         name,
         score,
-        ...(metricToEvalMap ? [verdictIcon] : []),
+        verdictIcon,
         reasoning as string,
       ]);
     }
 
     return table.toString();
-  }, [metrics, verdicts, metricToEvalMap, maxReasoningLength, viewportWidth]);
+  }, [metrics, maxReasoningLength, viewportWidth]);
 
   return (
     <Box>

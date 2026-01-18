@@ -11,28 +11,22 @@
  */
 
 import {
-  type AggregateSummary,
-  type Aggregations,
   type AggregatorDef,
   type BaseMetricDef,
   type BooleanAggregatorDef,
   type CategoricalAggregatorDef,
   type Conversation,
   type DatasetItem,
-  type EvalSummary,
   type Metric,
   type MetricContainer,
   type MetricDef,
   type MetricScalar,
   type NumericAggregatorDef,
-  type PerTargetResult,
   type Score,
   type ScoringContext,
   type SingleTargetFor,
   type SingleTurnContainer,
   type SingleTurnRunPolicy,
-  type TargetVerdict,
-  type VerdictSummary,
   toScore,
 } from '@tally/core/types';
 import { P, match } from 'ts-pattern';
@@ -77,9 +71,8 @@ export interface PipelineState {
       }>
     >
   >;
-  readonly verdicts: ReadonlyMap<string, ReadonlyMap<string, readonly TargetVerdict[]>>;
-  readonly aggregateSummaries: readonly AggregateSummary[];
-  readonly evalSummaries: ReadonlyMap<string, EvalSummary>;
+  readonly verdicts: ReadonlyMap<string, ReadonlyMap<string, readonly PipelineVerdict[]>>;
+  readonly evalSummaries: ReadonlyMap<string, PipelineEvalSummary>;
 }
 
 /**
@@ -92,13 +85,46 @@ export interface PipelineOptions {
 }
 
 /**
+ * Internal verdict record used during pipeline execution.
+ *
+ * NOTE: This is intentionally an internal shape (not the persisted artifact schema).
+ * The persisted schema uses `EvalOutcome` attached to `StepEvalResult` / `ConversationEvalResult`.
+ */
+export interface PipelineVerdict {
+  verdict: 'pass' | 'fail' | 'unknown';
+  score: Score;
+  rawValue?: MetricScalar;
+}
+
+export type PipelineAggregations = Record<string, number | Record<string, number>>;
+
+export interface PipelineVerdictSummary {
+  passRate: Score;
+  failRate: Score;
+  unknownRate: Score;
+  passCount: number;
+  failCount: number;
+  unknownCount: number;
+  totalCount: number;
+}
+
+export interface PipelineEvalSummary {
+  evalKind: 'singleTurn' | 'multiTurn' | 'scorer';
+  aggregations: {
+    score: PipelineAggregations;
+    raw?: PipelineAggregations;
+  };
+  verdictSummary?: PipelineVerdictSummary;
+}
+
+/**
  * Pipeline result
  */
 export interface PipelineResult {
-  readonly perTargetResults: readonly PerTargetResult[];
-  readonly aggregateSummaries: readonly AggregateSummary[];
-  readonly evalSummaries: ReadonlyMap<string, EvalSummary>;
-  readonly metricToEvalMap: ReadonlyMap<string, string>;
+  readonly rawMetrics: ReadonlyMap<string, readonly Metric<MetricScalar>[]>;
+  readonly derivedScores: ReadonlyMap<string, ReadonlyMap<string, DerivedScoreEntry>>;
+  readonly verdicts: ReadonlyMap<string, ReadonlyMap<string, readonly PipelineVerdict[]>>;
+  readonly evalSummaries: ReadonlyMap<string, PipelineEvalSummary>;
 }
 
 // ============================================================================
@@ -350,7 +376,7 @@ const phaseNormalize = (
 // Phase 4: Score
 // ============================================================================
 
-type DerivedScoreEntry = Readonly<{
+export type DerivedScoreEntry = Readonly<{
   scores: readonly Score[];
   rawValues: readonly MetricScalar[];
   outputMetric: BaseMetricDef<number>;
@@ -455,7 +481,7 @@ const buildVerdict = (
   score: Score,
   rawValue: MetricScalar,
   verdictPolicy: NonNullable<EvalMetadataEntry['verdictPolicy']>
-): TargetVerdict => ({
+): PipelineVerdict => ({
   verdict: computeVerdict(score, rawValue, verdictPolicy),
   score,
   rawValue,
@@ -464,7 +490,7 @@ const buildVerdict = (
 const phaseComputeVerdicts = (
   evalMetadata: ReadonlyMap<string, EvalMetadataEntry>,
   derivedScores: ReadonlyMap<string, ReadonlyMap<string, DerivedScoreEntry>>
-): ReadonlyMap<string, ReadonlyMap<string, readonly TargetVerdict[]>> =>
+): ReadonlyMap<string, ReadonlyMap<string, readonly PipelineVerdict[]>> =>
   new Map(
     Array.from(derivedScores.entries())
       .map(([targetId, scorerMap]) => {
@@ -475,13 +501,13 @@ const phaseComputeVerdicts = (
             const metadata = evalMetadata.get(evalName);
             if (!metadata?.verdictPolicy || metadata.verdictPolicy.kind === 'none') return [];
 
-            const verdicts: TargetVerdict[] = scores
-              .map((score, i): TargetVerdict | null =>
+            const verdicts: PipelineVerdict[] = scores
+              .map((score, i): PipelineVerdict | null =>
                 score !== undefined
                   ? buildVerdict(score, rawValues[i] ?? score, metadata.verdictPolicy!)
                   : null
               )
-              .filter((v): v is TargetVerdict => v !== null);
+              .filter((v): v is PipelineVerdict => v !== null);
 
             return verdicts.length > 0 ? ([[evalName, verdicts]] as const) : [];
           }
@@ -513,7 +539,7 @@ const calculateScoreAggregations = (
   scores: readonly Score[],
   evalKind: 'singleTurn' | 'multiTurn' | 'scorer',
   inputMetrics: readonly MetricDef<MetricScalar, MetricContainer>[]
-): Aggregations =>
+): PipelineAggregations =>
   match(evalKind)
     .with('singleTurn', () => {
       const entries = extractAggregators(inputMetrics)
@@ -538,7 +564,7 @@ const calculateRawValueAggregations = (
   valueType: 'number' | 'boolean' | 'string' | 'ordinal',
   evalKind: 'singleTurn' | 'multiTurn' | 'scorer',
   inputMetrics: readonly MetricDef<MetricScalar, MetricContainer>[]
-): Aggregations => {
+): PipelineAggregations => {
   if (evalKind !== 'singleTurn' && evalKind !== 'scorer') return {};
 
   const allAggregators: AggregatorDef[] =
@@ -622,9 +648,9 @@ const countVerdict = (
  */
 const calculateVerdictSummaryFromVerdicts = (
   evalName: string,
-  verdictsMap: ReadonlyMap<string, ReadonlyMap<string, readonly TargetVerdict[]>>,
+  verdictsMap: ReadonlyMap<string, ReadonlyMap<string, readonly PipelineVerdict[]>>,
   totalCount: number
-): VerdictSummary | undefined => {
+): PipelineVerdictSummary | undefined => {
   const counts = Array.from(verdictsMap.values())
     .flatMap((targetVerdicts) => targetVerdicts.get(evalName) ?? [])
     .reduce((acc, v) => countVerdict(v.verdict, acc), { pass: 0, fail: 0, unknown: 0 });
@@ -687,8 +713,8 @@ const buildEvalSummary = (
   evalName: string,
   entry: CollectedScoresEntry,
   metadata: EvalMetadataEntry,
-  verdicts: ReadonlyMap<string, ReadonlyMap<string, readonly TargetVerdict[]>>
-): EvalSummary => {
+  verdicts: ReadonlyMap<string, ReadonlyMap<string, readonly PipelineVerdict[]>>
+): PipelineEvalSummary => {
   const { scores, rawValues, outputMetric, inputMetrics } = entry;
 
   const scoreAggregations = calculateScoreAggregations(scores, metadata.evalKind, inputMetrics);
@@ -714,11 +740,10 @@ const buildEvalSummary = (
       : undefined;
 
   return {
-    evalName,
     evalKind: metadata.evalKind,
     aggregations: {
       score: scoreAggregations,
-      raw: rawValueAggregations as Aggregations,
+      ...(rawValueAggregations ? { raw: rawValueAggregations as PipelineAggregations } : {}),
     },
     ...(verdictSummary ? { verdictSummary } : {}),
   };
@@ -730,10 +755,9 @@ const buildEvalSummary = (
 const phaseAggregate = (
   evalMetadata: ReadonlyMap<string, EvalMetadataEntry>,
   derivedScores: ReadonlyMap<string, ReadonlyMap<string, DerivedScoreEntry>>,
-  verdicts: ReadonlyMap<string, ReadonlyMap<string, readonly TargetVerdict[]>>
+  verdicts: ReadonlyMap<string, ReadonlyMap<string, readonly PipelineVerdict[]>>
 ): {
-  aggregateSummaries: readonly AggregateSummary[];
-  evalSummaries: ReadonlyMap<string, EvalSummary>;
+  evalSummaries: ReadonlyMap<string, PipelineEvalSummary>;
 } => {
   const scoresByEval = collectScoresByEval(derivedScores);
 
@@ -743,74 +767,17 @@ const phaseAggregate = (
       if (!metadata) return null;
 
       const evalSummary = buildEvalSummary(evalName, entry, metadata, verdicts);
-
-      const aggregateSummary: AggregateSummary = {
-        metric: entry.outputMetric,
-        aggregations: {
-          score: evalSummary.aggregations.score,
-          ...(evalSummary.aggregations.raw ? { raw: evalSummary.aggregations.raw } : {}),
-        },
-        count: entry.scores.length,
-      };
-
-      return { evalName, evalSummary, aggregateSummary };
+      return { evalName, evalSummary };
     })
     .filter((r): r is NonNullable<typeof r> => r !== null);
 
   return {
-    aggregateSummaries: results.map((r) => r.aggregateSummary),
     evalSummaries: new Map(results.map((r) => [r.evalName, r.evalSummary])),
   };
 };
 
-// ============================================================================
-// Build Results
-// ============================================================================
-
-const buildPerTargetResults = <TContainer extends DatasetItem | Conversation>(
-  data: readonly TContainer[],
-  rawMetrics: ReadonlyMap<string, readonly Metric<MetricScalar>[]>,
-  derivedScores: ReadonlyMap<string, ReadonlyMap<string, DerivedScoreEntry>>,
-  verdicts: ReadonlyMap<string, ReadonlyMap<string, readonly TargetVerdict[]>>
-): readonly PerTargetResult[] =>
-  data
-    .filter((container): container is TContainer => container !== undefined)
-    .map((container, i) => {
-      const targetId = getTargetId(container as DatasetItem | Conversation, i);
-      const targetRawMetrics = rawMetrics.get(targetId) ?? [];
-      const targetDerivedScores = derivedScores.get(targetId) ?? new Map();
-      const targetVerdicts = verdicts.get(targetId) ?? new Map();
-
-      // Flatten derived scores using flatMap
-      const derivedMetrics = Array.from(targetDerivedScores.values()).flatMap(
-        ({ scores, outputMetric }) =>
-          scores.map((score: Score) => ({ definition: outputMetric, value: score }))
-      );
-
-      // Convert verdicts map using Array.from with map
-      const verdictsMap = new Map(
-        Array.from(targetVerdicts.entries()).map(([evalName, verdictList]) => [
-          evalName,
-          verdictList,
-        ])
-      );
-
-      return {
-        targetId,
-        rawMetrics: [...targetRawMetrics],
-        derivedMetrics,
-        verdicts: verdictsMap,
-      };
-    });
-
-const buildMetricToEvalMap = (
-  evalMetadata: ReadonlyMap<string, EvalMetadataEntry>
-): ReadonlyMap<string, string> =>
-  new Map(
-    Array.from(evalMetadata.entries()).flatMap(([evalName, metadata]) =>
-      (metadata.sourceMetrics ?? []).map((metricName) => [metricName, evalName] as [string, string])
-    )
-  );
+// NOTE: The legacy “report flattening” helpers (`buildPerTargetResults`, metricToEvalMap)
+// are intentionally removed as we migrate to the artifact schema (defs + series-by-stepIndex).
 
 // ============================================================================
 // Main Pipeline Execution
@@ -841,20 +808,12 @@ export async function executePipeline<TContainer extends DatasetItem | Conversat
   const verdicts = phaseComputeVerdicts(evalMetadata, derivedScores);
 
   // Phase 6: Aggregate
-  const { aggregateSummaries, evalSummaries } = phaseAggregate(
-    evalMetadata,
-    derivedScores,
-    verdicts
-  );
-
-  // Build results
-  const perTargetResults = buildPerTargetResults(data, rawMetrics, derivedScores, verdicts);
-  const metricToEvalMap = buildMetricToEvalMap(evalMetadata);
+  const { evalSummaries } = phaseAggregate(evalMetadata, derivedScores, verdicts);
 
   return {
-    perTargetResults,
-    aggregateSummaries,
+    rawMetrics,
+    derivedScores,
+    verdicts,
     evalSummaries,
-    metricToEvalMap,
   };
 }

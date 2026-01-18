@@ -24,8 +24,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "ai": "^5.0.89",
-    "@ai-sdk/google": "^2.0.29",
+    "ai": "^5.0.121",
+    "@ai-sdk/google": "^2.0.52",
     "@tally-evals/cli": "workspace:*",
     "zod": "^3.23.8",
     "@tally-evals/core": "workspace:*",

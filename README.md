@@ -320,17 +320,14 @@ import {
 
 ### Report Structure
 
-The `EvaluationReport` includes:
+`tally.run()` returns a **`TallyRunReport`** (SDK-facing). It contains:
 
-- `evalSummaries` - Per-eval summaries with:
-  - `aggregations.score` - Statistical aggregations on normalized scores (mean, percentiles)
-  - `aggregations.raw` - Statistical aggregations on raw metric values (optional)
-  - `verdictSummary` - Pass/fail rates from verdict policies (separate from statistical aggregations)
-- `perTargetResults` - Detailed results per conversation/dataset item
-  - `rawMetrics` - Raw metric values
-  - `derivedMetrics` - Scorer outputs
-  - `verdicts` - Pass/fail verdicts per eval
-- `aggregateSummaries` - Aggregate statistics across all derived metrics
+- `result.summaries.byEval[evalName]` — per-eval summary rollups
+- `result.singleTurn[evalName].byStepIndex[stepIndex]` — single-turn results (step-indexed, with `null` holes)
+- `result.multiTurn[evalName]` — conversation-level (multi-turn) results
+- `result.scorers[evalName]` — scorer outputs (explicitly scalar vs series)
+
+For read-only tooling (CLI/viewer/dev server), persist a **`TallyRunArtifact`** via `report.toArtifact()`.
 
 ## Development
 

@@ -7,7 +7,7 @@ A TypeScript framework for evaluating LLM agents with datasets, metrics, scorers
 - Evaluate single-turn and multi-turn behavior over datasets or conversations
 - Define pass/fail criteria with verdict policies
 - Type-safe aggregators (numeric, boolean, categorical) for summary statistics
-- Produce a structured `EvaluationReport` for analysis and CI
+- Produce a structured `TallyRunReport` for tests/CI (and persist a `TallyRunArtifact` for read-only tooling)
 
 ## Install
 
@@ -113,20 +113,17 @@ const evaluator = createEvaluator({
 const tally = createTally({ data: conversations, evaluators: [evaluator] })
 const report = await tally.run()
 
-// Access eval summaries
-report.evalSummaries.forEach((summary, evalName) => {
-  console.log(`${evalName}: mean=${summary.aggregations.score.mean}`)
-  if (summary.verdictSummary) {
-    console.log(`  Pass rate: ${summary.verdictSummary.passRate}`)
-  }
-})
+// Access eval summaries (single-turn + multi-turn + scorers)
+const summary = report.result.summaries?.byEval?.['Answer Relevance']
+console.log('summary', summary)
 
-// Access per-target verdicts
-report.perTargetResults.forEach((result) => {
-  result.verdicts.forEach((verdict, evalName) => {
-    console.log(`${result.targetId} - ${evalName}: ${verdict.verdict}`)
-  })
-})
+// Test-friendly access
+const view = report.view()
+console.log('step 0 verdict', view.stepVerdict(0, 'Answer Relevance'))
+console.log('conversation verdict', view.conversationVerdict('Overall Quality'))
+
+// Persist for CLI/viewer
+const artifact = report.toArtifact()
 ```
 
 ## Evals API

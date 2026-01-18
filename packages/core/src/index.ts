@@ -126,18 +126,40 @@ export type {
 } from './types/evaluators';
 
 // =============================================================================
-// Types - Reports
+// Types - Run Artifacts (canonical stored run schema)
 // =============================================================================
 
 export type {
-  TargetVerdict,
-  PerTargetResult,
-  Aggregations,
-  VerdictSummary,
-  AggregateSummary,
-  EvalSummary,
-  EvaluationReport,
-} from './types/report';
+  MetricName,
+  EvalName,
+  RunId,
+  ConversationId,
+  Verdict,
+  MetricScalarOrNull,
+  Measurement,
+  VerdictPolicyInfo,
+  EvalOutcome,
+  StepEvalResult,
+  ConversationEvalResult,
+  SingleTurnEvalSeries,
+  ConversationResult,
+  MetricDefSnap,
+  EvalDefSnap,
+  RunDefs,
+  AggregationValue,
+  Aggregations as ArtifactAggregations,
+  VerdictSummary as ArtifactVerdictSummary,
+  EvalSummarySnap,
+  Summaries,
+  TallyRunArtifact,
+} from './types/runArtifact';
+
+// =============================================================================
+// Types - SDK Report/View
+// =============================================================================
+
+export type { TargetRunView } from './types/runView';
+export type { TallyRunReport } from './types/runReport';
 
 // =============================================================================
 // Types - Tally Container
@@ -196,12 +218,9 @@ export {
   ConversationCodec,
   decodeConversation,
   encodeConversation,
-  EvaluationReportCodec,
-  decodeReport,
-  encodeReport,
+  decodeRunArtifact,
+  encodeRunArtifact,
 } from './codecs';
-
-// Note: EvaluationReport type is exported from types/report above
 
 // =============================================================================
 // Conversion

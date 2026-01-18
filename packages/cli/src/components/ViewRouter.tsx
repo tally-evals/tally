@@ -2,7 +2,7 @@
  * Router component for switching between summary and turn-by-turn views
  */
 
-import type { Conversation, EvaluationReport } from '@tally-evals/core';
+import type { Conversation, TallyRunArtifact } from '@tally-evals/core';
 import { Box, Text, useInput } from 'ink';
 import type React from 'react';
 import { useState } from 'react';
@@ -15,7 +15,7 @@ import { BreadCrumbs } from './shared/BreadCrumbs';
 
 interface ViewRouterProps {
   conversation: Conversation;
-  report: EvaluationReport;
+  report: TallyRunArtifact;
   onBack?: () => void;
 }
 
