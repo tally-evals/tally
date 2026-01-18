@@ -1,5 +1,5 @@
-import type { EvaluationReport } from '../codecs/report';
-import { decodeReport, encodeReport } from '../codecs/report';
+import type { TallyRunArtifact } from '../types/runArtifact';
+import { decodeRunArtifact, encodeRunArtifact } from '../codecs/runArtifact';
 import type { IStorage } from '../storage/storage.interface';
 import type { TrajectoryRunMeta } from '../types/runs';
 import type { RunType } from './types';
@@ -12,18 +12,18 @@ export class RunRef {
     public readonly type: RunType
   ) {}
 
-  async load(): Promise<EvaluationReport | TrajectoryRunMeta> {
+  async load(): Promise<TallyRunArtifact | TrajectoryRunMeta> {
     const content = await this.storage.read(this.path);
     if (this.type === 'tally') {
-      return decodeReport(content);
+      return decodeRunArtifact(content);
     }
     return JSON.parse(content) as TrajectoryRunMeta;
   }
 
-  async save(data: EvaluationReport | TrajectoryRunMeta): Promise<void> {
+  async save(data: TallyRunArtifact | TrajectoryRunMeta): Promise<void> {
     const content =
       this.type === 'tally'
-        ? encodeReport(data as EvaluationReport)
+        ? encodeRunArtifact(data as TallyRunArtifact)
         : JSON.stringify(data, null, 2);
     await this.storage.write(this.path, content);
   }

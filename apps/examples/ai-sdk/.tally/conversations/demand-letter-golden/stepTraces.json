@@ -10,8 +10,40 @@
         "role": "assistant",
         "content": [
           {
+            "type": "text",
+            "text": "I can help with that! To start, I need to gather some information to create your demand letter.\n\nCould you please tell me the type of demand you need to make? For example, is it for non-payment, a specific action, or to cease and desist?"
+          }
+        ]
+      }
+    ],
+    "timestamp": "2026-01-18T23:04:02.001Z",
+    "stepId": "step-1",
+    "selection": {
+      "method": "start",
+      "candidates": [
+        {
+          "stepId": "step-1",
+          "score": 1,
+          "reasons": [
+            "Initial start step selected at turn 0"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "turnIndex": 1,
+    "userMessage": {
+      "role": "user",
+      "content": "It's for non-payment of an invoice."
+    },
+    "agentMessages": [
+      {
+        "role": "assistant",
+        "content": [
+          {
             "type": "tool-call",
-            "toolCallId": "VhbxbbN0Eb1aoyFr",
+            "toolCallId": "AgS1Oa0L27tvPnMX",
             "toolName": "getTemplateFields",
             "input": {
               "demandType": "payment"
@@ -24,7 +56,7 @@
         "content": [
           {
             "type": "tool-result",
-            "toolCallId": "VhbxbbN0Eb1aoyFr",
+            "toolCallId": "AgS1Oa0L27tvPnMX",
             "toolName": "getTemplateFields",
             "output": {
               "type": "json",
@@ -122,31 +154,23 @@
         "content": [
           {
             "type": "text",
-            "text": "I can help with that. To create a demand letter for an unpaid invoice, I need some information. Please provide the following:\n\n*   Recipient's full legal name\n*   Recipient's full mailing address\n*   Your full legal name\n*   Your address\n*   The total amount owed (USD)\n*   The date by which you expect to be paid\n*   A detailed description of the claim (e.g., invoice number, services rendered, dates of service)\n*   The legal basis for your demand (e.g., breach of contract)\n\nLet's start with the recipient's full legal name."
+            "text": "I can help with that. For a non-payment demand letter, I need the following information:\n\n*   Recipient's full legal name\n*   Recipient's full mailing address\n*   Your full legal name\n*   Your address\n*   The amount owed (in USD)\n*   The date by which the demand must be fulfilled\n*   A detailed description of the claim\n*   The legal basis for your demand\n\nLet's start with the recipient's full legal name."
           }
         ]
       }
     ],
-    "timestamp": "2026-01-11T18:38:20.713Z",
-    "stepId": "step-1",
+    "timestamp": "2026-01-18T23:04:05.872Z",
+    "stepId": null,
     "selection": {
-      "method": "start",
-      "candidates": [
-        {
-          "stepId": "step-1",
-          "score": 1,
-          "reasons": [
-            "Initial start step selected at turn 0"
-          ]
-        }
-      ]
+      "method": "none",
+      "candidates": []
     }
   },
   {
-    "turnIndex": 1,
+    "turnIndex": 2,
     "userMessage": {
       "role": "user",
-      "content": "The recipient's name is ABC Company. Their address is 123 Commerce Street, Suite 400, Anytown, CA 90210."
+      "content": "The recipient's full legal name is ABC Company. Their address is 42 Market Street, Anytown, CA 90210."
     },
     "agentMessages": [
       {
@@ -154,11 +178,20 @@
         "content": [
           {
             "type": "tool-call",
-            "toolCallId": "W6fRHq1hKh4Lilbs",
+            "toolCallId": "CqIeVqzXLvmA13jB",
             "toolName": "validateInputs",
             "input": {
               "fieldId": "recipientName",
               "value": "ABC Company"
+            }
+          },
+          {
+            "type": "tool-call",
+            "toolCallId": "6xGKZ6RSd1JWwxfV",
+            "toolName": "validateInputs",
+            "input": {
+              "fieldId": "recipientAddress",
+              "value": "42 Market Street, Anytown, CA 90210"
             }
           }
         ]
@@ -168,7 +201,7 @@
         "content": [
           {
             "type": "tool-result",
-            "toolCallId": "W6fRHq1hKh4Lilbs",
+            "toolCallId": "CqIeVqzXLvmA13jB",
             "toolName": "validateInputs",
             "output": {
               "type": "json",
@@ -177,29 +210,10 @@
                 "message": "Recipient Name is valid"
               }
             }
-          }
-        ]
-      },
-      {
-        "role": "assistant",
-        "content": [
-          {
-            "type": "tool-call",
-            "toolCallId": "1EkRl5ALA5x9i1h8",
-            "toolName": "validateInputs",
-            "input": {
-              "fieldId": "recipientAddress",
-              "value": "123 Commerce Street, Suite 400, Anytown, CA 90210"
-            }
-          }
-        ]
-      },
-      {
-        "role": "tool",
-        "content": [
+          },
           {
             "type": "tool-result",
-            "toolCallId": "1EkRl5ALA5x9i1h8",
+            "toolCallId": "6xGKZ6RSd1JWwxfV",
             "toolName": "validateInputs",
             "output": {
               "type": "json",
@@ -216,12 +230,12 @@
         "content": [
           {
             "type": "text",
-            "text": "Thank you. Now, please provide your full legal name and your address."
+            "text": "Thank you. Now, please provide your full legal name."
           }
         ]
       }
     ],
-    "timestamp": "2026-01-11T18:38:26.076Z",
+    "timestamp": "2026-01-18T23:04:10.049Z",
     "stepId": "step-3",
     "selection": {
       "method": "llm-ranked",
@@ -230,7 +244,7 @@
           "stepId": "step-3",
           "score": 0.6,
           "reasons": [
-            "This step involves providing recipient details, which aligns with the assistant's request for the recipient's name, even though it's more specific than the general step."
+            "Step 2 asks for 'recipient details (ABC Company, address)', which is partially aligned with the assistant asking for 'Recipient's full legal name' and 'Recipient's full mailing address'. However, the assistant has explicitly asked for the name first, and Step 2 is a broader category."
           ]
         }
       ]

@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
-import { decodeConversation, decodeReport } from '../../src/codecs';
+import { decodeConversation, decodeRunArtifact } from '../../src/codecs';
 import { TallyStore } from '../../src/store/TallyStore';
 import { sampleStepTrace, stepTraceWithToolCall } from '../fixtures/messages';
 import type { TrajectoryRunMeta } from '../../src/types/runs';
@@ -60,16 +60,19 @@ describe('TallyStore (store layer)', () => {
 
     const convRef = await store.createConversation('conv-1');
 
-    // Tally run (EvaluationReport)
-    const reportJson = readFileSync(join(__dirname, '../fixtures/sample-run.json'), 'utf-8');
-    const report = decodeReport(reportJson);
+    // Tally run (TallyRunArtifact)
+    const artifactJson = readFileSync(
+      join(__dirname, '../fixtures/sample-run-artifact.json'),
+      'utf-8'
+    );
+    const artifact = decodeRunArtifact(artifactJson);
 
     const tallyRun = await convRef.createRun({ type: 'tally', runId: 'run-tally-1' });
-    await tallyRun.save(report);
+    await tallyRun.save(artifact);
 
-    const loadedReport = await tallyRun.load();
+    const loadedArtifact = await tallyRun.load();
     expect(tallyRun.type).toBe('tally');
-    expect((loadedReport as { runId: string }).runId).toBe(report.runId);
+    expect((loadedArtifact as { runId: string }).runId).toBe(artifact.runId);
 
     // Trajectory run (TrajectoryRunMeta)
     const trajectory: TrajectoryRunMeta = {
@@ -103,7 +106,9 @@ describe('TallyStore (store layer)', () => {
 
     const tallyRun = await convRef.createRun({ type: 'tally', runId: 'run-tally-1' });
     await tallyRun.save(
-      decodeReport(readFileSync(join(__dirname, '../fixtures/sample-run.json'), 'utf-8'))
+      decodeRunArtifact(
+        readFileSync(join(__dirname, '../fixtures/sample-run-artifact.json'), 'utf-8')
+      )
     );
 
     const trajRun = await convRef.createRun({ type: 'trajectory', runId: 'run-traj-1' });

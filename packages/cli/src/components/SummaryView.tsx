@@ -2,28 +2,12 @@
  * Summary view showing aggregate metrics
  */
 
-import type { EvaluationReport, EvalSummary } from '@tally-evals/core';
+import type { TallyRunArtifact } from '@tally-evals/core';
 import Table from 'cli-table3';
 import { Box, Text } from 'ink';
 import type React from 'react';
 import { colors } from 'src/utils/colors';
 import { score } from 'src/utils/colors';
-
-/**
- * Convert evalSummaries to a properly typed Map
- * Handles both Map instances (in-memory) and plain objects (after JSON serialization)
- */
-function getEvalSummariesMap(
-  evalSummaries: EvaluationReport['evalSummaries'],
-): Map<string, EvalSummary> {
-  if (evalSummaries instanceof Map) {
-    return evalSummaries;
-  }
-  // After JSON serialization, Map becomes a plain object
-  return new Map(
-    Object.entries(evalSummaries as unknown as Record<string, EvalSummary>),
-  );
-}
 
 /**
  * Safely get a numeric aggregation value from an Aggregations object
@@ -39,7 +23,7 @@ function getNumericAggregation(
 }
 
 interface SummaryViewProps {
-  report: EvaluationReport;
+  report: TallyRunArtifact;
 }
 
 /**
@@ -62,7 +46,9 @@ function formatScoreValue(value: number): string {
 }
 
 export function SummaryView({ report }: SummaryViewProps): React.ReactElement {
-  if (report.evalSummaries.size === 0) {
+  const summaries = report.result.summaries?.byEval ?? {};
+  const summaryEntries = Object.entries(summaries);
+  if (summaryEntries.length === 0) {
     return <Text>{colors.muted('No evaluation summaries available')}</Text>;
   }
 
@@ -85,20 +71,18 @@ export function SummaryView({ report }: SummaryViewProps): React.ReactElement {
     colWidths: [20, 15, 10, 10, 10, 10, 12],
   });
 
-  const summaries = getEvalSummariesMap(report.evalSummaries);
-
-  for (const [evalName, summary] of summaries) {
-    const percentiles = summary.aggregations.score.percentiles;
+  for (const [evalName, summary] of summaryEntries) {
+    const percentiles = (summary.aggregations?.score as any)?.percentiles;
     const p =
       percentiles &&
       typeof percentiles === 'object' &&
       !Array.isArray(percentiles)
         ? (percentiles as { p50?: number; p75?: number; p90?: number })
         : null;
-    const meanValue = getNumericAggregation(summary.aggregations.score, 'mean');
+    const meanValue = getNumericAggregation(summary.aggregations?.score, 'mean');
     const row = [
       evalName,
-      summary.evalKind,
+      summary.kind,
       meanValue !== undefined ? formatScoreValue(meanValue) : colors.muted('-'),
       p?.p50 !== undefined ? formatScoreValue(p.p50) : colors.muted('-'),
       p?.p75 !== undefined ? formatScoreValue(p.p75) : colors.muted('-'),

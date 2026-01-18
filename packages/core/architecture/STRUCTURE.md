@@ -53,7 +53,7 @@ packages/core/
 │   ├── codecs/                    # Serialization codecs
 │   │   ├── index.ts               # Codec exports
 │   │   ├── conversation.ts        # ConversationCodec (JSONL)
-│   │   └── report.ts              # EvaluationReportCodec (JSON)
+│   │   └── runArtifact.ts         # Run artifact codec (JSON)
 │   │
 │   ├── conversion/                # Type conversions
 │   │   ├── index.ts               # Conversion exports

@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@mastra/core": "latest",
-    "@ai-sdk/google": "^2.0.29",
+    "@ai-sdk/google": "^2.0.52",
     "zod": "^3.23.8",
     "@tally-evals/tally": "workspace:*"
   },

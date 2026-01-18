@@ -5,7 +5,7 @@
  * - Datasets and Conversations (input data)
  * - Evaluators (with Evals - new API)
  * - Metrics (Boolean, Number, Ordinal/Enum)
- * - EvaluationReport (final output with built-in aggregations)
+ * - TallyRunArtifact (stored run artifact output with defs + step-indexed results)
  */
 
 // ============================================================================
@@ -54,14 +54,26 @@ export type {
   SingleTurnRunPolicy,
   EvaluationContext,
   Evaluator,
-  // Report types (ENHANCED)
-  TargetVerdict,
-  PerTargetResult,
-  AggregateSummary,
-  Aggregations,
-  VerdictSummary,
-  EvalSummary,
-  EvaluationReport,
+  // Run artifact types (canonical reporting schema)
+  MetricName,
+  EvalName,
+  RunId,
+  ConversationId,
+  Verdict,
+  MetricScalarOrNull,
+  Measurement,
+  VerdictPolicyInfo,
+  EvalOutcome,
+  StepEvalResult,
+  ConversationEvalResult,
+  SingleTurnEvalSeries,
+  ConversationResult,
+  MetricDefSnap,
+  EvalDefSnap,
+  RunDefs,
+  EvalSummarySnap,
+  Summaries,
+  TallyRunArtifact,
   // Main container
   Tally,
 } from './core/types';
@@ -102,6 +114,13 @@ export type {
 
 export { TallyContainer, createTally } from './core/tally';
 export type { TallyContainer as TallyContainerType } from './core/tally';
+
+// ============================================================================
+// SDK/Test Views
+// ============================================================================
+
+export { createTargetRunView } from './view/targetRunView';
+export type { TargetRunView } from './core/types';
 
 // ============================================================================
 // Builders

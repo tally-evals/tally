@@ -30,12 +30,12 @@ This section provides a concise, implementation-accurate outline aligned with th
   - `Evaluator` = `metrics` + `scorer` + optional `EvaluationContext` (target selection for single-turn).
 - Aggregators
   - `Aggregator` consumes scorer output metrics to produce summaries.
-- Reports
-  - `PerTargetResult`, `AggregateSummary`, `EvaluationReport`.
+- Run outputs
+  - `TallyRunReport` (SDK-facing) and `TallyRunArtifact` (persisted for tooling).
 
 ### Orchestration: Tally Container
-- `createTally(data, evaluators, aggregators)` returns a `TallyContainer`.
-- `TallyContainer.run()` executes the full pipeline and returns `EvaluationReport`.
+- `createTally({ data, evaluators })` returns a `TallyContainer`.
+- `TallyContainer.run()` executes the full pipeline and returns `TallyRunReport`.
 - Validates inputs and attaches metadata (counts, timestamp, runId).
 
 ### Execution Pipeline (5 Phases)
@@ -523,35 +523,23 @@ interface Tally<TContainer> {
     TContainer,
     readonly MetricDefFor<TContainer>[]
   >[];
-  aggregators: readonly Aggregator[];
-  run(): Promise<EvaluationReport>;
+  run(options?: { llmOptions?: { temperature?: number; maxRetries?: number } }): Promise<TallyRunReport>;
 }
 ```
 
 ### Report System
 ```ts
-interface PerTargetResult {
-  targetId: string;
-  rawMetrics: Metric[]; // each Metric carries its defining MetricDef
-  derivedMetrics: Array<{
-    definition: BaseMetricDef<number>;
-    value: Score;
-  }>;
-}
-
-interface AggregateSummary {
-  metric: BaseMetricDef<number>;
-  average: Score;
-  percentile?: Record<number, number>;
-  count: number;
-}
-
-interface EvaluationReport {
+interface TallyRunReport {
   runId: string;
-  timestamp: Date;
-  perTargetResults: PerTargetResult[];
-  aggregateSummaries: AggregateSummary[];
-  metadata: Record<string, unknown>;
+  createdAt: Date;
+  result: {
+    summaries?: { byEval: Record<string, unknown> };
+    singleTurn: Record<string, { byStepIndex: Array<unknown | null> }>;
+    multiTurn: Record<string, unknown>;
+    scorers: Record<string, unknown>;
+  };
+  view(): TargetRunView;
+  toArtifact(): TallyRunArtifact;
 }
 ```
 

@@ -90,7 +90,7 @@
     "ts-pattern": "^5.9.0"
   },
   "devDependencies": {
-    "@ai-sdk/google": "^2.0.29",
+    "@ai-sdk/google": "^2.0.52",
     "@tally-evals/biome-config": "workspace:*",
     "@tally-evals/typescript-config": "workspace:*",
     "@types/bun": "latest",

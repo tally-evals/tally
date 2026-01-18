@@ -5,7 +5,7 @@
  * - GOOGLE_GENERATIVE_AI_API_KEY environment variable
  * - Set E2E_TRAJECTORIES=1 to run (or run in CI)
  * 
- * Run with: pnpm --filter=@tally-evals/trajectories test:e2e
+ * Run with: bun run --filter=@tally-evals/trajectories test:e2e
  */
 
 import { describe, it, expect, beforeAll } from 'bun:test';

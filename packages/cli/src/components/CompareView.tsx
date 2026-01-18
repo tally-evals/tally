@@ -2,23 +2,7 @@
  * Side-by-side comparison view for two reports
  */
 
-import type { Conversation, EvaluationReport, EvalSummary } from '@tally-evals/core';
-
-/**
- * Convert evalSummaries to a properly typed Map
- * Handles both Map instances (in-memory) and plain objects (after JSON serialization)
- */
-function getEvalSummariesMap(
-  evalSummaries: EvaluationReport['evalSummaries'],
-): Map<string, EvalSummary> {
-  if (evalSummaries instanceof Map) {
-    return evalSummaries;
-  }
-  // After JSON serialization, Map becomes a plain object
-  return new Map(
-    Object.entries(evalSummaries as unknown as Record<string, EvalSummary>),
-  );
-}
+import type { Conversation, TallyRunArtifact } from '@tally-evals/core';
 
 /**
  * Safely get a numeric aggregation value from an Aggregations object
@@ -51,8 +35,8 @@ import { BreadCrumbs } from './shared/BreadCrumbs.js';
 
 interface CompareViewProps {
   conversation: Conversation;
-  leftReport: EvaluationReport;
-  rightReport: EvaluationReport;
+  leftReport: TallyRunArtifact;
+  rightReport: TallyRunArtifact;
   onBack?: () => void;
 }
 
@@ -81,34 +65,12 @@ export function CompareView({
     }
   });
 
-  const leftResult = leftReport.perTargetResults[0];
-  const rightResult = rightReport.perTargetResults[0];
-
-  if (!leftResult || !rightResult) {
-    return (
-      <Text>{colors.error('One or both reports missing target results')}</Text>
-    );
-  }
-
-  const getMetricsForStep = (
-    targetMetrics: typeof leftResult.rawMetrics,
-    stepIdx: number,
-  ) => {
-    const metricArray: typeof targetMetrics = [];
-    let metricCount = 0;
-
-    for (const metric of targetMetrics) {
-      const scopeInfo = metric.metricDef as unknown as { scope?: string };
-      if (scopeInfo.scope === 'single') {
-        if (metricCount === stepIdx) {
-          metricArray.push(metric);
-        }
-        metricCount++;
-      }
-    }
-
-    return metricArray;
-  };
+  const evalNames = Array.from(
+    new Set([
+      ...Object.keys(leftReport.result.singleTurn ?? {}),
+      ...Object.keys(rightReport.result.singleTurn ?? {}),
+    ]),
+  ).sort();
 
   const currentStep = conversation.steps[scrollPosition];
   if (!currentStep) {
@@ -125,15 +87,9 @@ export function CompareView({
   );
   const toolCalls = extractToolCallsFromMessages(currentStep.output);
 
-  const leftMetrics = getMetricsForStep(leftResult.rawMetrics, scrollPosition);
-  const rightMetrics = getMetricsForStep(
-    rightResult.rawMetrics,
-    scrollPosition,
-  );
-
   const table = new Table({
     head: [
-      colors.bold('Metric'),
+      colors.bold('Eval'),
       colors.bold('Left'),
       colors.bold('Right'),
       colors.bold('Delta'),
@@ -146,61 +102,34 @@ export function CompareView({
     colWidths: [20, 12, 12, 12],
   });
 
-  const allMetricNames = new Set<string>();
-  for (const m of leftMetrics) {
-    allMetricNames.add(m.metricDef.name);
-  }
-  for (const m of rightMetrics) {
-    allMetricNames.add(m.metricDef.name);
-  }
+  for (const evalName of evalNames) {
+    const leftStep =
+      leftReport.result.singleTurn?.[evalName]?.byStepIndex?.[scrollPosition] ??
+      null;
+    const rightStep =
+      rightReport.result.singleTurn?.[evalName]?.byStepIndex?.[scrollPosition] ??
+      null;
 
-  for (const metricName of Array.from(allMetricNames).sort()) {
-    const leftMetric = leftMetrics.find((m) => m.metricDef.name === metricName);
-    const rightMetric = rightMetrics.find(
-      (m) => m.metricDef.name === metricName,
-    );
+    const leftScoreNum = leftStep?.measurement.score;
+    const rightScoreNum = rightStep?.measurement.score;
 
-    let leftNormalized = 0;
-    let rightNormalized = 0;
-
-    const leftScore = leftMetric
-      ? typeof leftMetric.value === 'number'
-        ? (() => {
-            leftNormalized =
-              leftMetric.value >= 0 && leftMetric.value <= 5
-                ? leftMetric.value / 5
-                : leftMetric.value;
-            return formatScore(leftMetric.value);
-          })()
-        : String(leftMetric.value)
-      : colors.muted('-');
-    const rightScore = rightMetric
-      ? typeof rightMetric.value === 'number'
-        ? (() => {
-            rightNormalized =
-              rightMetric.value >= 0 && rightMetric.value <= 5
-                ? rightMetric.value / 5
-                : rightMetric.value;
-            return formatScore(rightMetric.value);
-          })()
-        : String(rightMetric.value)
-      : colors.muted('-');
+    const leftScore =
+      leftScoreNum !== undefined ? formatScore(leftScoreNum) : colors.muted('-');
+    const rightScore =
+      rightScoreNum !== undefined ? formatScore(rightScoreNum) : colors.muted('-');
 
     let deltaText = colors.muted('-');
-    if (
-      typeof leftMetric?.value === 'number' &&
-      typeof rightMetric?.value === 'number'
-    ) {
-      const delta = rightNormalized - leftNormalized;
+    if (typeof leftScoreNum === 'number' && typeof rightScoreNum === 'number') {
+      const delta = rightScoreNum - leftScoreNum;
       deltaText =
         delta > 0.01
           ? colors.success(`+${delta.toFixed(3)}`)
           : delta < -0.01
-          ? colors.error(delta.toFixed(3))
-          : colors.muted(delta.toFixed(3));
+            ? colors.error(delta.toFixed(3))
+            : colors.muted(delta.toFixed(3));
     }
 
-    table.push([metricName, leftScore, rightScore, deltaText]);
+    table.push([evalName, leftScore, rightScore, deltaText]);
   }
 
   return (
@@ -269,15 +198,21 @@ export function CompareView({
             colWidths: [20, 12, 12, 12],
           });
 
-          const leftSummaries = getEvalSummariesMap(leftReport.evalSummaries);
-          const rightSummaries = getEvalSummariesMap(rightReport.evalSummaries);
+          const leftSummaries = leftReport.result.summaries?.byEval ?? {};
+          const rightSummaries = rightReport.result.summaries?.byEval ?? {};
 
-          for (const [evalName, leftSummary] of leftSummaries) {
-            const rightSummary = rightSummaries.get(evalName);
-            if (!rightSummary) continue;
+          const allEvalNames = new Set<string>([
+            ...Object.keys(leftSummaries),
+            ...Object.keys(rightSummaries),
+          ]);
 
-            const leftMeanValue = getNumericAggregation(leftSummary.aggregations.score, 'mean');
-            const rightMeanValue = getNumericAggregation(rightSummary.aggregations.score, 'mean');
+          for (const evalName of Array.from(allEvalNames).sort()) {
+            const leftSummary = leftSummaries[evalName];
+            const rightSummary = rightSummaries[evalName];
+            if (!leftSummary || !rightSummary) continue;
+
+            const leftMeanValue = getNumericAggregation(leftSummary.aggregations?.score, 'mean');
+            const rightMeanValue = getNumericAggregation(rightSummary.aggregations?.score, 'mean');
 
             if (leftMeanValue === undefined || rightMeanValue === undefined) {
               summaryTable.push([evalName, colors.muted('-'), colors.muted('-'), colors.muted('-')]);
@@ -291,8 +226,8 @@ export function CompareView({
               delta > 0.01
                 ? colors.success(`+${delta.toFixed(3)}`)
                 : delta < -0.01
-                ? colors.error(delta.toFixed(3))
-                : colors.muted(delta.toFixed(3));
+                  ? colors.error(delta.toFixed(3))
+                  : colors.muted(delta.toFixed(3));
 
             summaryTable.push([evalName, leftMean, rightMean, deltaText]);
           }

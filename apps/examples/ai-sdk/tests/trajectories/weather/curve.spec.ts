@@ -95,18 +95,18 @@ describe('Weather Agent - Curve Ball', () => {
 		});
 
 		const report = await tally.run();
-		await saveTallyReportToStore({ conversationId: 'weather-curve', report });
+		await saveTallyReportToStore({ conversationId: 'weather-curve', report: report.toArtifact() });
 
 		// Assertions
 		expect(report).toBeDefined();
-		expect(report.perTargetResults.length).toBeGreaterThan(0);
-		expect(report.evalSummaries.size).toBeGreaterThan(0);
+		expect(report.result.stepCount).toBeGreaterThan(0);
+		expect(Object.keys(report.result.summaries?.byEval ?? {}).length).toBeGreaterThan(0);
 
 		// For curve ball, we're more lenient - just check that agent handled it
 		// The agent should still respond appropriately even if the request is ambiguous
-		const overallQualitySummary = report.evalSummaries.get('Overall Quality');
+		const overallQualitySummary = report.result.summaries?.byEval?.['Overall Quality'];
 		if (overallQualitySummary) {
-			const mean = overallQualitySummary.aggregations.score['Mean'];
+			const mean = (overallQualitySummary.aggregations?.score as any)?.mean;
 			if (typeof mean === 'number') {
 				expect(mean).toBeGreaterThan(0.4); // At least 0.4 average score
 			}

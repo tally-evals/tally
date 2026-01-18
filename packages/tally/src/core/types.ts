@@ -1,8 +1,7 @@
 /**
  * Core type definitions for the Tally evaluation framework
  *
- * This file re-exports all types from @tally-evals/core for backward compatibility.
- * The canonical type definitions now live in the core package.
+ * This file re-exports core types from @tally-evals/core.
  */
 
 // Re-export everything from @tally-evals/core
@@ -66,14 +65,28 @@ export type {
   ScorerEval,
   Eval,
   Evaluator,
-  // Report types
-  TargetVerdict,
-  PerTargetResult,
-  Aggregations,
-  VerdictSummary,
-  AggregateSummary,
-  EvalSummary,
-  EvaluationReport,
+  // Run artifact types (canonical reporting schema)
+  MetricName,
+  EvalName,
+  RunId,
+  ConversationId,
+  Verdict,
+  MetricScalarOrNull,
+  Measurement,
+  VerdictPolicyInfo,
+  EvalOutcome,
+  StepEvalResult,
+  ConversationEvalResult,
+  SingleTurnEvalSeries,
+  ConversationResult,
+  MetricDefSnap,
+  EvalDefSnap,
+  RunDefs,
+  EvalSummarySnap,
+  Summaries,
+  TallyRunArtifact,
+  TargetRunView,
+  TallyRunReport,
   // Tally container
   Tally,
 } from '@tally-evals/core';

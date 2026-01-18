@@ -44,7 +44,7 @@
   },
   "peerDependencies": {
     "@s2-dev/streamstore": "^0.21.0",
-    "ai": "^5.0.0",
+    "ai": "^5.0.121",
     "ioredis": "^5.0.0"
   },
   "peerDependenciesMeta": {
@@ -61,7 +61,7 @@
     "@tally-evals/typescript-config": "workspace:*",
     "@types/bun": "latest",
     "@types/node": "24.6.2",
-    "ai": "^5.0.0",
+    "ai": "^5.0.121",
     "dotenv": "^17.2.3",
     "ioredis": "^5.4.1",
     "tsdown": "^0.20.0-beta.3",

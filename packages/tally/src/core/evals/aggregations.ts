@@ -28,7 +28,7 @@ export function calculateVerdictSummary(
   scores: readonly Score[],
   verdictPolicy: VerdictPolicy,
   rawValues?: readonly MetricScalar[]
-): import('@tally/core/types').VerdictSummary {
+): import('@tally-evals/core').ArtifactVerdictSummary {
   if (scores.length === 0) {
     throw new Error('Cannot calculate verdict summary for empty scores array');
   }
