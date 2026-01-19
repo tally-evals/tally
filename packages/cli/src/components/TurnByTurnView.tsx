@@ -7,6 +7,7 @@ import { Box, Text, useInput, useStdout } from 'ink';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { colors } from 'src/utils/colors.js';
+import { formatPassAt } from 'src/utils/formatters';
 import { ConversationTurn } from './shared/ConversationTurn';
 import { MetricsTable } from './shared/MetricsTable';
 import { Scrollable } from './shared/Scrollable';
@@ -96,6 +97,9 @@ export function TurnByTurnView({
     if (!stepRes) continue;
     currentTurnMetrics.push({
       name: evalName,
+      ...(report.defs?.evals?.[evalName]?.verdict
+        ? { passAt: formatPassAt(report.defs.evals[evalName]!.verdict) }
+        : {}),
       ...(stepRes.measurement.score !== undefined
         ? { score: Number(stepRes.measurement.score) }
         : {}),
@@ -121,6 +125,9 @@ export function TurnByTurnView({
 
     currentTurnMetrics.push({
       name: evalName,
+      ...(report.defs?.evals?.[evalName]?.verdict
+        ? { passAt: formatPassAt(report.defs.evals[evalName]!.verdict) }
+        : {}),
       ...(stepRes.measurement?.score !== undefined
         ? { score: Number(stepRes.measurement.score) }
         : {}),
@@ -148,6 +155,9 @@ export function TurnByTurnView({
   for (const [evalName, res] of Object.entries(report.result.multiTurn ?? {})) {
     multiTurnRows.push({
       name: evalName,
+      ...(report.defs?.evals?.[evalName]?.verdict
+        ? { passAt: formatPassAt(report.defs.evals[evalName]!.verdict) }
+        : {}),
       ...(res.measurement.score !== undefined ? { score: Number(res.measurement.score) } : {}),
       ...(res.measurement.rawValue !== undefined
         ? { rawValue: res.measurement.rawValue as any }

@@ -6,11 +6,7 @@ import Table from 'cli-table3';
 import { Box, Text, useStdout } from 'ink';
 import React, { useMemo } from 'react';
 import { colors } from '../../utils/colors';
-import {
-  formatScore,
-  formatVerdict,
-  truncateText,
-} from '../../utils/formatters';
+import { formatScore, formatVerdict, truncateText } from '../../utils/formatters';
 import type { CliMetricRow } from './ConversationTurn';
 
 interface MetricsTableProps {
@@ -35,9 +31,10 @@ function MetricsTableComponent({
     const metricColWidth = 20;
     const scoreColWidth = 12;
     const rawColWidth = 12;
+    const passAtColWidth = 14;
     const verdictColWidth = 10;
 
-    const numColumns = 5;
+    const numColumns = 6;
     const borderOverhead = numColumns * 3 + 1;
 
     const reasoningColWidth = Math.max(
@@ -46,6 +43,7 @@ function MetricsTableComponent({
         metricColWidth -
         scoreColWidth -
         rawColWidth -
+        passAtColWidth -
         verdictColWidth -
         borderOverhead,
     );
@@ -55,6 +53,7 @@ function MetricsTableComponent({
         colors.bold('Eval'),
         colors.bold('Score'),
         colors.bold('Raw'),
+        colors.bold('Pass at'),
         colors.bold('Verdict'),
         colors.bold('Reasoning'),
       ].map((h) => colors.info(h)),
@@ -68,6 +67,7 @@ function MetricsTableComponent({
         metricColWidth,
         scoreColWidth,
         rawColWidth,
+        passAtColWidth,
         verdictColWidth,
         reasoningColWidth,
       ],
@@ -85,6 +85,7 @@ function MetricsTableComponent({
               ? metric.rawValue
               : String(metric.rawValue)
           : '-';
+      const passAt = metric.passAt !== undefined ? metric.passAt : colors.muted('-');
       const verdictIcon = formatVerdict(metric.verdict);
       const fullReasoning = metric.reasoning || '';
       const reasoning =
@@ -99,6 +100,7 @@ function MetricsTableComponent({
         name,
         score,
         raw,
+        passAt,
         verdictIcon,
         reasoning as string,
       ]);
