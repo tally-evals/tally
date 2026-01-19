@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { ChevronLeft } from "lucide-react";
+import type { TallyRunArtifact } from "@tally-evals/core";
 import {
   Conversation,
   ConversationContent,
@@ -29,83 +30,7 @@ type ConversationData = {
   steps: ConversationStep[];
 };
 
-type RunData = {
-  schemaVersion?: number;
-  runId?: string;
-  createdAt?: string;
-  defs?: {
-    evals?: Record<string, { metric?: string; kind?: string }>;
-    metrics?: Record<string, { description?: string; valueType?: string; scope?: string }>;
-  };
-  result?: {
-    singleTurn?: Record<
-      string,
-      {
-        byStepIndex?: Array<{
-          eval?: string;
-          measurement?: {
-            score?: number;
-            rawValue?: unknown;
-            confidence?: number;
-            reasoning?: string;
-            executionTimeMs?: number;
-            timestamp?: string;
-          };
-          outcome?: { verdict?: string };
-        } | null>;
-      }
-    >;
-    multiTurn?: Record<
-      string,
-      {
-        eval?: string;
-        measurement?: {
-          score?: number;
-          rawValue?: unknown;
-          confidence?: number;
-          reasoning?: string;
-          executionTimeMs?: number;
-          timestamp?: string;
-        };
-        outcome?: { verdict?: string };
-      }
-    >;
-    scorers?: Record<
-      string,
-      | {
-          shape?: "scalar";
-          result?: {
-            eval?: string;
-            measurement?: { score?: number; rawValue?: unknown; reasoning?: string };
-            outcome?: { verdict?: string };
-          };
-        }
-      | {
-          shape?: "seriesByStepIndex";
-          series?: {
-            byStepIndex?: Array<{
-              eval?: string;
-              measurement?: { score?: number; rawValue?: unknown; reasoning?: string };
-              outcome?: { verdict?: string };
-            } | null>;
-          };
-        }
-    >;
-    summaries?: {
-      byEval?: Record<
-        string,
-        {
-          eval?: string;
-          kind?: string;
-          count?: number;
-          aggregations?: { score?: Record<string, unknown>; raw?: Record<string, unknown> };
-          verdictSummary?: Record<string, unknown>;
-        }
-      >;
-    };
-  };
-  metadata?: Record<string, unknown>;
-};
+type RunData = TallyRunArtifact;
 
 function getProperty(obj: unknown, key: string): unknown {
   if (obj && typeof obj === "object" && key in obj) return (obj as Record<string, unknown>)[key];
@@ -266,8 +191,9 @@ export function RunView({ convId, runId }: RunViewProps) {
       for (let stepIndex = 0; stepIndex < Math.min(arr.length, steps.length); stepIndex++) {
         const r = arr[stepIndex];
         if (!r) continue;
-        const m = r.measurement ?? {};
-        const metricName = run?.defs?.evals?.[evalName]?.metric;
+        const m = r.measurement;
+        const metricName =
+          typeof m.metricRef === "string" ? m.metricRef : run?.defs?.evals?.[evalName]?.metric;
         byStep[stepIndex]?.push({
           evalName,
           ...(metricName ? { metricName } : {}),
@@ -290,8 +216,8 @@ export function RunView({ convId, runId }: RunViewProps) {
   }, [run?.result?.summaries?.byEval]);
 
   const endOfConversationEvals = useMemo(() => {
-    // "multi turn metrics" in practice includes multiTurn AND scorer-style evals.
-    return evalSummariesEntries.filter(([, v]) => v.kind !== "singleTurn");
+    // Include singleTurn, multiTurn, and scorer summaries in the table.
+    return evalSummariesEntries;
   }, [evalSummariesEntries]);
 
   const evalSummaryRows = useMemo(() => {
@@ -299,24 +225,39 @@ export function RunView({ convId, runId }: RunViewProps) {
       const evalName = ev.eval ?? name;
       const kind = ev.kind ?? "unknown";
       const aggs = ev.aggregations?.score ?? {};
-      const mean = typeof (aggs as any).mean === "number" ? ((aggs as any).mean as number) : undefined;
-      const percentiles =
-        (aggs as any).percentiles && typeof (aggs as any).percentiles === "object" && !Array.isArray((aggs as any).percentiles)
-          ? ((aggs as any).percentiles as Record<string, unknown>)
-          : undefined;
-      const p50 = typeof percentiles?.p50 === "number" ? (percentiles.p50 as number) : undefined;
-      const p75 = typeof percentiles?.p75 === "number" ? (percentiles.p75 as number) : undefined;
-      const p90 = typeof percentiles?.p90 === "number" ? (percentiles.p90 as number) : undefined;
+
+      const getAgg = (key: string): number | undefined => {
+        const candidates: string[] = [key];
+        const lower = key.toLowerCase();
+        const upper = key.toUpperCase();
+        candidates.push(lower, upper);
+        if (lower === "mean") candidates.push("Mean");
+        if (/^p\d+$/.test(lower)) candidates.push(`P${lower.slice(1)}`);
+
+        for (const k of candidates) {
+          const v = (aggs as Record<string, unknown>)[k];
+          if (typeof v === "number") return v;
+        }
+        return undefined;
+      };
+
+      const mean = getAgg("mean");
+      const p50 = getAgg("p50");
+      const p75 = getAgg("p75");
+      const p90 = getAgg("p90");
       const passRate =
         ev.verdictSummary && typeof ev.verdictSummary === "object"
           ? (ev.verdictSummary as any).passRate
           : undefined;
 
-      return { evalName, kind, mean, p50, p75, p90, passRate };
+      const scorerRef = kind === "scorer" ? run?.defs?.evals?.[evalName]?.scorerRef : undefined;
+      const calcKind = scorerRef ? run?.defs?.scorers?.[scorerRef]?.combine?.kind : undefined;
+
+      return { evalName, kind, mean, p50, p75, p90, passRate, ...(calcKind ? { calcKind } : {}) };
     });
 
     return rows;
-  }, [endOfConversationEvals]);
+  }, [endOfConversationEvals, run?.defs]);
 
   if (loading) {
     return (
@@ -547,6 +488,7 @@ export function RunView({ convId, runId }: RunViewProps) {
                     <tr className="border-b border-border">
                       <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Eval</th>
                       <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Kind</th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Calc</th>
                       <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Mean</th>
                       <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">P50</th>
                       <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">P75</th>
@@ -559,6 +501,7 @@ export function RunView({ convId, runId }: RunViewProps) {
                       <tr key={r.evalName} className="border-b border-border/60 last:border-0">
                         <td className="px-3 py-2 align-top font-medium">{r.evalName}</td>
                         <td className="px-3 py-2 align-top text-xs text-muted-foreground">{r.kind}</td>
+                        <td className="px-3 py-2 align-top font-mono text-xs">{r.calcKind ?? "—"}</td>
                         <td className="px-3 py-2 align-top font-mono text-xs">{r.mean ?? "—"}</td>
                         <td className="px-3 py-2 align-top font-mono text-xs">{r.p50 ?? "—"}</td>
                         <td className="px-3 py-2 align-top font-mono text-xs">{r.p75 ?? "—"}</td>

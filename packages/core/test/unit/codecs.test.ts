@@ -106,6 +106,7 @@ describe('TallyRunArtifact codec', () => {
             verdict: { kind: 'number', type: 'threshold', passAt: 0.8 },
           },
         },
+        scorers: {},
       },
       result: {
         stepCount: 2,
@@ -113,8 +114,9 @@ describe('TallyRunArtifact codec', () => {
           'Answer Relevance': {
             byStepIndex: [
               {
-                eval: 'Answer Relevance',
+                evalRef: 'Answer Relevance',
                 measurement: {
+                  metricRef: 'answerRelevance',
                   score: 1,
                   rawValue: 5,
                   confidence: 0.9,
@@ -164,7 +166,7 @@ describe('TallyRunArtifact codec', () => {
     expect(decoded.runId).toBe('run-1767864765136-test');
     expect(decoded.result.stepCount).toBe(2);
     expect(decoded.result.singleTurn['Answer Relevance']?.byStepIndex).toHaveLength(2);
-    expect(decoded.result.singleTurn['Answer Relevance']?.byStepIndex[0]?.eval).toBe(
+    expect(decoded.result.singleTurn['Answer Relevance']?.byStepIndex[0]?.evalRef).toBe(
       'Answer Relevance'
     );
   });

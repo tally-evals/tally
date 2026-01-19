@@ -11,6 +11,9 @@ import type {
   Evaluator,
   MetricContainer,
   MetricScalar,
+  ScorerInput,
+  ScorerCombineKind,
+  ScorerInputSnap,
   TallyRunArtifact,
   TallyRunReport,
   RunDefs,
@@ -36,6 +39,28 @@ import type { GenerateObjectOptions } from './execution/llm/generateObject';
 import { type DerivedScoreEntry, type PipelineOptions, type PipelineResult, type PipelineVerdict, executePipeline } from './pipeline';
 import { resolveRunPolicy, selectConversationTargets, selectDatasetTargets } from './evaluators/context';
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function asScorerCombineKind(value: unknown): ScorerCombineKind | undefined {
+  return value === 'weightedAverage' ||
+    value === 'identity' ||
+    value === 'custom' ||
+    value === 'unknown'
+    ? value
+    : undefined;
+}
+
+function getScorerCombineKind(scorer: { metadata?: Record<string, unknown>; combineScores?: unknown }): ScorerCombineKind {
+  const meta = scorer.metadata;
+  if (isRecord(meta) && isRecord(meta.__tally)) {
+    const tagged = asScorerCombineKind(meta.__tally.combineKind);
+    if (tagged) return tagged;
+  }
+  return scorer.combineScores ? 'custom' : 'unknown';
+}
+
 function getTargetId(container: DatasetItem | Conversation, index: number): string {
   return match(container)
     .with({ id: P.string }, (c) => c.id)
@@ -44,18 +69,26 @@ function getTargetId(container: DatasetItem | Conversation, index: number): stri
 
 function toPolicyInfo(policy: unknown): VerdictPolicyInfo {
   if (!policy || typeof policy !== 'object') return { kind: 'none' };
-  const kind = (policy as any).kind;
+  const kind = isRecord(policy) ? policy.kind : undefined;
   if (kind === 'none') return { kind: 'none' };
-  if (kind === 'boolean') return { kind: 'boolean', passWhen: Boolean((policy as any).passWhen) };
-  if (kind === 'ordinal') return { kind: 'ordinal', passWhenIn: (policy as any).passWhenIn ?? [] };
+  if (kind === 'boolean') {
+    return { kind: 'boolean', passWhen: Boolean(isRecord(policy) ? policy.passWhen : false) };
+  }
+  if (kind === 'ordinal') {
+    const passWhenIn = isRecord(policy) && Array.isArray(policy.passWhenIn) ? policy.passWhenIn : [];
+    return { kind: 'ordinal', passWhenIn };
+  }
   if (kind === 'number') {
-    const type = (policy as any).type;
-    if (type === 'threshold') return { kind: 'number', type: 'threshold', passAt: Number((policy as any).passAt) };
+    const type = isRecord(policy) ? policy.type : undefined;
+    if (type === 'threshold') {
+      const passAt = Number(isRecord(policy) ? policy.passAt : NaN);
+      return { kind: 'number', type: 'threshold', passAt };
+    }
     return {
       kind: 'number',
       type: 'range',
-      ...(((policy as any).min !== undefined) ? { min: Number((policy as any).min) } : {}),
-      ...(((policy as any).max !== undefined) ? { max: Number((policy as any).max) } : {}),
+      ...(isRecord(policy) && policy.min !== undefined ? { min: Number(policy.min) } : {}),
+      ...(isRecord(policy) && policy.max !== undefined ? { max: Number(policy.max) } : {}),
     };
   }
   if (kind === 'custom') return { kind: 'custom', note: 'not-serializable' };
@@ -89,6 +122,7 @@ function buildRunDefs(args: {
 }): RunDefs {
   const metrics: Record<string, MetricDefSnap> = {};
   const evals: Record<string, EvalDefSnap> = {};
+  const scorers: RunDefs['scorers'] = {};
 
   for (const ie of args.internalEvaluators) {
     const md = args.evalMetadata.get(ie.evalName);
@@ -104,27 +138,42 @@ function buildRunDefs(args: {
       };
     }
 
+    if (ie.evalKind === 'scorer') {
+      const combineKind = getScorerCombineKind(ie.scorer);
+
+      scorers[ie.scorer.name] = {
+        name: ie.scorer.name,
+        inputs: (ie.scorer.inputs as readonly ScorerInput[]).map((input): ScorerInputSnap => ({
+          metricRef: input.metric.name,
+          weight: input.weight,
+          ...(input.required !== undefined ? { required: input.required } : {}),
+          ...(input.normalizerOverride !== undefined ? { hasNormalizerOverride: true } : {}),
+        })),
+        ...(ie.scorer.normalizeWeights !== undefined
+          ? { normalizeWeights: ie.scorer.normalizeWeights }
+          : {}),
+        ...(ie.scorer.fallbackScore !== undefined
+          ? { fallbackScore: ie.scorer.fallbackScore }
+          : {}),
+        combine: { kind: combineKind },
+        ...(ie.scorer.description ? { description: ie.scorer.description } : {}),
+        ...(ie.scorer.metadata ? { metadata: ie.scorer.metadata } : {}),
+      };
+    }
+
     evals[ie.evalName] = {
       name: ie.evalName,
       kind: ie.evalKind,
       outputShape: ie.evalKind === 'singleTurn' ? 'seriesByStepIndex' : 'scalar',
-      metric: primaryMetric?.name ?? ie.evalName,
-      ...(ie.evalKind === 'scorer'
-        ? {
-            scorer: {
-              name: ie.scorer.name,
-              inputs: ie.scorer.inputs.map((i) => i.metric.name),
-              weights: ie.scorer.inputs.map((i) => i.weight),
-            },
-          }
-        : {}),
+      metric: ie.evalKind === 'scorer' ? ie.scorer.name : (primaryMetric?.name ?? ie.evalName),
+      ...(ie.evalKind === 'scorer' ? { scorerRef: ie.scorer.name } : {}),
       verdict: toPolicyInfo(md?.verdictPolicy),
       ...(ie.description ? { description: ie.description } : {}),
       ...(ie.metadata ? { metadata: ie.metadata } : {}),
     };
   }
 
-  return { metrics, evals };
+  return { metrics, evals, scorers };
 }
 
 function findDerivedForEval(
@@ -142,6 +191,7 @@ function buildSingleTurnSeries(args: {
   stepCount: number;
   selectedIndices: readonly number[];
   metricName: string | undefined;
+  metricRef: string;
   rawMetrics: readonly import('@tally/core/types').Metric<MetricScalar>[];
   derivedEntry: DerivedScoreEntry | undefined;
   verdicts: readonly PipelineVerdict[] | undefined;
@@ -164,6 +214,7 @@ function buildSingleTurnSeries(args: {
     const rawCandidate = metric?.value ?? fallbackRaw;
     const rawValue = asMetricScalarOrNull(rawCandidate);
     const measurement = {
+      metricRef: args.metricRef,
       ...(score !== undefined ? { score } : {}),
       ...(rawValue !== undefined ? { rawValue } : {}),
       ...(metric?.confidence !== undefined ? { confidence: metric.confidence } : {}),
@@ -173,7 +224,7 @@ function buildSingleTurnSeries(args: {
     };
 
     byStepIndex[stepIndex] = {
-      eval: args.evalName,
+      evalRef: args.evalName,
       measurement,
       ...(verdict ? { outcome: toOutcome({ verdict, policy: args.policy }) } : {}),
     };
@@ -195,8 +246,8 @@ function buildConversationResult(args: {
     args.pipeline.verdicts.get(targetId) ?? new Map<string, readonly PipelineVerdict[]>();
 
   const stepCount =
-    'steps' in args.container && Array.isArray((args.container as any).steps)
-      ? (args.container as Conversation).steps.length
+    'steps' in args.container && Array.isArray(args.container.steps)
+      ? args.container.steps.length
       : 1;
 
   const evaluatorByEval = new Map(args.internalEvaluators.map((ie) => [ie.evalName, ie]));
@@ -228,6 +279,7 @@ function buildConversationResult(args: {
         stepCount,
         selectedIndices,
         metricName: ie?.metrics[0]?.name,
+        metricRef: ie?.metrics[0]?.name ?? evalName,
         rawMetrics: targetRawMetrics,
         derivedEntry,
         verdicts: verdictList,
@@ -249,8 +301,9 @@ function buildConversationResult(args: {
       const rawValue = asMetricScalarOrNull(rawCandidate);
 
       multiTurn[evalName] = {
-        eval: evalName,
+        evalRef: evalName,
         measurement: {
+          metricRef: metricName ?? evalName,
           ...(score !== undefined ? { score } : {}),
           ...(rawValue !== undefined ? { rawValue } : {}),
           ...(metric?.confidence !== undefined ? { confidence: metric.confidence } : {}),
@@ -272,8 +325,9 @@ function buildConversationResult(args: {
       scorers[evalName] = {
         shape: 'scalar',
         result: {
-          eval: evalName,
+          evalRef: evalName,
           measurement: {
+            metricRef: ie?.scorer.name ?? evalName,
             ...(scores[0] !== undefined ? { score: scores[0] } : {}),
             ...(rawValue !== undefined ? { rawValue } : {}),
           },
@@ -294,6 +348,7 @@ function buildConversationResult(args: {
         stepCount,
         selectedIndices,
         metricName: undefined,
+        metricRef: ie?.scorer.name ?? evalName,
         rawMetrics: [],
         derivedEntry,
         verdicts: verdictList,
@@ -332,15 +387,14 @@ function buildConversationResult(args: {
 /**
  * Validate evaluator has required fields
  */
-const validateEvaluator = (evaluator: Evaluator<MetricContainer>): void =>
-  match(evaluator)
-    .with({ evals: P.when((e) => !e || e.length === 0) }, ({ name }) => {
-      throw new Error(`Tally: evaluator "${name}" must have at least one eval`);
-    })
-    .with({ context: P.nullish }, ({ name }) => {
-      throw new Error(`Tally: evaluator "${name}" must have a context`);
-    })
-    .otherwise(() => undefined);
+const validateEvaluator = (evaluator: Evaluator<MetricContainer>): void => {
+  if (!Array.isArray(evaluator.evals) || evaluator.evals.length === 0) {
+    throw new Error(`Tally: evaluator "${evaluator.name}" must have at least one eval`);
+  }
+  if (!evaluator.context) {
+    throw new Error(`Tally: evaluator "${evaluator.name}" must have a context`);
+  }
+};
 
 /**
  * Validate constructor inputs

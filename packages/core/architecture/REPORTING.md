@@ -368,7 +368,7 @@ export interface StoredRunArtifact {
 
 ### Notes / improvements over current stored shape
 
-- **No `metric` field in per-row results**: it is derivable from `defs.evals[result.eval].metric`, which keeps rows smaller and consistent.
+- **`Measurement.metricRef` is required**: row measurements can join directly into `defs.metrics[metricRef]` for UI/TUI.
 - **`Measurement.score` is optional**: makes this future-proof for evaluators that only yield raw/ordinal values.
 - **Scorers stay explicit**: `shape` is required so consumers never guess “series vs scalar”.
 
@@ -440,8 +440,8 @@ expect(view.stepVerdict(0, "Answer Relevance")).toBe("pass");
 ```ts
 const step0 = view.step(0, "Answer Relevance");
 if (step0) {
-  const evalDef = view.evalDef(step0.eval);
-  const metricDef = view.metricDefForEval(step0.eval);
+  const evalDef = view.evalDef(step0.evalRef);
+  const metricDef = view.metricDefForEval(step0.evalRef);
   // Render labels from defs; render values from result
 }
 ```

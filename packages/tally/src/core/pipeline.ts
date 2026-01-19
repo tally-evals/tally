@@ -611,6 +611,14 @@ const calculateRawValueAggregations = (
   evalKind: 'singleTurn' | 'multiTurn' | 'scorer',
   inputMetrics: readonly MetricDef<MetricScalar, MetricContainer>[],
 ): PipelineAggregations => {
+  // Multi-turn evals produce a single scalar per conversation.
+  // Treat them as scalar and store the raw scalar for summary display.
+  if (evalKind === 'multiTurn') {
+    if (rawValues.length !== 1) return {};
+    const v = rawValues[0];
+    return typeof v === 'number' ? { value: v } : {};
+  }
+
   if (evalKind !== 'singleTurn' && evalKind !== 'scorer') return {};
 
   const allAggregators: AggregatorDef[] =

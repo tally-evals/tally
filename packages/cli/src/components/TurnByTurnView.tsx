@@ -99,6 +99,9 @@ export function TurnByTurnView({
       ...(stepRes.measurement.score !== undefined
         ? { score: Number(stepRes.measurement.score) }
         : {}),
+      ...(stepRes.measurement.rawValue !== undefined
+        ? { rawValue: stepRes.measurement.rawValue as any }
+        : {}),
       ...(stepRes.outcome?.verdict !== undefined
         ? { verdict: stepRes.outcome.verdict }
         : {}),
@@ -118,6 +121,9 @@ export function TurnByTurnView({
     multiTurnRows.push({
       name: evalName,
       ...(res.measurement.score !== undefined ? { score: Number(res.measurement.score) } : {}),
+      ...(res.measurement.rawValue !== undefined
+        ? { rawValue: res.measurement.rawValue as any }
+        : {}),
       ...(res.outcome?.verdict !== undefined ? { verdict: res.outcome.verdict } : {}),
       ...(res.measurement.reasoning !== undefined ? { reasoning: res.measurement.reasoning } : {}),
     });

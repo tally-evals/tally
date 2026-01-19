@@ -34,9 +34,10 @@ function MetricsTableComponent({
 
     const metricColWidth = 20;
     const scoreColWidth = 12;
+    const rawColWidth = 12;
     const verdictColWidth = 10;
 
-    const numColumns = 4;
+    const numColumns = 5;
     const borderOverhead = numColumns * 3 + 1;
 
     const reasoningColWidth = Math.max(
@@ -44,6 +45,7 @@ function MetricsTableComponent({
       viewportWidth -
         metricColWidth -
         scoreColWidth -
+        rawColWidth -
         verdictColWidth -
         borderOverhead,
     );
@@ -52,6 +54,7 @@ function MetricsTableComponent({
       head: [
         colors.bold('Eval'),
         colors.bold('Score'),
+        colors.bold('Raw'),
         colors.bold('Verdict'),
         colors.bold('Reasoning'),
       ].map((h) => colors.info(h)),
@@ -64,6 +67,7 @@ function MetricsTableComponent({
       colWidths: [
         metricColWidth,
         scoreColWidth,
+        rawColWidth,
         verdictColWidth,
         reasoningColWidth,
       ],
@@ -72,6 +76,15 @@ function MetricsTableComponent({
     for (const metric of metrics) {
       const name = truncateText(metric.name, 20);
       const score = metric.score !== undefined ? formatScore(metric.score) : colors.muted('-');
+      // Raw values should not be color-coded; keep plain text (white).
+      const raw =
+        metric.rawValue !== undefined
+          ? typeof metric.rawValue === 'number'
+            ? metric.rawValue.toFixed(3)
+            : typeof metric.rawValue === 'string'
+              ? metric.rawValue
+              : String(metric.rawValue)
+          : '-';
       const verdictIcon = formatVerdict(metric.verdict);
       const fullReasoning = metric.reasoning || '';
       const reasoning =
@@ -85,6 +98,7 @@ function MetricsTableComponent({
       table.push([
         name,
         score,
+        raw,
         verdictIcon,
         reasoning as string,
       ]);
