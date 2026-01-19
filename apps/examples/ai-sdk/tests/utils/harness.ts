@@ -20,8 +20,9 @@ import { TallyStore, stepTracesToConversation } from '@tally-evals/core';
 import type { Conversation, ConversationStep } from '@tally-evals/core';
 import type { TallyRunArtifact } from '@tally-evals/core';
 
-// Load .env.local if it exists
-config({ path: resolve(process.cwd(), '.env.local') });
+// Load app-local .env.local (tests run from monorepo root in CI/dev)
+const APP_ROOT = resolve(__dirname, '..', '..');
+config({ path: resolve(APP_ROOT, '.env.local') });
 
 const RECORD_MODE = process.env.RECORD_TRAJECTORIES === '1';
 

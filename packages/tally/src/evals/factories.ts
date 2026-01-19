@@ -124,7 +124,6 @@ export function defineScorerEval(args: {
     ...(args.description !== undefined
       ? { description: args.description }
       : {}),
-    inputs: args.scorer.inputs.map((i) => i.metric),
     scorer: args.scorer,
     ...(args.verdict !== undefined ? { verdict: args.verdict } : {}),
     ...(args.context !== undefined ? { context: args.context } : {}),

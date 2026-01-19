@@ -126,7 +126,6 @@ export interface MultiTurnEval<
  */
 export interface ScorerEval<TContainer extends MetricContainer> extends EvalBase<TContainer> {
   kind: 'scorer';
-  inputs: readonly MetricDefFor<TContainer>[];  // Input metrics (can be multiple)
   scorer: Scorer;  // Scorer definition (outputs normalized Score)
   verdict?: VerdictPolicyFor<number>;  // Always number-based (Score is number)
 }
@@ -255,7 +254,6 @@ export function defineMultiTurnEval<
 export function defineScorerEval<TContainer extends MetricContainer>(args: {
   name: string;
   description?: string;
-  inputs: readonly MetricDefFor<TContainer>[];
   scorer: Scorer;
   verdict?: VerdictPolicyFor<number>;
   context?: EvaluationContext;
@@ -538,7 +536,6 @@ const qualityScorer = defineScorer({
 // Scorer eval: verdict is always number-based (Score output)
 const qualityEval = defineScorerEval({
   name: 'Overall Quality',
-  inputs: [relevanceMetric, completenessMetric],
   scorer: qualityScorer,
   verdict: thresholdVerdict(0.75),  // Pass when quality score >= 0.75
 });

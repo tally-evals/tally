@@ -76,7 +76,6 @@ describe('Weather Agent - Curve Ball', () => {
 
 		const overallQualityEval = defineScorerEval({
 			name: 'Overall Quality',
-			inputs: [answerRelevance, completeness],
 			scorer: qualityScorer,
 			verdict: thresholdVerdict(0.5), // Lower threshold for curve ball
 		});

@@ -68,7 +68,6 @@ import { defineScorerEval, thresholdVerdict } from '@tally-evals/tally';
 // Decision: "The overall weighted quality must be >= 0.8"
 const qualityEval = defineScorerEval({
   name: 'Production Quality',
-  inputs: [relevance, completeness, toxicity],
   scorer: qualityScorer,
   verdict: thresholdVerdict(0.8),
 });

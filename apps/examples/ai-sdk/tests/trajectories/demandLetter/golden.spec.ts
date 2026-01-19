@@ -102,7 +102,6 @@ describe('Demand Letter Agent - Golden Path', () => {
 
 		const overallQualityEval = defineScorerEval({
 			name: 'Overall Quality',
-			inputs: [answerRelevance, completeness],
 			scorer: qualityScorer,
 			verdict: thresholdVerdict(0.7),
 		});

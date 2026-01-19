@@ -70,7 +70,6 @@ describe('Demand Letter Agent - Curve Ball', () => {
 
 		const overallQualityEval = defineScorerEval({
 			name: 'Overall Quality',
-			inputs: [answerRelevance, completeness],
 			scorer: qualityScorer,
 			verdict: thresholdVerdict(0.5),
 		});
