@@ -21,6 +21,7 @@ export type CliMetricRow = {
   name: string;
   score?: number;
   verdict?: 'pass' | 'fail' | 'unknown';
+  passAt?: string;
   reasoning?: string;
   rawValue?: MetricScalar;
 };
