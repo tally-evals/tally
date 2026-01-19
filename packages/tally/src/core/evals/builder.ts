@@ -23,7 +23,7 @@ import type {
   SingleTurnContainer,
   SingleTurnEval,
   VerdictPolicy,
-} from '@tally-evals/core';
+} from '@tally/core/types';
 import { defineBaseMetric, defineInput, defineScorer } from '../factory';
 import {
   applyAutoNormalization,
@@ -249,11 +249,15 @@ function buildMultiTurnEval(
 function buildScorerEval<TContainer extends MetricContainer>(
   definition: ScorerEval
 ): InternalEvaluator<TContainer> {
+  const inputMetrics = (definition.scorer.inputs as readonly { metric: unknown }[]).map(
+    (input) => input.metric,
+  );
+
   const result: InternalEvaluator<TContainer> = {
     name: `${definition.name}_evaluator`,
     description: definition.description,
-    // Cast inputs to container-specific MetricDef list for internal pipeline
-    metrics: definition.inputs as unknown as MetricDefFor<TContainer>[],
+    // Derive dependency metrics directly from scorer inputs
+    metrics: inputMetrics as unknown as MetricDefFor<TContainer>[],
     scorer: definition.scorer,
     context: definition.context,
     metadata: definition.metadata,

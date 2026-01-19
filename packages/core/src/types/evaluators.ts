@@ -11,8 +11,6 @@ import type {
   MetricContainer,
   SingleTurnContainer,
   MultiTurnContainer,
-  SingleTurnMetricDef,
-  MultiTurnMetricDef,
 } from './metrics';
 import type { Scorer } from './scorers';
 
@@ -156,12 +154,6 @@ export interface MultiTurnEval<
  */
 export interface ScorerEval extends EvalBase {
   kind: 'scorer';
-  // Allow mixing single-turn and multi-turn metrics in scorer inputs
-  // Using MetricScalar to accept any valid metric value type while maintaining type safety
-  inputs: readonly (
-    | SingleTurnMetricDef<MetricScalar, SingleTurnContainer>
-    | MultiTurnMetricDef<MetricScalar, MultiTurnContainer>
-  )[]; // Input metrics (can be multiple)
   scorer: Scorer; // Scorer definition (outputs normalized Score)
   verdict?: VerdictPolicyFor<number>; // Always number-based (Score is number)
 }

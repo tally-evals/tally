@@ -127,7 +127,6 @@ describe.skipIf(!process.env.GOOGLE_GENERATIVE_AI_API_KEY)('E2E | Metrics | Gold
 
     const overallQualityEval = defineScorerEval({
       name: 'Overall Quality',
-      inputs: [answerRelevance, completeness, roleAdherence, goalCompletion, topicAdherence],
       scorer: qualityScorer,
       verdict: thresholdVerdict(0.7), // Adjusted from 0.7, actual scores ~0.84
     });
@@ -167,7 +166,9 @@ describe.skipIf(!process.env.GOOGLE_GENERATIVE_AI_API_KEY)('E2E | Metrics | Gold
     // Verify single-turn series exist and are step-indexed
     expect(Object.keys(report.result.singleTurn).length).toBeGreaterThan(0);
     for (const series of Object.values(report.result.singleTurn)) {
-      expect(series.byStepIndex.length).toBe(report.result.stepCount);
+      expect((series as { byStepIndex: unknown[] }).byStepIndex.length).toBe(
+        report.result.stepCount,
+      );
     }
 
     // Verify scorers exist (derived/composite outputs)

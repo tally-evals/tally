@@ -1,0 +1,474 @@
+{
+  "schemaVersion": 1,
+  "runId": "run-1768839544346-wnh182k",
+  "createdAt": "2026-01-19T16:19:04.346Z",
+  "defs": {
+    "metrics": {
+      "answerRelevance": {
+        "name": "answerRelevance",
+        "scope": "single",
+        "valueType": "number",
+        "description": "Measures how relevant the output is to the input query using LLM-based statement-level relevance analysis"
+      },
+      "completeness": {
+        "name": "completeness",
+        "scope": "single",
+        "valueType": "number",
+        "description": "Measures how complete an answer is relative to expected coverage using LLM-based analysis"
+      }
+    },
+    "evals": {
+      "Answer Relevance": {
+        "name": "Answer Relevance",
+        "kind": "singleTurn",
+        "outputShape": "seriesByStepIndex",
+        "metric": "answerRelevance",
+        "verdict": {
+          "kind": "none"
+        }
+      },
+      "Completeness": {
+        "name": "Completeness",
+        "kind": "singleTurn",
+        "outputShape": "seriesByStepIndex",
+        "metric": "completeness",
+        "verdict": {
+          "kind": "none"
+        }
+      },
+      "Overall Quality": {
+        "name": "Overall Quality",
+        "kind": "scorer",
+        "outputShape": "scalar",
+        "metric": "answerRelevance",
+        "scorer": {
+          "name": "OverallQuality",
+          "inputs": [
+            "answerRelevance",
+            "completeness"
+          ],
+          "weights": [
+            0.5,
+            0.5
+          ]
+        },
+        "verdict": {
+          "kind": "number",
+          "type": "threshold",
+          "passAt": 0.7
+        }
+      }
+    }
+  },
+  "result": {
+    "stepCount": 8,
+    "singleTurn": {
+      "Answer Relevance": {
+        "byStepIndex": [
+          {
+            "eval": "Answer Relevance",
+            "measurement": {
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The response directly and completely answers the query by providing the current weather conditions for San Francisco, including temperature, humidity, and wind speed.",
+              "executionTimeMs": 1423,
+              "timestamp": "2026-01-19T16:19:05.770Z"
+            }
+          },
+          {
+            "eval": "Answer Relevance",
+            "measurement": {
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.95,
+              "reasoning": "The response directly and completely answers the query by providing the requested weather information for London, UK.",
+              "executionTimeMs": 1526,
+              "timestamp": "2026-01-19T16:19:05.873Z"
+            }
+          },
+          {
+            "eval": "Answer Relevance",
+            "measurement": {
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.98,
+              "reasoning": "The response directly and completely answers the query by providing the weather in Tokyo, Japan, in Celsius, as requested.",
+              "executionTimeMs": 1525,
+              "timestamp": "2026-01-19T16:19:05.873Z"
+            }
+          },
+          {
+            "eval": "Answer Relevance",
+            "measurement": {
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.95,
+              "reasoning": "The response directly and completely answers the query about the weather in Paris, France, providing specific details like temperature, humidity, and wind speed.",
+              "executionTimeMs": 1079,
+              "timestamp": "2026-01-19T16:19:05.427Z"
+            }
+          },
+          {
+            "eval": "Answer Relevance",
+            "measurement": {
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.99,
+              "reasoning": "The response directly and completely answers the query by providing the current weather conditions for New York City, including temperature, humidity, and wind speed.",
+              "executionTimeMs": 1117,
+              "timestamp": "2026-01-19T16:19:05.466Z"
+            }
+          },
+          {
+            "eval": "Answer Relevance",
+            "measurement": {
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.95,
+              "reasoning": "The response directly and completely answers the query by providing the current weather for London, UK, as requested.",
+              "executionTimeMs": 1117,
+              "timestamp": "2026-01-19T16:19:05.466Z"
+            }
+          },
+          {
+            "eval": "Answer Relevance",
+            "measurement": {
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.95,
+              "reasoning": "The response directly and completely answers the query by providing the weather for Tokyo, Japan, and specifically includes the temperature in Celsius as requested.",
+              "executionTimeMs": 866,
+              "timestamp": "2026-01-19T16:19:05.215Z"
+            }
+          },
+          {
+            "eval": "Answer Relevance",
+            "measurement": {
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.95,
+              "reasoning": "The response directly and fully answers the query about the weather in San Francisco with specific details.",
+              "executionTimeMs": 1422,
+              "timestamp": "2026-01-19T16:19:05.771Z"
+            }
+          }
+        ]
+      },
+      "Completeness": {
+        "byStepIndex": [
+          {
+            "eval": "Completeness",
+            "measurement": {
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.9,
+              "reasoning": "The response fully covers the expected topic (current weather for San Francisco) by providing key details such as temperature, humidity, and wind speed. The coverage is thorough and there are no apparent gaps for this specific query.",
+              "executionTimeMs": 1421,
+              "timestamp": "2026-01-19T16:19:05.771Z"
+            }
+          },
+          {
+            "eval": "Completeness",
+            "measurement": {
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.9,
+              "reasoning": "The response fully covers the expected topic (weather for London, UK) and provides specific details such as temperature, humidity, and wind speed, which are all relevant components of weather information. The coverage is thorough for a current weather report.",
+              "executionTimeMs": 1620,
+              "timestamp": "2026-01-19T16:19:05.970Z"
+            }
+          },
+          {
+            "eval": "Completeness",
+            "measurement": {
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.9,
+              "reasoning": "The response fully addresses the query by providing the current weather in Tokyo, Japan, in Celsius, including temperature, humidity, and wind speed. All requested information is present and thoroughly covered.",
+              "executionTimeMs": 1524,
+              "timestamp": "2026-01-19T16:19:05.874Z"
+            }
+          },
+          {
+            "eval": "Completeness",
+            "measurement": {
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.9,
+              "reasoning": "The response directly answers the query by providing the current weather in Paris, France, including temperature, humidity, and wind speed. All expected information is present and accurate.",
+              "executionTimeMs": 1421,
+              "timestamp": "2026-01-19T16:19:05.771Z"
+            }
+          },
+          {
+            "eval": "Completeness",
+            "measurement": {
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.95,
+              "reasoning": "The response directly answers the query about the weather in New York City. It provides key details such as current conditions (sunny), temperature, humidity, and wind speed, which are all relevant and expected pieces of information for a weather report.",
+              "executionTimeMs": 1420,
+              "timestamp": "2026-01-19T16:19:05.770Z"
+            }
+          },
+          {
+            "eval": "Completeness",
+            "measurement": {
+              "score": 0.4,
+              "rawValue": 2,
+              "confidence": 0.9,
+              "reasoning": "The response provides the *current* weather for London, UK, but the query asks for the weather *next*. This implies a forecast (e.g., tomorrow, the next few days), which is not provided. Therefore, the response only partially addresses the query, with significant gaps in information related to future weather.",
+              "executionTimeMs": 1828,
+              "timestamp": "2026-01-19T16:19:06.179Z"
+            }
+          },
+          {
+            "eval": "Completeness",
+            "measurement": {
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.9,
+              "reasoning": "The response fully addresses the query by providing the weather for Tokyo, Japan, and specifically including the temperature in Celsius as requested. It also includes additional relevant details such as humidity and wind speed, making the coverage comprehensive.",
+              "executionTimeMs": 1729,
+              "timestamp": "2026-01-19T16:19:06.080Z"
+            }
+          },
+          {
+            "eval": "Completeness",
+            "measurement": {
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.95,
+              "reasoning": "The response fully addresses the user's query by providing the current weather in San Francisco. It includes key details such as temperature, humidity, and wind speed, offering a comprehensive and complete update.",
+              "executionTimeMs": 1626,
+              "timestamp": "2026-01-19T16:19:05.977Z"
+            }
+          }
+        ]
+      }
+    },
+    "multiTurn": {},
+    "scorers": {
+      "Overall Quality": {
+        "shape": "seriesByStepIndex",
+        "series": {
+          "byStepIndex": [
+            {
+              "eval": "Overall Quality",
+              "measurement": {
+                "score": 1
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.7
+                },
+                "observed": {
+                  "rawValue": 1,
+                  "score": 1
+                }
+              }
+            },
+            {
+              "eval": "Overall Quality",
+              "measurement": {
+                "score": 1
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.7
+                },
+                "observed": {
+                  "rawValue": 1,
+                  "score": 1
+                }
+              }
+            },
+            {
+              "eval": "Overall Quality",
+              "measurement": {
+                "score": 1
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.7
+                },
+                "observed": {
+                  "rawValue": 1,
+                  "score": 1
+                }
+              }
+            },
+            {
+              "eval": "Overall Quality",
+              "measurement": {
+                "score": 1
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.7
+                },
+                "observed": {
+                  "rawValue": 1,
+                  "score": 1
+                }
+              }
+            },
+            {
+              "eval": "Overall Quality",
+              "measurement": {
+                "score": 1
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.7
+                },
+                "observed": {
+                  "rawValue": 1,
+                  "score": 1
+                }
+              }
+            },
+            {
+              "eval": "Overall Quality",
+              "measurement": {
+                "score": 0.7
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.7
+                },
+                "observed": {
+                  "rawValue": 0.7,
+                  "score": 0.7
+                }
+              }
+            },
+            {
+              "eval": "Overall Quality",
+              "measurement": {
+                "score": 1
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.7
+                },
+                "observed": {
+                  "rawValue": 1,
+                  "score": 1
+                }
+              }
+            },
+            {
+              "eval": "Overall Quality",
+              "measurement": {
+                "score": 1
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.7
+                },
+                "observed": {
+                  "rawValue": 1,
+                  "score": 1
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "summaries": {
+      "byEval": {
+        "Answer Relevance": {
+          "eval": "Answer Relevance",
+          "kind": "singleTurn",
+          "count": 8,
+          "aggregations": {
+            "score": {
+              "Mean": 1,
+              "P50": 1,
+              "P75": 1,
+              "P90": 1
+            },
+            "raw": {
+              "Mean": 5,
+              "P50": 5,
+              "P75": 5,
+              "P90": 5
+            }
+          }
+        },
+        "Completeness": {
+          "eval": "Completeness",
+          "kind": "singleTurn",
+          "count": 8,
+          "aggregations": {
+            "score": {
+              "Mean": 0.925,
+              "P50": 1,
+              "P75": 1,
+              "P90": 1
+            },
+            "raw": {
+              "Mean": 4.625,
+              "P50": 5,
+              "P75": 5,
+              "P90": 5
+            }
+          }
+        },
+        "Overall Quality": {
+          "eval": "Overall Quality",
+          "kind": "scorer",
+          "count": 8,
+          "aggregations": {
+            "score": {
+              "Mean": 0.9625,
+              "P50": 1,
+              "P75": 1,
+              "P90": 1
+            }
+          },
+          "verdictSummary": {
+            "passRate": 1,
+            "failRate": 0,
+            "unknownRate": 0,
+            "passCount": 8,
+            "failCount": 0,
+            "unknownCount": 0,
+            "totalCount": 8
+          }
+        }
+      }
+    }
+  },
+  "metadata": {
+    "dataCount": 1,
+    "evaluatorCount": 1
+  }
+}

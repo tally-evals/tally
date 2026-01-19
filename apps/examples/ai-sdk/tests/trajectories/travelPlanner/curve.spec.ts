@@ -101,12 +101,6 @@ describe('Travel Planner Agent - Curve Ball', () => {
 
     const overallQualityEval = defineScorerEval({
       name: 'Overall Quality',
-      inputs: [
-        answerRelevance,
-        completeness,
-        roleAdherence,
-        knowledgeRetention,
-      ],
       scorer: qualityScorer,
       verdict: thresholdVerdict(0.5), // Curve ball: overall quality should be reasonable
     });

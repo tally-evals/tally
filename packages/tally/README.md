@@ -97,7 +97,6 @@ const roleAdherenceEval = defineMultiTurnEval({
 
 const overallQualityEval = defineScorerEval({
   name: 'Overall Quality',
-  inputs: [relevance, completeness, roleAdherence],
   scorer: qualityScorer,
   verdict: thresholdVerdict(0.7), // Pass if score >= 0.7
 })
@@ -163,7 +162,6 @@ Combine multiple metrics using a scorer:
 ```ts
 const overallQualityEval = defineScorerEval({
   name: 'Overall Quality',
-  inputs: [relevanceMetric, completenessMetric, roleAdherenceMetric],
   scorer: weightedAverageScorer,
   verdict: thresholdVerdict(0.7), // Pass if score >= 0.7
 })

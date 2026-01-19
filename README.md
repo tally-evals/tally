@@ -217,12 +217,6 @@ const goalCompletionEval = defineMultiTurnEval({
 
 const overallQualityEval = defineScorerEval({
   name: 'Overall Quality',
-  inputs: [
-    relevanceMetric,
-    completenessMetric,
-    roleAdherenceMetric,
-    goalCompletionMetric,
-  ],
   scorer: qualityScorer,
   verdict: thresholdVerdict(0.7), // Pass if score >= 0.7
 })
@@ -281,7 +275,7 @@ report.perTargetResults.forEach((result) => {
 
 1. **Single-Turn Evals** - Evaluate individual conversation steps or dataset items
 2. **Multi-Turn Evals** - Evaluate entire conversations
-3. **Scorer Evals** - Combine multiple metrics using a scorer
+3. **Scorer Evals** - Combine multiple metrics using a scorer (the eval automatically uses the scorer's configured inputs)
 
 ### Verdict Policies
 
