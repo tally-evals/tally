@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { ChevronLeft } from "lucide-react";
 import type { TallyRunArtifact } from "@tally-evals/core";
+import { MetricSummaryPopover } from "../components/MetricSummaryPopover";
 import {
   Conversation,
   ConversationContent,
@@ -183,32 +184,97 @@ export function RunView({ convId, runId }: RunViewProps) {
   // IMPORTANT: Hooks must run unconditionally on every render (avoid hook-order errors).
   const steps = conversation?.steps ?? [];
   const singleTurn = run?.result?.singleTurn ?? {};
+  const scorerResults = run?.result?.scorers ?? {};
 
   const perStepEvals: StepEvalRow[][] = useMemo(() => {
     const byStep: StepEvalRow[][] = Array.from({ length: steps.length }, () => []);
+
+    const pushStepRow = (args: {
+      evalName: string;
+      measurement: {
+        metricRef?: unknown;
+        score?: unknown;
+        rawValue?: unknown;
+        confidence?: unknown;
+        executionTimeMs?: unknown;
+        reasoning?: unknown;
+      };
+      outcome?: { verdict?: unknown };
+      stepIndex: number;
+    }) => {
+      const metricName =
+        typeof args.measurement.metricRef === "string"
+          ? args.measurement.metricRef
+          : run?.defs?.evals?.[args.evalName]?.metric;
+
+      byStep[args.stepIndex]?.push({
+        evalName: args.evalName,
+        ...(metricName ? { metricName } : {}),
+        verdict: typeof args.outcome?.verdict === "string" ? args.outcome.verdict : "unknown",
+        ...(typeof args.measurement.score === "number" ? { score: args.measurement.score } : {}),
+        ...(args.measurement.rawValue !== undefined ? { rawValue: args.measurement.rawValue } : {}),
+        ...(typeof args.measurement.confidence === "number"
+          ? { confidence: args.measurement.confidence }
+          : {}),
+        ...(typeof args.measurement.executionTimeMs === "number"
+          ? { timeMs: args.measurement.executionTimeMs }
+          : {}),
+        ...(typeof args.measurement.reasoning === "string"
+          ? { reasoning: args.measurement.reasoning }
+          : {}),
+      });
+    };
+
     for (const [evalName, series] of Object.entries(singleTurn)) {
       const arr = series?.byStepIndex ?? [];
       for (let stepIndex = 0; stepIndex < Math.min(arr.length, steps.length); stepIndex++) {
         const r = arr[stepIndex];
         if (!r) continue;
-        const m = r.measurement;
-        const metricName =
-          typeof m.metricRef === "string" ? m.metricRef : run?.defs?.evals?.[evalName]?.metric;
-        byStep[stepIndex]?.push({
+        pushStepRow({
           evalName,
-          ...(metricName ? { metricName } : {}),
-          verdict: r.outcome?.verdict ?? "unknown",
-          ...(typeof m.score === "number" ? { score: m.score } : {}),
-          ...(m.rawValue !== undefined ? { rawValue: m.rawValue } : {}),
-          ...(typeof m.confidence === "number" ? { confidence: m.confidence } : {}),
-          ...(typeof m.executionTimeMs === "number" ? { timeMs: m.executionTimeMs } : {}),
-          ...(typeof m.reasoning === "string" ? { reasoning: m.reasoning } : {}),
+          measurement: r.measurement ?? {},
+          outcome: r.outcome,
+          stepIndex,
         });
       }
     }
+
+    // Include scorers that produce per-step series (shape: seriesByStepIndex)
+    for (const [evalName, s] of Object.entries(scorerResults)) {
+      if (!s || typeof s !== "object") continue;
+      if (!("shape" in s) || (s as any).shape !== "seriesByStepIndex") continue;
+      const arr = (s as any).series?.byStepIndex ?? [];
+      for (let stepIndex = 0; stepIndex < Math.min(arr.length, steps.length); stepIndex++) {
+        const r = arr[stepIndex];
+        if (!r) continue;
+        pushStepRow({
+          evalName,
+          measurement: r.measurement ?? {},
+          outcome: r.outcome,
+          stepIndex,
+        });
+      }
+    }
+
     for (const rows of byStep) rows.sort((a, b) => a.evalName.localeCompare(b.evalName));
     return byStep;
-  }, [singleTurn, steps.length, run?.defs?.evals]);
+  }, [singleTurn, scorerResults, steps.length, run?.defs?.evals]);
+
+  const conversationEvalSummary = useMemo(() => {
+    let passCount = 0;
+    let failCount = 0;
+    for (const stepRows of perStepEvals) {
+      for (const r of stepRows) {
+        if (r.verdict === "pass") passCount++;
+        else if (r.verdict === "fail") failCount++;
+      }
+    }
+    return {
+      steps: steps.length,
+      passCount,
+      failCount,
+    };
+  }, [perStepEvals, steps.length]);
 
   const evalSummariesEntries = useMemo(() => {
     const summaries = run?.result?.summaries?.byEval ?? {};
@@ -224,9 +290,13 @@ export function RunView({ convId, runId }: RunViewProps) {
     const rows = endOfConversationEvals.map(([name, ev]) => {
       const evalName = ev.eval ?? name;
       const kind = ev.kind ?? "unknown";
-      const aggs = ev.aggregations?.score ?? {};
+      const scoreAggs = ev.aggregations?.score ?? {};
+      const rawAggs = ev.aggregations?.raw ?? {};
 
-      const getAgg = (key: string): number | undefined => {
+      const getAgg = (
+        aggs: Record<string, unknown>,
+        key: string,
+      ): number | undefined => {
         const candidates: string[] = [key];
         const lower = key.toLowerCase();
         const upper = key.toUpperCase();
@@ -235,16 +305,28 @@ export function RunView({ convId, runId }: RunViewProps) {
         if (/^p\d+$/.test(lower)) candidates.push(`P${lower.slice(1)}`);
 
         for (const k of candidates) {
-          const v = (aggs as Record<string, unknown>)[k];
+          const v = aggs[k];
           if (typeof v === "number") return v;
         }
         return undefined;
       };
 
-      const mean = getAgg("mean");
-      const p50 = getAgg("p50");
-      const p75 = getAgg("p75");
-      const p90 = getAgg("p90");
+      // For multi-turn we store a scalar under `value` (not Mean/Pxx).
+      const scoreMeanOrValue =
+        getAgg(scoreAggs as Record<string, unknown>, "mean") ??
+        getAgg(scoreAggs as Record<string, unknown>, "value");
+      const rawMeanOrValue =
+        getAgg(rawAggs as Record<string, unknown>, "mean") ??
+        getAgg(rawAggs as Record<string, unknown>, "value");
+
+      const scoreP50 = getAgg(scoreAggs as Record<string, unknown>, "p50");
+      const scoreP75 = getAgg(scoreAggs as Record<string, unknown>, "p75");
+      const scoreP90 = getAgg(scoreAggs as Record<string, unknown>, "p90");
+
+      const rawP50 = getAgg(rawAggs as Record<string, unknown>, "p50");
+      const rawP75 = getAgg(rawAggs as Record<string, unknown>, "p75");
+      const rawP90 = getAgg(rawAggs as Record<string, unknown>, "p90");
+
       const passRate =
         ev.verdictSummary && typeof ev.verdictSummary === "object"
           ? (ev.verdictSummary as any).passRate
@@ -253,11 +335,79 @@ export function RunView({ convId, runId }: RunViewProps) {
       const scorerRef = kind === "scorer" ? run?.defs?.evals?.[evalName]?.scorerRef : undefined;
       const calcKind = scorerRef ? run?.defs?.scorers?.[scorerRef]?.combine?.kind : undefined;
 
-      return { evalName, kind, mean, p50, p75, p90, passRate, ...(calcKind ? { calcKind } : {}) };
+      return {
+        evalName,
+        kind,
+        // score + raw for TUI-like cells
+        scoreMeanOrValue,
+        rawMeanOrValue,
+        scoreP50,
+        rawP50,
+        scoreP75,
+        rawP75,
+        scoreP90,
+        rawP90,
+        passRate,
+        ...(calcKind ? { calcKind } : {}),
+      };
     });
 
     return rows;
   }, [endOfConversationEvals, run?.defs]);
+
+  const getHeatClass = (score01: number | undefined): string => {
+    if (typeof score01 !== "number") return "text-muted-foreground";
+    if (score01 >= 0.8) return "text-emerald-600 dark:text-emerald-400";
+    if (score01 >= 0.6) return "text-emerald-500 dark:text-emerald-300";
+    if (score01 >= 0.4) return "text-yellow-600 dark:text-yellow-300";
+    return "text-red-600 dark:text-red-400";
+  };
+
+  const renderKindTag = (kind: string): React.ReactNode => {
+    const label =
+      kind === "singleTurn"
+        ? "Single Turn"
+        : kind === "multiTurn"
+          ? "Multi Turn"
+          : kind === "scorer"
+            ? "Scorer"
+            : kind;
+    const base = "inline-flex items-center rounded px-2 py-0.5 text-xs font-medium";
+    const cls =
+      kind === "singleTurn"
+        ? "bg-blue-500/10 text-blue-700 dark:text-blue-300"
+        : kind === "multiTurn"
+          ? "bg-purple-500/10 text-purple-700 dark:text-purple-300"
+          : kind === "scorer"
+            ? "bg-amber-500/10 text-amber-700 dark:text-amber-300"
+            : "bg-muted text-muted-foreground";
+    return <span className={[base, cls].join(" ")}>{label}</span>;
+  };
+
+  const formatDualCell = (args: {
+    raw: number | undefined;
+    score: number | undefined;
+  }): React.ReactNode => {
+    const rawText = typeof args.raw === "number" ? args.raw.toFixed(3) : "—";
+    const scoreText = typeof args.score === "number" ? args.score.toFixed(3) : "—";
+    return (
+      <div className="leading-tight">
+        <div className={["font-mono text-xs", getHeatClass(args.score)].join(" ")}>
+          {rawText}
+        </div>
+        <div className="font-mono text-[11px] text-muted-foreground">{scoreText}</div>
+      </div>
+    );
+  };
+
+  const formatRateCell = (rate01: number | undefined): React.ReactNode => {
+    if (typeof rate01 !== "number") return "—";
+    return (
+      <span className={["font-mono text-xs", getHeatClass(rate01)].join(" ")}>
+        {rate01.toFixed(3)}
+      </span>
+    );
+  };
 
   if (loading) {
     return (
@@ -307,7 +457,23 @@ export function RunView({ convId, runId }: RunViewProps) {
       {/* Conversation thread */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Conversation</CardTitle>
+          <div className="flex items-center justify-between gap-4">
+            <CardTitle className="text-lg">Conversation</CardTitle>
+            <div className="text-xs">
+              <span className="text-muted-foreground">Steps</span>{" "}
+              <span className="font-mono text-foreground">{conversationEvalSummary.steps}</span>{" "}
+              <span className="text-muted-foreground">·</span>{" "}
+              <span className="text-muted-foreground">Pass</span>{" "}
+              <span className="font-mono text-emerald-600 dark:text-emerald-400">
+                {conversationEvalSummary.passCount}
+              </span>{" "}
+              <span className="text-muted-foreground">·</span>{" "}
+              <span className="text-muted-foreground">Fail</span>{" "}
+              <span className="font-mono text-red-600 dark:text-red-400">
+                {conversationEvalSummary.failCount}
+              </span>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="h-[700px] min-h-0">
           {steps.length === 0 ? (
@@ -370,7 +536,37 @@ export function RunView({ convId, runId }: RunViewProps) {
                         {stepMetrics.length > 0 ? (
                           <details className="rounded-md border border-border bg-muted/20">
                             <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium">
-                              Step evals ({stepMetrics.length})
+                              {(() => {
+                                const passCount = stepMetrics.filter(
+                                  (m) => m.verdict === "pass",
+                                ).length;
+                                const failCount = stepMetrics.filter(
+                                  (m) => m.verdict === "fail",
+                                ).length;
+                                return (
+                                  <span className="inline-flex items-center gap-3">
+                                    <span>Step evals</span>
+                                    <span className="text-xs text-muted-foreground">
+                                      Evals{" "}
+                                      <span className="font-mono text-foreground">
+                                        {stepMetrics.length}
+                                      </span>
+                                    </span>
+                                    <span className="text-xs">
+                                      <span className="text-muted-foreground">Pass</span>{" "}
+                                      <span className="font-mono text-emerald-600 dark:text-emerald-400">
+                                        {passCount}
+                                      </span>
+                                    </span>
+                                    <span className="text-xs">
+                                      <span className="text-muted-foreground">Fail</span>{" "}
+                                      <span className="font-mono text-red-600 dark:text-red-400">
+                                        {failCount}
+                                      </span>
+                                    </span>
+                                  </span>
+                                );
+                              })()}
                             </summary>
                             <div className="border-t border-border px-4 py-3 space-y-3">
                               <div className="overflow-x-auto rounded-md border border-border bg-background">
@@ -379,9 +575,6 @@ export function RunView({ convId, runId }: RunViewProps) {
                                     <tr className="border-b border-border">
                                       <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">
                                         Eval
-                                      </th>
-                                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">
-                                        Metric
                                       </th>
                                       <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">
                                         Verdict
@@ -411,10 +604,20 @@ export function RunView({ convId, runId }: RunViewProps) {
                                       return (
                                         <tr key={idx} className="border-b border-border/60 last:border-0">
                                           <td className="px-3 py-2 align-top">
-                                            <div className="font-medium">{m.evalName}</div>
-                                          </td>
-                                          <td className="px-3 py-2 align-top text-xs text-muted-foreground">
-                                            {m.metricName ?? "—"}
+                                            <div className="space-y-0.5">
+                                              <span className="inline-flex items-center gap-2">
+                                                <span className="font-medium">{m.evalName}</span>
+                                                {run ? (
+                                                  <MetricSummaryPopover
+                                                    run={run as TallyRunArtifact}
+                                                    evalName={m.evalName}
+                                                  />
+                                                ) : null}
+                                              </span>
+                                              <div className="text-xs text-muted-foreground">
+                                                {m.metricName ?? "—"}
+                                              </div>
+                                            </div>
                                           </td>
                                           <td className="px-3 py-2 align-top">
                                             <span
@@ -473,10 +676,10 @@ export function RunView({ convId, runId }: RunViewProps) {
         </CardContent>
       </Card>
 
-      {/* End-of-conversation summary (TUI-inspired tables) */}
+      {/* End-of-conversation eval summary (TUI-inspired table) */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Summary</CardTitle>
+          <CardTitle className="text-lg">Eval Summary</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           {evalSummaryRows.length ? (
@@ -488,7 +691,6 @@ export function RunView({ convId, runId }: RunViewProps) {
                     <tr className="border-b border-border">
                       <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Eval</th>
                       <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Kind</th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Calc</th>
                       <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Mean</th>
                       <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">P50</th>
                       <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">P75</th>
@@ -499,16 +701,26 @@ export function RunView({ convId, runId }: RunViewProps) {
                   <tbody>
                     {evalSummaryRows.map((r) => (
                       <tr key={r.evalName} className="border-b border-border/60 last:border-0">
-                        <td className="px-3 py-2 align-top font-medium">{r.evalName}</td>
-                        <td className="px-3 py-2 align-top text-xs text-muted-foreground">{r.kind}</td>
-                        <td className="px-3 py-2 align-top font-mono text-xs">{r.calcKind ?? "—"}</td>
-                        <td className="px-3 py-2 align-top font-mono text-xs">{r.mean ?? "—"}</td>
-                        <td className="px-3 py-2 align-top font-mono text-xs">{r.p50 ?? "—"}</td>
-                        <td className="px-3 py-2 align-top font-mono text-xs">{r.p75 ?? "—"}</td>
-                        <td className="px-3 py-2 align-top font-mono text-xs">{r.p90 ?? "—"}</td>
-                        <td className="px-3 py-2 align-top font-mono text-xs">
-                          {typeof r.passRate === "number" ? r.passRate : "—"}
+                        <td className="px-3 py-2 align-top">
+                          <span className="inline-flex items-center gap-2">
+                            <span className="font-medium">{r.evalName}</span>
+                            <MetricSummaryPopover run={run as TallyRunArtifact} evalName={r.evalName} />
+                          </span>
                         </td>
+                        <td className="px-3 py-2 align-top">{renderKindTag(String(r.kind))}</td>
+                        <td className="px-3 py-2 align-top">
+                          {formatDualCell({ raw: r.rawMeanOrValue, score: r.scoreMeanOrValue })}
+                        </td>
+                        <td className="px-3 py-2 align-top">
+                          {formatDualCell({ raw: r.rawP50, score: r.scoreP50 })}
+                        </td>
+                        <td className="px-3 py-2 align-top">
+                          {formatDualCell({ raw: r.rawP75, score: r.scoreP75 })}
+                        </td>
+                        <td className="px-3 py-2 align-top">
+                          {formatDualCell({ raw: r.rawP90, score: r.scoreP90 })}
+                        </td>
+                        <td className="px-3 py-2 align-top">{formatRateCell(r.passRate)}</td>
                       </tr>
                     ))}
                   </tbody>
