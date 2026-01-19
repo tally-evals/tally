@@ -162,12 +162,6 @@ describe('Travel Planner Agent - Golden Path', () => {
 
     const overallQualityEval = defineScorerEval({
       name: 'Overall Quality',
-      inputs: [
-        answerRelevance,
-        completeness,
-        roleAdherence,
-        knowledgeRetention,
-      ],
       scorer: qualityScorer,
       verdict: thresholdVerdict(0.5), // Golden path: overall quality should be reasonable
     });
@@ -202,7 +196,9 @@ describe('Travel Planner Agent - Golden Path', () => {
 
     expect(report).toBeDefined();
     expect(report.result.stepCount).toBeGreaterThan(0);
-    expect(Object.keys(report.result.summaries?.byEval ?? {}).length).toBeGreaterThan(0);
+    expect(
+      Object.keys(report.result.summaries?.byEval ?? {}).length,
+    ).toBeGreaterThan(0);
 
     // Format and display report as tables
     formatReportAsTables(report.toArtifact(), conversation);
@@ -234,7 +230,8 @@ describe('Travel Planner Agent - Golden Path', () => {
       if (typeof s === 'number') expect(s).toBeGreaterThanOrEqual(0.6);
     }
 
-    const overallQualitySummary = report.result.summaries?.byEval?.['Overall Quality'];
+    const overallQualitySummary =
+      report.result.summaries?.byEval?.['Overall Quality'];
     const mean = (overallQualitySummary?.aggregations?.score as any)?.mean;
     if (typeof mean === 'number') expect(mean).toBeGreaterThanOrEqual(0.6);
   }, 300000); // 5 minute timeout for trajectory execution
