@@ -111,6 +111,34 @@ export function TurnByTurnView({
     });
   }
 
+  // Include per-step scorer series (shape: seriesByStepIndex) alongside single-turn metrics
+  for (const [evalName, scorerRes] of Object.entries(report.result.scorers ?? {})) {
+    if (!scorerRes || typeof scorerRes !== 'object') continue;
+    if (!('shape' in scorerRes) || (scorerRes as any).shape !== 'seriesByStepIndex') continue;
+    const stepRes =
+      (scorerRes as any).series?.byStepIndex?.[scrollPosition] ?? null;
+    if (!stepRes) continue;
+
+    currentTurnMetrics.push({
+      name: evalName,
+      ...(stepRes.measurement?.score !== undefined
+        ? { score: Number(stepRes.measurement.score) }
+        : {}),
+      ...(stepRes.measurement?.rawValue !== undefined
+        ? { rawValue: stepRes.measurement.rawValue as any }
+        : {}),
+      ...(stepRes.outcome?.verdict !== undefined
+        ? { verdict: stepRes.outcome.verdict }
+        : {}),
+      ...(stepRes.measurement?.reasoning !== undefined
+        ? { reasoning: stepRes.measurement.reasoning }
+        : {}),
+    });
+  }
+
+  // Keep stable ordering in the per-turn table
+  currentTurnMetrics.sort((a, b) => a.name.localeCompare(b.name));
+
   const currentStep = conversation.steps[scrollPosition];
   if (!currentStep) {
     return <Text>{colors.error('No step found at current position')}</Text>;
