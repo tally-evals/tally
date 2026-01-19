@@ -68,6 +68,7 @@ export type {
   // Run artifact types (canonical reporting schema)
   MetricName,
   EvalName,
+  ScorerName,
   RunId,
   ConversationId,
   Verdict,
@@ -82,6 +83,9 @@ export type {
   MetricDefSnap,
   EvalDefSnap,
   RunDefs,
+  ScorerCombineKind,
+  ScorerInputSnap,
+  ScorerDefSnap,
   EvalSummarySnap,
   Summaries,
   TallyRunArtifact,

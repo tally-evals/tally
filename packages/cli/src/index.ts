@@ -14,6 +14,22 @@ import { loadConversationAndTallyReport, openStore } from './data/store';
 
 const program = new Command();
 
+function requireTty(commandName: string): void {
+  // Ink interactive UIs require a TTY to enable raw mode.
+  // In non-interactive environments (CI, piped stdin, some IDE runners), fail fast
+  // with a clear message instead of a raw-mode stack trace.
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    console.error(chalk.red(`✗ Cannot start interactive UI for "${commandName}"`));
+    console.error(
+      chalk.gray(
+        'This command requires an interactive TTY (stdin/stdout).\n' +
+          'Tip: run it from a real terminal (not via a piped/redirected process), or use `tally dev server` for the web viewer.',
+      ),
+    );
+    process.exit(1);
+  }
+}
+
 program
   .name('tally')
   .description('Interactive CLI for visualizing Tally evaluation results')
@@ -25,6 +41,7 @@ program
   .description('Browse .tally runs interactively')
   .action(async () => {
     try {
+      requireTty('browse');
       const tallyStore = await openStore();
       render(React.createElement(BrowseView, { store: tallyStore }));
     } catch (err) {
@@ -45,6 +62,7 @@ program
         process.exit(1);
       }
 
+      requireTty('view');
       const tallyStore = await openStore();
       const { conversation: convData, report } = await loadConversationAndTallyReport({
         store: tallyStore,

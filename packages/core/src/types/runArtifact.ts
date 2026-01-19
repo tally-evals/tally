@@ -8,6 +8,7 @@
  */
 
 import type { MetricScalar, Score } from './primitives';
+import type { Scorer, ScorerInput } from './scorers';
 
 // ============================================================================
 // Common primitives
@@ -15,6 +16,7 @@ import type { MetricScalar, Score } from './primitives';
 
 export type MetricName = string; // MetricDef.name
 export type EvalName = string; // Eval.name
+export type ScorerName = string; // Scorer.name
 export type RunId = string;
 export type ConversationId = string;
 
@@ -35,6 +37,12 @@ export type MetricScalarOrNull = MetricScalar | null;
  * No policy semantics live here.
  */
 export interface Measurement {
+  /**
+   * Reference to the primary “thing measured” in `defs.metrics`.
+   * For scorer evals, this should reference the scorer's derived metric entry (see `defs.scorers`).
+   */
+  metricRef: MetricName;
+
   /**
    * Normalized score (0..1) used for aggregation/curves when applicable.
    * Optional because some evaluators may only yield raw values or ordinal labels.
@@ -87,13 +95,13 @@ export interface EvalOutcome {
 // ============================================================================
 
 export interface StepEvalResult {
-  eval: EvalName;
+  evalRef: EvalName;
   measurement: Measurement;
   outcome?: EvalOutcome;
 }
 
 export interface ConversationEvalResult {
-  eval: EvalName;
+  evalRef: EvalName;
   measurement: Measurement;
   outcome?: EvalOutcome;
 }
@@ -162,12 +170,8 @@ export interface EvalDefSnap {
   /** which metric this eval is about */
   metric: MetricName;
 
-  /** scorer-specific config */
-  scorer?: {
-    name: string;
-    inputs: readonly MetricName[];
-    weights?: readonly number[];
-  };
+  /** scorer ref (scorer config lives in `defs.scorers`) */
+  scorerRef?: ScorerName;
 
   verdict?: VerdictPolicyInfo;
   description?: string;
@@ -177,7 +181,36 @@ export interface EvalDefSnap {
 export interface RunDefs {
   metrics: Record<MetricName, MetricDefSnap>;
   evals: Record<EvalName, EvalDefSnap>;
+  scorers: Record<ScorerName, ScorerDefSnap>;
 }
+
+export type ScorerCombineKind = 'weightedAverage' | 'identity' | 'custom' | 'unknown';
+
+/**
+ * Serializable scorer input snapshot.
+ *
+ * Derived from `ScorerInput` but replaces MetricDef references with name refs
+ * and collapses non-serializable fields into booleans.
+ */
+export type ScorerInputSnap = Omit<ScorerInput, 'metric' | 'normalizerOverride'> & {
+  metricRef: MetricName;
+  hasNormalizerOverride?: boolean;
+};
+
+/**
+ * Serializable scorer definition snapshot.
+ *
+ * Derived from `Scorer` but:
+ * - replaces input MetricDef references with `ScorerInputSnap`
+ * - drops `combineScores` (non-serializable)
+ * - does not embed MetricDef output (store refs elsewhere if needed)
+ */
+export type ScorerDefSnap = Omit<Scorer, 'inputs' | 'output' | 'combineScores'> & {
+  name: ScorerName;
+  inputs: readonly ScorerInputSnap[];
+  fallbackScore?: Score;
+  combine?: { kind: ScorerCombineKind; note?: string };
+};
 
 // ============================================================================
 // Summaries

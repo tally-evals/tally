@@ -17,6 +17,7 @@ const MetricScalarOrNullSchema = z.union([
 
 const MeasurementSchema = z
   .object({
+    metricRef: z.string(),
     score: z.number().min(0).max(1).optional(),
     rawValue: MetricScalarOrNullSchema.optional(),
     confidence: z.number().optional(),
@@ -70,7 +71,7 @@ const EvalOutcomeSchema = z
 
 const StepEvalResultSchema = z
   .object({
-    eval: z.string(),
+    evalRef: z.string(),
     measurement: MeasurementSchema,
     outcome: EvalOutcomeSchema.optional(),
   })
@@ -78,7 +79,7 @@ const StepEvalResultSchema = z
 
 const ConversationEvalResultSchema = z
   .object({
-    eval: z.string(),
+    evalRef: z.string(),
     measurement: MeasurementSchema,
     outcome: EvalOutcomeSchema.optional(),
   })
@@ -167,14 +168,34 @@ const EvalDefSnapSchema = z
     kind: z.enum(['singleTurn', 'multiTurn', 'scorer']),
     outputShape: z.enum(['seriesByStepIndex', 'scalar']),
     metric: z.string(),
-    scorer: z
+    scorerRef: z.string().optional(),
+    verdict: VerdictPolicyInfoSchema.optional(),
+    description: z.string().optional(),
+    metadata: z.record(z.string(), z.unknown()).optional(),
+  })
+  .passthrough();
+
+const ScorerInputSnapSchema = z
+  .object({
+    metricRef: z.string(),
+    weight: z.number(),
+    required: z.boolean().optional(),
+    hasNormalizerOverride: z.boolean().optional(),
+  })
+  .passthrough();
+
+const ScorerDefSnapSchema = z
+  .object({
+    name: z.string(),
+    inputs: z.array(ScorerInputSnapSchema),
+    normalizeWeights: z.boolean().optional(),
+    fallbackScore: z.number().min(0).max(1).optional(),
+    combine: z
       .object({
-        name: z.string(),
-        inputs: z.array(z.string()),
-        weights: z.array(z.number()).optional(),
+        kind: z.enum(['weightedAverage', 'identity', 'custom', 'unknown']),
+        note: z.string().optional(),
       })
       .optional(),
-    verdict: VerdictPolicyInfoSchema.optional(),
     description: z.string().optional(),
     metadata: z.record(z.string(), z.unknown()).optional(),
   })
@@ -184,6 +205,7 @@ const RunDefsSchema = z
   .object({
     metrics: z.record(z.string(), MetricDefSnapSchema),
     evals: z.record(z.string(), EvalDefSnapSchema),
+    scorers: z.record(z.string(), ScorerDefSnapSchema),
   })
   .passthrough();
 

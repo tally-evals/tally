@@ -13,8 +13,32 @@ function getNumericAggregation(
   key: string,
 ): number | undefined {
   if (!aggregations) return undefined;
-  const value = aggregations[key];
-  return typeof value === 'number' ? value : undefined;
+
+  const candidates: string[] = [key];
+
+  // Common naming conventions in artifacts:
+  // - pipeline uses aggregator.name ("Mean", "P50", ...)
+  // - some consumers historically expect normalized keys ("mean", "p50", ...)
+  const lower = key.toLowerCase();
+  const upper = key.toUpperCase();
+  candidates.push(lower, upper);
+
+  // "mean" -> "Mean"
+  if (lower === 'mean') {
+    candidates.push('Mean');
+  }
+
+  // "p50" -> "P50"
+  if (/^p\d+$/.test(lower)) {
+    candidates.push(`P${lower.slice(1)}`);
+  }
+
+  for (const k of candidates) {
+    const value = aggregations[k];
+    if (typeof value === 'number') return value;
+  }
+
+  return undefined;
 }
 import Table from 'cli-table3';
 import { Box, Text, useInput } from 'ink';
@@ -211,8 +235,11 @@ export function CompareView({
             const rightSummary = rightSummaries[evalName];
             if (!leftSummary || !rightSummary) continue;
 
-            const leftMeanValue = getNumericAggregation(leftSummary.aggregations?.score, 'mean');
-            const rightMeanValue = getNumericAggregation(rightSummary.aggregations?.score, 'mean');
+            // Prefer raw aggregations for display; fall back to score (e.g. scorers).
+            const leftAggs = leftSummary.aggregations?.raw ?? leftSummary.aggregations?.score;
+            const rightAggs = rightSummary.aggregations?.raw ?? rightSummary.aggregations?.score;
+            const leftMeanValue = getNumericAggregation(leftAggs, 'mean');
+            const rightMeanValue = getNumericAggregation(rightAggs, 'mean');
 
             if (leftMeanValue === undefined || rightMeanValue === undefined) {
               summaryTable.push([evalName, colors.muted('-'), colors.muted('-'), colors.muted('-')]);

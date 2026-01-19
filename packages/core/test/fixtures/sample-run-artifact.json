@@ -19,7 +19,8 @@
         "metric": "answerRelevance",
         "verdict": { "kind": "number", "type": "threshold", "passAt": 0.8 }
       }
-    }
+    },
+    "scorers": {}
   },
   "result": {
     "stepCount": 2,
@@ -27,8 +28,9 @@
       "Answer Relevance": {
         "byStepIndex": [
           {
-            "eval": "Answer Relevance",
+            "evalRef": "Answer Relevance",
             "measurement": {
+              "metricRef": "answerRelevance",
               "score": 1,
               "rawValue": 5,
               "confidence": 0.9,

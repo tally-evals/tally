@@ -152,5 +152,16 @@ export function createWeightedAverageScorer<TInputs extends readonly ScorerInput
       fallbackScore,
     }),
     ...(metadata && { metadata }),
+    metadata: {
+      ...(scorer.metadata ?? {}),
+      ...(metadata ?? {}),
+      // Tag for run-artifact serialization: allows UI to explain “how calculated”
+      __tally: {
+        ...(typeof (scorer.metadata as any)?.__tally === 'object'
+          ? (scorer.metadata as any).__tally
+          : {}),
+        combineKind: 'weightedAverage',
+      },
+    },
   };
 }

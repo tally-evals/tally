@@ -132,6 +132,7 @@ export type {
 export type {
   MetricName,
   EvalName,
+  ScorerName,
   RunId,
   ConversationId,
   Verdict,
@@ -145,6 +146,9 @@ export type {
   ConversationResult,
   MetricDefSnap,
   EvalDefSnap,
+  ScorerCombineKind,
+  ScorerInputSnap,
+  ScorerDefSnap,
   RunDefs,
   AggregationValue,
   Aggregations as ArtifactAggregations,

@@ -6,6 +6,11 @@ import { score, verdict } from './colors';
 
 export type MetricScalar = number | boolean | string;
 
+function clamp01(value: number): number {
+  if (Number.isNaN(value)) return 0;
+  return Math.max(0, Math.min(1, value));
+}
+
 /**
  * Normalize a metric value to [0, 1] range
  */
@@ -26,22 +31,42 @@ export function normalizeMetricValue(value: MetricScalar): number {
 }
 
 /**
- * Format a score with color based on value
+ * Apply a [0,1] heatmap color to any text.
+ */
+export function colorByRate01(value: number, text: string): string {
+  const normalized = clamp01(value);
+
+  if (normalized >= 0.8) {
+    return score.excellent(text);
+  }
+  if (normalized >= 0.6) {
+    return score.good(text);
+  }
+  if (normalized >= 0.4) {
+    return score.fair(text);
+  }
+  return score.poor(text);
+}
+
+/**
+ * Format a [0,1] rate (passRate, failRate, unknownRate, etc.) with heatmap.
+ */
+export function formatRate01(value: number): string {
+  const normalized = clamp01(value);
+  const formatted = normalized.toFixed(3);
+  return colorByRate01(normalized, formatted);
+}
+
+/**
+ * Format a score with color based on value.
+ *
+ * NOTE: This accepts values that may be 0-1 or 0-5 (LLM rubric) and normalizes.
+ * Prefer `formatRate01` when you already know it's a [0,1] rate.
  */
 export function formatScore(value: number): string {
   const normalized = normalizeMetricValue(value);
   const formatted = normalized.toFixed(3);
-
-  if (normalized >= 0.8) {
-    return score.excellent(formatted);
-  }
-  if (normalized >= 0.6) {
-    return score.good(formatted);
-  }
-  if (normalized >= 0.4) {
-    return score.fair(formatted);
-  }
-  return score.poor(formatted);
+  return colorByRate01(normalized, formatted);
 }
 
 /**

@@ -1,0 +1,1211 @@
+{
+  "schemaVersion": 1,
+  "runId": "run-1768858449535-c5zdkx0",
+  "createdAt": "2026-01-19T21:34:09.535Z",
+  "defs": {
+    "metrics": {
+      "answerRelevance": {
+        "name": "answerRelevance",
+        "scope": "single",
+        "valueType": "number",
+        "description": "Measures how relevant the output is to the input query using LLM-based statement-level relevance analysis"
+      },
+      "completeness": {
+        "name": "completeness",
+        "scope": "single",
+        "valueType": "number",
+        "description": "Measures how complete an answer is relative to expected coverage using LLM-based analysis"
+      },
+      "roleAdherence": {
+        "name": "roleAdherence",
+        "scope": "multi",
+        "valueType": "number",
+        "description": "Measures how well the assistant adheres to a specified role across an entire conversation",
+        "metadata": {
+          "expectedRole": "travel planning assistant that helps users find flights, accommodations, and travel information",
+          "checkConsistency": true
+        }
+      },
+      "knowledgeRetention": {
+        "name": "knowledgeRetention",
+        "scope": "multi",
+        "valueType": "number",
+        "description": "Measures how well the assistant retains and uses information from earlier parts of the conversation"
+      }
+    },
+    "evals": {
+      "Answer Relevance": {
+        "name": "Answer Relevance",
+        "kind": "singleTurn",
+        "outputShape": "seriesByStepIndex",
+        "metric": "answerRelevance",
+        "verdict": {
+          "kind": "number",
+          "type": "threshold",
+          "passAt": 2.5
+        }
+      },
+      "Completeness": {
+        "name": "Completeness",
+        "kind": "singleTurn",
+        "outputShape": "seriesByStepIndex",
+        "metric": "completeness",
+        "verdict": {
+          "kind": "number",
+          "type": "threshold",
+          "passAt": 2
+        }
+      },
+      "Role Adherence": {
+        "name": "Role Adherence",
+        "kind": "multiTurn",
+        "outputShape": "scalar",
+        "metric": "roleAdherence",
+        "verdict": {
+          "kind": "number",
+          "type": "threshold",
+          "passAt": 3.5
+        }
+      },
+      "Knowledge Retention": {
+        "name": "Knowledge Retention",
+        "kind": "multiTurn",
+        "outputShape": "scalar",
+        "metric": "knowledgeRetention",
+        "verdict": {
+          "kind": "number",
+          "type": "threshold",
+          "passAt": 3
+        }
+      },
+      "Overall Quality": {
+        "name": "Overall Quality",
+        "kind": "scorer",
+        "outputShape": "scalar",
+        "metric": "OverallQuality",
+        "scorerRef": "OverallQuality",
+        "verdict": {
+          "kind": "number",
+          "type": "threshold",
+          "passAt": 0.5
+        }
+      }
+    },
+    "scorers": {
+      "OverallQuality": {
+        "name": "OverallQuality",
+        "inputs": [
+          {
+            "metricRef": "answerRelevance",
+            "weight": 0.3,
+            "required": true
+          },
+          {
+            "metricRef": "roleAdherence",
+            "weight": 0.3,
+            "required": true
+          },
+          {
+            "metricRef": "knowledgeRetention",
+            "weight": 0.25,
+            "required": true
+          },
+          {
+            "metricRef": "completeness",
+            "weight": 0.15,
+            "required": true
+          }
+        ],
+        "normalizeWeights": true,
+        "combine": {
+          "kind": "weightedAverage"
+        },
+        "description": "Weighted average scorer combining 4 metrics",
+        "metadata": {
+          "__tally": {
+            "combineKind": "weightedAverage"
+          }
+        }
+      }
+    }
+  },
+  "result": {
+    "stepCount": 13,
+    "singleTurn": {
+      "Answer Relevance": {
+        "byStepIndex": [
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.9,
+              "reasoning": "The response is highly relevant as it acknowledges the user's excitement and immediately engages with the trip planning by asking a pertinent follow-up question about dates.",
+              "executionTimeMs": 1749,
+              "timestamp": "2026-01-19T21:34:11.286Z"
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.9,
+              "reasoning": "The response is highly relevant as it directly addresses the user's implied need for travel planning by asking a clarifying question about the trip details, which is a natural next step in the conversation.",
+              "executionTimeMs": 1855,
+              "timestamp": "2026-01-19T21:34:11.396Z"
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.9,
+              "reasoning": "The response directly confirms the return date provided in the query and then asks a relevant follow-up question to gather more information for booking the flight. This indicates full relevance.",
+              "executionTimeMs": 1854,
+              "timestamp": "2026-01-19T21:34:11.395Z"
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.9,
+              "reasoning": "The response directly addresses the user's stated departure location (JFK) and provides relevant flight information, fulfilling the implicit need for flight options based on the departure city.",
+              "executionTimeMs": 1745,
+              "timestamp": "2026-01-19T21:34:11.286Z"
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.95,
+              "reasoning": "The response directly addresses the user's request for details on the $275 and $299 flight options, and also confirms that both are non-stop, which was a specific preference mentioned in the query. The information provided is precise and relevant to the user's stated interests.",
+              "executionTimeMs": 1640,
+              "timestamp": "2026-01-19T21:34:11.181Z"
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 0.6,
+              "rawValue": 3,
+              "confidence": 0.9,
+              "reasoning": "The response partially addresses the query by acknowledging the user's intent to book a flight and then pivoting to accommodations. However, it completely ignores the flight booking request and jumps directly to hotels, which is only the second part of the user's request. The response is partially relevant because it addresses the accommodation part of the query, but it misses the primary request of booking the flight.",
+              "executionTimeMs": 1523,
+              "timestamp": "2026-01-19T21:34:11.065Z"
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2.5
+              },
+              "observed": {
+                "rawValue": 3,
+                "score": 0.6
+              }
+            }
+          },
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.95,
+              "reasoning": "The response directly addresses all aspects of the query: a hotel search for one guest with a nightly budget of $200-$250. It provides specific hotel options that fit within or close to the specified budget, along with relevant details like star rating, location, amenities, and price. The response also proactively asks for feedback to refine the search, demonstrating a complete understanding and fulfillment of the user's request.",
+              "executionTimeMs": 1853,
+              "timestamp": "2026-01-19T21:34:11.395Z"
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.95,
+              "reasoning": "The response directly confirms the user's choice of the Grand Plaza Hotel and acknowledges the reasons provided in the query. It then proactively offers further assistance relevant to trip planning, demonstrating a complete understanding and fulfillment of the user's stated intent.",
+              "executionTimeMs": 1640,
+              "timestamp": "2026-01-19T21:34:11.182Z"
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.9,
+              "reasoning": "The response directly addresses the user's expressed interest in finding dining options and trying new local favorites. It asks clarifying questions to narrow down the search, demonstrating a clear understanding of the user's intent and a commitment to providing relevant recommendations.",
+              "executionTimeMs": 1524,
+              "timestamp": "2026-01-19T21:34:11.066Z"
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.9,
+              "reasoning": "The response directly addresses the user's preferences for food (Italian, local flavor), ambiance (cozy, dimly lit, great view implied by romantic spots), and provides specific recommendations with relevant details like ratings, cuisine type, and price. It also explicitly asks if the suggestions appeal, further confirming relevance.",
+              "executionTimeMs": 1958,
+              "timestamp": "2026-01-19T21:34:11.500Z"
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.9,
+              "reasoning": "The response directly confirms the user's choice ('La Bella Italia it is') and acknowledges the positive aspects they mentioned ('I'm sure you'll have a fantastic meal there'). It then proactively offers further assistance related to the user's trip, which is a relevant follow-up.",
+              "executionTimeMs": 1628,
+              "timestamp": "2026-01-19T21:34:11.171Z"
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.9,
+              "reasoning": "The response directly addresses the user's request for a rental car and the specified dates. It also proactively identifies a potential issue with the dates (flight arrival vs. car pickup) and offers a helpful suggestion, demonstrating full relevance and understanding of the user's intent.",
+              "executionTimeMs": 1743,
+              "timestamp": "2026-01-19T21:34:11.286Z"
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.95,
+              "reasoning": "The response directly and completely answers both parts of the query: adjusting the rental car pick-up date and providing the requested weather forecast for San Francisco during the specified dates. It also offers helpful packing advice based on the forecast.",
+              "executionTimeMs": 1418,
+              "timestamp": "2026-01-19T21:34:10.961Z"
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          }
+        ]
+      },
+      "Completeness": {
+        "byStepIndex": [
+          {
+            "evalRef": "Completeness",
+            "measurement": {
+              "metricRef": "completeness",
+              "score": 0.2,
+              "rawValue": 1,
+              "confidence": 0.9,
+              "reasoning": "The query expresses excitement about planning a trip to San Francisco and implicitly expects information or guidance on how to start planning. The response acknowledges the excitement but immediately asks for dates, which is a very early step in planning and doesn't provide any initial information or suggestions about San Francisco itself. It doesn't cover any expected topics related to trip planning (e.g., attractions, accommodation, transportation, best times to visit, etc.) and is therefore very incomplete.",
+              "executionTimeMs": 2063,
+              "timestamp": "2026-01-19T21:34:11.606Z"
+            },
+            "outcome": {
+              "verdict": "fail",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2
+              },
+              "observed": {
+                "rawValue": 1,
+                "score": 0.2
+              }
+            }
+          },
+          {
+            "evalRef": "Completeness",
+            "measurement": {
+              "metricRef": "completeness",
+              "score": 0,
+              "rawValue": 0,
+              "confidence": 0.9,
+              "reasoning": "The query states a travel date but does not ask a question. The response assumes the user is looking for flight information and asks a clarifying question about the trip type. However, it does not provide any information related to the query itself, making it entirely incomplete in terms of addressing the user's stated information.",
+              "executionTimeMs": 1627,
+              "timestamp": "2026-01-19T21:34:11.170Z"
+            },
+            "outcome": {
+              "verdict": "fail",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2
+              },
+              "observed": {
+                "rawValue": 0,
+                "score": 0
+              }
+            }
+          },
+          {
+            "evalRef": "Completeness",
+            "measurement": {
+              "metricRef": "completeness",
+              "score": 0.6,
+              "rawValue": 3,
+              "confidence": 0.9,
+              "reasoning": "The response correctly identifies the return date but incorrectly states the departure date. It then asks a relevant follow-up question to gather more information, but the initial confirmation of the travel dates is flawed, leading to incomplete coverage of the expected information.",
+              "executionTimeMs": 1638,
+              "timestamp": "2026-01-19T21:34:11.182Z"
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2
+              },
+              "observed": {
+                "rawValue": 3,
+                "score": 0.6
+              }
+            }
+          },
+          {
+            "evalRef": "Completeness",
+            "measurement": {
+              "metricRef": "completeness",
+              "score": 0.4,
+              "rawValue": 2,
+              "confidence": 0.9,
+              "reasoning": "The response acknowledges the departure location (JFK) but does not provide any information about the destination, which is a critical missing piece of information for flight options. It also assumes specific dates and a class of service without this being requested in the query. While it offers flight options and price ranges, the lack of destination makes the response significantly incomplete.",
+              "executionTimeMs": 1851,
+              "timestamp": "2026-01-19T21:34:11.395Z"
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2
+              },
+              "observed": {
+                "rawValue": 2,
+                "score": 0.4
+              }
+            }
+          },
+          {
+            "evalRef": "Completeness",
+            "measurement": {
+              "metricRef": "completeness",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.9,
+              "reasoning": "The response fully addresses all aspects of the query. It provides details for both the $275 and $299 options, confirms that both are non-stop flights as requested, and includes departure/arrival times and flight durations. The additional question about booking or other trip aspects is also a helpful, relevant follow-up.",
+              "executionTimeMs": 1956,
+              "timestamp": "2026-01-19T21:34:11.500Z"
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Completeness",
+            "measurement": {
+              "metricRef": "completeness",
+              "score": 0.4,
+              "rawValue": 2,
+              "confidence": 0.9,
+              "reasoning": "The response completely ignores the user's request to book the SkyWings Airlines flight. It only addresses the secondary request about accommodations, and even then, it asks for information that was not provided in the original query (dates, budget, guest count). The primary intent of booking the flight is entirely missed.",
+              "executionTimeMs": 1522,
+              "timestamp": "2026-01-19T21:34:11.066Z"
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2
+              },
+              "observed": {
+                "rawValue": 2,
+                "score": 0.4
+              }
+            }
+          },
+          {
+            "evalRef": "Completeness",
+            "measurement": {
+              "metricRef": "completeness",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.9,
+              "reasoning": "The response fully addresses all aspects of the query. It confirms the number of guests, the nightly budget, and provides multiple hotel options within that budget. The hotels offered include details on star rating, location, amenities, and price, directly aligning with the user's stated needs.",
+              "executionTimeMs": 1522,
+              "timestamp": "2026-01-19T21:34:11.066Z"
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Completeness",
+            "measurement": {
+              "metricRef": "completeness",
+              "score": 0.2,
+              "rawValue": 1,
+              "confidence": 0.9,
+              "reasoning": "The response acknowledges the user's choice but does not provide any information or confirmation about the Grand Plaza Hotel itself, which was the core of the user's statement. It moves on to other services without addressing the details mentioned by the user (pool, spa, city center location, budget fit). Therefore, it is largely incomplete in addressing the user's expressed preferences and decision-making.",
+              "executionTimeMs": 1520,
+              "timestamp": "2026-01-19T21:34:11.065Z"
+            },
+            "outcome": {
+              "verdict": "fail",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2
+              },
+              "observed": {
+                "rawValue": 1,
+                "score": 0.2
+              }
+            }
+          },
+          {
+            "evalRef": "Completeness",
+            "measurement": {
+              "metricRef": "completeness",
+              "score": 0.6,
+              "rawValue": 3,
+              "confidence": 0.9,
+              "reasoning": "The response acknowledges the user's interest in dining and local favorites but doesn't provide any specific recommendations or information. Instead, it asks clarifying questions to narrow down the search. This means it covers the *intent* of the query but not the *substance* of what a user might expect from a response about dining options. It's a good conversational step but not a complete answer to finding dining options.",
+              "executionTimeMs": 1741,
+              "timestamp": "2026-01-19T21:34:11.286Z"
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2
+              },
+              "observed": {
+                "rawValue": 3,
+                "score": 0.6
+              }
+            }
+          },
+          {
+            "evalRef": "Completeness",
+            "measurement": {
+              "metricRef": "completeness",
+              "score": 0.6,
+              "rawValue": 3,
+              "confidence": 0.9,
+              "reasoning": "The response addresses the user's preference for Italian food and a cozy, dimly lit spot. It also touches on 'local flavor' by suggesting highly-rated restaurants. However, it misses the 'great view' aspect entirely and only offers two options, which might not be exhaustive. The depth of coverage for the Italian aspect is good, but the overall completeness is moderate due to the missed criteria and limited options.",
+              "executionTimeMs": 1625,
+              "timestamp": "2026-01-19T21:34:11.170Z"
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2
+              },
+              "observed": {
+                "rawValue": 3,
+                "score": 0.6
+              }
+            }
+          },
+          {
+            "evalRef": "Completeness",
+            "measurement": {
+              "metricRef": "completeness",
+              "score": 0.2,
+              "rawValue": 1,
+              "confidence": 0.9,
+              "reasoning": "The response acknowledges the user's choice but does not provide any information about the restaurant itself, such as its romantic ambiance or high rating, which were key points in the user's query. It moves on to unrelated topics without addressing the core of the user's stated preferences.",
+              "executionTimeMs": 1625,
+              "timestamp": "2026-01-19T21:34:11.170Z"
+            },
+            "outcome": {
+              "verdict": "fail",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2
+              },
+              "observed": {
+                "rawValue": 1,
+                "score": 0.2
+              }
+            }
+          },
+          {
+            "evalRef": "Completeness",
+            "measurement": {
+              "metricRef": "completeness",
+              "score": 0.6,
+              "rawValue": 3,
+              "confidence": 0.9,
+              "reasoning": "The response correctly identifies the requested pick-up date but does not acknowledge the return date. It also proactively suggests an adjustment based on a perceived discrepancy (flight date vs. rental start date), which wasn't explicitly asked for but is a reasonable inference. However, it misses the opportunity to confirm the return date, leaving that aspect incomplete.",
+              "executionTimeMs": 1636,
+              "timestamp": "2026-01-19T21:34:11.181Z"
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2
+              },
+              "observed": {
+                "rawValue": 3,
+                "score": 0.6
+              }
+            }
+          },
+          {
+            "evalRef": "Completeness",
+            "measurement": {
+              "metricRef": "completeness",
+              "score": 0.6,
+              "rawValue": 3,
+              "confidence": 0.9,
+              "reasoning": "The response successfully adjusted the rental car pick-up date as requested. However, it only partially addressed the weather query. While it provided a general forecast (sunny, temperature range), it did not offer specific daily details or mention potential for fog, which is a common characteristic of San Francisco weather and relevant for packing advice. Therefore, the coverage of the weather aspect is incomplete.",
+              "executionTimeMs": 1322,
+              "timestamp": "2026-01-19T21:34:10.867Z"
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2
+              },
+              "observed": {
+                "rawValue": 3,
+                "score": 0.6
+              }
+            }
+          }
+        ]
+      }
+    },
+    "multiTurn": {
+      "Role Adherence": {
+        "evalRef": "Role Adherence",
+        "measurement": {
+          "metricRef": "roleAdherence",
+          "score": 1,
+          "rawValue": 5,
+          "confidence": 0.95,
+          "reasoning": "The assistant perfectly adheres to the role of a travel planning assistant throughout the entire conversation. It consistently helps the user with flights, accommodations, dining, and rental cars. The language, tone, and behavior are appropriate for the role, and all responses are relevant and helpful within the context of travel planning. There are no deviations or inconsistencies observed.",
+          "executionTimeMs": 1416,
+          "timestamp": "2026-01-19T21:34:10.961Z"
+        },
+        "outcome": {
+          "verdict": "pass",
+          "policy": {
+            "kind": "number",
+            "type": "threshold",
+            "passAt": 3.5
+          },
+          "observed": {
+            "rawValue": 5,
+            "score": 1
+          }
+        }
+      },
+      "Knowledge Retention": {
+        "evalRef": "Knowledge Retention",
+        "measurement": {
+          "metricRef": "knowledgeRetention",
+          "score": 0.9,
+          "rawValue": 4.5,
+          "confidence": 0.9,
+          "reasoning": "The assistant demonstrated strong knowledge retention throughout the conversation, accurately recalling and utilizing details about the destination, dates, and specific choices made by the user. There was a minor hiccup with the rental car dates, but the assistant quickly identified and corrected it. The assistant also effectively used the user's preferences for dining and accommodation. The only reason it's not a perfect score is the initial discrepancy with the rental car pick-up date, which required user correction.",
+          "executionTimeMs": 2060,
+          "timestamp": "2026-01-19T21:34:11.606Z"
+        },
+        "outcome": {
+          "verdict": "pass",
+          "policy": {
+            "kind": "number",
+            "type": "threshold",
+            "passAt": 3
+          },
+          "observed": {
+            "rawValue": 4.5,
+            "score": 0.9
+          }
+        }
+      }
+    },
+    "scorers": {
+      "Overall Quality": {
+        "shape": "seriesByStepIndex",
+        "series": {
+          "byStepIndex": [
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.855
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.855,
+                  "score": 0.855
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.825
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.825,
+                  "score": 0.825
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.9149999999999999
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.9149999999999999,
+                  "score": 0.9149999999999999
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.885
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.885,
+                  "score": 0.885
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.975
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.975,
+                  "score": 0.975
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.7649999999999999
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.7649999999999999,
+                  "score": 0.7649999999999999
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.975
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.975,
+                  "score": 0.975
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.855
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.855,
+                  "score": 0.855
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.9149999999999999
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.9149999999999999,
+                  "score": 0.9149999999999999
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.9149999999999999
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.9149999999999999,
+                  "score": 0.9149999999999999
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.855
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.855,
+                  "score": 0.855
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.9149999999999999
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.9149999999999999,
+                  "score": 0.9149999999999999
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.9149999999999999
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.9149999999999999,
+                  "score": 0.9149999999999999
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "summaries": {
+      "byEval": {
+        "Answer Relevance": {
+          "eval": "Answer Relevance",
+          "kind": "singleTurn",
+          "count": 13,
+          "aggregations": {
+            "score": {
+              "P67": 1,
+              "Mean": 0.9692307692307692,
+              "P50": 1,
+              "P75": 1,
+              "P90": 1
+            },
+            "raw": {
+              "P67": 5,
+              "Mean": 4.846153846153846,
+              "P50": 5,
+              "P75": 5,
+              "P90": 5
+            }
+          },
+          "verdictSummary": {
+            "passRate": 1,
+            "failRate": 0,
+            "unknownRate": 0,
+            "passCount": 13,
+            "failCount": 0,
+            "unknownCount": 0,
+            "totalCount": 13
+          }
+        },
+        "Completeness": {
+          "eval": "Completeness",
+          "kind": "singleTurn",
+          "count": 13,
+          "aggregations": {
+            "score": {
+              "Mean": 0.4923076923076923,
+              "P50": 0.6,
+              "P75": 0.6,
+              "P90": 0.9200000000000003
+            },
+            "raw": {
+              "Mean": 2.4615384615384617,
+              "P50": 3,
+              "P75": 3,
+              "P90": 4.600000000000001
+            }
+          },
+          "verdictSummary": {
+            "passRate": 0.6923076923076923,
+            "failRate": 0.3076923076923077,
+            "unknownRate": 0,
+            "passCount": 9,
+            "failCount": 4,
+            "unknownCount": 0,
+            "totalCount": 13
+          }
+        },
+        "Role Adherence": {
+          "eval": "Role Adherence",
+          "kind": "multiTurn",
+          "count": 1,
+          "aggregations": {
+            "score": {
+              "value": 1,
+              "Mean": 1
+            },
+            "raw": {
+              "value": 5,
+              "Mean": 5
+            }
+          },
+          "verdictSummary": {
+            "passRate": 1,
+            "failRate": 0,
+            "unknownRate": 0,
+            "passCount": 1,
+            "failCount": 0,
+            "unknownCount": 0,
+            "totalCount": 1
+          }
+        },
+        "Knowledge Retention": {
+          "eval": "Knowledge Retention",
+          "kind": "multiTurn",
+          "count": 1,
+          "aggregations": {
+            "score": {
+              "value": 0.9,
+              "Mean": 0.9
+            },
+            "raw": {
+              "value": 4.5,
+              "Mean": 4.5
+            }
+          },
+          "verdictSummary": {
+            "passRate": 1,
+            "failRate": 0,
+            "unknownRate": 0,
+            "passCount": 1,
+            "failCount": 0,
+            "unknownCount": 0,
+            "totalCount": 1
+          }
+        },
+        "Overall Quality": {
+          "eval": "Overall Quality",
+          "kind": "scorer",
+          "count": 13,
+          "aggregations": {
+            "score": {
+              "Mean": 0.8896153846153845,
+              "P50": 0.9149999999999999,
+              "P75": 0.9149999999999999,
+              "P90": 0.963
+            }
+          },
+          "verdictSummary": {
+            "passRate": 1,
+            "failRate": 0,
+            "unknownRate": 0,
+            "passCount": 13,
+            "failCount": 0,
+            "unknownCount": 0,
+            "totalCount": 13
+          }
+        }
+      }
+    }
+  },
+  "metadata": {
+    "dataCount": 1,
+    "evaluatorCount": 1
+  }
+}
