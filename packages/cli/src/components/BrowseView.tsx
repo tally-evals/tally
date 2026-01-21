@@ -148,7 +148,8 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
           setLoading(true);
           setError(null);
           const convData = await selectedConversation.load();
-          const reportData = (await selectedRuns[0]?.load()) as TallyRunArtifact;
+          const reportData =
+            (await selectedRuns[0]?.load()) as TallyRunArtifact;
           setConversation(convData);
           setReport(reportData);
         } catch (err) {
@@ -413,10 +414,22 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
               const checkbox = isSelected ? colors.success('◼ ') : '◻ ';
               const prefix = isFocused ? colors.info('▶ ') : '  ';
               const label = isFocused
-                ? colors.info(run.id ?? 'unknown')
+                ? `${colors.info(run.id ?? 'unknown')} ${
+                    run.timestamp
+                      ? colors.info(new Date(run.timestamp).toLocaleString())
+                      : ''
+                  }`
                 : isSelected
-                ? colors.success(run.id ?? 'unknown')
-                : run.id ?? 'unknown';
+                ? `${colors.success(run.id ?? 'unknown')} ${
+                    run.timestamp
+                      ? colors.info(new Date(run.timestamp).toLocaleString())
+                      : ''
+                  }`
+                : `${run.id ?? 'unknown'} ${
+                    run.timestamp
+                      ? colors.info(new Date(run.timestamp).toLocaleString())
+                      : ''
+                  }`;
               return (
                 <Text key={run.id ?? `run-${index}`}>
                   {prefix}
