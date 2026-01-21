@@ -5,7 +5,7 @@ import {
   CardHeader,
   CardTitle,
 } from '../components/ui/card';
-import { ChevronLeft, GitBranch, Play } from 'lucide-react';
+import { ChevronLeft, GitBranch, Play, ArrowUp, ArrowDown } from 'lucide-react';
 
 interface Run {
   id: string;
@@ -34,6 +34,7 @@ export function ConversationView({ id }: ConversationViewProps) {
   const [runs, setRuns] = useState<Run[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sortRunsAscending, setSortRunsAscending] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -71,6 +72,12 @@ export function ConversationView({ id }: ConversationViewProps) {
   }
 
   const meta = trajectory?.meta ?? null;
+
+  const sortedRuns = [...runs].sort((a, b) => {
+    const timeA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+    const timeB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+    return sortRunsAscending ? timeA - timeB : timeB - timeA;
+  });
 
   return (
     <div className="space-y-6">
@@ -143,8 +150,20 @@ export function ConversationView({ id }: ConversationViewProps) {
 
       {/* Runs */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-4">
           <CardTitle className="text-lg">Tally runs ({runs.length})</CardTitle>
+          <button
+            onClick={() => setSortRunsAscending(!sortRunsAscending)}
+            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium border border-border rounded-lg hover:bg-muted transition-colors"
+            title={sortRunsAscending ? 'Sort descending' : 'Sort ascending'}
+          >
+            {sortRunsAscending ? (
+              <ArrowUp className="h-4 w-4" />
+            ) : (
+              <ArrowDown className="h-4 w-4" />
+            )}
+            {sortRunsAscending ? 'Oldest first' : 'Newest first'}
+          </button>
         </CardHeader>
         <CardContent>
           {runs.length === 0 ? (
@@ -153,7 +172,7 @@ export function ConversationView({ id }: ConversationViewProps) {
             </div>
           ) : (
             <div className="space-y-2">
-              {runs.map((run) => (
+              {sortedRuns.map((run) => (
                 <a
                   key={run.id}
                   href={`#/conversations/${id}/runs/${run.id}`}
