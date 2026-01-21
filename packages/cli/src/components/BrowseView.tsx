@@ -48,9 +48,8 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
 
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [selectedConversationIndex, setSelectedConversationIndex] = useState(0);
-  const [selectedRunsSet, setSelectedRunsSet] = useState<Set<number>>(
-    new Set(),
-  );
+  const [sortRunsAscending, setSortRunsAscending] = useState(false);
+  const [selectedRunIds, setSelectedRunIds] = useState<Set<string>>(new Set());
 
   const { stdout } = useStdout();
   const conversationListRef = useRef<ScrollListRef>(null);
@@ -129,7 +128,7 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
         const runs = await selectedConversation.listRuns();
         setAvailableRuns(runs);
         setSelectedIndex(0);
-        setSelectedRunsSet(new Set());
+        setSelectedRunIds(new Set());
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load runs');
       }
@@ -195,19 +194,25 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
       process.exit(0);
     }
 
+    if (input === 't' || input === 'T') {
+      if (screen === 'runs') {
+        setSortRunsAscending(!sortRunsAscending);
+      }
+    }
+
     if (key.escape && screen !== 'conversations') {
       if (screen === 'view' || screen === 'compare') {
         setScreen('runs');
         setSelectedRuns([]);
-        setSelectedRunsSet(new Set());
+        setSelectedRunIds(new Set());
       } else if (screen === 'trajectory') {
         setScreen('runs');
-        setSelectedRunsSet(new Set());
+        setSelectedRunIds(new Set());
       } else if (screen === 'runs') {
         setScreen('conversations');
         setSelectedConversation(null);
         setSelectedRuns([]);
-        setSelectedRunsSet(new Set());
+        setSelectedRunIds(new Set());
       }
     }
 
@@ -223,7 +228,7 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
         if (conversation) {
           setSelectedConversation(conversation);
           setScreen('runs');
-          setSelectedRunsSet(new Set());
+          setSelectedRunIds(new Set());
         }
       }
     }
@@ -240,12 +245,18 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
       } else if (input === ' ') {
         if (selectedIndex >= trajectoryOffset) {
           const runIdx = selectedIndex - trajectoryOffset;
-          setSelectedRunsSet((prev) => {
+          const sortedRuns = [...availableRuns].sort((a, b) => {
+            const timeA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+            const timeB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+            return sortRunsAscending ? timeA - timeB : timeB - timeA;
+          });
+          const runId = sortedRuns[runIdx]?.id ?? `run-${runIdx}`;
+          setSelectedRunIds((prev) => {
             const newSet = new Set(prev);
-            if (newSet.has(runIdx)) {
-              newSet.delete(runIdx);
+            if (newSet.has(runId)) {
+              newSet.delete(runId);
             } else {
-              newSet.add(runIdx);
+              newSet.add(runId);
             }
             return newSet;
           });
@@ -255,13 +266,21 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
           setScreen('trajectory');
         } else {
           const runIdx = selectedIndex - trajectoryOffset;
-          const runs = Array.from(selectedRunsSet)
-            .sort()
-            .map((idx) => availableRuns[idx])
+          const sortedRuns = [...availableRuns].sort((a, b) => {
+            const timeA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+            const timeB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+            return sortRunsAscending ? timeA - timeB : timeB - timeA;
+          });
+          const runs = Array.from(selectedRunIds)
+            .map((runId) =>
+              availableRuns.find(
+                (r) => (r.id ?? `run-${availableRuns.indexOf(r)}`) === runId,
+              ),
+            )
             .filter((run): run is RunRef => run !== undefined);
 
           if (runs.length === 0) {
-            const run = availableRuns[runIdx];
+            const run = sortedRuns[runIdx];
             if (run) {
               setSelectedRuns([run]);
               setScreen('view');
@@ -376,6 +395,12 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
       );
     }
 
+    const sortedRuns = [...availableRuns].sort((a, b) => {
+      const timeA = a.timestamp ? new Date(a.timestamp).getTime() : 0;
+      const timeB = b.timestamp ? new Date(b.timestamp).getTime() : 0;
+      return sortRunsAscending ? timeA - timeB : timeB - timeA;
+    });
+
     return (
       <Box flexDirection="column" height={terminalHeight}>
         <BreadCrumbs breadcrumbs={[selectedConversation.id]} />
@@ -393,7 +418,7 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
 
         <Box flexDirection="column" marginBottom={1} marginLeft={2}>
           <Text bold color="white">
-            📋 Runs {colors.muted(`(${selectedRunsSet.size} selected)`)}
+            📋 Runs {colors.muted(`(${selectedRunIds.size} selected)`)}
           </Text>
         </Box>
 
@@ -408,8 +433,9 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
                 : 0
             }
           >
-            {availableRuns.map((run, index) => {
-              const isSelected = selectedRunsSet.has(index);
+            {sortedRuns.map((run, index) => {
+              const runId = run.id ?? `run-${index}`;
+              const isSelected = selectedRunIds.has(runId);
               const isFocused = selectedIndex === index + trajectoryOffset;
               const checkbox = isSelected ? colors.success('◼ ') : '◻ ';
               const prefix = isFocused ? colors.info('▶ ') : '  ';
@@ -449,12 +475,17 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
                 : 'Navigate runs',
             },
             { key: 'Space', description: 'Select run' },
-            ...(selectedRunsSet.size <= 2
+            {
+              key: 't',
+              description: sortRunsAscending
+                ? 'Sort descending'
+                : 'Sort ascending',
+            },
+            ...(selectedRunIds.size <= 2
               ? [
                   {
                     key: 'Enter',
-                    description:
-                      selectedRunsSet.size === 2 ? 'Compare' : 'View',
+                    description: selectedRunIds.size === 2 ? 'Compare' : 'View',
                   },
                 ]
               : []),
@@ -498,7 +529,7 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
           onBack={() => {
             setScreen('runs');
             setSelectedRuns([]);
-            setSelectedRunsSet(new Set());
+            setSelectedRunIds(new Set());
             setConversation(null);
             setReport(null);
           }}
@@ -556,7 +587,7 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
           onBack={() => {
             setScreen('runs');
             setSelectedRuns([]);
-            setSelectedRunsSet(new Set());
+            setSelectedRunIds(new Set());
             setConversation(null);
             setLeftReport(null);
             setRightReport(null);
@@ -585,7 +616,7 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
         conversationId={selectedConversation.id}
         onBack={() => {
           setScreen('runs');
-          setSelectedRunsSet(new Set());
+          setSelectedRunIds(new Set());
         }}
       />
     );
