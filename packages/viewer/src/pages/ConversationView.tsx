@@ -1,10 +1,16 @@
-import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { ChevronLeft, GitBranch, Play } from "lucide-react";
+import { useState, useEffect } from 'react';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '../components/ui/card';
+import { ChevronLeft, GitBranch, Play } from 'lucide-react';
 
 interface Run {
   id: string;
   type: string;
+  timestamp: Date | null;
 }
 
 interface ConversationViewProps {
@@ -35,6 +41,7 @@ export function ConversationView({ id }: ConversationViewProps) {
       fetch(`/api/conversations/${id}/runs`).then((r) => r.json()),
     ])
       .then(([trajectoryData, runsData]) => {
+        console.log(runsData);
         setTrajectory(trajectoryData);
         setRuns(runsData);
         setLoading(false);
@@ -48,7 +55,9 @@ export function ConversationView({ id }: ConversationViewProps) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="animate-pulse text-muted-foreground">Loading conversation...</div>
+        <div className="animate-pulse text-muted-foreground">
+          Loading conversation...
+        </div>
       </div>
     );
   }
@@ -67,7 +76,10 @@ export function ConversationView({ id }: ConversationViewProps) {
     <div className="space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <a href="#/" className="hover:text-foreground transition-colors flex items-center gap-1">
+        <a
+          href="#/"
+          className="hover:text-foreground transition-colors flex items-center gap-1"
+        >
           <ChevronLeft className="h-4 w-4" />
           Conversations
         </a>
@@ -89,7 +101,7 @@ export function ConversationView({ id }: ConversationViewProps) {
           <div>
             <CardTitle className="text-lg">Trajectory</CardTitle>
             <div className="mt-1 text-sm text-muted-foreground">
-              {meta?.goal ? meta.goal : "No trajectory metadata available."}
+              {meta?.goal ? meta.goal : 'No trajectory metadata available.'}
             </div>
           </div>
           <a
@@ -102,19 +114,29 @@ export function ConversationView({ id }: ConversationViewProps) {
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <div className="text-xs font-semibold text-muted-foreground">Persona</div>
+            <div className="text-xs font-semibold text-muted-foreground">
+              Persona
+            </div>
             <div className="text-sm">
-              <div className="font-medium">{meta?.persona?.name ?? "—"}</div>
-              <div className="text-muted-foreground">{meta?.persona?.description ?? "—"}</div>
+              <div className="font-medium">{meta?.persona?.name ?? '—'}</div>
+              <div className="text-muted-foreground">
+                {meta?.persona?.description ?? '—'}
+              </div>
             </div>
           </div>
           <div className="space-y-2">
-            <div className="text-xs font-semibold text-muted-foreground">Created</div>
-            <div className="text-sm">
-              {meta?.createdAt ? new Date(meta.createdAt).toLocaleString() : "—"}
+            <div className="text-xs font-semibold text-muted-foreground">
+              Created
             </div>
-            <div className="text-xs font-semibold text-muted-foreground">Max turns</div>
-            <div className="text-sm">{meta?.maxTurns ?? "—"}</div>
+            <div className="text-sm">
+              {meta?.createdAt
+                ? new Date(meta.createdAt).toLocaleString()
+                : '—'}
+            </div>
+            <div className="text-xs font-semibold text-muted-foreground">
+              Max turns
+            </div>
+            <div className="text-sm">{meta?.maxTurns ?? '—'}</div>
           </div>
         </CardContent>
       </Card>
@@ -126,7 +148,9 @@ export function ConversationView({ id }: ConversationViewProps) {
         </CardHeader>
         <CardContent>
           {runs.length === 0 ? (
-            <div className="text-sm text-muted-foreground">No runs found for this conversation.</div>
+            <div className="text-sm text-muted-foreground">
+              No runs found for this conversation.
+            </div>
           ) : (
             <div className="space-y-2">
               {runs.map((run) => (
@@ -138,6 +162,11 @@ export function ConversationView({ id }: ConversationViewProps) {
                   <div className="flex items-center gap-2">
                     <Play className="h-4 w-4 text-muted-foreground" />
                     <span className="font-mono text-sm">{run.id}</span>
+                    {run.timestamp && (
+                      <span className="text-xs text-muted-foreground ml-2">
+                        {new Date(run.timestamp).toLocaleString()}
+                      </span>
+                    )}
                   </div>
                   <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded">
                     {run.type}
