@@ -126,10 +126,6 @@ export const travelPlannerGoldenTrajectory: Trajectory = {
     terminals: ['step-18'],
   },
   maxTurns: 25,
-  storage: {
-    strategy: 'local',
-    conversationId: 'travel-planner-golden',
-  },
   loopDetection: {
     maxConsecutiveSameStep: 5,
   },
@@ -197,9 +193,5 @@ export const travelPlannerCurveTrajectory: Trajectory = {
     terminals: ['step-9'],
   },
   maxTurns: 15,
-  storage: {
-    strategy: 'local',
-    conversationId: 'travel-planner-curve',
-  },
   userModel: google('models/gemini-2.5-flash-lite'),
 };

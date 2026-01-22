@@ -1,10 +1,11 @@
 {
-  "name": "mastra",
+  "name": "@tally-evals/examples-mastra",
   "version": "1.0.0",
-  "description": "",
+  "description": "Mastra evaluation examples using the Tally framework",
   "main": "index.js",
   "scripts": {
-    "test": "vitest",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
     "dev": "mastra dev",
     "build": "mastra build",
     "start": "mastra start"
@@ -24,6 +25,7 @@
     "@mastra/libsql": "^0.16.4",
     "@mastra/loggers": "^0.10.19",
     "@mastra/memory": "^0.15.13",
+    "@tally-evals/core": "workspace:*",
     "@tally-evals/tally": "workspace:*",
     "@tally-evals/trajectories": "workspace:*",
     "dotenv": "^17.2.3",
@@ -34,7 +36,6 @@
     "@types/node": "^25.0.3",
     "mastra": "^0.18.0",
     "typescript": "^5.9.3",
-    "vite-tsconfig-paths": "^6.0.3",
-    "vitest": "^1.1.0"
+    "vite-tsconfig-paths": "^6.0.3"
   }
 }
