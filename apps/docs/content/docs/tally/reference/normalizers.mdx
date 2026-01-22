@@ -1,11 +1,11 @@
 ---
-title: Normalization
+title: Normalizers
 description: Convert raw metric values into normalized scores.
 ---
 
 import { PropertyTable } from '@/components/PropertyTable';
 
-# Normalization
+# Normalizers
 
 Normalizers convert raw metric values into normalized scores.
 
@@ -21,11 +21,10 @@ import {
   createIdentityNormalizer,
   createCustomNormalizer,
   applyNormalization,
-  resolveContext,
+  resolveCalibration,
   computeDistributionStats,
   computeRange,
-  clearContextCache,
-  getCachedContext,
+  createCalibrationCache,
 } from 'tally/normalization';
 ```
 
@@ -46,7 +45,7 @@ const answerRelevance = createSingleTurnLLM({
   provider: google('models/gemini-2.5-flash-lite'),
   prompt: { instruction: 'Score relevance 0-5.', variables: [] as const },
   normalization: {
-    default: createMinMaxNormalizer({ min: 0, max: 5, clip: true }),
+    normalizer: createMinMaxNormalizer({ min: 0, max: 5, clip: true }),
   },
 });
 ```
@@ -154,7 +153,7 @@ No options.
   content={[
     {
       name: 'normalize',
-      type: '(value: T, args: { context: ScoringContext; metric: MetricDef<T, MetricContainer> }) => Score',
+      type: '(value: T, args: { context: NormalizationContextFor<T>; metric: MetricInfo }) => Score',
       description: 'Custom normalization function (must return a Score in [0,1]).',
     },
   ]}
@@ -171,22 +170,23 @@ These are intended for **manual normalization or custom pipelines**. Most users 
     { name: 'value', type: 'T', description: 'Raw metric value to normalize.' },
     {
       name: 'normalizerSpec',
-      type: 'NormalizerSpec<T, ScoringContext> | NormalizeToScore<T, ScoringContext>',
+      type: 'NormalizerSpec<T, NormalizationContextFor<T>> | NormalizeToScore<T, NormalizationContextFor<T>>',
       description: 'Normalizer specification or function.',
     },
-    { name: 'context', type: 'ScoringContext', description: 'Scoring context for normalization.' },
+    { name: 'context', type: 'NormalizationContextFor<T>', description: 'Normalization context (resolved from calibration).' },
     { name: 'metric', type: 'MetricDef<T, MetricContainer>', description: 'Metric definition (used by custom normalizers).' },
   ]}
 />
 
-### `resolveContext()`
+### `resolveCalibration()`
 
 <PropertyTable
   content={[
-    { name: 'normalization', type: 'MetricNormalization<T, ScoringContext> | undefined', description: 'Metric normalization config.' },
+    { name: 'normalization', type: 'MetricNormalization<T, NormalizationContextFor<T>> | undefined', description: 'Metric normalization config.' },
     { name: 'dataset', type: 'readonly unknown[]', description: 'Full dataset for context resolution.' },
     { name: 'rawValues', type: 'readonly T[]', description: 'Raw values for the metric.' },
-    { name: 'metricName', type: 'string', description: 'Metric name used for caching.' },
+    { name: 'metricName', type: 'string', description: 'Metric name used for per-run caching.' },
+    { name: 'cache', type: 'CalibrationCache', description: 'Per-run cache (create once per run).' },
   ]}
 />
 
@@ -206,40 +206,36 @@ These are intended for **manual normalization or custom pipelines**. Most users 
   ]}
 />
 
-### `clearContextCache()`
+### `createCalibrationCache()`
 
 No options.
-
-### `getCachedContext()`
-
-<PropertyTable
-  content={[
-    { name: 'metricName', type: 'string', description: 'Metric name whose context was cached.' },
-  ]}
-/>
 
 ### Example: precompute context once, reuse across runs
 
 ```ts
 import {
-  resolveContext,
+  resolveCalibration,
   applyNormalization,
   createZScoreNormalizer,
+  createCalibrationCache,
 } from 'tally/normalization';
 
 const rawValues = [1, 2, 3, 4, 5];
 const normalizer = createZScoreNormalizer({ mean: 3, stdDev: 1, to: '0-1' });
 
-const context = resolveContext({
-  metricName: 'latencyScore',
+const cache = createCalibrationCache();
+const context = await resolveCalibration(
+  { normalizer },
+  [],
   rawValues,
-  normalizer,
-});
+  'latencyScore',
+  cache
+);
 
-const score = applyNormalization(2, {
-  metricName: 'latencyScore',
-  normalizer,
-  context,
+const score = applyNormalization(2, normalizer, context, {
+  // minimal fields used by custom normalizers
+  name: 'latencyScore',
+  valueType: 'number',
 });
 ```
 

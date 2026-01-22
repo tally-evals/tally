@@ -82,7 +82,7 @@ export const concisenessMetric = createSingleTurnLLM({
   },
   // Normalizes the 1-5 score to a 0-1 range for Tally reports
   normalization: {
-    default: createMinMaxNormalizer({ min: 1, max: 5 })
+    normalizer: createMinMaxNormalizer({ min: 1, max: 5 })
   }
 });
 ```

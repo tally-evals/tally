@@ -25,13 +25,12 @@ Tally works out of the box with default settings, but you can configure shared s
 
 ### TypeScript Setup
 
-Ensure your `tsconfig.json` has `skipLibCheck: true` and `moduleResolution: "bundler"` (or "node16"/"nodenext") to properly resolve Tally's exports.
+Tally uses subpath exports (`@tally-evals/tally/scorers`, etc.) which require modern module resolution. Ensure your `tsconfig.json` uses `moduleResolution: "bundler"` (or `"node16"`/`"nodenext"`):
 
 ```json
 {
   "compilerOptions": {
-    "moduleResolution": "bundler",
-    "skipLibCheck": true
+    "moduleResolution": "bundler"
   }
 }
 ```
