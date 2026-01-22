@@ -1,0 +1,170 @@
+---
+title: Aggregators
+description: Summarize per-target scores into dataset-level statistics.
+---
+
+import { PropertyTable } from '@/components/PropertyTable';
+
+# Aggregators
+
+Aggregators are definitions that summarize arrays of values into dataset-level statistics. In the current API, aggregator definitions are **attached to single-turn metrics** via the `aggregators` field.
+
+## Import
+
+```ts
+import {
+  // Custom definitions (define*)
+  defineNumericAggregator,
+  defineBooleanAggregator,
+  defineCategoricalAggregator,
+  // Prebuilt (create*)
+  createMeanAggregator,
+  createPercentileAggregator,
+  createThresholdAggregator,
+  createTrueRateAggregator,
+  createFalseRateAggregator,
+  createDistributionAggregator,
+  createModeAggregator,
+} from 'tally';
+import type {
+  CompatibleAggregator,
+  AggregatorDef,
+  NumericAggregatorDef,
+  BooleanAggregatorDef,
+  CategoricalAggregatorDef,
+} from 'tally';
+```
+
+## Attaching aggregators to a metric
+
+Aggregator defs are attached to a **single-turn metric** at construction time.
+
+```ts
+import { createSingleTurnCode, defineBaseMetric, createPercentileAggregator } from 'tally';
+
+const latency = createSingleTurnCode({
+  base: defineBaseMetric({ name: 'latencyMs', valueType: 'number' }),
+  compute: ({ data }) => (data as { latencyMs: number }).latencyMs,
+  aggregators: [
+    createPercentileAggregator({ percentile: 95, description: 'p95 latency (ms)' }),
+  ],
+});
+```
+
+## Custom aggregator definitions
+
+### `defineNumericAggregator()`
+
+<PropertyTable
+  content={[
+    { name: 'name', type: 'string', description: 'Aggregator name (appears in reports).' },
+    { name: 'description', type: 'string', description: 'Optional description.', isOptional: true },
+    { name: 'aggregate', type: '(values: readonly number[]) => number', description: 'Aggregation function.' },
+    { name: 'metadata', type: 'Record<string, unknown>', description: 'Optional metadata.', isOptional: true },
+  ]}
+/>
+
+### `defineBooleanAggregator()`
+
+<PropertyTable
+  content={[
+    { name: 'name', type: 'string', description: 'Aggregator name (appears in reports).' },
+    { name: 'description', type: 'string', description: 'Optional description.', isOptional: true },
+    { name: 'aggregate', type: '(values: readonly boolean[]) => number', description: 'Aggregation function.' },
+    { name: 'metadata', type: 'Record<string, unknown>', description: 'Optional metadata.', isOptional: true },
+  ]}
+/>
+
+### `defineCategoricalAggregator()`
+
+<PropertyTable
+  content={[
+    { name: 'name', type: 'string', description: 'Aggregator name (appears in reports).' },
+    { name: 'description', type: 'string', description: 'Optional description.', isOptional: true },
+    {
+      name: 'aggregate',
+      type: '(values: readonly string[]) => Record<string, number>',
+      description: 'Aggregation function.',
+    },
+    { name: 'metadata', type: 'Record<string, unknown>', description: 'Optional metadata.', isOptional: true },
+  ]}
+/>
+
+## Prebuilt aggregators
+
+### `createMeanAggregator()`
+
+<PropertyTable
+  content={[
+    { name: 'description', type: 'string', description: 'Optional description.', isOptional: true },
+    { name: 'metadata', type: 'Record<string, unknown>', description: 'Optional metadata.', isOptional: true },
+  ]}
+/>
+
+### `createPercentileAggregator()`
+
+<PropertyTable
+  content={[
+    { name: 'percentile', type: 'number', description: 'Percentile in [0, 100].' },
+    { name: 'description', type: 'string', description: 'Optional description.', isOptional: true },
+    { name: 'metadata', type: 'Record<string, unknown>', description: 'Optional metadata.', isOptional: true },
+  ]}
+/>
+
+### `createThresholdAggregator()`
+
+<PropertyTable
+  content={[
+    { name: 'threshold', type: 'number', description: 'Threshold in [0, 1]. Default: 0.5.', isOptional: true },
+    { name: 'name', type: 'string', description: 'Optional custom name.', isOptional: true },
+    { name: 'description', type: 'string', description: 'Optional description.', isOptional: true },
+    { name: 'metadata', type: 'Record<string, unknown>', description: 'Optional metadata.', isOptional: true },
+  ]}
+/>
+
+### `createTrueRateAggregator()`
+
+<PropertyTable
+  content={[
+    { name: 'name', type: 'string', description: 'Optional custom name.', isOptional: true },
+    { name: 'description', type: 'string', description: 'Optional description.', isOptional: true },
+    { name: 'metadata', type: 'Record<string, unknown>', description: 'Optional metadata.', isOptional: true },
+  ]}
+/>
+
+### `createFalseRateAggregator()`
+
+<PropertyTable
+  content={[
+    { name: 'name', type: 'string', description: 'Optional custom name.', isOptional: true },
+    { name: 'description', type: 'string', description: 'Optional description.', isOptional: true },
+    { name: 'metadata', type: 'Record<string, unknown>', description: 'Optional metadata.', isOptional: true },
+  ]}
+/>
+
+### `createDistributionAggregator()`
+
+<PropertyTable
+  content={[
+    { name: 'name', type: 'string', description: 'Optional custom name.', isOptional: true },
+    { name: 'description', type: 'string', description: 'Optional description.', isOptional: true },
+    { name: 'proportions', type: 'boolean', description: 'Return proportions vs counts. Default: true.', isOptional: true },
+    { name: 'metadata', type: 'Record<string, unknown>', description: 'Optional metadata.', isOptional: true },
+  ]}
+/>
+
+### `createModeAggregator()`
+
+<PropertyTable
+  content={[
+    { name: 'name', type: 'string', description: 'Optional custom name.', isOptional: true },
+    { name: 'description', type: 'string', description: 'Optional description.', isOptional: true },
+    { name: 'metadata', type: 'Record<string, unknown>', description: 'Optional metadata.', isOptional: true },
+  ]}
+/>
+
+## Notes
+
+- **Compatibility**: use `CompatibleAggregator<TMetricValue>` to ensure you only attach aggregators that make sense for the metric’s raw value type.
+- **Verdict pass rate**: verdict-based pass rates live under eval summaries (verdict policies), not in aggregator defs.
+

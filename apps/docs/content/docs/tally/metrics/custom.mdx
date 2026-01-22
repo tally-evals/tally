@@ -1,0 +1,149 @@
+---
+title: Custom Metrics
+description: Defining your own domain-specific metrics.
+---
+
+Tally is designed as an evaluation engine where you can define your own metrics to match your specific domain requirements.
+
+## How Metrics are Structured
+
+Every metric in Tally is built from two primary parts:
+1. **The Base Definition**: Metadata like name, description, and value type (numeric, boolean, etc.).
+2. **The Implementation**: The logic that computes the metric (either TypeScript code or an LLM prompt).
+
+### Factory APIs
+
+The preferred way to create metrics is using the functional factory APIs from `@tally-evals/tally`:
+
+- `createSingleTurnCode` / `createSingleTurnLLM`: Measures individual conversation steps.
+- `createMultiTurnCode` / `createMultiTurnLLM`: Measures the entire conversation history.
+
+---
+
+## 1. Single-Turn Code Metric
+
+Use this when you want to measure something that can be determined by a script (e.g., keyword presence, JSON validation, response time).
+
+```ts
+import { defineBaseMetric, createSingleTurnCode } from '@tally-evals/tally';
+
+const base = defineBaseMetric({
+  name: 'jsonResponse',
+  valueType: 'boolean',
+  description: 'Checks if the assistant output is valid JSON'
+});
+
+export const jsonResponseMetric = createSingleTurnCode({
+  base,
+  compute: async ({ selected }) => {
+    try {
+      const content = selected.output[0]?.content ?? '';
+      JSON.parse(content);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+});
+```
+
+---
+
+## 2. Single-Turn LLM Metric
+
+Use this for measurements that require "judgment," such as relevance, tone, or toxicity.
+
+```ts
+import { defineBaseMetric, createSingleTurnLLM } from '@tally-evals/tally';
+import { createMinMaxNormalizer } from '@tally-evals/tally/normalization';
+
+const base = defineBaseMetric({
+  name: 'Conciseness',
+  valueType: 'number'
+});
+
+export const concisenessMetric = createSingleTurnLLM({
+  base,
+  provider: myModel,
+  prompt: {
+    instruction: `Rate the conciseness of the response relative to the query.
+    Query: {{input}}
+    Response: {{output}}
+    Score based on the rubric below.`,
+    variables: [] as const,
+  },
+  rubric: {
+    criteria: '1 = verbose/repetitive, 5 = perfectly concise',
+    scale: '1-5',
+    examples: [
+      { score: 5, reasoning: 'Direct answer without any fluff.' },
+      { score: 1, reasoning: 'Includes multiple paragraphs of unnecessary context.' }
+    ]
+  },
+  // Normalizes the 1-5 score to a 0-1 range for Tally reports
+  normalization: {
+    normalizer: createMinMaxNormalizer({ min: 1, max: 5 })
+  }
+});
+```
+
+---
+
+## 3. Multi-Turn Custom Metric
+
+Use this to evaluate behaviors that manifest across multiple turns, such as **Knowledge Retention**.
+
+Multi-turn metrics use `runOnContainer` to prepare the entire conversation history for evaluation.
+
+```ts
+import { defineBaseMetric, createMultiTurnLLM } from '@tally-evals/tally';
+
+const base = defineBaseMetric({
+  name: 'knowledgeRetention',
+  valueType: 'number',
+  description: 'Measures if the agent remembers user details provided in earlier turns'
+});
+
+export const knowledgeRetentionMetric = createMultiTurnLLM({
+  base,
+  provider: myModel,
+  // Prepare the conversation history for the LLM prompt
+  runOnContainer: async (conversation) => {
+    const history = conversation.steps
+      .map((s, i) => `Turn ${i+1}:\nUser: ${s.input.content}\nAgent: ${s.output[0].content}`)
+      .join('\n\n');
+    
+    return { history };
+  },
+  prompt: {
+    instruction: `Review the conversation history and determine if the agent 
+    correctly used information provided by the user in earlier turns.
+    
+    History:
+    {{history}}`,
+    variables: [] as const,
+  },
+  rubric: {
+    criteria: 'Did the agent remember facts?',
+    scale: '0-1',
+    examples: [
+      { score: 1, reasoning: 'User said their name was Bob in turn 1, agent used it in turn 3.' }
+    ]
+  }
+});
+```
+
+## Reusability & Composability
+
+When you define a metric using these factories, you are creating a `MetricDef`. This object is **typesafe and composable**:
+
+- It can be passed into a **Scorer** to be weighted with other metrics.
+- It can be passed into an **Eval** to have a **Verdict Policy** applied.
+- It can be reused across different **Evaluators** without re-defining the logic.
+
+---
+
+## Common pitfalls
+
+- **Single-turn selection**: single-turn metrics run on selected targets. Configure which steps/items to evaluate via the evaluator context (e.g., `runAllTargets()`).
+- **Normalization vs verdicts**: normalize to 0–1 when you want consistent reporting/scoring. Verdict policies can then gate pass/fail at different thresholds depending on scenario.

@@ -1,0 +1,198 @@
+---
+title: Metrics
+description: Measuring agent behavior with LLM and code-based metrics.
+---
+
+Metrics are the **signals** you measure about your agent. They can be fully deterministic (code checks) or model-judged (LLM-based), and they’re designed to be **reused** across different evaluation scenarios (Golden gating vs smoke tests vs regression runs).
+
+---
+
+## Blueprint vs. Result
+
+It is important to understand the distinction between a definition and its output:
+
+| Concept | Description |
+| :--- | :--- |
+| **`MetricDef`** | The **blueprint**. It defines the "how" (code or prompt), the metadata, and the expected value type. |
+| **`Metric`** | The **result**. This is the actual value (e.g., `4.5` or `true`) produced when a `MetricDef` is run against data. |
+
+---
+
+## Anatomy of a Metric
+
+Every metric in Tally fits into a few practical categories. These categories aren’t just taxonomy — they determine **how you run**, **how you score**, and **how you debug** evaluations.
+
+### 1. Value Type
+Metrics can produce any domain-relevant value:
+
+- **Numeric**: continuous values like token usage, latency, similarity scores, or judge scores.
+- **Boolean**: binary checks like “is the output valid JSON?”
+- **Ordinal**: categorical results mapped from a rubric (e.g., `{ Poor, Fair, Good, Excellent }`).
+
+In Tally, metric values are represented as a scalar type:
+
+```ts
+type MetricScalar = number | boolean | string;
+```
+
+Example:
+
+```ts
+import { defineBaseMetric } from '@tally-evals/tally';
+
+// Likert-style ordinal rating produced by an LLM judge or rubric
+// (store as an ordinal category; map to scores via normalization when needed)
+const concisenessLikert = defineBaseMetric({
+  name: 'concisenessLikert',
+  valueType: 'string',
+  description: 'Conciseness rating as an ordinal category (e.g., VeryVerbose → VeryConcise)',
+});
+```
+
+### 2. Scope
+Determines *what* the metric is measuring:
+
+- **Single-turn**: evaluates a single interaction (input + output).
+- **Multi-turn**: analyzes the entire conversation history (drift, retention, goal completion).
+
+Example (single-turn vs multi-turn):
+
+```ts
+import { createSingleTurnCode, createMultiTurnLLM, defineBaseMetric } from '@tally-evals/tally';
+
+// Single-turn: "Does this step include a tool call?"
+const hasToolCall = createSingleTurnCode({
+  base: defineBaseMetric({
+    name: 'hasToolCall',
+    valueType: 'boolean',
+  }),
+  compute: ({ selected }) =>
+    selected.output.some(
+      (m) => m.role === 'assistant' && m.content.length > 0,
+    ),
+});
+
+// Multi-turn: "Did the agent stay on topic across the whole conversation?"
+const stayedOnTopic = createMultiTurnLLM({
+  base: defineBaseMetric({
+    name: 'stayedOnTopic',
+    valueType: 'number',
+  }),
+  runOnContainer: async (conversation) => ({
+    transcript: conversation.steps
+      .map(
+        (s) =>
+          `User: ${s.input.content}\nAssistant: ${s.output
+            .map((m) => m.content)
+            .join(' ')}`,
+      )
+      .join('\n\n'),
+  }),
+  provider: myModel,
+  prompt: {
+    instruction: 'Score topic adherence 0-5.\n\n{{transcript}}',
+    variables: [] as const,
+  },
+});
+```
+
+### 3. Implementation
+The engine that powers the measurement:
+
+- **Code-based**: deterministic logic written in TypeScript. Best for technical validation.
+- **LLM-based**: evaluated by a language model using a prompt/rubric. Best for semantic judgment.
+
+Example (code-based vs LLM-based options):
+
+```ts
+import { createSingleTurnCode, createSingleTurnLLM, defineBaseMetric } from '@tally-evals/tally';
+import { createMinMaxNormalizer } from '@tally-evals/tally/normalization';
+
+// Code-based: optional preProcessor, cacheable, metadata
+const keywordPresent = createSingleTurnCode({
+  base: defineBaseMetric({
+    name: 'keywordPresent',
+    valueType: 'boolean',
+  }),
+  preProcessor: async (selected) => ({
+    text: selected.output.map((m) => m.content).join(' '),
+  }),
+  compute: ({ data }) => (data as { text: string }).text.includes('refund'),
+  cacheable: true,
+  metadata: {
+    keyword: 'refund',
+  },
+});
+
+// LLM-based: provider, prompt, rubric, normalization
+const helpfulness = createSingleTurnLLM({
+  base: defineBaseMetric({
+    name: 'helpfulness',
+    valueType: 'number',
+  }),
+  provider: myModel,
+  prompt: {
+    instruction:
+      'Rate helpfulness 1-5.\n\nQuery: {{input}}\nResponse: {{output}}',
+    variables: [] as const,
+  },
+  rubric: {
+    criteria: '1=unhelpful, 5=very helpful',
+    scale: '1-5',
+  },
+  normalization: {
+    normalizer: createMinMaxNormalizer({
+      min: 1,
+      max: 5,
+      clip: true,
+    }),
+  },
+});
+```
+
+---
+
+## The Metric Lifecycle
+
+1.  **Define**: Create a `MetricDef` using the [factory APIs](/docs/tally/metrics/custom).
+2.  **Execute**: Tally runs the definition against your conversation data.
+3.  **Normalize (Optional)**: If you plan to **combine** a metric inside a [Scorer](/docs/tally/scorers), you’ll typically attach a **Normalizer** so the metric maps to a comparable 0–1 score. It’s optional because some metrics already produce 0–1, and some workflows don’t use scorers.
+4.  **Compose**: Use [Scorers](/docs/tally/scorers) to combine multiple signals, then use [Evals](/docs/tally/evals) to apply a verdict policy.
+
+---
+
+## Normalization (recommended)
+
+Normalization converts a raw metric value (number/boolean/ordinal) into a comparable **0–1 score**. In the current API, normalization lives on the metric definition.
+
+If you’re using scorers, you typically want *every input metric* to have a sensible normalization strategy (or provide `normalizerOverride` per scorer input).
+
+See the full reference: [/docs/tally/reference/normalizers](/docs/tally/reference/normalizers).
+
+---
+
+## Aggregations (single-turn metrics)
+
+Aggregations are no longer a standalone `tally/aggregators` API. Instead, **single-turn metrics can carry aggregator definitions** that the pipeline uses to summarize results across targets.
+
+- **Where it applies**: `SingleTurnMetricDef` (step/item-level metrics)
+- **Where to read the output**: `report.evalSummaries.get(evalName)?.aggregations`
+
+If you need bespoke summaries (e.g., per-customer-tier rollups), post-process the report (group/filter per-target results) rather than trying to “register aggregators” globally.
+
+---
+
+## Golden vs Smoke: same measures, different policies
+
+In practice, you want to reuse the **same metrics** across scenarios:
+- **Golden dataset**: strict verdict policy (release gating).
+- **Smoke tests / dev loops**: looser verdict policy (fast feedback).
+
+The **measure stays constant**; the **verdict policy changes**. This is how you avoid rewriting evaluation logic for every test suite.
+
+## API Reference
+
+- [Metric Factories](/docs/tally/reference/metric) — `defineBaseMetric`, `createSingleTurnCode`, `createSingleTurnLLM`, `withNormalization`
+- [Built-in Metrics](/docs/tally/reference/builtin-metrics) — Pre-built metrics for common use cases
+- [Normalizers](/docs/tally/reference/normalizers) — `createMinMaxNormalizer`, `createBooleanNormalizer`, `createOrdinalNormalizer`
+- [Aggregators](/docs/tally/reference/aggregators) — `createMeanAggregator`, `createTrueRateAggregator`, etc.

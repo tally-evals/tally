@@ -1,0 +1,123 @@
+{
+  "version": 1,
+  "trajectoryId": "travel-planner-golden",
+  "createdAt": "2026-01-19T17:23:11.795Z",
+  "goal": "Plan a complete trip to San Francisco including flights, accommodations, vehicle rentals, dining reservations, and weather information",
+  "persona": {
+    "name": "Travel Enthusiast",
+    "description": "You are planning a trip and need help finding flights, accommodations, vehicle rentals and dining reservations. You provide information step by step as the agent asks for it. You are friendly and cooperative.",
+    "guardrails": [
+      "Provide information naturally and conversationally",
+      "Answer clarifying questions when asked",
+      "Express preferences when relevant and select the best option"
+    ]
+  },
+  "maxTurns": 25,
+  "loopDetection": {
+    "maxConsecutiveSameStep": 4
+  },
+  "stepGraph": {
+    "start": "step-1",
+    "terminals": [
+      "step-18"
+    ],
+    "steps": [
+      {
+        "id": "step-1",
+        "instruction": "Express interest in planning a trip to San Francisco"
+      },
+      {
+        "id": "step-2",
+        "instruction": "Provide origin city (New York), JFK"
+      },
+      {
+        "id": "step-3",
+        "instruction": "Provide departure date (June 15th, 2025)"
+      },
+      {
+        "id": "step-4",
+        "instruction": "Confirm round trip is needed"
+      },
+      {
+        "id": "step-5",
+        "instruction": "Provide return date (June 20th, 2025)"
+      },
+      {
+        "id": "step-6",
+        "instruction": "Review flight options and express preference from given options"
+      },
+      {
+        "id": "step-7",
+        "instruction": "Request help finding a hotel in San Francisco"
+      },
+      {
+        "id": "step-8",
+        "instruction": "Provide check-in date and duration (June 15th for 5 nights)"
+      },
+      {
+        "id": "step-9",
+        "instruction": "Provide guest count (just for me)"
+      },
+      {
+        "id": "step-10",
+        "instruction": "Express preference for hotels over apartments"
+      },
+      {
+        "id": "step-11",
+        "instruction": "Review hotel options and select preference",
+        "preconditions": [
+          {
+            "type": "stepSatisfied",
+            "stepId": "step-10"
+          }
+        ]
+      },
+      {
+        "id": "step-12",
+        "instruction": "Request help finding a vehicle to rent in San Francisco"
+      },
+      {
+        "id": "step-13",
+        "instruction": "Express preference for sedans"
+      },
+      {
+        "id": "step-14",
+        "instruction": "Review vehicle rental options and select preference",
+        "preconditions": [
+          {
+            "type": "stepSatisfied",
+            "stepId": "step-13"
+          }
+        ]
+      },
+      {
+        "id": "step-15",
+        "instruction": "Request help finding a restaurant to dine at in San Francisco"
+      },
+      {
+        "id": "step-16",
+        "instruction": "Express preference for Italian cuisine"
+      },
+      {
+        "id": "step-17",
+        "instruction": "Review restaurant options and select preference",
+        "preconditions": [
+          {
+            "type": "stepSatisfied",
+            "stepId": "step-16"
+          }
+        ]
+      },
+      {
+        "id": "step-18",
+        "instruction": "Ask about weather during the trip",
+        "preconditions": [
+          {
+            "type": "stepSatisfied",
+            "stepId": "step-17"
+          }
+        ]
+      }
+    ]
+  }
+}

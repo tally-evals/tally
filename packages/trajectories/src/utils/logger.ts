@@ -129,6 +129,9 @@ function extractToolCalls(messages: readonly ModelMessage[]): Array<{
 export function logStep(step: StepTrace, turnIndex: number): void {
 	console.log(`\n${colors.bright}${colors.blue}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${colors.reset}`);
 	console.log(`${colors.bright}${colors.blue}Turn ${turnIndex}${colors.reset} ${colors.dim}(${step.timestamp.toISOString()})${colors.reset}`);
+	console.log(
+		`${colors.dim}${colors.gray}Step:${colors.reset} ${step.stepId ?? '(none)'}  ${colors.dim}${colors.gray}Selection:${colors.reset} ${step.selection.method}`
+	);
 	console.log(`${colors.bright}${colors.blue}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${colors.reset}\n`);
 
 	// Log user message
@@ -169,6 +172,14 @@ export function logStep(step: StepTrace, turnIndex: number): void {
 	for (const msg of step.agentMessages) {
 		console.log(formatMessage(msg, getRoleColor(msg.role)));
 		console.log();
+	}
+
+	if (step.end) {
+		console.log(
+			`${colors.bright}${colors.yellow}END${colors.reset} ${colors.dim}(${step.end.reason}${step.end.completed ? ', completed' : ''})${colors.reset}${
+				step.end.summary ? ` ${colors.dim}${step.end.summary}${colors.reset}` : ''
+			}`
+		);
 	}
 }
 

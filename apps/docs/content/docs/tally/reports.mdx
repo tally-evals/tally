@@ -1,0 +1,129 @@
+---
+title: Run Report
+description: Understanding the output of a Tally evaluation run.
+---
+
+After calling `await tally.run()`, you receive a `TallyRunReport`—the complete record of everything that happened during evaluation. This object captures raw measurements, normalized scores, verdicts, and aggregated summaries.
+
+## What's in a Report
+
+A report contains three main sections:
+
+| Section | Purpose |
+|---------|---------|
+| `defs` | Snapshots of all metric, eval, and scorer definitions used in the run |
+| `result` | Per-step and per-conversation measurements with optional summaries |
+| `metadata` | Optional run-level context (timing, model info, etc.) |
+
+The report also exposes two methods:
+
+- `view()` — returns an ergonomic helper for assertions and inspection
+- `toArtifact()` — converts to a schema-stable JSON structure for persistence
+
+## Accessing Results
+
+Results are organized by eval kind:
+
+```ts
+const report = await tally.run();
+
+// Single-turn evals: array indexed by step
+const relevanceResults = report.result.singleTurn['answer-relevance'];
+relevanceResults.byStepIndex.forEach((step, i) => {
+  if (step) {
+    console.log(`Step ${i}: score=${step.measurement.score}`);
+  }
+});
+
+// Multi-turn evals: one result per conversation
+const coherence = report.result.multiTurn['conversation-coherence'];
+console.log(`Coherence: ${coherence.measurement.score}`);
+
+// Scorer evals: check the shape field
+const quality = report.result.scorers['overall-quality'];
+if (quality.shape === 'seriesByStepIndex') {
+  // series of scores
+} else {
+  // single scalar result
+}
+```
+
+## Summaries and Aggregations
+
+When metrics define aggregators, the report includes statistical summaries:
+
+```ts
+const summaries = report.result.summaries;
+if (summaries) {
+  for (const [evalName, summary] of Object.entries(summaries.byEval)) {
+    console.log(`${evalName}:`);
+    console.log(`  count: ${summary.count}`);
+    
+    if (summary.aggregations) {
+      console.log(`  mean score: ${summary.aggregations.score.mean}`);
+    }
+    
+    if (summary.verdictSummary) {
+      const v = summary.verdictSummary;
+      console.log(`  pass rate: ${(v.passRate * 100).toFixed(1)}%`);
+    }
+  }
+}
+```
+
+## Serializing Reports
+
+For storage, CI pipelines, or the Tally viewer, convert to an artifact:
+
+```ts
+const artifact = report.toArtifact();
+
+// Save to disk
+import { writeFileSync } from 'fs';
+writeFileSync('run.json', JSON.stringify(artifact, null, 2));
+```
+
+The artifact uses the same structure as the report but with ISO timestamps instead of Date objects and a `schemaVersion` field for forward compatibility.
+
+## Filtering Failures
+
+To debug failed evaluations, filter by verdict:
+
+```ts
+const failures: Array<{ eval: string; step: number; reason: string }> = [];
+
+for (const [evalName, series] of Object.entries(report.result.singleTurn)) {
+  series.byStepIndex.forEach((step, i) => {
+    if (step?.outcome?.verdict === 'fail') {
+      failures.push({
+        eval: evalName,
+        step: i,
+        reason: step.measurement.reasoning ?? 'No reasoning provided',
+      });
+    }
+  });
+}
+
+console.log(`Found ${failures.length} failures`);
+```
+
+## CI Integration
+
+Block deployments when quality drops below a threshold:
+
+```ts
+const report = await tally.run();
+const summary = report.result.summaries?.byEval['answer-relevance'];
+
+if (summary?.verdictSummary) {
+  const passRate = summary.verdictSummary.passRate;
+  if (passRate < 0.95) {
+    process.exitCode = 1;
+    console.error(`Pass rate ${(passRate * 100).toFixed(1)}% is below 95% threshold`);
+  }
+}
+```
+
+## API Reference
+
+For the complete type definitions, see the [Reports API Reference](/docs/tally/reference/reports).

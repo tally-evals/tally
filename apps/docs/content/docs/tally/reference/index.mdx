@@ -1,0 +1,29 @@
+---
+title: Overview
+description: Bottom-up API reference for the tally package.
+---
+
+# Overview
+
+This section documents the **tally API from the bottom up**. Use it to understand how metrics are built and wired into evals before running `createTally`.
+
+## How the pieces fit
+
+1. **Metric types** define the shape of raw values, scores, and containers (`DatasetItem`, `Conversation`, etc.).
+2. **Metric factories** produce value objects that can be composed and reused.
+3. **Normalization** turns raw metric values into normalized scores.
+4. **Scorers** combine multiple normalized metrics into a derived score.
+5. **Aggregators** summarize scores across targets.
+6. **Evals** connect metrics + scorers with verdict policies and run contexts.
+7. **createTally** executes the evaluation pipeline and returns a report.
+8. **Data & utils** help with loading datasets and runtime validation.
+
+## Typical workflow
+
+1. Define base metrics with `defineBaseMetric`.
+2. Create metrics with `createSingleTurnLLM` / `createMultiTurnLLM` or code-based variants.
+3. Combine metrics with `defineInput` + `createWeightedAverageScorer`.
+4. Wrap into evals via `defineSingleTurnEval` / `defineScorerEval`.
+5. Build an evaluator with `createEvaluator`.
+6. Run with `createTally({ data, evaluators })`.
+

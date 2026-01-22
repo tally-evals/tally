@@ -1,110 +1,895 @@
 /**
  * Evaluation Pipeline
  *
- * Orchestrates the evaluation process with evals:
+ * Orchestrates the evaluation process:
  * 1. Measure: Execute all metrics (single-turn + multi-turn)
- * 2. Resolve Context: Resolve normalization contexts for each metric
+ * 2. Resolve Calibration: Resolve metric calibration for each metric
  * 3. Normalize: Transform raw values to Scores
  * 4. Score: Execute scorers to produce derived metrics
  * 5. Compute Verdicts: Calculate pass/fail verdicts for each eval
  * 6. Aggregate: Compute built-in aggregations and eval summaries
  */
 
-import type {
-  MetricDef,
-  SingleTurnContainer,
-  MetricContainer,
-  Metric,
-  MetricScalar,
-  Score,
-  PerTargetResult,
-  AggregateSummary,
-  Conversation,
-  DatasetItem,
-  SingleTargetFor,
-  MetricDefFor,
-  ScoringContext,
-  BaseMetricDef,
-  SingleTurnRunPolicy,
-  TargetVerdict,
-  BuiltInAggregations,
-} from '@tally/core/types';
-import { runSingleTurnMetrics } from './execution/runSingleTurn';
-import { runMultiTurnMetric } from './execution/runMultiTurn';
-import type { RunSingleTurnOptions } from './execution/runSingleTurn';
-import type { RunMultiTurnOptions } from './execution/runMultiTurn';
-import type { ExecutorOptions } from './execution/executors';
-import type { MemoryCache } from './execution/cache/memoryCache';
-import type { GenerateObjectOptions } from './execution/llm/generateObject';
-import { resolveContext } from './normalization/context';
-import { applyNormalization } from './normalization/apply';
 import {
+  type AggregatorDef,
+  type BaseMetricDef,
+  type BooleanAggregatorDef,
+  type CategoricalAggregatorDef,
+  type Conversation,
+  type DatasetItem,
+  type Metric,
+  type MetricContainer,
+  type MetricDef,
+  type MetricScalar,
+  type NormalizationContextFor,
+  type NumericAggregatorDef,
+  type Score,
+  type SingleTargetFor,
+  type SingleTurnContainer,
+  type SingleTurnRunPolicy,
+  toScore,
+} from '@tally/core/types';
+import { P, match } from 'ts-pattern';
+import type { EvalMetadataEntry, InternalEvaluator } from './evals/builder';
+import { computeVerdict } from './evals/verdict';
+import {
+  resolveRunPolicy,
   selectConversationTargets,
   selectDatasetTargets,
-  resolveRunPolicy,
 } from './evaluators/context';
-import type { InternalEvaluator } from './evals/builder';
-import type { VerdictPolicy } from './evals/types';
-import { computeVerdict } from './evals/verdict';
-import { calculateBuiltInAggregations } from './evals/aggregations';
+import type { MemoryCache } from './execution/cache/memoryCache';
+import type { ExecutorOptions } from './execution/executors';
+import type { GenerateObjectOptions } from './execution/llm/generateObject';
+import { runMultiTurnMetric } from './execution/runMultiTurn';
+import type { RunMultiTurnOptions } from './execution/runMultiTurn';
+import { runSingleTurnMetrics } from './execution/runSingleTurn';
+import type { RunSingleTurnOptions } from './execution/runSingleTurn';
+import { applyNormalization } from './normalization/apply';
+import {
+  createCalibrationCache,
+  resolveCalibration,
+} from './normalization/context';
+import { isConversation, isDatasetItem } from '@tally/utils/guards';
+
+// ============================================================================
+// Types
+// ============================================================================
 
 /**
- * Pipeline state - intermediate results between phases
+ * Pipeline state - immutable intermediate results between phases
  */
 export interface PipelineState {
-  // Phase 1: Raw metric results
-  rawMetrics: Map<string, Metric<MetricScalar>[]>; // key: targetId, value: metrics for that target
-
-  // Phase 2: Resolved contexts per metric
-  contexts: Map<string, ScoringContext>; // key: metric name
-
-  // Phase 3: Normalized scores per target
-  normalizedScores: Map<string, Map<string, Score>>; // key: targetId, inner key: metric name
-
-  // Phase 4: Derived metric scores per target
-  // Maps targetId -> scorer name -> { score, outputMetric, evalName }
-  derivedScores: Map<
+  readonly rawMetrics: ReadonlyMap<string, readonly Metric<MetricScalar>[]>;
+  readonly calibrations: ReadonlyMap<string, unknown>;
+  readonly normalizedScores: ReadonlyMap<
     string,
-    Map<
+    ReadonlyMap<string, readonly Score[]>
+  >;
+  readonly derivedScores: ReadonlyMap<
+    string,
+    ReadonlyMap<
       string,
-      {
-        score: Score;
+      Readonly<{
+        scores: readonly Score[];
+        rawValues: readonly MetricScalar[];
         outputMetric: BaseMetricDef<number>;
-        evalName?: string; // Track which eval this score belongs to
-      }
+        inputMetrics: readonly MetricDef<MetricScalar, MetricContainer>[];
+        evalName?: string;
+      }>
     >
   >;
-
-  // Phase 5: Verdicts per target per eval
-  verdicts: Map<string, Map<string, TargetVerdict>>; // key: targetId, inner key: eval name
-
-  // Phase 6: Aggregate summaries and eval summaries
-  aggregateSummaries: AggregateSummary[];
-  evalSummaries: Map<
+  readonly verdicts: ReadonlyMap<
     string,
-    {
-      evalName: string;
-      evalKind: 'singleTurn' | 'multiTurn' | 'scorer';
-      aggregations: BuiltInAggregations;
-      verdictSummary?: {
-        passRate: Score;
-        failRate: Score;
-        passCount: number;
-        failCount: number;
-        totalCount: number;
-      };
-    }
+    ReadonlyMap<string, readonly PipelineVerdict[]>
   >;
+  readonly evalSummaries: ReadonlyMap<string, PipelineEvalSummary>;
 }
 
 /**
  * Pipeline options
  */
 export interface PipelineOptions {
-  cache?: MemoryCache<MetricScalar>;
-  llmOptions?: GenerateObjectOptions;
-  metadata?: Record<string, unknown>;
+  readonly cache?: MemoryCache<MetricScalar>;
+  readonly llmOptions?: GenerateObjectOptions;
+  readonly metadata?: Record<string, unknown>;
 }
+
+/**
+ * Internal verdict record used during pipeline execution.
+ *
+ * NOTE: This is intentionally an internal shape (not the persisted artifact schema).
+ * The persisted schema uses `EvalOutcome` attached to `StepEvalResult` / `ConversationEvalResult`.
+ */
+export interface PipelineVerdict {
+  verdict: 'pass' | 'fail' | 'unknown';
+  score: Score;
+  rawValue?: MetricScalar;
+}
+
+export type PipelineAggregations = Record<
+  string,
+  number | Record<string, number>
+>;
+
+export interface PipelineVerdictSummary {
+  passRate: Score;
+  failRate: Score;
+  unknownRate: Score;
+  passCount: number;
+  failCount: number;
+  unknownCount: number;
+  totalCount: number;
+}
+
+export interface PipelineEvalSummary {
+  evalKind: 'singleTurn' | 'multiTurn' | 'scorer';
+  aggregations: {
+    score: PipelineAggregations;
+    raw?: PipelineAggregations;
+  };
+  verdictSummary?: PipelineVerdictSummary;
+}
+
+/**
+ * Pipeline result
+ */
+export interface PipelineResult {
+  readonly rawMetrics: ReadonlyMap<string, readonly Metric<MetricScalar>[]>;
+  readonly derivedScores: ReadonlyMap<
+    string,
+    ReadonlyMap<string, DerivedScoreEntry>
+  >;
+  readonly verdicts: ReadonlyMap<
+    string,
+    ReadonlyMap<string, readonly PipelineVerdict[]>
+  >;
+  readonly evalSummaries: ReadonlyMap<string, PipelineEvalSummary>;
+}
+// ============================================================================
+// Utility Functions
+// ============================================================================
+
+/**
+ * Get target ID from container
+ */
+const getTargetId = (
+  container: DatasetItem | Conversation,
+  index: number,
+): string =>
+  match(container)
+    .with({ id: P.string }, (c) => c.id)
+    .otherwise(() => `target-${index}`);
+
+/**
+ * Get unique metrics from evaluators
+ */
+const getUniqueMetrics = <TContainer extends DatasetItem | Conversation>(
+  internalEvaluators: readonly InternalEvaluator<TContainer>[],
+): readonly {
+  metricName: string;
+  metricDef: MetricDef<MetricScalar, TContainer>;
+}[] =>
+  Array.from(
+    internalEvaluators
+      .flatMap(({ metrics }) => metrics)
+      .reduce(
+        (seen, metric) =>
+          seen.has(metric.name)
+            ? seen
+            : seen.set(
+                metric.name,
+                metric as unknown as MetricDef<MetricScalar, TContainer>,
+              ),
+        new Map<string, MetricDef<MetricScalar, TContainer>>(),
+      ),
+    ([metricName, metricDef]) => ({ metricName, metricDef }),
+  );
+
+/**
+ * Select targets based on run policy
+ */
+const selectTargets = <TContainer extends DatasetItem | Conversation>(
+  container: TContainer,
+  policy: SingleTurnRunPolicy | undefined,
+): readonly SingleTargetFor<TContainer>[] => {
+  const effectivePolicy: SingleTurnRunPolicy = policy ?? { run: 'all' };
+
+  return match(container)
+    .when(isConversation, (conv) => {
+      const result = selectConversationTargets(conv, effectivePolicy);
+      return result.targets as readonly SingleTargetFor<TContainer>[];
+    })
+    .when(isDatasetItem, (item) => {
+      const result = selectDatasetTargets([item], effectivePolicy);
+      return result.targets as readonly SingleTargetFor<TContainer>[];
+    })
+    .otherwise(() => [] as readonly SingleTargetFor<TContainer>[]);
+};
+
+/**
+ * Build executor options
+ */
+const buildExecutorOptions = (options?: PipelineOptions): ExecutorOptions => ({
+  ...(options?.cache !== undefined ? { cache: options.cache } : {}),
+  ...(options?.llmOptions !== undefined
+    ? { llmOptions: options.llmOptions }
+    : {}),
+});
+
+/**
+ * Extract raw values from raw metrics
+ */
+const extractRawValues = (
+  targetId: string,
+  outputMetricName: string,
+  expectedLength: number,
+  rawMetricsMap: ReadonlyMap<string, readonly Metric<MetricScalar>[]>,
+  sourceMetrics?: readonly string[],
+): readonly MetricScalar[] => {
+  const rawMetrics = rawMetricsMap.get(targetId) ?? [];
+
+  // Try source metrics first (single source)
+  if (sourceMetrics && sourceMetrics.length === 1) {
+    const sourceMetricName = sourceMetrics[0];
+    const values = rawMetrics
+      .filter((m) => m.metricDef.name === sourceMetricName)
+      .map((m) => m.value);
+    if (values.length > 0) return values;
+  }
+
+  // Try base metric name (without _score suffix)
+  const baseMetricName = outputMetricName.replace('_score', '');
+  const baseValues = rawMetrics
+    .filter((m) => m.metricDef.name === baseMetricName)
+    .map((m) => m.value);
+  if (baseValues.length > 0) return baseValues;
+
+  // Try exact output metric name
+  const exactValues = rawMetrics
+    .filter((m) => m.metricDef.name === outputMetricName)
+    .map((m) => m.value);
+  if (exactValues.length > 0) return exactValues;
+
+  // Return placeholder array
+  return new Array(expectedLength).fill(undefined) as MetricScalar[];
+};
+
+// ============================================================================
+// Phase 1: Measure
+// ============================================================================
+
+const phaseMeasure = async <TContainer extends DatasetItem | Conversation>(
+  data: readonly TContainer[],
+  internalEvaluators: readonly InternalEvaluator<TContainer>[],
+  options?: PipelineOptions,
+): Promise<ReadonlyMap<string, readonly Metric<MetricScalar>[]>> => {
+  const executorOptions = buildExecutorOptions(options);
+
+  const entries = await Promise.all(
+    data.map(async (container, index) => {
+      const targetId = getTargetId(container, index);
+      const seenMetrics = new Set<string>();
+
+      const metrics = (
+        await Promise.all(
+          internalEvaluators
+            .flatMap(({ metrics, context }) =>
+              metrics.map((metricDef) => ({ metricDef, context })),
+            )
+            .map(async ({ metricDef, context }) => {
+              if (seenMetrics.has(metricDef.name)) return [];
+              seenMetrics.add(metricDef.name);
+
+              return match(metricDef.scope)
+                .with('single', async () => {
+                  const policy = resolveRunPolicy(context);
+                  const targets = selectTargets(container, policy);
+                  return runSingleTurnMetrics(
+                    metricDef as MetricDef<MetricScalar, SingleTurnContainer>,
+                    targets as unknown as SingleTargetFor<SingleTurnContainer>[],
+                    executorOptions satisfies RunSingleTurnOptions,
+                  );
+                })
+                .with('multi', async () => {
+                  if (!isConversation(container)) return [];
+                  return runMultiTurnMetric(
+                    metricDef as MetricDef<MetricScalar, Conversation>,
+                    container,
+                    {
+                      ...executorOptions,
+                      ...(options?.metadata !== undefined
+                        ? { runMetadata: options.metadata }
+                        : {}),
+                    } satisfies RunMultiTurnOptions,
+                  );
+                })
+                .otherwise(() => {
+                  throw new Error(`Invalid metric scope: ${metricDef.scope}`);
+                });
+            }),
+        )
+      ).flat();
+
+      return [targetId, metrics] as const;
+    }),
+  );
+
+  return new Map(entries);
+};
+
+// ============================================================================
+// Phase 2: Resolve Calibration
+// ============================================================================
+
+const phaseResolveCalibration = async <
+  TContainer extends DatasetItem | Conversation,
+>(
+  data: readonly TContainer[],
+  internalEvaluators: readonly InternalEvaluator<TContainer>[],
+  rawMetrics: ReadonlyMap<string, readonly Metric<MetricScalar>[]>,
+): Promise<ReadonlyMap<string, unknown>> => {
+  const uniqueMetrics = getUniqueMetrics(internalEvaluators);
+  const cache = createCalibrationCache();
+
+  const entries = await Promise.all(
+    uniqueMetrics.map(async ({ metricName, metricDef }) => {
+      const rawValues = Array.from(rawMetrics.values())
+        .flat()
+        .filter((m) => m.metricDef.name === metricName)
+        .map((m) => m.value);
+
+      const calibration = await resolveCalibration(
+        metricDef.normalization,
+        data,
+        rawValues,
+        metricName,
+        cache,
+      );
+
+      return [metricName, calibration] as const;
+    }),
+  );
+
+  return new Map(entries);
+};
+
+// ============================================================================
+// Phase 3: Normalize
+// ============================================================================
+
+const phaseNormalize = (
+  rawMetrics: ReadonlyMap<string, readonly Metric<MetricScalar>[]>,
+  calibrations: ReadonlyMap<string, unknown>,
+): ReadonlyMap<string, ReadonlyMap<string, readonly Score[]>> =>
+  new Map(
+    Array.from(rawMetrics.entries()).map(([targetId, metrics]) => {
+      const scoresByMetric = metrics.reduce((acc, metric) => {
+        const calibration = calibrations.get(metric.metricDef.name);
+        if (!calibration) {
+          throw new Error(
+            `Missing calibration for metric: ${metric.metricDef.name}`,
+          );
+        }
+
+        const score = applyNormalization(
+          metric.value,
+          metric.metricDef.normalization?.normalizer ?? { type: 'identity' },
+          calibration as NormalizationContextFor<typeof metric.value>,
+          metric.metricDef as MetricDef<MetricScalar, MetricContainer>,
+        );
+
+        const existing = acc.get(metric.metricDef.name) ?? [];
+        return acc.set(metric.metricDef.name, [...existing, score]);
+      }, new Map<string, Score[]>());
+
+      return [
+        targetId,
+        scoresByMetric as ReadonlyMap<string, readonly Score[]>,
+      ] as const;
+    }),
+  );
+
+// ============================================================================
+// Phase 4: Score
+// ============================================================================
+
+export type DerivedScoreEntry = Readonly<{
+  scores: readonly Score[];
+  rawValues: readonly MetricScalar[];
+  outputMetric: BaseMetricDef<number>;
+  inputMetrics: readonly MetricDef<MetricScalar, MetricContainer>[];
+  evalName?: string;
+}>;
+
+/**
+ * Build input scores for a single index from scorer inputs
+ */
+const buildInputScoresForIndex = (
+  inputs: readonly {
+    metric: MetricDef<MetricScalar, MetricContainer>;
+    required?: boolean;
+  }[],
+  targetScores: ReadonlyMap<string, readonly Score[]>,
+  index: number,
+  fallbackScore: Score | undefined,
+  scorerName: string,
+  targetId: string,
+): Record<string, Score> =>
+  inputs.reduce((acc, input) => {
+    const arr = targetScores.get(input.metric.name);
+    const score = arr?.at(index) ?? arr?.at(-1) ?? fallbackScore;
+
+    if (score !== undefined) {
+      return { ...acc, [input.metric.name]: score };
+    }
+    if (input.required !== false) {
+      throw new Error(
+        `Required metric "${input.metric.name}" missing for scorer "${scorerName}" on target "${targetId}"`,
+      );
+    }
+    return acc;
+  }, {} as Record<string, Score>);
+
+const phaseScore = <TContainer extends DatasetItem | Conversation>(
+  internalEvaluators: readonly InternalEvaluator<TContainer>[],
+  evalMetadata: ReadonlyMap<string, EvalMetadataEntry>,
+  normalizedScores: ReadonlyMap<string, ReadonlyMap<string, readonly Score[]>>,
+  rawMetrics: ReadonlyMap<string, readonly Metric<MetricScalar>[]>,
+): ReadonlyMap<string, ReadonlyMap<string, DerivedScoreEntry>> =>
+  internalEvaluators.reduce((resultMap, { scorer, evalName }) => {
+    Array.from(normalizedScores.entries()).forEach(
+      ([targetId, targetScores]) => {
+        // The scorer inputs are runtime values; ensure we keep them typed locally for TS inference.
+        const inputs = scorer.inputs as readonly {
+          metric: MetricDef<MetricScalar, MetricContainer>;
+          required?: boolean;
+          normalizerOverride?: unknown;
+          weight: number;
+        }[];
+
+        const maxLen = Math.max(
+          ...inputs.map((input) => targetScores.get(input.metric.name)?.length ?? 0),
+        );
+
+        const derivedScores: Score[] = Array.from(
+          { length: maxLen },
+          (_, i) => {
+            const inputScores = buildInputScoresForIndex(
+              inputs,
+              targetScores,
+              i,
+              scorer.fallbackScore,
+              scorer.name,
+              targetId,
+            );
+
+            if (!scorer.combineScores) {
+              throw new Error(
+                `Scorer "${scorer.name}" missing combineScores function`,
+              );
+            }
+
+            return scorer.combineScores(inputScores);
+          },
+        );
+
+        const metadata = evalMetadata.get(evalName);
+        const sourceMetrics = metadata?.sourceMetrics;
+
+        const rawValues = extractRawValues(
+          targetId,
+          scorer.output.name,
+          derivedScores.length,
+          rawMetrics,
+          sourceMetrics,
+        );
+
+        const existing =
+          resultMap.get(targetId) ?? new Map<string, DerivedScoreEntry>();
+        existing.set(scorer.name, {
+          scores: derivedScores,
+          rawValues,
+          outputMetric: scorer.output,
+          inputMetrics: inputs.map((input) => input.metric),
+          evalName,
+        });
+        resultMap.set(targetId, existing);
+      },
+    );
+
+    return resultMap;
+  }, new Map<string, Map<string, DerivedScoreEntry>>()) as ReadonlyMap<
+    string,
+    ReadonlyMap<string, DerivedScoreEntry>
+  >;
+
+// ============================================================================
+// Phase 5: Compute Verdicts
+// ============================================================================
+
+/**
+ * Build verdict from score and raw value
+ */
+const buildVerdict = (
+  score: Score,
+  rawValue: MetricScalar,
+  verdictPolicy: NonNullable<EvalMetadataEntry['verdictPolicy']>,
+): PipelineVerdict => ({
+  verdict: computeVerdict(score, rawValue, verdictPolicy),
+  score,
+  rawValue,
+});
+
+const phaseComputeVerdicts = (
+  evalMetadata: ReadonlyMap<string, EvalMetadataEntry>,
+  derivedScores: ReadonlyMap<string, ReadonlyMap<string, DerivedScoreEntry>>,
+): ReadonlyMap<string, ReadonlyMap<string, readonly PipelineVerdict[]>> =>
+  new Map(
+    Array.from(derivedScores.entries())
+      .map(([targetId, scorerMap]) => {
+        const verdictEntries = Array.from(scorerMap.entries()).flatMap(
+          ([_scorerName, { scores, rawValues, evalName }]) => {
+            if (!evalName) return [];
+
+            const metadata = evalMetadata.get(evalName);
+            if (
+              !metadata?.verdictPolicy ||
+              metadata.verdictPolicy.kind === 'none'
+            )
+              return [];
+
+            const verdicts: PipelineVerdict[] = scores
+              .map((score, i): PipelineVerdict | null =>
+                score !== undefined
+                  ? buildVerdict(
+                      score,
+                      rawValues[i] ?? score,
+                      metadata.verdictPolicy!,
+                    )
+                  : null,
+              )
+              .filter((v): v is PipelineVerdict => v !== null);
+
+            return verdicts.length > 0 ? ([[evalName, verdicts]] as const) : [];
+          },
+        );
+
+        return verdictEntries.length > 0
+          ? ([targetId, new Map(verdictEntries)] as const)
+          : null;
+      })
+      .filter((entry): entry is NonNullable<typeof entry> => entry !== null),
+  );
+
+// ============================================================================
+// Phase 6: Aggregate
+// ============================================================================
+
+/**
+ * Extract aggregators from metrics as AggregatorDef array
+ */
+const extractAggregators = (
+  inputMetrics: readonly MetricDef<MetricScalar, MetricContainer>[],
+): AggregatorDef[] =>
+  inputMetrics.flatMap((m) =>
+    'aggregators' in m ? (m.aggregators as unknown as AggregatorDef[]) : [],
+  );
+
+/**
+ * Calculate score aggregations (always numeric)
+ */
+const calculateScoreAggregations = (
+  scores: readonly Score[],
+  evalKind: 'singleTurn' | 'multiTurn' | 'scorer',
+  inputMetrics: readonly MetricDef<MetricScalar, MetricContainer>[],
+): PipelineAggregations =>
+  match(evalKind)
+    .with('singleTurn', () => {
+      const entries = extractAggregators(inputMetrics)
+        .filter((a): a is NumericAggregatorDef => a.kind === 'numeric')
+        .map(
+          (a) =>
+            [a.name, a.aggregate(scores as readonly number[])] as [
+              string,
+              number,
+            ],
+        );
+      return Object.fromEntries(entries);
+    })
+    .with('multiTurn', () =>
+      scores.length === 1 ? { value: scores[0] as number } : {},
+    )
+    .with('scorer', () => {
+      const entries = resolveCommonAggregators(inputMetrics)
+        .filter((a): a is NumericAggregatorDef => a.kind === 'numeric')
+        .map(
+          (a) =>
+            [a.name, a.aggregate(scores as readonly number[])] as [
+              string,
+              number,
+            ],
+        );
+      return Object.fromEntries(entries);
+    })
+    .exhaustive();
+
+/**
+ * Calculate raw value aggregations based on value type
+ */
+const calculateRawValueAggregations = (
+  rawValues: readonly MetricScalar[],
+  valueType: 'number' | 'boolean' | 'string' | 'ordinal',
+  evalKind: 'singleTurn' | 'multiTurn' | 'scorer',
+  inputMetrics: readonly MetricDef<MetricScalar, MetricContainer>[],
+): PipelineAggregations => {
+  // Multi-turn evals produce a single scalar per conversation.
+  // Treat them as scalar and store the raw scalar for summary display.
+  if (evalKind === 'multiTurn') {
+    if (rawValues.length !== 1) return {};
+    const v = rawValues[0];
+    return typeof v === 'number' ? { value: v } : {};
+  }
+
+  if (evalKind !== 'singleTurn' && evalKind !== 'scorer') return {};
+
+  const allAggregators: AggregatorDef[] =
+    evalKind === 'singleTurn'
+      ? extractAggregators(inputMetrics)
+      : resolveCommonAggregators(inputMetrics);
+
+  return match(valueType)
+    .with('number', () =>
+      Object.fromEntries(
+        allAggregators
+          .filter((a): a is NumericAggregatorDef => a.kind === 'numeric')
+          .map(
+            (a) =>
+              [a.name, a.aggregate(rawValues as readonly number[])] as [
+                string,
+                number,
+              ],
+          ),
+      ),
+    )
+    .with('boolean', () =>
+      Object.fromEntries(
+        allAggregators
+          .filter((a): a is BooleanAggregatorDef => a.kind === 'boolean')
+          .map(
+            (a) =>
+              [a.name, a.aggregate(rawValues as readonly boolean[])] as [
+                string,
+                number,
+              ],
+          ),
+      ),
+    )
+    .with(P.union('string', 'ordinal'), () =>
+      Object.fromEntries(
+        allAggregators
+          .filter(
+            (a): a is CategoricalAggregatorDef => a.kind === 'categorical',
+          )
+          .map(
+            (a) =>
+              [a.name, a.aggregate(rawValues as readonly string[])] as [
+                string,
+                Record<string, number>,
+              ],
+          ),
+      ),
+    )
+    .exhaustive();
+};
+
+/**
+ * Resolve common aggregators across metrics
+ * Returns AggregatorDef[] for simplified type handling
+ */
+const resolveCommonAggregators = (
+  inputMetrics: readonly MetricDef<MetricScalar, MetricContainer>[],
+): AggregatorDef[] => {
+  const metricsWithAggregators = inputMetrics.filter((m) => 'aggregators' in m);
+
+  const aggregatorCounts = inputMetrics
+    .filter(
+      (
+        m,
+      ): m is MetricDef<MetricScalar, MetricContainer> & {
+        aggregators: AggregatorDef[];
+      } => 'aggregators' in m,
+    )
+    .flatMap((m) => m.aggregators)
+    .reduce<Map<string, { count: number; aggregator: AggregatorDef }>>(
+      (acc, agg) => {
+        const existing = acc.get(agg.name);
+        return existing
+          ? acc.set(agg.name, {
+              count: existing.count + 1,
+              aggregator: existing.aggregator,
+            })
+          : acc.set(agg.name, { count: 1, aggregator: agg });
+      },
+      new Map<string, { count: number; aggregator: AggregatorDef }>(),
+    );
+
+  return Array.from(aggregatorCounts.values())
+    .filter((entry) => entry.count === metricsWithAggregators.length)
+    .map((entry) => entry.aggregator);
+};
+
+/**
+ * Count verdict by type using ts-pattern
+ */
+const countVerdict = (
+  verdict: 'pass' | 'fail' | 'unknown',
+  acc: { pass: number; fail: number; unknown: number },
+): { pass: number; fail: number; unknown: number } =>
+  match(verdict)
+    .with('pass', () => ({ ...acc, pass: acc.pass + 1 }))
+    .with('fail', () => ({ ...acc, fail: acc.fail + 1 }))
+    .with('unknown', () => ({ ...acc, unknown: acc.unknown + 1 }))
+    .exhaustive();
+
+/**
+ * Calculate verdict summary from verdicts
+ */
+const calculateVerdictSummaryFromVerdicts = (
+  evalName: string,
+  verdictsMap: ReadonlyMap<
+    string,
+    ReadonlyMap<string, readonly PipelineVerdict[]>
+  >,
+  totalCount: number,
+): PipelineVerdictSummary | undefined => {
+  const counts = Array.from(verdictsMap.values())
+    .flatMap((targetVerdicts) => targetVerdicts.get(evalName) ?? [])
+    .reduce((acc, v) => countVerdict(v.verdict, acc), {
+      pass: 0,
+      fail: 0,
+      unknown: 0,
+    });
+
+  const computedTotal = counts.pass + counts.fail + counts.unknown;
+  if (computedTotal === 0) return undefined;
+
+  const actualTotal = computedTotal > 0 ? computedTotal : totalCount;
+
+  return {
+    passRate: toScore(counts.pass / actualTotal),
+    failRate: toScore(counts.fail / actualTotal),
+    unknownRate: toScore(counts.unknown / actualTotal),
+    passCount: counts.pass,
+    failCount: counts.fail,
+    unknownCount: counts.unknown,
+    totalCount: actualTotal,
+  };
+};
+
+/**
+ * Collected scores entry type for aggregation
+ */
+type CollectedScoresEntry = {
+  scores: Score[];
+  rawValues: MetricScalar[];
+  outputMetric: BaseMetricDef<number>;
+  inputMetrics: readonly MetricDef<MetricScalar, MetricContainer>[];
+};
+
+/**
+ * Collect scores by eval name from derived scores
+ */
+const collectScoresByEval = (
+  derivedScores: ReadonlyMap<string, ReadonlyMap<string, DerivedScoreEntry>>,
+): Map<string, CollectedScoresEntry> =>
+  Array.from(derivedScores.values())
+    .flatMap((scorerMap) => Array.from(scorerMap.values()))
+    .filter((entry) => entry.evalName !== undefined)
+    .reduce(
+      (acc, { scores, rawValues, outputMetric, evalName, inputMetrics }) => {
+        const existing = acc.get(evalName!);
+        return existing
+          ? acc.set(evalName!, {
+              ...existing,
+              scores: [...existing.scores, ...scores],
+              rawValues: [...existing.rawValues, ...rawValues],
+            })
+          : acc.set(evalName!, {
+              scores: [...scores],
+              rawValues: [...rawValues],
+              outputMetric,
+              inputMetrics,
+            });
+      },
+      new Map<string, CollectedScoresEntry>(),
+    );
+
+/**
+ * Build eval summary from collected scores
+ */
+const buildEvalSummary = (
+  evalName: string,
+  entry: CollectedScoresEntry,
+  metadata: EvalMetadataEntry,
+  verdicts: ReadonlyMap<
+    string,
+    ReadonlyMap<string, readonly PipelineVerdict[]>
+  >,
+): PipelineEvalSummary => {
+  const { scores, rawValues, outputMetric, inputMetrics } = entry;
+
+  const scoreAggregations = calculateScoreAggregations(
+    scores,
+    metadata.evalKind,
+    inputMetrics,
+  );
+
+  const validRawValues = rawValues.filter((v) => v !== undefined);
+  const rawValueAggregations =
+    validRawValues.length > 0 && metadata.evalKind !== 'scorer'
+      ? calculateRawValueAggregations(
+          validRawValues,
+          (outputMetric?.valueType ??
+            inputMetrics[0]?.valueType ??
+            'number') as 'number' | 'boolean' | 'string' | 'ordinal',
+          metadata.evalKind,
+          inputMetrics,
+        )
+      : undefined;
+
+  const verdictSummary =
+    metadata.verdictPolicy && metadata.verdictPolicy.kind !== 'none'
+      ? calculateVerdictSummaryFromVerdicts(evalName, verdicts, scores.length)
+      : undefined;
+
+  return {
+    evalKind: metadata.evalKind,
+    aggregations: {
+      score: scoreAggregations,
+      ...(rawValueAggregations
+        ? { raw: rawValueAggregations as PipelineAggregations }
+        : {}),
+    },
+    ...(verdictSummary ? { verdictSummary } : {}),
+  };
+};
+
+/**
+ * Phase 6: Aggregate
+ */
+const phaseAggregate = (
+  evalMetadata: ReadonlyMap<string, EvalMetadataEntry>,
+  derivedScores: ReadonlyMap<string, ReadonlyMap<string, DerivedScoreEntry>>,
+  verdicts: ReadonlyMap<
+    string,
+    ReadonlyMap<string, readonly PipelineVerdict[]>
+  >,
+): {
+  evalSummaries: ReadonlyMap<string, PipelineEvalSummary>;
+} => {
+  const scoresByEval = collectScoresByEval(derivedScores);
+
+  const results = Array.from(scoresByEval.entries())
+    .map(([evalName, entry]) => {
+      const metadata = evalMetadata.get(evalName);
+      if (!metadata) return null;
+
+      const evalSummary = buildEvalSummary(evalName, entry, metadata, verdicts);
+      return { evalName, evalSummary };
+    })
+    .filter((r): r is NonNullable<typeof r> => r !== null);
+
+  return {
+    evalSummaries: new Map(results.map((r) => [r.evalName, r.evalSummary])),
+  };
+};
+
+// NOTE: The legacy “report flattening” helpers (`buildPerTargetResults`, metricToEvalMap)
+// are intentionally removed as we migrate to the artifact schema (defs + series-by-stepIndex).
+
+// ============================================================================
+// Main Pipeline Execution
+// ============================================================================
 
 /**
  * Execute the full evaluation pipeline
@@ -114,615 +899,44 @@ export async function executePipeline<
 >(
   data: readonly TContainer[],
   internalEvaluators: readonly InternalEvaluator<TContainer>[],
-  evalMetadata: Map<
-    string,
-    {
-      evalKind: 'singleTurn' | 'multiTurn' | 'scorer';
-      verdictPolicy?: VerdictPolicy;
-      sourceMetrics?: string[];
-    }
-  >,
+  evalMetadata: Map<string, EvalMetadataEntry>,
   options?: PipelineOptions,
-): Promise<{
-  perTargetResults: PerTargetResult[];
-  aggregateSummaries: AggregateSummary[];
-  evalSummaries: Map<
-    string,
-    {
-      evalName: string;
-      evalKind: 'singleTurn' | 'multiTurn' | 'scorer';
-      aggregations: BuiltInAggregations;
-      verdictSummary?: {
-        passRate: Score;
-        failRate: Score;
-        passCount: number;
-        failCount: number;
-        totalCount: number;
-      };
-    }
-  >;
-  metricToEvalMap: Map<string, string>;
-}> {
-  const state: PipelineState = {
-    rawMetrics: new Map(),
-    contexts: new Map(),
-    normalizedScores: new Map(),
-    derivedScores: new Map(),
-    verdicts: new Map(),
-    aggregateSummaries: [],
-    evalSummaries: new Map(),
-  };
+): Promise<PipelineResult> {
+  // Phase 1: Measure
+  const rawMetrics = await phaseMeasure(data, internalEvaluators, options);
 
-  // Phase 1: Measure - Execute all metrics
-  await phaseMeasure(data, internalEvaluators, state, options);
+  // Phase 2: Resolve Calibration
+  const calibrations = await phaseResolveCalibration(
+    data,
+    internalEvaluators,
+    rawMetrics,
+  );
 
-  // Phase 2: Resolve Context - Resolve normalization contexts
-  await phaseResolveContext(data, internalEvaluators, state);
+  // Phase 3: Normalize
+  const normalizedScores = phaseNormalize(rawMetrics, calibrations);
 
-  // Phase 3: Normalize - Transform raw values to Scores
-  phaseNormalize(internalEvaluators, state);
+  // Phase 4: Score
+  const derivedScores = phaseScore(
+    internalEvaluators,
+    evalMetadata,
+    normalizedScores,
+    rawMetrics,
+  );
 
-  // Phase 4: Score - Execute scorers to produce derived metrics
-  phaseScore(internalEvaluators, state);
+  // Phase 5: Compute Verdicts
+  const verdicts = phaseComputeVerdicts(evalMetadata, derivedScores);
 
-  // Phase 5: Compute Verdicts - Calculate pass/fail verdicts
-  phaseComputeVerdicts(internalEvaluators, evalMetadata, state);
-
-  // Phase 6: Aggregate - Compute built-in aggregations and eval summaries
-  phaseAggregate(internalEvaluators, evalMetadata, state);
-
-  // Build final results
-  const perTargetResults = buildPerTargetResults(state, data);
-  const aggregateSummaries = state.aggregateSummaries;
-  const evalSummaries = state.evalSummaries;
-
-  // Build metric to eval mapping for report
-  const metricToEvalMap = new Map<string, string>();
-  for (const [evalName, metadata] of evalMetadata) {
-    if (metadata.sourceMetrics) {
-      for (const metricName of metadata.sourceMetrics) {
-        metricToEvalMap.set(metricName, evalName);
-      }
-    }
-  }
+  // Phase 6: Aggregate
+  const { evalSummaries } = phaseAggregate(
+    evalMetadata,
+    derivedScores,
+    verdicts,
+  );
 
   return {
-    perTargetResults,
-    aggregateSummaries,
+    rawMetrics,
+    derivedScores,
+    verdicts,
     evalSummaries,
-    metricToEvalMap,
   };
-}
-
-/**
- * Phase 1: Measure - Execute all metrics for all evaluators
- */
-async function phaseMeasure<TContainer extends DatasetItem | Conversation>(
-  data: readonly TContainer[],
-  internalEvaluators: readonly InternalEvaluator<TContainer>[],
-  state: PipelineState,
-  options?: PipelineOptions,
-): Promise<void> {
-  const executionOptions: RunSingleTurnOptions = {};
-  if (options?.cache !== undefined) {
-    executionOptions.cache = options.cache;
-  }
-  if (options?.llmOptions !== undefined) {
-    executionOptions.llmOptions = options.llmOptions;
-  }
-  if (options?.metadata !== undefined) {
-    (executionOptions as unknown as ExecutorOptions).runMetadata =
-      options.metadata;
-  }
-
-  // Process each container
-  for (let i = 0; i < data.length; i++) {
-    const container = data[i];
-    if (container === undefined) continue;
-
-    const targetId = getTargetId(container, i);
-    const metrics: Metric<MetricScalar>[] = [];
-
-    // Execute all evaluators' metrics for this container
-    for (const evaluator of internalEvaluators) {
-      for (const metricDef of evaluator.metrics) {
-        if (metricDef.scope === 'single') {
-          // Single-turn: select targets based on policy
-          const policy = resolveRunPolicy(evaluator.context);
-          const targets = selectTargets(container, policy);
-          // Type assertion: we've checked scope === 'single', so this is a single-turn metric
-          const singleTurnMetric = metricDef as unknown as MetricDef<
-            MetricScalar,
-            SingleTurnContainer
-          >;
-          const results = await runSingleTurnMetrics(
-            singleTurnMetric,
-            targets as unknown as SingleTargetFor<SingleTurnContainer>[],
-            executionOptions,
-          );
-          metrics.push(...results);
-        } else if (metricDef.scope === 'multi') {
-          // Multi-turn: execute on entire conversation
-          if (isConversation(container)) {
-            const multiTurnOptions: RunMultiTurnOptions = {};
-            if (options?.cache !== undefined) {
-              multiTurnOptions.cache = options.cache;
-            }
-            if (options?.llmOptions !== undefined) {
-              multiTurnOptions.llmOptions = options.llmOptions;
-            }
-            if (options?.metadata !== undefined) {
-              multiTurnOptions.runMetadata = options.metadata;
-            }
-            const result = await runMultiTurnMetric(
-              metricDef as MetricDef<MetricScalar, Conversation>,
-              container,
-              multiTurnOptions,
-            );
-            metrics.push(result);
-          }
-        }
-      }
-    }
-
-    state.rawMetrics.set(targetId, metrics);
-  }
-}
-
-/**
- * Phase 2: Resolve Context - Resolve normalization contexts for each unique metric
- */
-async function phaseResolveContext<
-  TContainer extends DatasetItem | Conversation,
->(
-  data: readonly TContainer[],
-  internalEvaluators: readonly InternalEvaluator<TContainer>[],
-  state: PipelineState,
-): Promise<void> {
-  // Collect all unique metric definitions
-  const uniqueMetrics = new Map<string, MetricDef<MetricScalar, TContainer>>();
-  for (const evaluator of internalEvaluators) {
-    for (const metricDef of evaluator.metrics) {
-      if (!uniqueMetrics.has(metricDef.name)) {
-        uniqueMetrics.set(metricDef.name, metricDef);
-      }
-    }
-  }
-
-  // Resolve context for each metric
-  for (const [metricName, metricDef] of uniqueMetrics) {
-    // Collect raw values for this metric across all targets
-    const rawValues: MetricScalar[] = [];
-    for (const metrics of state.rawMetrics.values()) {
-      for (const metric of metrics) {
-        if (metric.metricDef.name === metricName) {
-          rawValues.push(metric.value);
-        }
-      }
-    }
-
-    // Resolve context
-    const context = await resolveContext(
-      metricDef.normalization,
-      data,
-      rawValues,
-      metricName,
-    );
-    state.contexts.set(metricName, context);
-  }
-}
-
-/**
- * Phase 3: Normalize - Transform raw metric values to Scores
- */
-function phaseNormalize<TContainer extends DatasetItem | Conversation>(
-  internalEvaluators: readonly InternalEvaluator<TContainer>[],
-  state: PipelineState,
-): void {
-  // Collect all unique metric definitions
-  const uniqueMetrics = new Map<string, MetricDef<MetricScalar, TContainer>>();
-  for (const evaluator of internalEvaluators) {
-    for (const metricDef of evaluator.metrics) {
-      if (!uniqueMetrics.has(metricDef.name)) {
-        uniqueMetrics.set(metricDef.name, metricDef);
-      }
-    }
-  }
-
-  // Normalize metrics for each target
-  for (const [targetId, metrics] of state.rawMetrics) {
-    const scores = new Map<string, Score>();
-
-    for (const metric of metrics) {
-      const metricDef = metric.metricDef;
-      const context = state.contexts.get(metricDef.name);
-      if (!context) {
-        throw new Error(`Missing context for metric: ${metricDef.name}`);
-      }
-
-      // Get normalizer spec (default to identity if not specified)
-      const normalizerSpec = metricDef.normalization?.default ?? {
-        type: 'identity',
-      };
-
-      // Apply normalization
-      const score = applyNormalization(
-        metric.value,
-        normalizerSpec,
-        context,
-        metricDef as MetricDef<MetricScalar, MetricContainer>,
-      );
-
-      scores.set(metricDef.name, score);
-    }
-
-    state.normalizedScores.set(targetId, scores);
-  }
-}
-
-/**
- * Phase 4: Score - Execute scorers to produce derived metrics
- */
-function phaseScore<TContainer extends DatasetItem | Conversation>(
-  internalEvaluators: readonly InternalEvaluator<TContainer>[],
-  state: PipelineState,
-): void {
-  // Execute each evaluator's scorer
-  for (const evaluator of internalEvaluators) {
-    const scorer = evaluator.scorer;
-
-    // For each target, compute derived score
-    for (const [targetId, normalizedScores] of state.normalizedScores) {
-      // Collect input scores for this scorer
-      const inputScores: Record<string, Score> = {};
-      for (const input of scorer.inputs) {
-        const metricName = input.metric.name;
-        const score = normalizedScores.get(metricName);
-
-        if (score === undefined) {
-          if (input.required !== false) {
-            throw new Error(
-              `Required metric "${metricName}" missing for scorer "${scorer.name}" on target "${targetId}"`,
-            );
-          }
-          // Optional metric missing - skip or use fallback
-          if (scorer.fallbackScore !== undefined) {
-            inputScores[metricName] = scorer.fallbackScore;
-          }
-          continue;
-        }
-
-        inputScores[metricName] = score;
-      }
-
-      // Compute derived score
-      let derivedScore: Score;
-      if (scorer.combineScores) {
-        derivedScore = scorer.combineScores(inputScores as never);
-      } else {
-        // Default: weighted average (should be provided by scorer builder)
-        throw new Error(
-          `Scorer "${scorer.name}" missing combineScores function`,
-        );
-      }
-
-      // Store derived score with output metric definition and eval name
-      let targetDerivedScores = state.derivedScores.get(targetId);
-      if (!targetDerivedScores) {
-        targetDerivedScores = new Map();
-        state.derivedScores.set(targetId, targetDerivedScores);
-      }
-      targetDerivedScores.set(scorer.name, {
-        score: derivedScore,
-        outputMetric: scorer.output,
-        evalName: evaluator.evalName,
-      });
-    }
-  }
-}
-
-/**
- * Phase 5: Compute Verdicts - Calculate pass/fail verdicts for each eval
- */
-function phaseComputeVerdicts<TContainer extends DatasetItem | Conversation>(
-  internalEvaluators: readonly InternalEvaluator<TContainer>[],
-  evalMetadata: Map<
-    string,
-    {
-      evalKind: 'singleTurn' | 'multiTurn' | 'scorer';
-      verdictPolicy?: VerdictPolicy;
-      sourceMetrics?: string[];
-    }
-  >,
-  state: PipelineState,
-): void {
-  // For each target, compute verdicts for each eval
-  for (const [targetId, derivedScores] of state.derivedScores) {
-    const targetVerdicts = new Map<string, TargetVerdict>();
-
-    for (const [
-      scorerName,
-      { score, outputMetric, evalName },
-    ] of derivedScores) {
-      if (!evalName) continue;
-
-      const metadata = evalMetadata.get(evalName);
-      if (!metadata || !metadata.verdictPolicy) continue;
-
-      const verdictPolicy = metadata.verdictPolicy;
-      if (verdictPolicy.kind === 'none') continue;
-
-      // Get raw value for this eval (from raw metrics)
-      const rawMetrics = state.rawMetrics.get(targetId) ?? [];
-      let rawValue: MetricScalar | undefined;
-
-      // For single-turn/multi-turn evals, find the metric value
-      // For scorer evals, we don't have a single raw value, so use undefined
-      if (
-        metadata.evalKind === 'singleTurn' ||
-        metadata.evalKind === 'multiTurn'
-      ) {
-        // Find the metric that corresponds to this eval
-        // The scorer name should match the eval name pattern
-        for (const metric of rawMetrics) {
-          if (
-            metric.metricDef.name === outputMetric.name.replace('_score', '')
-          ) {
-            rawValue = metric.value;
-            break;
-          }
-        }
-      }
-
-      const verdict = computeVerdict(
-        score,
-        rawValue ?? score, // Fallback to score if no raw value
-        verdictPolicy,
-      );
-
-      targetVerdicts.set(evalName, {
-        verdict,
-        score,
-        rawValue: rawValue as MetricScalar,
-      } satisfies TargetVerdict);
-    }
-
-    if (targetVerdicts.size > 0) {
-      state.verdicts.set(targetId, targetVerdicts);
-    }
-  }
-}
-
-/**
- * Phase 6: Aggregate - Compute built-in aggregations and eval summaries
- */
-function phaseAggregate<TContainer extends DatasetItem | Conversation>(
-  internalEvaluators: readonly InternalEvaluator<TContainer>[],
-  evalMetadata: Map<
-    string,
-    {
-      evalKind: 'singleTurn' | 'multiTurn' | 'scorer';
-      verdictPolicy?: VerdictPolicy;
-      sourceMetrics?: string[];
-    }
-  >,
-  state: PipelineState,
-): void {
-  // Group derived scores by eval name, maintaining target order and pairing with raw values
-  const scoresByEval = new Map<
-    string,
-    {
-      targetIds: string[];
-      scores: Score[];
-      rawValues: MetricScalar[];
-      outputMetric: BaseMetricDef<number>;
-    }
-  >();
-
-  for (const [targetId, derivedScores] of state.derivedScores) {
-    for (const [
-      _scorerName,
-      { score, outputMetric, evalName },
-    ] of derivedScores) {
-      if (!evalName) continue;
-
-      const existing = scoresByEval.get(evalName);
-      if (!existing) {
-        scoresByEval.set(evalName, {
-          targetIds: [targetId],
-          scores: [score],
-          rawValues: [],
-          outputMetric,
-        });
-      } else {
-        existing.targetIds.push(targetId);
-        existing.scores.push(score);
-      }
-    }
-  }
-
-  // Collect raw values for each eval, using source metric names from evalMetadata
-  for (const [evalName, data] of scoresByEval) {
-    const metadata = evalMetadata.get(evalName);
-    if (!metadata) continue;
-
-    const sourceMetrics = metadata.sourceMetrics ?? [];
-    const { targetIds } = data;
-
-    for (let i = 0; i < targetIds.length; i++) {
-      const targetId = targetIds[i] as string;
-      const rawMetrics = state.rawMetrics.get(targetId) ?? [];
-
-      let rawValue: MetricScalar | undefined;
-
-      if (sourceMetrics.length > 0) {
-        const sourceMetricName = sourceMetrics[0];
-        for (const metric of rawMetrics) {
-          if (metric.metricDef.name === sourceMetricName) {
-            rawValue = metric.value;
-            break;
-          }
-        }
-      }
-
-      if (rawValue !== undefined) {
-        data.rawValues.push(rawValue);
-      }
-    }
-  }
-
-  // Compute aggregations for each eval
-  for (const [evalName, { scores, rawValues, outputMetric }] of scoresByEval) {
-    const metadata = evalMetadata.get(evalName);
-    if (!metadata) continue;
-
-    const verdictPolicy = metadata.verdictPolicy;
-    const aggregations = calculateBuiltInAggregations(
-      scores,
-      rawValues.length > 0 ? rawValues : undefined,
-      verdictPolicy,
-    );
-
-    // Build eval summary
-    const evalSummary: {
-      evalName: string;
-      evalKind: 'singleTurn' | 'multiTurn' | 'scorer';
-      aggregations: BuiltInAggregations;
-      verdictSummary?: {
-        passRate: Score;
-        failRate: Score;
-        passCount: number;
-        failCount: number;
-        totalCount: number;
-      };
-    } = {
-      evalName,
-      evalKind: metadata.evalKind,
-      aggregations,
-    };
-
-    if (
-      verdictPolicy &&
-      verdictPolicy.kind !== 'none' &&
-      aggregations.passRate !== undefined
-    ) {
-      evalSummary.verdictSummary = {
-        passRate: aggregations.passRate,
-        failRate: aggregations.failRate!,
-        passCount: aggregations.passCount!,
-        failCount: aggregations.failCount!,
-        totalCount: scores.length,
-      };
-    }
-
-    state.evalSummaries.set(evalName, evalSummary);
-
-    // Also create aggregate summary for backward compatibility
-    state.aggregateSummaries.push({
-      metric: outputMetric,
-      aggregations,
-      count: scores.length,
-    });
-  }
-}
-
-/**
- * Build per-target results from pipeline state
- */
-function buildPerTargetResults<TContainer extends DatasetItem | Conversation>(
-  state: PipelineState,
-  data: readonly TContainer[],
-): PerTargetResult[] {
-  const results: PerTargetResult[] = [];
-
-  for (let i = 0; i < data.length; i++) {
-    const container = data[i];
-    if (container === undefined) continue;
-
-    const targetId = getTargetId(container as DatasetItem | Conversation, i);
-    const rawMetrics = state.rawMetrics.get(targetId) ?? [];
-    const derivedScores = state.derivedScores.get(targetId) ?? new Map();
-    const verdicts = state.verdicts.get(targetId) ?? new Map();
-
-    const derivedMetrics: Array<{
-      definition: BaseMetricDef<number>;
-      value: Score;
-    }> = [];
-    for (const [, { score, outputMetric }] of derivedScores) {
-      derivedMetrics.push({
-        definition: outputMetric,
-        value: score,
-      });
-    }
-
-    results.push({
-      targetId,
-      rawMetrics,
-      derivedMetrics,
-      verdicts,
-    });
-  }
-
-  return results;
-}
-
-/**
- * Get target ID from container
- */
-function getTargetId(
-  container: DatasetItem | Conversation,
-  index: number,
-): string {
-  if ('id' in container && typeof container.id === 'string') {
-    return container.id;
-  }
-  return `target-${index}`;
-}
-
-/**
- * Select targets based on run policy
- */
-function selectTargets<TContainer extends DatasetItem | Conversation>(
-  container: TContainer,
-  policy: SingleTurnRunPolicy | undefined,
-): readonly SingleTargetFor<TContainer>[] {
-  const defaultPolicy: SingleTurnRunPolicy = { run: 'all' };
-  const effectivePolicy = policy ?? defaultPolicy;
-
-  if (isConversation(container)) {
-    const result = selectConversationTargets(container, effectivePolicy);
-    return result.targets as readonly SingleTargetFor<TContainer>[];
-  }
-  if (isDatasetItem(container)) {
-    const result = selectDatasetTargets([container], effectivePolicy);
-    return result.targets as readonly SingleTargetFor<TContainer>[];
-  }
-
-  return [];
-}
-
-/**
- * Type guard for Conversation
- */
-function isConversation(value: unknown): value is Conversation {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'id' in value &&
-    'steps' in value &&
-    Array.isArray((value as Conversation).steps)
-  );
-}
-
-/**
- * Type guard for DatasetItem
- */
-function isDatasetItem(value: unknown): value is DatasetItem {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'id' in value &&
-    'prompt' in value &&
-    'completion' in value
-  );
 }

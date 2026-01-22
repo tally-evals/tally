@@ -41,9 +41,10 @@
 ## Getting Started
 
 ```bash
-pnpm add @tally-evals/tally
+bun add @tally-evals/tally
 # Optional: conversation generation
-pnpm add @tally-evals/trajectories
+bun add @tally-evals/trajectories
+bun add @tally-evals/core
 ```
 
 ## Packages
@@ -67,6 +68,7 @@ import {
   withAISdkAgent,
   toConversation,
 } from '@tally-evals/trajectories'
+import { TallyStore } from '@tally-evals/core'
 import { weatherAgent } from '@tally-evals/examples-ai-sdk'
 import { google } from '@ai-sdk/google'
 
@@ -101,7 +103,11 @@ const trajectory = createTrajectory(
 )
 
 // Run the trajectory
-const result = await runTrajectory(trajectory)
+const store = await TallyStore.open({ cwd: process.cwd() })
+const result = await runTrajectory(trajectory, {
+  store,
+  trajectoryId: 'weather-trajectory',
+})
 
 // Convert to Tally Conversation format
 const conversation = toConversation(result, 'weather-trajectory')
@@ -211,12 +217,6 @@ const goalCompletionEval = defineMultiTurnEval({
 
 const overallQualityEval = defineScorerEval({
   name: 'Overall Quality',
-  inputs: [
-    relevanceMetric,
-    completenessMetric,
-    roleAdherenceMetric,
-    goalCompletionMetric,
-  ],
   scorer: qualityScorer,
   verdict: thresholdVerdict(0.7), // Pass if score >= 0.7
 })
@@ -249,9 +249,18 @@ formatReportAsTables(report, conversations)
 console.log('Eval summaries:', report.evalSummaries)
 console.log('Per-target results:', report.perTargetResults)
 
-// Check verdicts for each conversation
+// Check eval summaries
+report.evalSummaries.forEach((summary, evalName) => {
+  console.log(`${evalName}:`)
+  console.log(`  Mean score: ${summary.aggregations.score.mean}`)
+  if (summary.verdictSummary) {
+    console.log(`  Pass rate: ${summary.verdictSummary.passRate}`)
+  }
+})
+
+// Check verdicts for each target
 report.perTargetResults.forEach((result) => {
-  console.log(`Conversation ${result.targetId}:`)
+  console.log(`Target ${result.targetId}:`)
   result.verdicts.forEach((verdict, evalName) => {
     console.log(`  ${evalName}: ${verdict.verdict} (score: ${verdict.score})`)
   })
@@ -266,7 +275,7 @@ report.perTargetResults.forEach((result) => {
 
 1. **Single-Turn Evals** - Evaluate individual conversation steps or dataset items
 2. **Multi-Turn Evals** - Evaluate entire conversations
-3. **Scorer Evals** - Combine multiple metrics using a scorer
+3. **Scorer Evals** - Combine multiple metrics using a scorer (the eval automatically uses the scorer's configured inputs)
 
 ### Verdict Policies
 
@@ -278,56 +287,80 @@ Verdict policies define pass/fail criteria:
 - `ordinalVerdict(categories)` - Pass if value matches allowed categories
 - `customVerdict(fn)` - Custom pass/fail logic function
 
+### Aggregators
+
+Aggregators compute summary statistics across evaluation results. They are type-safe and discriminated by `kind`:
+
+```typescript
+import {
+  // Custom aggregator definitions
+  defineNumericAggregator,
+  defineBooleanAggregator,
+  defineCategoricalAggregator,
+  // Prebuilt aggregators
+  createMeanAggregator,
+  createPercentileAggregator,
+  createThresholdAggregator,
+  createTrueRateAggregator,
+  createDistributionAggregator,
+  // Default aggregators by value type
+  getDefaultAggregators,
+} from '@tally-evals/tally'
+```
+
+- **Numeric**: `createMeanAggregator()`, `createPercentileAggregator()`, `createThresholdAggregator()`
+- **Boolean**: `createTrueRateAggregator()`, `createFalseRateAggregator()`
+- **Categorical**: `createDistributionAggregator()`, `createModeAggregator()`
+
 ### Report Structure
 
-The `EvaluationReport` includes:
+`tally.run()` returns a **`TallyRunReport`** (SDK-facing). It contains:
 
-- `evalSummaries` - Aggregated statistics per eval (mean, percentiles, pass rates)
-- `perTargetResults` - Detailed results per conversation/dataset item
-  - `rawMetrics` - Raw metric values
-  - `derivedMetrics` - Scorer outputs
-  - `verdicts` - Pass/fail verdicts per eval
-- `aggregateSummaries` - Legacy aggregator results (deprecated, use evalSummaries)
+- `result.summaries.byEval[evalName]` — per-eval summary rollups
+- `result.singleTurn[evalName].byStepIndex[stepIndex]` — single-turn results (step-indexed, with `null` holes)
+- `result.multiTurn[evalName]` — conversation-level (multi-turn) results
+- `result.scorers[evalName]` — scorer outputs (explicitly scalar vs series)
+
+For read-only tooling (CLI/viewer/dev server), persist a **`TallyRunArtifact`** via `report.toArtifact()`.
 
 ## Development
 
-This is a monorepo managed with pnpm workspaces and Turbo.
+This is a monorepo managed with Bun workspaces and Turbo.
 
 ### Prerequisites
 
-- Node.js 18+
-- pnpm 8.15.0+
+- Bun 1.2+
 
 ### Setup
 
 ```bash
 # Install dependencies
-pnpm install
+bun install
 
 # Build all packages
-pnpm build
+bun run build
 
 # Run tests
-pnpm test
+bun run test
 
 # Run linting
-pnpm lint
+bun run lint
 
 # Start development mode
-pnpm dev
+bun run dev
 ```
 
 ### Working on Specific Packages
 
 ```bash
 # Build a specific package
-pnpm --filter=tally build
+bun run --filter=tally build
 
 # Run tests for a specific package
-pnpm --filter=tally test
+bun run --filter=tally test
 
 # Run in development mode
-pnpm --filter=tally dev
+bun run --filter=tally dev
 ```
 
 ## Project Structure
@@ -346,7 +379,7 @@ tally/
 │   ├── biome-config/      # Shared Biome configuration
 │   └── typescript-config/ # Shared TypeScript configurations
 ├── package.json           # Root workspace configuration
-├── pnpm-workspace.yaml    # pnpm workspace definition
+├── bun.lock               # Bun lockfile
 └── turbo.json            # Turbo pipeline configuration
 ```
 

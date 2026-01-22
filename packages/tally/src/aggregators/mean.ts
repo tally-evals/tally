@@ -1,56 +1,47 @@
 /**
  * Mean Aggregator
  *
- * Calculates the arithmetic mean (average) of Score values across all data points.
+ * Calculates the arithmetic mean (average) of numeric values across all data points.
+ * This is a numeric aggregator - works on scores and numeric raw values.
  */
 
-import type { Aggregator, BaseMetricDef, Score } from '@tally/core/types';
-import { validateScores, isEmpty, calculateMean } from '@tally/core/aggregators/base';
+import { calculateMean, isEmpty } from '@tally/core/aggregators/base';
+import type { NumericAggregatorDef } from '@tally/core/types';
 
 /**
  * Options for mean aggregator
  */
 export interface MeanAggregatorOptions {
-	description?: string;
-	metadata?: Record<string, unknown>;
+  description?: string;
+  metadata?: Record<string, unknown>;
 }
 
 /**
  * Create a mean aggregator
  *
- * @param metric - Base metric definition for the derived metric being aggregated
  * @param options - Optional configuration
- * @returns Aggregator that calculates the mean of Score values
+ * @returns NumericAggregatorDef that calculates the mean of numeric values
  *
  * @example
  * ```ts
- * const meanAggregator = createMeanAggregator(qualityMetric, {
+ * const meanAggregator = createMeanAggregator({
  *   description: 'Average quality score across all evaluations'
  * });
  * ```
  */
-export function createMeanAggregator(args: {
-	metric: BaseMetricDef<number>;
-	options?: MeanAggregatorOptions;
-}): Aggregator {
-	return {
-		name: `mean_${args.metric.name}`,
-		description:
-			args.options?.description ?? `Mean of ${args.metric.name}`,
-		metric: args.metric,
-		aggregate: (values: readonly Score[]) => {
-			if (isEmpty(values)) {
-				throw new Error(
-					`Mean aggregator for ${args.metric.name}: cannot aggregate empty array`
-				);
-			}
-
-			validateScores(values);
-			return calculateMean(values);
-		},
-		...(args.options?.metadata !== undefined && {
-			metadata: args.options.metadata,
-		}),
-	};
+export function createMeanAggregator(options?: MeanAggregatorOptions): NumericAggregatorDef {
+  return {
+    kind: 'numeric',
+    name: 'Mean',
+    description: options?.description ?? 'Arithmetic mean',
+    aggregate: (values: readonly number[]) => {
+      if (isEmpty(values)) {
+        throw new Error('Mean aggregator: cannot aggregate empty array');
+      }
+      return calculateMean(values);
+    },
+    ...(options?.metadata !== undefined && {
+      metadata: options.metadata,
+    }),
+  };
 }
-

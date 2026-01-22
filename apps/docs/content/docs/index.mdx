@@ -1,42 +1,53 @@
 ---
-title: 'Tally Evaluation Framework'
-description: 'A TypeScript evaluation framework for running model evaluations with datasets, evaluators, metrics, and aggregators.'
+title: Tally Ecosystem
+description: A complete framework for evaluating LLM agents with multi-turn trajectories, metrics, and automated evals.
 ---
 
-# Welcome to Tally
+Welcome to the Tally documentation. Tally is a modular ecosystem for building, testing, and evaluating LLM-based agents.
 
-Tally is a comprehensive TypeScript evaluation framework designed for running model evaluations. It provides a structured approach to testing and measuring model behavior through a clear, intuitive API.
+## Core Packages
 
-## What is Tally?
+<Cards>
+  <Card 
+    title="Tally (Evaluation)" 
+    description="The main evaluation framework for metrics, scorers, and automated reports." 
+    href="/docs/tally" 
+  />
+  <Card 
+    title="Trajectories (Generation)" 
+    description="Simulate multi-turn conversations and generate test data for evaluation." 
+    href="/docs/trajectories" 
+  />
+  <Card 
+    title="Core (Foundation)" 
+    description="Shared types, storage adapters, and common utilities used across packages." 
+    href="/docs/core" 
+  />
+</Cards>
 
-Think of Tally as a **testing lab for model behavior**. Each test (Eval or Scenario) runs data through a set of judges (Evaluators), who measure specific qualities (Metrics) and then summarize the results (Aggregators).
+## How it Works
 
-In simple terms:
+The Tally ecosystem is designed to work together to provide a seamless evaluation workflow.
 
-> **Data comes in → Evaluators measure → Aggregators summarize → Reports tell the story.**
+```mermaid
+graph LR
+    A[Trajectories] -- generate --> B[Conversation Data]
+    B -- input --> C[Tally Framework]
+    C -- analyze --> D[Evaluation Report]
+    E[Core] -. types/storage .-> A
+    E -. types/storage .-> C
+```
 
-## Key Concepts
-
-### 🧩 The Big Picture
-
-- **Dataset** → individual examples like prompts, completions, or structured outputs
-- **Conversation** → multi-turn exchanges used to test dialogue or reasoning over time
-- **Evaluator** → connects Selector (chooses scope) and Scorer (applies measurement logic)
-- **Metric** → defines what kind of signal to record (Boolean, Number, Ordinal/Enum)
-- **Aggregator** → combines signals into meaningful summaries
-- **EvaluationReport** → final output with detailed and summary results
+1. **Generate**: Use `@tally-evals/trajectories` to simulate realistic, multi-turn conversations with your agents.
+2. **Evaluate**: Feed those conversations into `@tally-evals/tally` to measure performance using LLM-based metrics and custom scorers.
+3. **Iterate**: Analyze the generated reports to identify failure modes and improve your agent.
 
 ## Quick Start
 
-```typescript
-import { tally } from 'tally'
+To get started with the entire ecosystem:
 
-// Framework implementation coming soon
-console.log(tally)
+```bash
+pnpm add @tally-evals/tally @tally-evals/trajectories @tally-evals/core
 ```
 
-## Next Steps
-
-- [Getting Started](/docs/getting-started) - Set up your first evaluation
-- [Examples](/docs/examples) - See Tally in action with Mastra and Agent Kit
-- [API Reference](/docs/api) - Complete API documentation
+Explore the documentation for each package using the tabs in the sidebar.

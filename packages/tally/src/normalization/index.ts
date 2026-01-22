@@ -5,22 +5,20 @@
  */
 
 export {
-	createMinMaxNormalizer,
-	createZScoreNormalizer,
-	createThresholdNormalizer,
-	createLinearNormalizer,
-	createOrdinalMapNormalizer,
-	createIdentityNormalizer,
-	createCustomNormalizer,
+  createMinMaxNormalizer,
+  createZScoreNormalizer,
+  createThresholdNormalizer,
+  createLinearNormalizer,
+  createOrdinalMapNormalizer,
+  createIdentityNormalizer,
+  createCustomNormalizer,
 } from '../core/normalization/factory';
 
 export { applyNormalization } from '../core/normalization/apply';
 
 export {
-	resolveContext,
-	computeDistributionStats,
-	computeRange,
-	clearContextCache,
-	getCachedContext,
+  resolveCalibration,
+  computeDistributionStats,
+  computeRange,
+  createCalibrationCache,
 } from '../core/normalization/context';
-

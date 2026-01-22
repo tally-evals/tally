@@ -1,0 +1,112 @@
+---
+title: Scorers
+description: Normalizing and combining metrics into unified scores.
+---
+
+While **Metrics** focus on capturing raw domain data (which can be numeric, boolean, or ordinal), **Scorers** are responsible for transforming those heterogeneous results into a unified, normalized format—usually a **0–1 Score**.
+
+Scorers act as the "normalization bridge" in Tally, allowing you to combine diverse measurements into high-level concepts like "Overall Quality," "Safety," or "Professionalism."
+
+---
+
+## Metrics vs. Scorers
+
+The primary difference between a Metric and a Scorer is their **output requirements** and **responsibility**:
+
+| Feature | Metric | Scorer |
+| :--- | :--- | :--- |
+| **Input** | Conversation data (Step or History). | Multiple Metric results. |
+| **Output Type** | Any (ms, boolean, stars, etc.). | **Always Numeric (normalized 0–1).** |
+| **Responsibility** | Domain-specific measurement. | Weighting, normalization, and combination. |
+| **Composability** | Atoms of measurement. | Molecules of evaluation. |
+
+---
+
+## Why Normalize to 0–1?
+
+Normalization is the process of mapping a raw value (like "500ms" or "4 stars") onto a standard 0–1 scale. This is a critical step for two reasons:
+
+1.  **Fair Weighting**: You cannot directly average "500ms" and "true." Normalizing both to a 0–1 scale allows you to apply meaningful weights (e.g., latency is 20% of the score, correctness is 80%).
+2.  **Consistent Verdicts**: By enforcing a 0–1 output, you can use standard **Verdict Policies** (like `thresholdVerdict(0.8)`) across any scorer, regardless of which metrics it combines.
+
+---
+
+## Weighted Average Scorer
+
+The `WeightedAverageScorer` is the most common scorer. It takes a list of input metrics, normalizes each one, and calculates a weighted mean.
+
+```ts
+import { createWeightedAverageScorer, defineInput } from '@tally-evals/tally/scorers';
+import { createMinMaxNormalizer } from '@tally-evals/tally/normalization';
+
+// 1. Define the Scorer
+const qualityScorer = createWeightedAverageScorer({
+  name: 'OverallQuality',
+  inputs: [
+    // Use defineInput to combine metrics with weights and normalizers
+    defineInput({ 
+      metric: relevanceMetric, 
+      weight: 0.6 
+    }),
+    defineInput({ 
+      metric: latencyMetric, 
+      weight: 0.4,
+      // Map 0-2000ms to 1-0 (inverted: lower is better)
+      normalizerOverride: createMinMaxNormalizer({ min: 2000, max: 0, clip: true })
+    }),
+  ],
+});
+```
+
+See the full `defineInput()` API reference in [`/docs/tally/reference/scorers`](../reference/scorers.mdx#defineinput) for options and defaults.
+
+---
+
+## Custom Scorers
+
+For non-linear combinations (e.g., if any toxicity is detected, the entire quality score should be zero), you can define a custom scorer.
+
+### What gets passed to a custom scorer?
+
+`combineScores` receives a **map of normalized scores**, keyed by metric name. The shape is:
+
+```ts
+type InputScores = Record<string, Score>;
+// In practice, it's strongly typed based on the metrics you pass to `inputs`.
+```
+
+Your function must return a **normalized `Score`** (0–1).
+
+```ts
+import { defineScorer, defineBaseMetric } from '@tally-evals/tally';
+import { defineInput } from '@tally-evals/tally/scorers';
+
+export const safetyPenaltyScorer = defineScorer({
+  name: 'SafetyAdjustedQuality',
+  output: defineBaseMetric({ name: 'safetyAdjustedQuality', valueType: 'number' }),
+  inputs: [
+    defineInput({ metric: qualityMetric, weight: 1 }),
+    defineInput({ metric: toxicityMetric, weight: 1 })
+  ],
+  combineScores: (scores) => {
+    const quality = scores[qualityMetric.name];
+    const toxicity = scores[toxicityMetric.name];
+
+    // Non-linear logic: 
+    // If toxicity is high (> 0.2), ignore quality and return 0
+    if (toxicity > 0.2) return 0;
+    
+    return quality;
+  }
+});
+```
+
+---
+
+## Summary
+
+Use **Metrics** to measure your domain. Use **Scorers** to bring those measurements into Tally's standardized 0–1 evaluation space. Once normalized, these scores can be passed to **Evals** for a final pass/fail decision.
+
+## API Reference
+
+For full type definitions and factory options, see the [Scorers API Reference](/docs/tally/reference/scorers).
