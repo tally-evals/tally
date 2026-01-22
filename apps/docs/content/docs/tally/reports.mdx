@@ -1,102 +1,129 @@
 ---
-title: Reports
-description: The comprehensive source of truth for evaluation runs.
+title: Run Report
+description: Understanding the output of a Tally evaluation run.
 ---
 
-The **Evaluation Report** is the final output of the Tally engine. It is a structured, serializable "Source of Truth" that captures every measurement, every decision (verdict), and every summary from an evaluation run.
+After calling `await tally.run()`, you receive a `TallyRunReport`—the complete record of everything that happened during evaluation. This object captures raw measurements, normalized scores, verdicts, and aggregated summaries.
 
-A report is designed to serve two audiences:
-1.  **Stakeholders**: Through high-level aggregated summaries.
-2.  **Developers**: Through granular, turn-by-turn failure analysis.
+## What's in a Report
 
----
+A report contains three main sections:
 
-## Anatomy of a Report
+| Section | Purpose |
+|---------|---------|
+| `defs` | Snapshots of all metric, eval, and scorer definitions used in the run |
+| `result` | Per-step and per-conversation measurements with optional summaries |
+| `metadata` | Optional run-level context (timing, model info, etc.) |
 
-When you call `await tally.run()`, you receive a report object with three distinct sections:
+The report also exposes two methods:
 
-### 1. Eval Summaries (`evalSummaries`)
-The bird's-eye view. This section contains the output of your [Aggregators](/docs/tally/aggregators). It tells you how each Eval performed across the entire dataset.
+- `view()` — returns an ergonomic helper for assertions and inspection
+- `toArtifact()` — converts to a schema-stable JSON structure for persistence
 
-- **Example**: `Relevance: 85% Pass Rate, 0.78 Mean Score`.
-- **Single-turn vs multi-turn**: each entry includes `evalKind: 'singleTurn' | 'multiTurn' | 'scorer'`.
+## Accessing Results
 
-### 2. Per-Target Results (`perTargetResults`)
-The deep-dive data. For every single conversation or step in your dataset, Tally records:
-- The raw metric value (e.g., `500ms`).
-- The normalized score (e.g., `0.8`).
-- The final verdict (`pass` or `fail`).
-- Any error messages if the evaluation failed.
-
-**How to differentiate single-turn vs multi-turn here:** `perTargetResults` is “one result per target container”. If you ran on a dataset of single-turn items, each entry is a turn/item. If you ran on a dataset of conversations, each entry is a conversation (multi-turn).
-
-### 3. Metadata (`metadata`)
-Contextual information about the run, including:
-- Total execution time.
-- Timestamp of the run.
-- Model names and versions used for evaluation.
-
----
-
-## Visibility and Debugging
-
-Tally makes it easy to visualize these reports wherever you work.
-
-### CLI Tables
-For a quick check during development, Tally can format the report as a clean table in your terminal.
+Results are organized by eval kind:
 
 ```ts
-import { formatReportAsTables } from '@tally-evals/tally';
-
 const report = await tally.run();
-console.log(formatReportAsTables(report));
-```
 
-### Failure Analysis
-Because the report contains the full context for every `fail` verdict, you can quickly identify and fix the specific interactions that are dragging down your scores.
-
-```ts
-const failures = report.perTargetResults.filter((r) => {
-  for (const [, v] of r.verdicts) {
-    if (v.verdict === 'fail') return true;
+// Single-turn evals: array indexed by step
+const relevanceResults = report.result.singleTurn['answer-relevance'];
+relevanceResults.byStepIndex.forEach((step, i) => {
+  if (step) {
+    console.log(`Step ${i}: score=${step.measurement.score}`);
   }
-  return false;
 });
 
-failures.forEach(f => {
-  console.log(`Failure in ${f.targetId}:`, f.verdicts);
-});
-```
+// Multi-turn evals: one result per conversation
+const coherence = report.result.multiTurn['conversation-coherence'];
+console.log(`Coherence: ${coherence.measurement.score}`);
 
----
-
-## CI/CD Integration: "Fail Fast"
-
-Tally reports are first-class citizens in your automation pipeline. By parsing the `evalSummaries`, you can automatically block problematic code before it reaches production.
-
-```ts
-const report = await tally.run();
-const relevance = report.evalSummaries.get('Answer Relevance');
-if (!relevance) throw new Error('Missing summary');
-
-const passRate = relevance.aggregations.passRate;
-if (passRate !== undefined && passRate < 0.95) {
-  throw new Error(`Evaluation Failed: Pass rate (${passRate}) is below 95%`);
+// Scorer evals: check the shape field
+const quality = report.result.scorers['overall-quality'];
+if (quality.shape === 'seriesByStepIndex') {
+  // series of scores
+} else {
+  // single scalar result
 }
 ```
 
-If you want to split summaries by single-turn vs multi-turn:
+## Summaries and Aggregations
+
+When metrics define aggregators, the report includes statistical summaries:
 
 ```ts
-for (const [evalName, summary] of report.evalSummaries) {
-  if (summary.evalKind === 'multiTurn') {
-    console.log('multi-turn', evalName, summary.aggregations.mean);
+const summaries = report.result.summaries;
+if (summaries) {
+  for (const [evalName, summary] of Object.entries(summaries.byEval)) {
+    console.log(`${evalName}:`);
+    console.log(`  count: ${summary.count}`);
+    
+    if (summary.aggregations) {
+      console.log(`  mean score: ${summary.aggregations.score.mean}`);
+    }
+    
+    if (summary.verdictSummary) {
+      const v = summary.verdictSummary;
+      console.log(`  pass rate: ${(v.passRate * 100).toFixed(1)}%`);
+    }
   }
 }
 ```
 
----
+## Serializing Reports
 
-## Summary
+For storage, CI pipelines, or the Tally viewer, convert to an artifact:
 
-The report is not just an output; it is a **historical record** of your system's quality. By saving these reports over time, you build a comprehensive map of your agent's evolution and performance.
+```ts
+const artifact = report.toArtifact();
+
+// Save to disk
+import { writeFileSync } from 'fs';
+writeFileSync('run.json', JSON.stringify(artifact, null, 2));
+```
+
+The artifact uses the same structure as the report but with ISO timestamps instead of Date objects and a `schemaVersion` field for forward compatibility.
+
+## Filtering Failures
+
+To debug failed evaluations, filter by verdict:
+
+```ts
+const failures: Array<{ eval: string; step: number; reason: string }> = [];
+
+for (const [evalName, series] of Object.entries(report.result.singleTurn)) {
+  series.byStepIndex.forEach((step, i) => {
+    if (step?.outcome?.verdict === 'fail') {
+      failures.push({
+        eval: evalName,
+        step: i,
+        reason: step.measurement.reasoning ?? 'No reasoning provided',
+      });
+    }
+  });
+}
+
+console.log(`Found ${failures.length} failures`);
+```
+
+## CI Integration
+
+Block deployments when quality drops below a threshold:
+
+```ts
+const report = await tally.run();
+const summary = report.result.summaries?.byEval['answer-relevance'];
+
+if (summary?.verdictSummary) {
+  const passRate = summary.verdictSummary.passRate;
+  if (passRate < 0.95) {
+    process.exitCode = 1;
+    console.error(`Pass rate ${(passRate * 100).toFixed(1)}% is below 95% threshold`);
+  }
+}
+```
+
+## API Reference
+
+For the complete type definitions, see the [Reports API Reference](/docs/tally/reference/reports).

@@ -127,22 +127,6 @@ const evaluator = createEvaluator({
   context: runAllTargets(),
 })`;
 
-export const aggregatorTsDef = String.raw`export interface Aggregator {
-  name: string;
-  description?: string;
-  metric: BaseMetricDef<number>;
-  aggregate: (values: readonly Score[]) => Score;
-  metadata?: Record<string, unknown>;
-}
-`;
-
-export const aggregatorExample = String.raw`import { createMeanAggregator } from '@tally-evals/tally/aggregators'
-
-const mean = createMeanAggregator({
-  name: 'mean',
-  metric: overallMetric,
-})`;
-
 export const reportTsDef = String.raw`export interface EvaluationReport {
   runId: string;
   timestamp: Date;
@@ -189,7 +173,6 @@ Tally is composed of several fundamental building blocks that you combine togeth
 | [**Scorer**](/docs/tally/scorers) | **Normalizer/Combiner** | Combines multiple metric results into a unified score (usually 0–1) based on weights. | <CodePopover title="Scorer (core)" tsDef={scorerTsDef} example={scorerExample} /> |
 | [**Eval**](/docs/tally/evals) | **Decision Rule** | Combines a Metric or Scorer with a **Verdict Policy** to determine if the result "passes" or "fails." | <CodePopover title="Eval (single-turn / multi-turn / scorer)" tsDef={evalTsDef} example={evalExample} /> |
 | [**Evaluator**](/docs/tally/evals) | **Orchestrator** | Groups related Evals together and defines the execution policy for targets. | <CodePopover title="Evaluator (core)" tsDef={evaluatorTsDef} example={evaluatorExample} /> |
-| [**Aggregator**](/docs/tally/aggregators) | **Statistician** | Summarizes individual results into dataset-level statistics (e.g., Mean, Pass Rate). | <CodePopover title="Aggregator (core)" tsDef={aggregatorTsDef} example={aggregatorExample} /> |
 | [**Report**](/docs/tally/reports) | **Scorecard** | The final structured output for analysis, visualization, and CI/CD. | <CodePopover title="EvaluationReport (core)" tsDef={reportTsDef} example={reportExample} /> |
 
 ## The Composability Trio
@@ -222,6 +205,14 @@ graph TD
     end
 
     Verdicts --> Results[Per-Target Results]
-    Results --> Aggregators[Aggregators]
-    Aggregators --> Report[Evaluation Report]
+    Results --> Report[Evaluation Report]
 ```
+
+## API Reference
+
+For detailed type definitions and factory functions, see:
+
+- [Metrics API](/docs/tally/reference/metric) — `defineBaseMetric`, `createSingleTurnCode`, `createSingleTurnLLM`, etc.
+- [Scorers API](/docs/tally/reference/scorers) — `defineScorer`, `createWeightedAverageScorer`, `defineInput`
+- [Evals API](/docs/tally/reference/evals) — `defineSingleTurnEval`, `defineMultiTurnEval`, `defineScorerEval`
+- [Reports API](/docs/tally/reference/reports) — `TallyRunReport`, `TallyRunArtifact`

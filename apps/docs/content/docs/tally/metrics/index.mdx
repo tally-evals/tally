@@ -141,7 +141,7 @@ const helpfulness = createSingleTurnLLM({
     scale: '1-5',
   },
   normalization: {
-    default: createMinMaxNormalizer({
+    normalizer: createMinMaxNormalizer({
       min: 1,
       max: 5,
       clip: true,
@@ -161,6 +161,27 @@ const helpfulness = createSingleTurnLLM({
 
 ---
 
+## Normalization (recommended)
+
+Normalization converts a raw metric value (number/boolean/ordinal) into a comparable **0–1 score**. In the current API, normalization lives on the metric definition.
+
+If you’re using scorers, you typically want *every input metric* to have a sensible normalization strategy (or provide `normalizerOverride` per scorer input).
+
+See the full reference: [/docs/tally/reference/normalizers](/docs/tally/reference/normalizers).
+
+---
+
+## Aggregations (single-turn metrics)
+
+Aggregations are no longer a standalone `tally/aggregators` API. Instead, **single-turn metrics can carry aggregator definitions** that the pipeline uses to summarize results across targets.
+
+- **Where it applies**: `SingleTurnMetricDef` (step/item-level metrics)
+- **Where to read the output**: `report.evalSummaries.get(evalName)?.aggregations`
+
+If you need bespoke summaries (e.g., per-customer-tier rollups), post-process the report (group/filter per-target results) rather than trying to “register aggregators” globally.
+
+---
+
 ## Golden vs Smoke: same measures, different policies
 
 In practice, you want to reuse the **same metrics** across scenarios:
@@ -168,3 +189,10 @@ In practice, you want to reuse the **same metrics** across scenarios:
 - **Smoke tests / dev loops**: looser verdict policy (fast feedback).
 
 The **measure stays constant**; the **verdict policy changes**. This is how you avoid rewriting evaluation logic for every test suite.
+
+## API Reference
+
+- [Metric Factories](/docs/tally/reference/metric) — `defineBaseMetric`, `createSingleTurnCode`, `createSingleTurnLLM`, `withNormalization`
+- [Built-in Metrics](/docs/tally/reference/builtin-metrics) — Pre-built metrics for common use cases
+- [Normalizers](/docs/tally/reference/normalizers) — `createMinMaxNormalizer`, `createBooleanNormalizer`, `createOrdinalNormalizer`
+- [Aggregators](/docs/tally/reference/aggregators) — `createMeanAggregator`, `createTrueRateAggregator`, etc.
