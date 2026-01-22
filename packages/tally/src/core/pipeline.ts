@@ -439,17 +439,23 @@ const phaseScore = <TContainer extends DatasetItem | Conversation>(
   internalEvaluators.reduce((resultMap, { scorer, evalName }) => {
     Array.from(normalizedScores.entries()).forEach(
       ([targetId, targetScores]) => {
+        // The scorer inputs are runtime values; ensure we keep them typed locally for TS inference.
+        const inputs = scorer.inputs as readonly {
+          metric: MetricDef<MetricScalar, MetricContainer>;
+          required?: boolean;
+          normalizerOverride?: unknown;
+          weight: number;
+        }[];
+
         const maxLen = Math.max(
-          ...scorer.inputs.map(
-            (input) => targetScores.get(input.metric.name)?.length ?? 0,
-          ),
+          ...inputs.map((input) => targetScores.get(input.metric.name)?.length ?? 0),
         );
 
         const derivedScores: Score[] = Array.from(
           { length: maxLen },
           (_, i) => {
             const inputScores = buildInputScoresForIndex(
-              scorer.inputs,
+              inputs,
               targetScores,
               i,
               scorer.fallbackScore,
@@ -484,7 +490,7 @@ const phaseScore = <TContainer extends DatasetItem | Conversation>(
           scores: derivedScores,
           rawValues,
           outputMetric: scorer.output,
-          inputMetrics: scorer.inputs.map((input) => input.metric),
+          inputMetrics: inputs.map((input) => input.metric),
           evalName,
         });
         resultMap.set(targetId, existing);
@@ -694,15 +700,18 @@ const resolveCommonAggregators = (
       } => 'aggregators' in m,
     )
     .flatMap((m) => m.aggregators)
-    .reduce((acc, agg) => {
-      const existing = acc.get(agg.name);
-      return existing
-        ? acc.set(agg.name, {
-            count: existing.count + 1,
-            aggregator: existing.aggregator,
-          })
-        : acc.set(agg.name, { count: 1, aggregator: agg });
-    }, new Map<string, { count: number; aggregator: AggregatorDef }>());
+    .reduce<Map<string, { count: number; aggregator: AggregatorDef }>>(
+      (acc, agg) => {
+        const existing = acc.get(agg.name);
+        return existing
+          ? acc.set(agg.name, {
+              count: existing.count + 1,
+              aggregator: existing.aggregator,
+            })
+          : acc.set(agg.name, { count: 1, aggregator: agg });
+      },
+      new Map<string, { count: number; aggregator: AggregatorDef }>(),
+    );
 
   return Array.from(aggregatorCounts.values())
     .filter((entry) => entry.count === metricsWithAggregators.length)
