@@ -1,0 +1,243 @@
+---
+title: Builtin Metrics
+description: Prebuilt metric definitions.
+---
+
+import { TypeTable } from 'fumadocs-ui/components/type-table';
+import { PropertyTable } from '@/components/PropertyTable';
+
+# Builtin Metrics
+
+Prebuilt metrics are exported from the `tally/metrics` entrypoint.
+
+## Import
+
+```ts
+import {
+  createAnswerRelevanceMetric,
+  createAnswerSimilarityMetric,
+  createCompletenessMetric,
+  createToxicityMetric,
+  createToolCallAccuracyMetric,
+  createRoleAdherenceMetric,
+  createGoalCompletionMetric,
+  createTopicAdherenceMetric,
+} from 'tally/metrics';
+```
+
+### `createAnswerRelevanceMetric()`
+
+<PropertyTable
+  content={[
+    {
+      name: 'provider',
+      type: 'LanguageModel',
+      description: 'LLM provider for relevance analysis.',
+    },
+    {
+      name: 'partialWeight',
+      type: 'number',
+      description:
+        'Partial weight for “unsure” statements. Used in the rubric to guide the LLM.',
+      isOptional: true,
+      defaultValue: '0.3',
+    },
+  ]}
+/>
+
+### `createAnswerSimilarityMetric()`
+
+<PropertyTable
+  content={[
+    {
+      name: 'embeddingModel',
+      type: 'EmbeddingModel',
+      description: 'Optional embedding model for semantic similarity calculation.',
+      isOptional: true,
+    },
+    {
+      name: 'targetResponse',
+      type: 'string',
+      description:
+        'Optional target response to compare against. If omitted, the metric may use `metadata.targetResponse`.',
+      isOptional: true,
+    },
+    {
+      name: 'minKeywords',
+      type: 'number',
+      description:
+        'Minimum number of matching keywords required (keyword-based mode).',
+      isOptional: true,
+      defaultValue: '1',
+    },
+  ]}
+/>
+
+### `createCompletenessMetric()`
+
+<PropertyTable
+  content={[
+    {
+      name: 'provider',
+      type: 'LanguageModel',
+      description: 'LLM provider for completeness analysis.',
+    },
+    {
+      name: 'expectedPoints',
+      type: 'string[]',
+      description:
+        'Optional list of expected key points/topics. Included in the prompt to guide evaluation.',
+      isOptional: true,
+    },
+  ]}
+/>
+
+### `createToxicityMetric()`
+
+<PropertyTable
+  content={[
+    {
+      name: 'provider',
+      type: 'LanguageModel',
+      description: 'LLM provider for toxicity detection.',
+    },
+    {
+      name: 'categories',
+      type: "Array<'hate' | 'harassment' | 'violence' | 'self-harm' | 'sexual' | 'profanity'>",
+      description: 'Optional toxicity categories to emphasize during evaluation.',
+      isOptional: true,
+    },
+  ]}
+/>
+
+### `createToolCallAccuracyMetric()`
+
+<PropertyTable
+  content={[
+    {
+      name: 'expectedToolCalls',
+      type: 'Array<{ toolName: string; argsSchema?: z.ZodSchema }>',
+      description: 'Expected tool calls (required).',
+      properties: [
+        {
+          type: 'ExpectedToolCall',
+          parameters: [
+            {
+              name: 'toolName',
+              type: 'string',
+              description: 'Tool name to expect.',
+            },
+            {
+              name: 'argsSchema',
+              type: 'z.ZodSchema',
+              description: 'Optional schema for validating tool call args.',
+              isOptional: true,
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'toolCallOrder',
+      type: 'string[]',
+      description: 'Optional expected order of tool calls (array of tool names).',
+      isOptional: true,
+    },
+    {
+      name: 'strictMode',
+      type: 'boolean',
+      description:
+        'If true, tool call sequence must be exact and cannot include extra calls.',
+      isOptional: true,
+      defaultValue: 'false',
+    },
+  ]}
+/>
+
+### `createRoleAdherenceMetric()`
+
+<PropertyTable
+  content={[
+    {
+      name: 'expectedRole',
+      type: 'string',
+      description: 'Expected role/persona description to adhere to.',
+    },
+    {
+      name: 'provider',
+      type: 'LanguageModel',
+      description: 'LLM provider for role adherence analysis.',
+    },
+    {
+      name: 'checkConsistency',
+      type: 'boolean',
+      description: 'Whether to evaluate consistency across all turns.',
+      isOptional: true,
+      defaultValue: 'true',
+    },
+  ]}
+/>
+
+### `createGoalCompletionMetric()`
+
+<PropertyTable
+  content={[
+    {
+      name: 'goal',
+      type: 'string',
+      description: 'Goal description to evaluate against.',
+    },
+    {
+      name: 'provider',
+      type: 'LanguageModel',
+      description: 'LLM provider for goal completion analysis.',
+    },
+    {
+      name: 'checkPartialCompletion',
+      type: 'boolean',
+      description: 'Whether to reward partial progress toward the goal.',
+      isOptional: true,
+      defaultValue: 'true',
+    },
+    {
+      name: 'considerEfficiency',
+      type: 'boolean',
+      description: 'Whether to consider efficiency (fewer turns) in scoring.',
+      isOptional: true,
+      defaultValue: 'false',
+    },
+  ]}
+/>
+
+### `createTopicAdherenceMetric()`
+
+<PropertyTable
+  content={[
+    {
+      name: 'topics',
+      type: 'string[]',
+      description: 'Topics the assistant should adhere to throughout the conversation.',
+    },
+    {
+      name: 'provider',
+      type: 'LanguageModel',
+      description: 'LLM provider for topic adherence analysis.',
+    },
+    {
+      name: 'allowTopicTransitions',
+      type: 'boolean',
+      description: 'If true, allows natural transitions between related topics.',
+      isOptional: true,
+      defaultValue: 'true',
+    },
+    {
+      name: 'strictMode',
+      type: 'boolean',
+      description:
+        'If true, penalizes deviations from the specified topics more strictly.',
+      isOptional: true,
+      defaultValue: 'false',
+    },
+  ]}
+/>
+

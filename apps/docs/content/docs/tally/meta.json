@@ -12,6 +12,22 @@
     "scorers",
     "evals",
     "aggregators",
-    "reports"
+    "reports",
+    "---API Reference---",
+    "reference/index",
+    "---Metrics Definitions---",
+    "reference/metric",
+    "reference/builtin-metrics",
+    "reference/normalization",
+    "---Scoring & Summarization---",
+    "reference/scorers",
+    "---Aggregators---",
+    "reference/aggregators",
+    "---Evaluation Orchestration---",
+    "reference/evals",
+    "reference/create-tally",
+    "---IO & Utilities---",
+    "reference/data",
+    "reference/utils"
   ]
 }

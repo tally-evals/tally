@@ -1,0 +1,123 @@
+---
+title: Aggregators
+description: Summarize per-target scores into dataset-level statistics.
+---
+
+import { PropertyTable } from '@/components/PropertyTable';
+
+# Aggregators
+
+Prebuilt aggregators summarize score arrays into dataset-level stats.
+
+## Import
+
+```ts
+import {
+  createMeanAggregator,
+  createPercentileAggregator,
+  createPassRateAggregator,
+} from 'tally/aggregators';
+import type {
+  MeanAggregatorOptions,
+  PercentileAggregatorOptions,
+  PassRateAggregatorOptions,
+} from 'tally/aggregators';
+```
+
+### `createMeanAggregator()`
+
+<PropertyTable
+  content={[
+    {
+      name: 'metric',
+      type: 'BaseMetricDef<number>',
+      description: 'Base metric definition for the derived metric being aggregated.',
+    },
+    {
+      name: 'options',
+      type: '{ description?: string; metadata?: Record<string, unknown> }',
+      description: 'Optional configuration for the aggregator.',
+      isOptional: true,
+      properties: [
+        {
+          type: 'options',
+          parameters: [
+            {
+              name: 'description',
+              type: 'string',
+              description: 'Optional description for the aggregation.',
+              isOptional: true,
+            },
+            {
+              name: 'metadata',
+              type: 'Record<string, unknown>',
+              description: 'Optional metadata for the aggregation.',
+              isOptional: true,
+            },
+          ],
+        },
+      ],
+    },
+  ]}
+/>
+
+### `createPercentileAggregator()`
+
+<PropertyTable
+  content={[
+    {
+      name: 'metric',
+      type: 'BaseMetricDef<number>',
+      description: 'Base metric definition for the derived metric being aggregated.',
+    },
+    {
+      name: 'percentile',
+      type: 'number',
+      description: 'Percentile to compute (0-100).',
+    },
+    {
+      name: 'description',
+      type: 'string',
+      description: 'Optional description for the aggregation.',
+      isOptional: true,
+    },
+    {
+      name: 'metadata',
+      type: 'Record<string, unknown>',
+      description: 'Optional metadata for the aggregation.',
+      isOptional: true,
+    },
+  ]}
+/>
+
+### `createPassRateAggregator()`
+
+<PropertyTable
+  content={[
+    {
+      name: 'metric',
+      type: 'BaseMetricDef<number>',
+      description: 'Base metric definition for the derived metric being aggregated.',
+    },
+    {
+      name: 'threshold',
+      type: 'number',
+      description: 'Pass threshold in [0, 1].',
+      isOptional: true,
+      defaultValue: '0.5',
+    },
+    {
+      name: 'description',
+      type: 'string',
+      description: 'Optional description for the aggregation.',
+      isOptional: true,
+    },
+    {
+      name: 'metadata',
+      type: 'Record<string, unknown>',
+      description: 'Optional metadata for the aggregation.',
+      isOptional: true,
+    },
+  ]}
+/>
+
