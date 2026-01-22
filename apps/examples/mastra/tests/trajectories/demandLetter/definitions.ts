@@ -67,10 +67,6 @@ export const demandLetterGoldenTrajectory: Trajectory = {
     terminals: ['step-10'],
   },
   maxTurns: 20,
-  storage: {
-    strategy: 'local',
-    conversationId: 'demand-letter-golden',
-  },
   loopDetection: {
     maxConsecutiveSameStep: 5,
   },
@@ -130,9 +126,5 @@ export const demandLetterCurveTrajectory: Trajectory = {
     terminals: ['step-9'],
   },
   maxTurns: 20,
-  storage: {
-    strategy: 'local',
-    conversationId: 'demand-letter-curve',
-  },
   userModel: google('models/gemini-2.5-flash-lite'),
 };

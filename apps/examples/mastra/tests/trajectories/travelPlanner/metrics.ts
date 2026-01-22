@@ -123,7 +123,7 @@ export const createKnowledgeRetentionMetric = (
       ],
     },
     normalization: {
-      default: createMinMaxNormalizer({
+      normalizer: createMinMaxNormalizer({
         min: 0,
         max: 5,
         clip: true,
