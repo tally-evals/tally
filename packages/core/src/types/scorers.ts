@@ -12,7 +12,7 @@ import type {
   BaseMetricDef,
 } from './metrics';
 import type {
-  ScoringContext,
+  NormalizationContextFor,
   NormalizerSpec,
   NormalizeToScore,
 } from './normalization';
@@ -30,7 +30,7 @@ export interface ScorerInput<
     MetricScalar,
     MetricContainer
   >,
-  TContext = ScoringContext,
+  TContext = NormalizationContextFor<MetricScalar>,
 > {
   metric: M; // Direct reference to the MetricDef being combined
   weight: number;

@@ -17,9 +17,8 @@ export {
 export { applyNormalization } from '../core/normalization/apply';
 
 export {
-  resolveContext,
+  resolveCalibration,
   computeDistributionStats,
   computeRange,
-  clearContextCache,
-  getCachedContext,
+  createCalibrationCache,
 } from '../core/normalization/context';

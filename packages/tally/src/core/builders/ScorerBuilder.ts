@@ -11,12 +11,12 @@ import type {
   MetricContainer,
   MetricDef,
   MetricScalar,
+  NormalizationContextFor,
   NormalizeToScore,
   NormalizerSpec,
   Score,
   Scorer,
   ScorerInput,
-  ScoringContext,
 } from '@tally/core/types';
 
 /**
@@ -64,21 +64,36 @@ class ScorerBuilder<TInputs extends readonly ScorerInput[] = readonly []> {
     metric: M,
     weight: number,
     normalizerOverride?:
-      | NormalizerSpec<TRawValue, ScoringContext>
-      | NormalizeToScore<TRawValue, ScoringContext>,
+      | NormalizerSpec<TRawValue, NormalizationContextFor<TRawValue>>
+      | NormalizeToScore<TRawValue, NormalizationContextFor<TRawValue>>,
     required = true
   ): ScorerBuilder<
-    readonly [...TInputs, ScorerInput<MetricDef<MetricScalar, MetricContainer>, ScoringContext>]
+    readonly [
+      ...TInputs,
+      ScorerInput<
+        MetricDef<MetricScalar, MetricContainer>,
+        NormalizationContextFor<MetricScalar>
+      >,
+    ]
   > {
     const input = {
       metric: metric as unknown as MetricDef<MetricScalar, MetricContainer>,
       weight,
       required,
       ...(normalizerOverride !== undefined && { normalizerOverride }),
-    } as ScorerInput<MetricDef<MetricScalar, MetricContainer>, ScoringContext>;
+    } as ScorerInput<
+      MetricDef<MetricScalar, MetricContainer>,
+      NormalizationContextFor<MetricScalar>
+    >;
 
     const builder = new ScorerBuilder<
-      readonly [...TInputs, ScorerInput<MetricDef<MetricScalar, MetricContainer>, ScoringContext>]
+      readonly [
+        ...TInputs,
+        ScorerInput<
+          MetricDef<MetricScalar, MetricContainer>,
+          NormalizationContextFor<MetricScalar>
+        >,
+      ]
     >(this.name, this.output);
     builder.inputs = [...this.inputs, input];
     builder.description = this.description;
@@ -88,7 +103,10 @@ class ScorerBuilder<TInputs extends readonly ScorerInput[] = readonly []> {
           scores: InputScores<
             readonly [
               ...TInputs,
-              ScorerInput<MetricDef<MetricScalar, MetricContainer>, ScoringContext>,
+              ScorerInput<
+                MetricDef<MetricScalar, MetricContainer>,
+                NormalizationContextFor<MetricScalar>
+              >,
             ]
           >
         ) => Score)

@@ -36,7 +36,10 @@ export type {
   Metric,
   // Normalization types
   NormalizeToScore,
-  ScoringContext,
+  NumericNormalizationContext,
+  BooleanNormalizationContext,
+  OrdinalNormalizationContext,
+  NormalizationContextFor,
   NormalizerSpec,
   MetricNormalization,
   // Scorer types

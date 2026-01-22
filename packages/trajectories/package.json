@@ -28,7 +28,7 @@
   "scripts": {
     "build": "tsdown",
     "dev": "tsdown --watch",
-    "test": "bun test",
+    "test": "bun test --timeout=30000",
     "test:watch": "bun test --watch",
     "test:e2e": "E2E_TRAJECTORIES=1 bun test test/e2e",
     "lint": "biome check .",

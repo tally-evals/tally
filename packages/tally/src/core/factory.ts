@@ -21,12 +21,12 @@ import type {
   MetricScalar,
   MultiTurnContainer,
   MultiTurnMetricDef,
+  NormalizationContextFor,
   NormalizeToScore,
   NormalizerSpec,
   Score,
   Scorer,
   ScorerInput,
-  ScoringContext,
   SingleTurnContainer,
   SingleTurnMetricDef,
   VarsTuple,
@@ -43,7 +43,7 @@ export function defineBaseMetric<T extends MetricScalar>(args: {
   valueType: BaseMetricDef<T>['valueType'];
   description?: string;
   metadata?: Record<string, unknown>;
-  normalization?: MetricNormalization<T, ScoringContext>;
+  normalization?: MetricNormalization<T, NormalizationContextFor<T>>;
 }): BaseMetricDef<T> {
   const { name, valueType, description, metadata, normalization } = args;
   return {
@@ -60,17 +60,19 @@ export function withNormalization<
   TMetric extends (BaseMetricDef<T> | MetricDef<T, MetricContainer>) & object,
 >(args: {
   metric: TMetric;
-  default: NormalizerSpec<T, ScoringContext> | NormalizeToScore<T, ScoringContext>;
-  context?:
-    | ScoringContext
+  normalizer:
+    | NormalizerSpec<T, NormalizationContextFor<T>>
+    | NormalizeToScore<T, NormalizationContextFor<T>>;
+  calibrate?:
+    | NormalizationContextFor<T>
     | ((args: {
         dataset: readonly unknown[];
         rawValues: readonly T[];
-      }) => Promise<ScoringContext> | ScoringContext);
+      }) => Promise<NormalizationContextFor<T>> | NormalizationContextFor<T>);
 }): TMetric {
-  const normalization: MetricNormalization<T, ScoringContext> = {
-    default: args.default,
-    ...(args.context !== undefined && { context: args.context }),
+  const normalization: MetricNormalization<T, NormalizationContextFor<T>> = {
+    normalizer: args.normalizer,
+    ...(args.calibrate !== undefined && { calibrate: args.calibrate }),
   };
   return {
     ...args.metric,
@@ -114,7 +116,7 @@ export function createSingleTurnCode<
   compute: CodeMetricFields<T>['compute'];
   dependencies?: CodeMetricFields<T>['dependencies'];
   cacheable?: CodeMetricFields<T>['cacheable'];
-  normalization?: MetricNormalization<T, ScoringContext>;
+  normalization?: MetricNormalization<T, NormalizationContextFor<T>>;
   metadata?: Record<string, unknown>;
   aggregators?: CompatibleAggregator<T>[];
 }): MetricDef<T, TContainer> {
@@ -160,7 +162,7 @@ export function createSingleTurnLLM<
   prompt: LLMMetricFields<T, V>['prompt'];
   rubric?: LLMMetricFields<T, V>['rubric'];
   postProcessing?: LLMMetricFields<T, V>['postProcessing'];
-  normalization?: MetricNormalization<T, ScoringContext>;
+  normalization?: MetricNormalization<T, NormalizationContextFor<T>>;
   metadata?: Record<string, unknown>;
   aggregators?: CompatibleAggregator<T>[];
 }): MetricDef<T, TContainer> {
@@ -210,7 +212,7 @@ export function createMultiTurnCode<T extends MetricScalar>(args: {
   compute: CodeMetricFields<T>['compute'];
   dependencies?: CodeMetricFields<T>['dependencies'];
   cacheable?: CodeMetricFields<T>['cacheable'];
-  normalization?: MetricNormalization<T, ScoringContext>;
+  normalization?: MetricNormalization<T, NormalizationContextFor<T>>;
   metadata?: Record<string, unknown>;
 }): MetricDef<T, MultiTurnContainer> {
   const { base, runOnContainer, compute, dependencies, cacheable, normalization, metadata } = args;
@@ -243,7 +245,7 @@ export function createMultiTurnLLM<
   prompt: LLMMetricFields<T, V>['prompt'];
   rubric?: LLMMetricFields<T, V>['rubric'];
   postProcessing?: LLMMetricFields<T, V>['postProcessing'];
-  normalization?: MetricNormalization<T, ScoringContext>;
+  normalization?: MetricNormalization<T, NormalizationContextFor<T>>;
   metadata?: Record<string, unknown>;
 }): MetricDef<T, TContainer> {
   const {
@@ -297,10 +299,10 @@ export function defineInput<
   metric: M;
   weight: number;
   normalizerOverride?:
-    | NormalizerSpec<TRawValue, ScoringContext>
-    | NormalizeToScore<TRawValue, ScoringContext>;
+    | NormalizerSpec<TRawValue, NormalizationContextFor<TRawValue>>
+    | NormalizeToScore<TRawValue, NormalizationContextFor<TRawValue>>;
   required?: boolean;
-}): ScorerInput<MetricDef<MetricScalar, MetricContainer>, ScoringContext> {
+}): ScorerInput<MetricDef<MetricScalar, MetricContainer>, NormalizationContextFor<MetricScalar>> {
   return {
     metric: args.metric as unknown as MetricDef<MetricScalar, MetricContainer>,
     weight: args.weight,
@@ -308,7 +310,7 @@ export function defineInput<
     ...(args.normalizerOverride !== undefined && {
       normalizerOverride: args.normalizerOverride,
     }),
-  } as ScorerInput<MetricDef<MetricScalar, MetricContainer>, ScoringContext>;
+  } as ScorerInput<MetricDef<MetricScalar, MetricContainer>, NormalizationContextFor<MetricScalar>>;
 }
 
 export function defineScorer<

@@ -8,7 +8,7 @@
  * Supports clipping and direction preference
  */
 
-import type { NormalizerSpec, Score, ScoringContext } from '@tally/core/types';
+import type { NormalizerSpec, NumericNormalizationContext, Score } from '@tally/core/types';
 import { toScore } from '@tally/core/types';
 
 /**
@@ -16,14 +16,12 @@ import { toScore } from '@tally/core/types';
  */
 export function normalizeZScore(
   value: number,
-  spec: Extract<NormalizerSpec<number, ScoringContext>, { type: 'z-score' }>,
-  context: ScoringContext
+  spec: Extract<NormalizerSpec<number, NumericNormalizationContext>, { type: 'z-score' }>,
+  context: NumericNormalizationContext
 ): Score {
   // Read mean/stdDev from spec, with fallback to context
-  const mean =
-    spec.mean ?? context.distribution?.mean ?? (context.extra?.mean as number | undefined);
-  const stdDev =
-    spec.stdDev ?? context.distribution?.stdDev ?? (context.extra?.stdDev as number | undefined);
+  const mean = spec.mean ?? context.distribution?.mean;
+  const stdDev = spec.stdDev ?? context.distribution?.stdDev;
 
   if (mean === undefined || stdDev === undefined) {
     throw new Error('Z-score normalizer requires mean and stdDev in spec or context.distribution');

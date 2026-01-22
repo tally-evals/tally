@@ -166,7 +166,7 @@ packages/tally/src/
 
 // Normalization types
 - NormalizeToScore<T, C>
-- ScoringContext
+- NormalizationContextFor<T>
 - NormalizerSpec<T, C>
 - MetricNormalization<T, C>
 

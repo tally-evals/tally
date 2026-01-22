@@ -117,7 +117,7 @@ export function createAnswerSimilarityMetric<
     },
     cacheable: true,
     normalization: {
-      default: createIdentityNormalizer(),
+      normalizer: createIdentityNormalizer(),
     },
   });
 
