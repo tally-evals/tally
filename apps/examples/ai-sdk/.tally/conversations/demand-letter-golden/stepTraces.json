@@ -10,8 +10,40 @@
         "role": "assistant",
         "content": [
           {
+            "type": "text",
+            "text": "I can help with that. We will need to gather some information to create your demand letter.\n\nFirst, I need to know the type of demand you are making. Since you mentioned an unpaid invoice, I assume it is a demand for payment. Is that correct?"
+          }
+        ]
+      }
+    ],
+    "timestamp": "2026-01-19T17:22:17.107Z",
+    "stepId": "step-1",
+    "selection": {
+      "method": "start",
+      "candidates": [
+        {
+          "stepId": "step-1",
+          "score": 1,
+          "reasons": [
+            "Initial start step selected at turn 0"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "turnIndex": 1,
+    "userMessage": {
+      "role": "user",
+      "content": "Yes, that's correct. I need to demand payment for an unpaid invoice."
+    },
+    "agentMessages": [
+      {
+        "role": "assistant",
+        "content": [
+          {
             "type": "tool-call",
-            "toolCallId": "VhbxbbN0Eb1aoyFr",
+            "toolCallId": "ncpTfJ2HiNL6C0JY",
             "toolName": "getTemplateFields",
             "input": {
               "demandType": "payment"
@@ -24,7 +56,7 @@
         "content": [
           {
             "type": "tool-result",
-            "toolCallId": "VhbxbbN0Eb1aoyFr",
+            "toolCallId": "ncpTfJ2HiNL6C0JY",
             "toolName": "getTemplateFields",
             "output": {
               "type": "json",
@@ -122,106 +154,36 @@
         "content": [
           {
             "type": "text",
-            "text": "I can help with that. To create a demand letter for an unpaid invoice, I need some information. Please provide the following:\n\n*   Recipient's full legal name\n*   Recipient's full mailing address\n*   Your full legal name\n*   Your address\n*   The total amount owed (USD)\n*   The date by which you expect to be paid\n*   A detailed description of the claim (e.g., invoice number, services rendered, dates of service)\n*   The legal basis for your demand (e.g., breach of contract)\n\nLet's start with the recipient's full legal name."
+            "text": "Okay, I see we need the following information to create your demand letter:\n\n*   Recipient's full legal name\n*   Recipient's full mailing address\n*   Your full legal name\n*   Your address\n*   The amount owed (in USD)\n*   The date by which the demand must be fulfilled\n*   A detailed description of the claim\n*   The legal basis for the demand\n\nWe'll go through these one by one.\n\nLet's start with the recipient. What is the full legal name of the person or entity you are sending this demand letter to?"
           }
         ]
       }
     ],
-    "timestamp": "2026-01-11T18:38:20.713Z",
-    "stepId": "step-1",
+    "timestamp": "2026-01-19T17:22:21.803Z",
+    "stepId": null,
     "selection": {
-      "method": "start",
-      "candidates": [
-        {
-          "stepId": "step-1",
-          "score": 1,
-          "reasons": [
-            "Initial start step selected at turn 0"
-          ]
-        }
-      ]
+      "method": "none",
+      "candidates": []
     }
   },
   {
-    "turnIndex": 1,
+    "turnIndex": 2,
     "userMessage": {
       "role": "user",
-      "content": "The recipient's name is ABC Company. Their address is 123 Commerce Street, Suite 400, Anytown, CA 90210."
+      "content": "The recipient is ABC Company."
     },
     "agentMessages": [
       {
         "role": "assistant",
         "content": [
           {
-            "type": "tool-call",
-            "toolCallId": "W6fRHq1hKh4Lilbs",
-            "toolName": "validateInputs",
-            "input": {
-              "fieldId": "recipientName",
-              "value": "ABC Company"
-            }
-          }
-        ]
-      },
-      {
-        "role": "tool",
-        "content": [
-          {
-            "type": "tool-result",
-            "toolCallId": "W6fRHq1hKh4Lilbs",
-            "toolName": "validateInputs",
-            "output": {
-              "type": "json",
-              "value": {
-                "valid": true,
-                "message": "Recipient Name is valid"
-              }
-            }
-          }
-        ]
-      },
-      {
-        "role": "assistant",
-        "content": [
-          {
-            "type": "tool-call",
-            "toolCallId": "1EkRl5ALA5x9i1h8",
-            "toolName": "validateInputs",
-            "input": {
-              "fieldId": "recipientAddress",
-              "value": "123 Commerce Street, Suite 400, Anytown, CA 90210"
-            }
-          }
-        ]
-      },
-      {
-        "role": "tool",
-        "content": [
-          {
-            "type": "tool-result",
-            "toolCallId": "1EkRl5ALA5x9i1h8",
-            "toolName": "validateInputs",
-            "output": {
-              "type": "json",
-              "value": {
-                "valid": true,
-                "message": "Recipient Address is valid"
-              }
-            }
-          }
-        ]
-      },
-      {
-        "role": "assistant",
-        "content": [
-          {
             "type": "text",
-            "text": "Thank you. Now, please provide your full legal name and your address."
+            "text": "Thank you. Now, please provide the full mailing address for ABC Company.\n"
           }
         ]
       }
     ],
-    "timestamp": "2026-01-11T18:38:26.076Z",
+    "timestamp": "2026-01-19T17:22:25.782Z",
     "stepId": "step-3",
     "selection": {
       "method": "llm-ranked",
@@ -230,7 +192,7 @@
           "stepId": "step-3",
           "score": 0.6,
           "reasons": [
-            "This step involves providing recipient details, which aligns with the assistant's request for the recipient's name, even though it's more specific than the general step."
+            "This step involves providing recipient details, which is the general category of information the assistant is currently asking for. However, the assistant is asking for a specific field (recipient name) and Step 2 is more general ('Provide recipient details (ABC Company, address)')."
           ]
         }
       ]

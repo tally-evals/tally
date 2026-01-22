@@ -237,7 +237,7 @@ function requireS2(): {
     return require('@s2-dev/streamstore');
   } catch {
     throw new Error(
-      'S2Storage requires @s2-dev/streamstore to be installed. Run: pnpm add @s2-dev/streamstore'
+      'S2Storage requires @s2-dev/streamstore to be installed. Run: bun add @s2-dev/streamstore'
     );
   }
 }

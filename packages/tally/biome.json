@@ -17,8 +17,14 @@
     "enabled": true,
     "rules": {
       "recommended": true,
+      "complexity": {
+        "noForEach": "off"
+      },
       "correctness": {
         "noUnusedVariables": "error"
+      },
+      "performance": {
+        "noAccumulatingSpread": "off"
       },
       "style": {
         "noNonNullAssertion": "warn",

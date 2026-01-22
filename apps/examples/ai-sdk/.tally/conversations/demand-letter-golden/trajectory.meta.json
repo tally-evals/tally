@@ -1,7 +1,7 @@
 {
   "version": 1,
   "trajectoryId": "demand-letter-golden",
-  "createdAt": "2026-01-11T18:38:17.956Z",
+  "createdAt": "2026-01-19T17:22:15.055Z",
   "goal": "Create a demand letter for an unpaid invoice successfully",
   "persona": {
     "name": "Business Owner",

@@ -5,10 +5,7 @@
  * single-turn run policies. Provides convenient helpers for common patterns.
  */
 
-import type {
-	EvaluationContext,
-	SingleTurnRunPolicy,
-} from '@tally/core/types';
+import type { EvaluationContext, SingleTurnRunPolicy } from '@tally/core/types';
 
 /**
  * Create an evaluation context that runs metrics on all targets
@@ -16,13 +13,11 @@ import type {
  * @param metadata - Optional metadata to attach to the context
  * @returns EvaluationContext with 'all' run policy
  */
-export function runAllTargets(
-	metadata?: Record<string, unknown>
-): EvaluationContext {
-	return {
-		singleTurn: { run: 'all' },
-		...(metadata !== undefined && { metadata }),
-	};
+export function runAllTargets(metadata?: Record<string, unknown>): EvaluationContext {
+  return {
+    singleTurn: { run: 'all' },
+    ...(metadata !== undefined && { metadata }),
+  };
 }
 
 /**
@@ -33,22 +28,22 @@ export function runAllTargets(
  * @returns EvaluationContext with 'selectedSteps' run policy
  */
 export function runSpecificSteps(
-	stepIndices: readonly number[],
-	metadata?: Record<string, unknown>
+  stepIndices: readonly number[],
+  metadata?: Record<string, unknown>
 ): EvaluationContext {
-	if (stepIndices.length === 0) {
-		throw new Error(
-			'runSpecificSteps: stepIndices array cannot be empty. Use runAllTargets() to evaluate all steps.'
-		);
-	}
+  if (stepIndices.length === 0) {
+    throw new Error(
+      'runSpecificSteps: stepIndices array cannot be empty. Use runAllTargets() to evaluate all steps.'
+    );
+  }
 
-	return {
-		singleTurn: {
-			run: 'selectedSteps',
-			stepIndices,
-		},
-		...(metadata !== undefined && { metadata }),
-	};
+  return {
+    singleTurn: {
+      run: 'selectedSteps',
+      stepIndices,
+    },
+    ...(metadata !== undefined && { metadata }),
+  };
 }
 
 /**
@@ -59,22 +54,22 @@ export function runSpecificSteps(
  * @returns EvaluationContext with 'selectedItems' run policy
  */
 export function runSpecificItems(
-	itemIndices: readonly number[],
-	metadata?: Record<string, unknown>
+  itemIndices: readonly number[],
+  metadata?: Record<string, unknown>
 ): EvaluationContext {
-	if (itemIndices.length === 0) {
-		throw new Error(
-			'runSpecificItems: itemIndices array cannot be empty. Use runAllTargets() to evaluate all items.'
-		);
-	}
+  if (itemIndices.length === 0) {
+    throw new Error(
+      'runSpecificItems: itemIndices array cannot be empty. Use runAllTargets() to evaluate all items.'
+    );
+  }
 
-	return {
-		singleTurn: {
-			run: 'selectedItems',
-			itemIndices,
-		},
-		...(metadata !== undefined && { metadata }),
-	};
+  return {
+    singleTurn: {
+      run: 'selectedItems',
+      itemIndices,
+    },
+    ...(metadata !== undefined && { metadata }),
+  };
 }
 
 /**
@@ -85,12 +80,11 @@ export function runSpecificItems(
  * @returns EvaluationContext with the specified policy
  */
 export function createEvaluationContext(
-	policy: SingleTurnRunPolicy,
-	metadata?: Record<string, unknown>
+  policy: SingleTurnRunPolicy,
+  metadata?: Record<string, unknown>
 ): EvaluationContext {
-	return {
-		singleTurn: policy,
-		...(metadata !== undefined && { metadata }),
-	};
+  return {
+    singleTurn: policy,
+    ...(metadata !== undefined && { metadata }),
+  };
 }
-

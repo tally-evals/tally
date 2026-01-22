@@ -18,9 +18,11 @@ import type { Prompt } from 'ai';
 import type { ModelMessage } from 'ai';
 import { TallyStore, stepTracesToConversation } from '@tally-evals/core';
 import type { Conversation, ConversationStep } from '@tally-evals/core';
+import type { TallyRunArtifact } from '@tally-evals/core';
 
-// Load .env.local if it exists
-config({ path: resolve(process.cwd(), '.env.local') });
+// Load app-local .env.local (tests run from monorepo root in CI/dev)
+const APP_ROOT = resolve(__dirname, '..', '..');
+config({ path: resolve(APP_ROOT, '.env.local') });
 
 const RECORD_MODE = process.env.RECORD_TRAJECTORIES === '1';
 
@@ -50,7 +52,7 @@ export interface RunCaseResult {
 
 export async function saveTallyReportToStore(args: {
 	conversationId: string;
-	report: unknown;
+	report: TallyRunArtifact;
 	/**
 	 * Optional override for the run id used as the report filename.
 	 * Defaults to `report.runId` (if present).
@@ -61,8 +63,7 @@ export async function saveTallyReportToStore(args: {
 	const appRoot = resolve(__dirname, '..', '..');
 	const store = await TallyStore.open({ cwd: appRoot });
 
-	const reportObj = args.report as { runId?: unknown };
-	const inferredRunId = typeof reportObj?.runId === 'string' ? reportObj.runId : undefined;
+	const inferredRunId = typeof args.report?.runId === 'string' ? args.report.runId : undefined;
 	const runId = args.runId ?? inferredRunId;
 	if (!runId) {
 		throw new Error('saveTallyReportToStore: runId is required (either pass args.runId or provide a report with runId:string)');

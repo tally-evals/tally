@@ -5,7 +5,7 @@
  * to a consistent AgentHandle interface.
  */
 
-import { generateText } from 'ai';
+import { generateText, convertToModelMessages } from 'ai';
 import type { Prompt, ModelMessage } from 'ai';
 import type { AgentHandle } from '../core/types.js';
 import { buildPromptFromMessages, messagesToMessages } from '../utils/prompt.js';
@@ -51,13 +51,40 @@ export function withAISdkAgent(
 		const agent = agentOrConfig as { generate: (input: Prompt) => Promise<{ response: { messages: ModelMessage[] } }> };
 		return {
 			async respond(agentMemoryMessages: readonly ModelMessage[]) {
+				let modelMessages: readonly ModelMessage[] = agentMemoryMessages;
+				try {
+					modelMessages = convertToModelMessages(agentMemoryMessages as unknown as never) as unknown as ModelMessage[];
+				} catch {
+					// If conversion fails, fall back to the provided messages.
+				}
+
 				// Use Prompt.messages for multi-turn support
 				const promptInput = buildPromptFromMessages({
-					messages: agentMemoryMessages,
+					messages: modelMessages,
 					useMessages: true,
 				});
 				const result = await agent.generate(promptInput);
-				return { messages: result.response.messages };
+				// Some agent implementations may return UIMessage-like messages; normalize to ModelMessage[] for trajectories memory.
+				// IMPORTANT: Do NOT run convertToModelMessages on already-valid ModelMessage[]; it can drop messages.
+				const rawOut = result.response.messages as unknown as Array<{ role?: unknown; content?: unknown }>;
+				const hasPartsContent = rawOut.some((m) => Array.isArray(m?.content));
+
+				let outMessages: ModelMessage[] = result.response.messages;
+				if (hasPartsContent) {
+					try {
+						const converted = convertToModelMessages(result.response.messages as unknown as never) as unknown as ModelMessage[];
+						if (Array.isArray(converted) && converted.length > 0) {
+							outMessages = converted;
+						} else {
+							// Fallback to original if conversion yields empty
+							outMessages = result.response.messages;
+						}
+					} catch {
+						// keep original
+					}
+				}
+
+				return { messages: outMessages };
 			},
 		};
 	}

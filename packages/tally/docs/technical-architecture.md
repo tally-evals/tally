@@ -22,7 +22,7 @@ This section provides a concise, implementation-accurate outline aligned with th
 - Metrics
   - `MetricDef`: single-turn or multi-turn; LLM-based or code-based.
   - `Metric`: runtime result with `value`, optional `confidence` and `reasoning`, plus timing.
-  - `MetricNormalization`: default normalizer and optional context resolver.
+  - `MetricNormalization`: `normalizer` and optional `calibrate` resolver.
   - `Score`: branded number constrained to [0, 1].
 - Scorers
   - `Scorer`, `ScorerInput`, `InputScores` (maps metric names to Scores).
@@ -30,12 +30,12 @@ This section provides a concise, implementation-accurate outline aligned with th
   - `Evaluator` = `metrics` + `scorer` + optional `EvaluationContext` (target selection for single-turn).
 - Aggregators
   - `Aggregator` consumes scorer output metrics to produce summaries.
-- Reports
-  - `PerTargetResult`, `AggregateSummary`, `EvaluationReport`.
+- Run outputs
+  - `TallyRunReport` (SDK-facing) and `TallyRunArtifact` (persisted for tooling).
 
 ### Orchestration: Tally Container
-- `createTally(data, evaluators, aggregators)` returns a `TallyContainer`.
-- `TallyContainer.run()` executes the full pipeline and returns `EvaluationReport`.
+- `createTally({ data, evaluators })` returns a `TallyContainer`.
+- `TallyContainer.run()` executes the full pipeline and returns `TallyRunReport`.
 - Validates inputs and attaches metadata (counts, timestamp, runId).
 
 ### Execution Pipeline (5 Phases)
@@ -44,11 +44,11 @@ This section provides a concise, implementation-accurate outline aligned with th
    - Multi-turn: run once per conversation (`runMultiTurnMetric`), optional `preprocessContainer`.
    - LLM metrics use AI SDK `generateObject`; code metrics use `compute`/`runOnSelected`.
    - Optional memory cache for code metrics.
-2) Resolve Context
+2) Resolve Calibration
    - Collect raw values per metric across targets.
-   - Resolve/caches per-metric `ScoringContext` (static or dynamic resolver over dataset + rawValues).
+   - Resolve/caches per-metric calibration context (static or dynamic resolver over dataset + rawValues).
 3) Normalize
-   - Apply per-metric default normalization (identity fallback when unspecified).
+   - Apply per-metric `normalizer` (identity fallback when unspecified).
    - Enforce `Score` [0, 1] invariants (`applyNormalization`).
 4) Score
    - For each evaluator, gather required input Scores and compute derived metric (e.g., weighted average).
@@ -63,7 +63,7 @@ This section provides a concise, implementation-accurate outline aligned with th
 ### Normalization
 - Built-in normalizers: identity, min-max, z-score, threshold, linear, ordinal-map, custom.
 - `MetricDef` owns normalization defaults. Scorers consume normalized values; overrides are not applied by the pipeline.
-- `resolveContext` produces context (range, distribution, thresholds) and caches per metric.
+- `resolveCalibration` produces a calibration context (range, distribution, thresholds) and caches per metric.
 
 ### Evaluator Context and Target Selection
 - `SingleTurnRunPolicy`: `all`, `selectedSteps` (conversations), `selectedItems` (datasets).
@@ -188,7 +188,7 @@ interface BaseMetricDef<T extends MetricScalar = MetricScalar> {
   valueType: ValueTypeFor<T>;
   metadata?: Record<string, unknown>;
   // Normalization is owned by the metric definition
-  normalization?: MetricNormalization<T, ScoringContext>;
+  normalization?: MetricNormalization<T, NormalizationContextFor<T>>;
 }
 
 // Shared fields for LLM-based metrics
@@ -299,16 +299,19 @@ type NormalizeToScore<T extends MetricScalar = number, C = unknown> = (
   args: { context: C; metric: MetricDef<T, any> }
 ) => Score; // must return [0,1] Score
 
-interface ScoringContext {
-  direction?: 'higher' | 'lower';
-  range?: { min: number; max: number };
-  distribution?: { mean: number; stdDev: number };
-  thresholds?: { pass: number; warn?: number };
-  ordinalMap?: Record<string | number, number>;
-  unit?: string;
-  clip?: boolean;
-  extra?: Record<string, unknown>;
-}
+type NormalizationContextFor<T extends MetricScalar> =
+  T extends number
+    ? {
+        direction?: 'higher' | 'lower';
+        range?: { min: number; max: number };
+        distribution?: { mean: number; stdDev: number };
+        thresholds?: { pass: number; warn?: number };
+        unit?: string;
+        clip?: boolean;
+      }
+    : T extends boolean
+      ? { trueScore?: number; falseScore?: number }
+      : { map?: Record<string, number> };
 
 type NormalizerSpec<T = any, C = any> =
   | { type: 'identity' }
@@ -316,12 +319,15 @@ type NormalizerSpec<T = any, C = any> =
   | { type: 'z-score'; mean?: number; stdDev?: number; to?: '0-1' | '0-100'; clip?: boolean; direction?: 'higher' | 'lower' }
   | { type: 'threshold'; threshold: number; above?: number; below?: number }
   | { type: 'linear'; slope: number; intercept: number; clip?: [number, number]; direction?: 'higher' | 'lower' }
-  | { type: 'ordinal-map'; map: Record<string | number, number> }
+  | { type: 'ordinal-map'; map: Record<string, number> }
   | { type: 'custom'; normalize: NormalizeToScore<T, C> };
 
-interface MetricNormalization<T extends MetricScalar = MetricScalar, C = ScoringContext> {
-  default: NormalizerSpec<T, C> | NormalizeToScore<T, C>;
-  context?: C | ((args: { dataset: readonly unknown[]; rawValues: readonly T[] }) => Promise<C> | C);
+interface MetricNormalization<
+  T extends MetricScalar = MetricScalar,
+  C = NormalizationContextFor<T>
+> {
+  normalizer: NormalizerSpec<T, C> | NormalizeToScore<T, C>;
+  calibrate?: C | ((args: { dataset: readonly unknown[]; rawValues: readonly T[] }) => Promise<C> | C);
 }
 ```
 
@@ -355,13 +361,13 @@ interface Scorer<I extends readonly ScorerInput[] = readonly ScorerInput[]> {
 
 ### Normalization Context Resolution (Run Phases)
 1) Measure: compute raw metric values for all targets.
-2) Resolve Context: for each MetricDef, resolve normalization context (static value or resolver using `dataset` and `rawValues`).
-3) Normalize: transform raw values to [0,1] using the metric’s default normalizer (identity fallback when unspecified).
+2) Resolve Calibration: for each MetricDef, resolve normalization calibration (static value or resolver using `dataset` and `rawValues`).
+3) Normalize: transform raw values to [0,1] using the metric’s `normalizer` (identity fallback when unspecified).
 4) Score: scorers combine already-normalized values via weights/combination function.
 5) Aggregate: aggregators summarize derived metric values.
 
 Normalization fallback:
-- `MetricDef.normalization.default` if provided, otherwise identity.
+- `MetricDef.normalization.normalizer` if provided, otherwise identity.
 
 Single-turn metrics respect `EvaluationContext.singleTurn` when selecting targets. Multi-turn metrics execute exactly once per container and ignore the single-turn run policy.
 
@@ -496,8 +502,8 @@ class MetricDefBuilder<
     fn: MultiTurnMetricDef<T, Conversation>['runOnContainer']
   ): MetricDefBuilder<T, Conversation>;
   withNormalization(
-    defaultNormalizer: NormalizerSpec<T, ScoringContext> | NormalizeToScore<T, ScoringContext>,
-    context?: ScoringContext | ((args: { dataset: readonly unknown[]; rawValues: readonly T[] }) => Promise<ScoringContext> | ScoringContext)
+    normalizer: NormalizerSpec<T, NormalizationContextFor<T>> | NormalizeToScore<T, NormalizationContextFor<T>>,
+    calibrate?: NormalizationContextFor<T> | ((args: { dataset: readonly unknown[]; rawValues: readonly T[] }) => Promise<NormalizationContextFor<T>> | NormalizationContextFor<T>)
   ): MetricDefBuilder<T, TContainer>;
   withMetadata(metadata: Record<string, unknown>): MetricDefBuilder<T, TContainer>;
   build(): MetricDef<T, TContainer>;
@@ -523,35 +529,23 @@ interface Tally<TContainer> {
     TContainer,
     readonly MetricDefFor<TContainer>[]
   >[];
-  aggregators: readonly Aggregator[];
-  run(): Promise<EvaluationReport>;
+  run(options?: { llmOptions?: { temperature?: number; maxRetries?: number } }): Promise<TallyRunReport>;
 }
 ```
 
 ### Report System
 ```ts
-interface PerTargetResult {
-  targetId: string;
-  rawMetrics: Metric[]; // each Metric carries its defining MetricDef
-  derivedMetrics: Array<{
-    definition: BaseMetricDef<number>;
-    value: Score;
-  }>;
-}
-
-interface AggregateSummary {
-  metric: BaseMetricDef<number>;
-  average: Score;
-  percentile?: Record<number, number>;
-  count: number;
-}
-
-interface EvaluationReport {
+interface TallyRunReport {
   runId: string;
-  timestamp: Date;
-  perTargetResults: PerTargetResult[];
-  aggregateSummaries: AggregateSummary[];
-  metadata: Record<string, unknown>;
+  createdAt: Date;
+  result: {
+    summaries?: { byEval: Record<string, unknown> };
+    singleTurn: Record<string, { byStepIndex: Array<unknown | null> }>;
+    multiTurn: Record<string, unknown>;
+    scorers: Record<string, unknown>;
+  };
+  view(): TargetRunView;
+  toArtifact(): TallyRunArtifact;
 }
 ```
 
@@ -590,7 +584,7 @@ interface EvaluationReport {
 ## 🧱 Type-Safety Enhancements (API-friendly naming)
 
 * **Score domain** – Branded `Score` type models normalized [0–1] values; helper `toScore(...)`.
-* **ScoringContext** – Structured context for normalization; no unsafe index signatures.
+* **NormalizationContextFor<T>** – Typed normalization context based on metric value type (number/boolean/string).
 * **NormalizerSpec / NormalizeToScore** – Normalizers return `Score`, ensuring downstream invariants.
 * **valueType** – Output value type (`'number'|'boolean'|'string'|'ordinal'`) is aligned to `T`.
 * **ModelProvider & PromptTemplate** – Clear LLM inputs with optional lazy model factories and typed variables/examples.

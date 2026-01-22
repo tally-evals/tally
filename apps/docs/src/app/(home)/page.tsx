@@ -354,7 +354,7 @@ const result = await runTrajectory(trajectory);`}</code>
             </p>
             
             <div className="max-w-md mx-auto relative mb-16 shadow-2xl rounded-2xl">
-              <InstallCommand command="pnpm add @tally-evals/tally" />
+              <InstallCommand command="bun add @tally-evals/tally" />
             </div>
 
             <div className="flex flex-wrap justify-center gap-6 relative z-10">

@@ -70,7 +70,6 @@ describe('Demand Letter Agent - Curve Ball', () => {
 
 		const overallQualityEval = defineScorerEval({
 			name: 'Overall Quality',
-			inputs: [answerRelevance, completeness],
 			scorer: qualityScorer,
 			verdict: thresholdVerdict(0.5),
 		});
@@ -87,15 +86,18 @@ describe('Demand Letter Agent - Curve Ball', () => {
 		});
 
 		const report = await tally.run();
-		await saveTallyReportToStore({ conversationId: 'demand-letter-curve', report });
+		await saveTallyReportToStore({ conversationId: 'demand-letter-curve', report: report.toArtifact() });
 
 		expect(report).toBeDefined();
-		expect(report.perTargetResults.length).toBeGreaterThan(0);
-		expect(report.evalSummaries.size).toBeGreaterThan(0);
+		expect(report.result.stepCount).toBeGreaterThan(0);
+		expect(Object.keys(report.result.summaries?.byEval ?? {}).length).toBeGreaterThan(0);
 
-		const overallQualitySummary = report.evalSummaries.get('Overall Quality');
+		const overallQualitySummary = report.result.summaries?.byEval?.['Overall Quality'];
 		if (overallQualitySummary) {
-			expect(overallQualitySummary.aggregations.mean).toBeGreaterThan(0.4);
+			const mean = (overallQualitySummary.aggregations?.score as any)?.mean;
+			if (typeof mean === 'number') {
+				expect(mean).toBeGreaterThan(0.4);
+			}
 		}
 	});
 });

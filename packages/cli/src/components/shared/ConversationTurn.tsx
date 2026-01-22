@@ -17,19 +17,19 @@ import {
 import { MetricsTable } from './MetricsTable';
 import { ToolCallList } from './ToolCallList.jsx';
 
-export type CliMetric = {
-  metricDef: { name: string } & Record<string, unknown>;
-  value: MetricScalar;
+export type CliMetricRow = {
+  name: string;
+  score?: number;
+  verdict?: 'pass' | 'fail' | 'unknown';
+  passAt?: string;
   reasoning?: string;
-  executionTime?: number;
-  timestamp?: Date;
-} & Record<string, unknown>;
+  rawValue?: MetricScalar;
+};
 
 interface ConversationTurnProps {
   stepIndex: number;
   step: ConversationStep;
-  metrics: CliMetric[];
-  verdicts?: Map<string, { verdict: 'pass' | 'fail' | 'unknown' }> | undefined;
+  metrics: CliMetricRow[];
   expanded?: boolean;
 }
 
@@ -37,7 +37,6 @@ export function ConversationTurn({
   stepIndex,
   step,
   metrics,
-  verdicts,
   expanded = false,
 }: ConversationTurnProps): React.ReactElement {
   const inputText = sanitizeText(extractTextFromMessage(step.input));
@@ -76,7 +75,6 @@ export function ConversationTurn({
           <Box>
             <MetricsTable
               metrics={metrics}
-              verdicts={verdicts ?? undefined}
               maxReasoningLength={expanded ? 100 : 40}
             />
           </Box>

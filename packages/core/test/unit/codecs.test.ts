@@ -3,9 +3,9 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'bun:test';
 import {
   decodeConversation,
-  decodeReport,
+  decodeRunArtifact,
   encodeConversation,
-  encodeReport,
+  encodeRunArtifact,
 } from '../../src/codecs';
 
 const fixturesDir = join(__dirname, '../fixtures');
@@ -82,111 +82,92 @@ describe('ConversationCodec', () => {
   });
 });
 
-describe('EvaluationReportCodec', () => {
-  it('round-trips report with realistic structure from actual run data', () => {
-    // Realistic report based on actual run-1767864765136-8zeeq5q.json
-    const report = {
+describe('TallyRunArtifact codec', () => {
+  it('round-trips a realistic artifact shape', () => {
+    const artifact = {
+      schemaVersion: 1 as const,
       runId: 'run-1767864765136-test',
-      timestamp: new Date('2026-01-08T09:32:45.136Z'),
-      perTargetResults: [
-        {
-          targetId: 'travel-planner-golden',
-          rawMetrics: [
-            {
-              metricDef: {
-                name: 'answerRelevance',
-                valueType: 'number' as const,
-                description: 'Measures how relevant the output is to the input query',
-              },
-              value: 5,
-              confidence: 0.9,
-              reasoning: 'The response directly addresses the user query.',
-              executionTime: 2187,
-              timestamp: new Date('2026-01-08T09:32:47.324Z'),
-            },
-          ],
-          derivedMetrics: [
-            {
-              definition: {
-                name: 'Answer Relevance_score',
-                valueType: 'number' as const,
-                description: 'Normalized score for Answer Relevance',
-              },
-              value: 1,
-            },
-          ],
-          verdicts: new Map([
-            [
-              'Answer Relevance',
-              {
-                verdict: 'pass' as const,
-                score: 1,
-                rawValue: null,
-              },
-            ],
-          ]),
-        },
-      ],
-      aggregateSummaries: [
-        {
-          metric: {
-            name: 'Answer Relevance_score',
+      createdAt: '2026-01-08T09:32:45.136Z',
+      defs: {
+        metrics: {
+          answerRelevance: {
+            name: 'answerRelevance',
+            scope: 'single' as const,
             valueType: 'number' as const,
-            description: 'Normalized score for Answer Relevance',
+            description: 'Measures how relevant the output is to the input query',
           },
-          aggregations: {
-            mean: 1,
-            percentiles: { p50: 1, p75: 1, p90: 1, p95: 1, p99: 1 },
-            passRate: 1,
-            failRate: 0,
-            passCount: 1,
-            failCount: 0,
-          },
-          count: 1,
         },
-      ],
-      evalSummaries: new Map([
-        [
-          'Answer Relevance',
-          {
-            evalName: 'Answer Relevance',
-            evalKind: 'singleTurn' as const,
-            aggregations: {
-              mean: 1,
-              percentiles: { p50: 1, p75: 1, p90: 1, p95: 1, p99: 1 },
-              passRate: 1,
-              failRate: 0,
-              passCount: 1,
-              failCount: 0,
-            },
-            verdictSummary: {
-              passRate: 1,
-              failRate: 0,
-              passCount: 1,
-              failCount: 0,
-              totalCount: 1,
+        evals: {
+          'Answer Relevance': {
+            name: 'Answer Relevance',
+            kind: 'singleTurn' as const,
+            outputShape: 'seriesByStepIndex' as const,
+            metric: 'answerRelevance',
+            verdict: { kind: 'number', type: 'threshold', passAt: 0.8 },
+          },
+        },
+        scorers: {},
+      },
+      result: {
+        stepCount: 2,
+        singleTurn: {
+          'Answer Relevance': {
+            byStepIndex: [
+              {
+                evalRef: 'Answer Relevance',
+                measurement: {
+                  metricRef: 'answerRelevance',
+                  score: 1,
+                  rawValue: 5,
+                  confidence: 0.9,
+                  reasoning: 'The response directly addresses the user query.',
+                  executionTimeMs: 2187,
+                  timestamp: '2026-01-08T09:32:47.324Z',
+                },
+                outcome: {
+                  verdict: 'pass',
+                  policy: { kind: 'number', type: 'threshold', passAt: 0.8 },
+                  observed: { score: 1, rawValue: 5 },
+                },
+              },
+              null,
+            ],
+          },
+        },
+        multiTurn: {},
+        scorers: {},
+        summaries: {
+          byEval: {
+            'Answer Relevance': {
+              eval: 'Answer Relevance',
+              kind: 'singleTurn',
+              count: 1,
+              aggregations: { score: { mean: 1 } },
+              verdictSummary: {
+                passRate: 1,
+                failRate: 0,
+                unknownRate: 0,
+                passCount: 1,
+                failCount: 0,
+                unknownCount: 0,
+                totalCount: 1,
+              },
             },
           },
-        ],
-      ]),
-      metricToEvalMap: new Map([['answerRelevance', 'Answer Relevance']]),
+        },
+      },
       metadata: { dataCount: 1, evaluatorCount: 1 },
     };
 
-    const encoded = encodeReport(report);
-    const decoded = decodeReport(encoded);
+    const encoded = encodeRunArtifact(artifact as any);
+    const decoded = decodeRunArtifact(encoded);
 
+    expect(decoded.schemaVersion).toBe(1);
     expect(decoded.runId).toBe('run-1767864765136-test');
-    expect(decoded.perTargetResults).toHaveLength(1);
-    expect(decoded.perTargetResults[0]?.verdicts).toBeInstanceOf(Map);
-    expect(decoded.evalSummaries).toBeInstanceOf(Map);
-
-    // Cast to Map since Zod schema has union type (Map | object)
-    const evalSummariesMap = decoded.evalSummaries as Map<string, unknown>;
-    const evalSummary = evalSummariesMap.get('Answer Relevance') as
-      | { evalName: string }
-      | undefined;
-    expect(evalSummary?.evalName).toBe('Answer Relevance');
-    expect(decoded.aggregateSummaries[0]?.aggregations.mean).toBe(1);
+    expect(decoded.result.stepCount).toBe(2);
+    expect(decoded.result.singleTurn['Answer Relevance']?.byStepIndex).toHaveLength(2);
+    expect(decoded.result.singleTurn['Answer Relevance']?.byStepIndex[0]?.evalRef).toBe(
+      'Answer Relevance'
+    );
   });
 });

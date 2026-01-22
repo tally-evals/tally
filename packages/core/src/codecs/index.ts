@@ -12,12 +12,7 @@ export {
   ModelMessageSchema,
 } from './conversation';
 
-export {
-  EvaluationReportCodec,
-  decodeReport,
-  encodeReport,
-  type EvaluationReport,
-} from './report';
+export { decodeRunArtifact, encodeRunArtifact } from './runArtifact';
 
 export {
   decodeTrajectoryMeta,

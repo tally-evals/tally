@@ -11,6 +11,8 @@
 }
 
 /* Custom scrollbar for dark mode */
+/* Note: many browsers hide scrollbars by default (overlay scrollbars).
+   We style them anyway for environments where they are shown. */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -27,6 +29,35 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground));
+}
+
+/* Conversation area: make scrollbar higher contrast on dark backgrounds */
+[data-conversation-container] {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: rgba(255, 255, 255, 0.35) rgba(255, 255, 255, 0.08); /* thumb track */
+}
+
+[data-conversation-container]::-webkit-scrollbar {
+  width: 10px;
+}
+
+[data-conversation-container]::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+[data-conversation-container]::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[data-conversation-container]::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+}
+
+[data-conversation-container]::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
 }
 
 /* Code blocks */

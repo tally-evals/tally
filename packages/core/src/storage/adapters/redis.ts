@@ -229,6 +229,6 @@ function requireRedis(): new (url: string) => RedisClient {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     return require('ioredis');
   } catch {
-    throw new Error('RedisStorage requires ioredis to be installed. Run: pnpm add ioredis');
+    throw new Error('RedisStorage requires ioredis to be installed. Run: bun add ioredis');
   }
 }

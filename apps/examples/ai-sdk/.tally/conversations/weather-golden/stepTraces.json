@@ -11,7 +11,7 @@
         "content": [
           {
             "type": "tool-call",
-            "toolCallId": "AsBTiRqpBgnLSOdu",
+            "toolCallId": "6F4HgFvjMVHJPeGO",
             "toolName": "weather",
             "input": {
               "location": "San Francisco, CA"
@@ -24,7 +24,7 @@
         "content": [
           {
             "type": "tool-result",
-            "toolCallId": "AsBTiRqpBgnLSOdu",
+            "toolCallId": "6F4HgFvjMVHJPeGO",
             "toolName": "weather",
             "output": {
               "type": "json",
@@ -50,7 +50,7 @@
         ]
       }
     ],
-    "timestamp": "2026-01-11T16:23:18.473Z",
+    "timestamp": "2026-01-19T17:22:30.506Z",
     "stepId": "step-1",
     "selection": {
       "method": "start",
@@ -69,7 +69,7 @@
     "turnIndex": 1,
     "userMessage": {
       "role": "user",
-      "content": "Great, thanks! Could I also get the weather for London, UK please? And can you give that to me in Celsius?"
+      "content": "Thanks! Could you also get me the weather for London, UK, and could you provide that in Celsius?"
     },
     "agentMessages": [
       {
@@ -77,7 +77,7 @@
         "content": [
           {
             "type": "tool-call",
-            "toolCallId": "rlM0zpEdTzjKNwL4",
+            "toolCallId": "nSwYXqrWI6nq7XWj",
             "toolName": "weather",
             "input": {
               "location": "London, UK",
@@ -91,7 +91,7 @@
         "content": [
           {
             "type": "tool-result",
-            "toolCallId": "rlM0zpEdTzjKNwL4",
+            "toolCallId": "nSwYXqrWI6nq7XWj",
             "toolName": "weather",
             "output": {
               "type": "json",
@@ -117,7 +117,7 @@
         ]
       }
     ],
-    "timestamp": "2026-01-11T16:23:23.289Z",
+    "timestamp": "2026-01-19T17:22:35.299Z",
     "stepId": null,
     "selection": {
       "method": "none",
@@ -128,7 +128,7 @@
     "turnIndex": 2,
     "userMessage": {
       "role": "user",
-      "content": "Perfect, thank you! Could I trouble you for the weather in Tokyo, Japan next? And if possible, I'd prefer that in Celsius as well."
+      "content": "Great, thank you! Could you also check the weather for Tokyo, Japan for me? And please keep it in Celsius."
     },
     "agentMessages": [
       {
@@ -136,7 +136,7 @@
         "content": [
           {
             "type": "tool-call",
-            "toolCallId": "BWmgFLUFJNSpZtm0",
+            "toolCallId": "GFhLcVhvKdMupxuf",
             "toolName": "weather",
             "input": {
               "location": "Tokyo, Japan",
@@ -150,7 +150,7 @@
         "content": [
           {
             "type": "tool-result",
-            "toolCallId": "BWmgFLUFJNSpZtm0",
+            "toolCallId": "GFhLcVhvKdMupxuf",
             "toolName": "weather",
             "output": {
               "type": "json",
@@ -176,7 +176,7 @@
         ]
       }
     ],
-    "timestamp": "2026-01-11T16:23:28.322Z",
+    "timestamp": "2026-01-19T17:22:40.028Z",
     "stepId": null,
     "selection": {
       "method": "none",
@@ -187,7 +187,7 @@
     "turnIndex": 3,
     "userMessage": {
       "role": "user",
-      "content": "Okay, that's great! Can you get me the weather for Paris, France, also in Celsius?"
+      "content": "Okay, perfect. One last one for me, please! Could you tell me the weather in New York City? And please give me that in Celsius too."
     },
     "agentMessages": [
       {
@@ -195,10 +195,10 @@
         "content": [
           {
             "type": "tool-call",
-            "toolCallId": "YQlDLiRgjg7pjnSw",
+            "toolCallId": "ZgfKsUgOThkXMkuq",
             "toolName": "weather",
             "input": {
-              "location": "Paris, France",
+              "location": "New York City, NY",
               "unit": "celsius"
             }
           }
@@ -209,17 +209,17 @@
         "content": [
           {
             "type": "tool-result",
-            "toolCallId": "YQlDLiRgjg7pjnSw",
+            "toolCallId": "ZgfKsUgOThkXMkuq",
             "toolName": "weather",
             "output": {
               "type": "json",
               "value": {
-                "location": "Paris, France",
+                "location": "New York City, NY",
                 "temperature": 22,
                 "condition": "sunny",
                 "humidity": 65,
                 "windSpeed": 10,
-                "message": "Current weather in Paris, France: sunny, 22°C"
+                "message": "Current weather in New York City, NY: sunny, 22°C"
               }
             }
           }
@@ -230,12 +230,12 @@
         "content": [
           {
             "type": "text",
-            "text": "The current weather in Paris, France is sunny with a temperature of 22°C, humidity at 65%, and wind speed of 10 mph."
+            "text": "The current weather in New York City, NY is sunny with a temperature of 22°C, humidity at 65%, and wind speed of 10 mph."
           }
         ]
       }
     ],
-    "timestamp": "2026-01-11T16:23:33.539Z",
+    "timestamp": "2026-01-19T17:22:45.088Z",
     "stepId": null,
     "selection": {
       "method": "none",
@@ -246,55 +246,20 @@
     "turnIndex": 4,
     "userMessage": {
       "role": "user",
-      "content": "That's good to know. Now, could you please tell me the weather in Rome, Italy, also in Celsius?"
+      "content": "That's great! Thanks for checking both Tokyo and New York City for me. I think I have all the information I need for now."
     },
     "agentMessages": [
       {
         "role": "assistant",
         "content": [
           {
-            "type": "tool-call",
-            "toolCallId": "oYe7HqGiEgFRJmvN",
-            "toolName": "weather",
-            "input": {
-              "location": "Rome, Italy",
-              "unit": "celsius"
-            }
-          }
-        ]
-      },
-      {
-        "role": "tool",
-        "content": [
-          {
-            "type": "tool-result",
-            "toolCallId": "oYe7HqGiEgFRJmvN",
-            "toolName": "weather",
-            "output": {
-              "type": "json",
-              "value": {
-                "location": "Rome, Italy",
-                "temperature": 22,
-                "condition": "sunny",
-                "humidity": 65,
-                "windSpeed": 10,
-                "message": "Current weather in Rome, Italy: sunny, 22°C"
-              }
-            }
-          }
-        ]
-      },
-      {
-        "role": "assistant",
-        "content": [
-          {
             "type": "text",
-            "text": "The current weather in Rome, Italy is sunny with a temperature of 22°C, humidity at 65%, and wind speed of 10 mph."
+            "text": "You're welcome! Glad I could help. Let me know if you need anything else."
           }
         ]
       }
     ],
-    "timestamp": "2026-01-11T16:23:38.136Z",
+    "timestamp": "2026-01-19T17:22:48.869Z",
     "stepId": null,
     "selection": {
       "method": "none",
@@ -305,7 +270,7 @@
     "turnIndex": 5,
     "userMessage": {
       "role": "user",
-      "content": "Perfect, thank you! Could you also get me the weather for London, England, in Celsius?"
+      "content": "Actually, I might need one more piece of information. Could you tell me what the weather is like in London today, in Celsius as well?"
     },
     "agentMessages": [
       {
@@ -313,223 +278,12 @@
         "content": [
           {
             "type": "tool-call",
-            "toolCallId": "yEJauAUrWfWLPhSr",
-            "toolName": "weather",
-            "input": {
-              "location": "London, England",
-              "unit": "celsius"
-            }
-          }
-        ]
-      },
-      {
-        "role": "tool",
-        "content": [
-          {
-            "type": "tool-result",
-            "toolCallId": "yEJauAUrWfWLPhSr",
-            "toolName": "weather",
-            "output": {
-              "type": "json",
-              "value": {
-                "location": "London, England",
-                "temperature": 22,
-                "condition": "sunny",
-                "humidity": 65,
-                "windSpeed": 10,
-                "message": "Current weather in London, England: sunny, 22°C"
-              }
-            }
-          }
-        ]
-      },
-      {
-        "role": "assistant",
-        "content": [
-          {
-            "type": "text",
-            "text": "The current weather in London, England is sunny with a temperature of 22°C, humidity at 65%, and wind speed of 10 mph."
-          }
-        ]
-      }
-    ],
-    "timestamp": "2026-01-11T16:23:43.796Z",
-    "stepId": null,
-    "selection": {
-      "method": "none",
-      "candidates": []
-    }
-  },
-  {
-    "turnIndex": 6,
-    "userMessage": {
-      "role": "user",
-      "content": "Great, thanks for that! Could you tell me the weather in Tokyo, Japan next? And please provide it in Celsius as well."
-    },
-    "agentMessages": [
-      {
-        "role": "assistant",
-        "content": [
-          {
-            "type": "tool-call",
-            "toolCallId": "YQH7wi5YgkOKc424",
-            "toolName": "weather",
-            "input": {
-              "location": "Tokyo, Japan",
-              "unit": "celsius"
-            }
-          }
-        ]
-      },
-      {
-        "role": "tool",
-        "content": [
-          {
-            "type": "tool-result",
-            "toolCallId": "YQH7wi5YgkOKc424",
-            "toolName": "weather",
-            "output": {
-              "type": "json",
-              "value": {
-                "location": "Tokyo, Japan",
-                "temperature": 22,
-                "condition": "sunny",
-                "humidity": 65,
-                "windSpeed": 10,
-                "message": "Current weather in Tokyo, Japan: sunny, 22°C"
-              }
-            }
-          }
-        ]
-      },
-      {
-        "role": "assistant",
-        "content": [
-          {
-            "type": "text",
-            "text": "The current weather in Tokyo, Japan is sunny with a temperature of 22°C, humidity at 65%, and wind speed of 10 mph."
-          }
-        ]
-      }
-    ],
-    "timestamp": "2026-01-11T16:23:47.879Z",
-    "stepId": null,
-    "selection": {
-      "method": "none",
-      "candidates": []
-    }
-  },
-  {
-    "turnIndex": 7,
-    "userMessage": {
-      "role": "user",
-      "content": "Excellent! That's helpful. I'm actually looking for weather in a few more places. Could you get me the current weather for Paris, France, and also for Rome, Italy? Both in Celsius, please."
-    },
-    "agentMessages": [
-      {
-        "role": "assistant",
-        "content": [
-          {
-            "type": "tool-call",
-            "toolCallId": "SsPNt9ihOxbGLU5k",
-            "toolName": "weather",
-            "input": {
-              "location": "Paris, France",
-              "unit": "celsius"
-            }
-          },
-          {
-            "type": "tool-call",
-            "toolCallId": "dl34FwBqvVA0Ge2e",
-            "toolName": "weather",
-            "input": {
-              "location": "Rome, Italy",
-              "unit": "celsius"
-            }
-          }
-        ]
-      },
-      {
-        "role": "tool",
-        "content": [
-          {
-            "type": "tool-result",
-            "toolCallId": "SsPNt9ihOxbGLU5k",
-            "toolName": "weather",
-            "output": {
-              "type": "json",
-              "value": {
-                "location": "Paris, France",
-                "temperature": 22,
-                "condition": "sunny",
-                "humidity": 65,
-                "windSpeed": 10,
-                "message": "Current weather in Paris, France: sunny, 22°C"
-              }
-            }
-          },
-          {
-            "type": "tool-result",
-            "toolCallId": "dl34FwBqvVA0Ge2e",
-            "toolName": "weather",
-            "output": {
-              "type": "json",
-              "value": {
-                "location": "Rome, Italy",
-                "temperature": 22,
-                "condition": "sunny",
-                "humidity": 65,
-                "windSpeed": 10,
-                "message": "Current weather in Rome, Italy: sunny, 22°C"
-              }
-            }
-          }
-        ]
-      },
-      {
-        "role": "assistant",
-        "content": [
-          {
-            "type": "text",
-            "text": "The current weather in Paris, France is sunny with a temperature of 22°C, humidity at 65%, and wind speed of 10 mph.\nThe current weather in Rome, Italy is sunny with a temperature of 22°C, humidity at 65%, and wind speed of 10 mph."
-          }
-        ]
-      }
-    ],
-    "timestamp": "2026-01-11T16:23:54.460Z",
-    "stepId": null,
-    "selection": {
-      "method": "none",
-      "candidates": []
-    }
-  },
-  {
-    "turnIndex": 8,
-    "userMessage": {
-      "role": "user",
-      "content": "Perfect, thanks for checking those! I'm interested in a couple more locations. Can you tell me the current weather in London, UK and also in Berlin, Germany? Celsius is preferred."
-    },
-    "agentMessages": [
-      {
-        "role": "assistant",
-        "content": [
-          {
-            "type": "tool-call",
-            "toolCallId": "BUinl62brOr6d41Q",
+            "toolCallId": "8QjIUnujiaITfCq5",
             "toolName": "weather",
             "input": {
               "location": "London, UK",
               "unit": "celsius"
             }
-          },
-          {
-            "type": "tool-call",
-            "toolCallId": "XNcFT167RHXhiV6D",
-            "toolName": "weather",
-            "input": {
-              "location": "Berlin, Germany",
-              "unit": "celsius"
-            }
           }
         ]
       },
@@ -538,7 +292,7 @@
         "content": [
           {
             "type": "tool-result",
-            "toolCallId": "BUinl62brOr6d41Q",
+            "toolCallId": "8QjIUnujiaITfCq5",
             "toolName": "weather",
             "output": {
               "type": "json",
@@ -551,20 +305,110 @@
                 "message": "Current weather in London, UK: sunny, 22°C"
               }
             }
-          },
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "The current weather in London, UK is sunny with a temperature of 22°C, humidity at 65%, and wind speed of 10 mph."
+          }
+        ]
+      }
+    ],
+    "timestamp": "2026-01-19T17:22:54.597Z",
+    "stepId": null,
+    "selection": {
+      "method": "none",
+      "candidates": []
+    }
+  },
+  {
+    "turnIndex": 6,
+    "userMessage": {
+      "role": "user",
+      "content": "Perfect, thank you! That's exactly what I needed for London."
+    },
+    "agentMessages": [
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "You're welcome! Happy to help."
+          }
+        ]
+      }
+    ],
+    "timestamp": "2026-01-19T17:22:58.940Z",
+    "stepId": null,
+    "selection": {
+      "method": "none",
+      "candidates": []
+    }
+  },
+  {
+    "turnIndex": 7,
+    "userMessage": {
+      "role": "user",
+      "content": "Great! It looks like I have all the information I need for San Francisco and London now."
+    },
+    "agentMessages": [
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "text",
+            "text": "Great! Glad I could help. Let me know if you need anything else."
+          }
+        ]
+      }
+    ],
+    "timestamp": "2026-01-19T17:23:02.640Z",
+    "stepId": null,
+    "selection": {
+      "method": "none",
+      "candidates": []
+    }
+  },
+  {
+    "turnIndex": 8,
+    "userMessage": {
+      "role": "user",
+      "content": "Actually, I do have one more location I need the weather for. Could you tell me what it's like in Tokyo today?"
+    },
+    "agentMessages": [
+      {
+        "role": "assistant",
+        "content": [
+          {
+            "type": "tool-call",
+            "toolCallId": "JS8P9ipntJDKoctC",
+            "toolName": "weather",
+            "input": {
+              "location": "Tokyo, Japan"
+            }
+          }
+        ]
+      },
+      {
+        "role": "tool",
+        "content": [
           {
             "type": "tool-result",
-            "toolCallId": "XNcFT167RHXhiV6D",
+            "toolCallId": "JS8P9ipntJDKoctC",
             "toolName": "weather",
             "output": {
               "type": "json",
               "value": {
-                "location": "Berlin, Germany",
-                "temperature": 22,
+                "location": "Tokyo, Japan",
+                "temperature": 72,
                 "condition": "sunny",
                 "humidity": 65,
                 "windSpeed": 10,
-                "message": "Current weather in Berlin, Germany: sunny, 22°C"
+                "message": "Current weather in Tokyo, Japan: sunny, 72°F"
               }
             }
           }
@@ -575,12 +419,12 @@
         "content": [
           {
             "type": "text",
-            "text": "The current weather in London, UK is sunny with a temperature of 22°C, humidity at 65%, and wind speed of 10 mph.\nThe current weather in Berlin, Germany is sunny with a temperature of 22°C, humidity at 65%, and wind speed of 10 mph."
+            "text": "The current weather in Tokyo, Japan is sunny with a temperature of 72°F, humidity at 65%, and wind speed of 10 mph."
           }
         ]
       }
     ],
-    "timestamp": "2026-01-11T16:23:59.200Z",
+    "timestamp": "2026-01-19T17:23:07.507Z",
     "stepId": null,
     "selection": {
       "method": "none",
@@ -591,7 +435,7 @@
     "turnIndex": 9,
     "userMessage": {
       "role": "user",
-      "content": "Great, thank you for that! I think that's all the locations I need for now."
+      "content": "That's perfect, thank you! I think I have everything I need now."
     },
     "agentMessages": [
       {
@@ -599,12 +443,12 @@
         "content": [
           {
             "type": "text",
-            "text": "You're welcome! If you need any more weather information in the future, just ask."
+            "text": "You're welcome! Let me know if anything else comes up."
           }
         ]
       }
     ],
-    "timestamp": "2026-01-11T16:24:04.394Z",
+    "timestamp": "2026-01-19T17:23:10.271Z",
     "stepId": null,
     "selection": {
       "method": "none",

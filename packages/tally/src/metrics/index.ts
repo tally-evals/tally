@@ -15,15 +15,14 @@ export { createTopicAdherenceMetric } from './multiTurn/topicAdherence';
 
 // Metric utilities
 export {
-	extractInputOutput,
-	extractTextFromMessage,
-	extractKeywords,
-	checkKeywordCoverage,
-	extractToolCalls,
+  extractInputOutput,
+  extractTextFromMessage,
+  extractKeywords,
+  checkKeywordCoverage,
+  extractToolCalls,
 } from './common/utils';
 export type {
-	KeywordExtractionOptions,
-	KeywordCoverageResult,
-	ExtractedToolCall,
+  KeywordExtractionOptions,
+  KeywordCoverageResult,
+  ExtractedToolCall,
 } from './common/utils';
-

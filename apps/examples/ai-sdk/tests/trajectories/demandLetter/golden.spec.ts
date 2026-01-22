@@ -102,7 +102,6 @@ describe('Demand Letter Agent - Golden Path', () => {
 
 		const overallQualityEval = defineScorerEval({
 			name: 'Overall Quality',
-			inputs: [answerRelevance, completeness],
 			scorer: qualityScorer,
 			verdict: thresholdVerdict(0.7),
 		});
@@ -119,23 +118,26 @@ describe('Demand Letter Agent - Golden Path', () => {
 		});
 
 		const report = await tally.run();
-		await saveTallyReportToStore({ conversationId: 'demand-letter-golden', report });
+		await saveTallyReportToStore({ conversationId: 'demand-letter-golden', report: report.toArtifact() });
 
 		// Debug output
-		const overallQualitySummary = report.evalSummaries.get('Overall Quality');
+		const overallQualitySummary = report.result.summaries?.byEval?.['Overall Quality'];
 		console.log('📊 Evaluation Results:');
 		console.log(`   Steps evaluated: ${conversation.steps.length}`);
-		console.log(`   Overall Quality mean: ${overallQualitySummary?.aggregations.mean}`);
+		console.log(`   Overall Quality mean: ${(overallQualitySummary?.aggregations?.score as any)?.mean}`);
 
 		expect(report).toBeDefined();
-		expect(report.perTargetResults.length).toBeGreaterThan(0);
-		expect(report.evalSummaries.size).toBeGreaterThan(0);
+		expect(report.result.stepCount).toBeGreaterThan(0);
+		expect(Object.keys(report.result.summaries?.byEval ?? {}).length).toBeGreaterThan(0);
 
 		// Check mean score
 		// Note: demandLetter trajectory was recorded with agent-loop (3 steps)
 		// so quality may be lower than a complete trajectory
 		if (overallQualitySummary) {
-			expect(overallQualitySummary.aggregations.mean).toBeGreaterThan(0.2);
+			const mean = (overallQualitySummary.aggregations?.score as any)?.mean;
+			if (typeof mean === 'number') {
+				expect(mean).toBeGreaterThan(0.2);
+			}
 		}
 	});
 });

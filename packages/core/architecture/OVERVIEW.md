@@ -43,7 +43,7 @@ Core is the foundational package providing shared types, configuration managemen
 | **Config** | `tally.config.ts` resolution, `.tally/` folder detection, defaults |
 | **Storage** | Low-level multi-backend I/O (Local, S2, Redis Streams) |
 | **Store** | High-level `TallyStore`, `ConversationRef`, `RunRef` abstractions |
-| **Codecs** | Zod-based encode/decode for Conversation and Report |
+| **Codecs** | Zod-based encode/decode for Conversation and Run Artifact |
 | **Conversion** | `StepTrace[]` ↔ `Conversation` transformations |
 | **Message Utils** | Tool call extraction, text extraction from ModelMessage |
 

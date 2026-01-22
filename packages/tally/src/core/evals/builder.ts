@@ -6,116 +6,113 @@
  */
 
 import type {
-  MetricDef,
-  MetricContainer,
-  SingleTurnContainer,
-  MultiTurnContainer,
-  Scorer,
-  ScorerInput,
   BaseMetricDef,
-  Score,
+  Eval,
+  EvaluationContext,
   InputScores,
+  MetricContainer,
+  MetricDef,
   MetricDefFor,
-  Evaluator,
+  MetricScalar,
+  MultiTurnContainer,
+  MultiTurnEval,
+  Score,
+  Scorer,
+  ScorerEval,
+  ScorerInput,
+  SingleTurnContainer,
+  SingleTurnEval,
+  VerdictPolicy,
 } from '@tally/core/types';
 import { defineBaseMetric, defineInput, defineScorer } from '../factory';
-import type {
-  Eval,
-  SingleTurnEval,
-  MultiTurnEval,
-  ScorerEval,
-  VerdictPolicy,
-} from './types';
 import {
-  needsAutoNormalization,
   applyAutoNormalization,
-  getDefaultAutoNormalizer,
   detectMetricValueType,
+  getDefaultAutoNormalizer,
+  needsAutoNormalization,
 } from './normalization';
 
 /**
  * Internal evaluator structure (legacy format for pipeline compatibility)
  * This is what the pipeline expects - metrics + scorer
+ *
+ * Note: Using explicit `| undefined` instead of `?` for exactOptionalPropertyTypes compatibility
  */
 export interface InternalEvaluator<TContainer extends MetricContainer> {
   name: string;
-  description?: string;
+  description: string | undefined;
   metrics: readonly MetricDefFor<TContainer>[];
   scorer: Scorer;
-  context?: import('@tally/core/types').EvaluationContext;
-  metadata?: Record<string, unknown>;
+  context: EvaluationContext | undefined;
+  metadata: Record<string, unknown> | undefined;
   // Eval metadata for verdict computation and aggregation
   evalName: string; // Name of the eval this evaluator represents
   evalKind: 'singleTurn' | 'multiTurn' | 'scorer';
-  verdictPolicy?: VerdictPolicy;
+  verdictPolicy: VerdictPolicy | undefined;
 }
 
 /**
  * Build internal evaluators from evals
  * Converts evals to the internal evaluator structure that the pipeline expects
  */
+/**
+ * Eval metadata entry for tracking eval state
+ */
+export interface EvalMetadataEntry {
+  evalKind: 'singleTurn' | 'multiTurn' | 'scorer';
+  verdictPolicy: VerdictPolicy | undefined;
+  sourceMetrics: string[] | undefined;
+}
+
 export function buildFromEvals<TContainer extends MetricContainer>(
-  evals: readonly Eval<TContainer>[],
+  evals: readonly Eval<TContainer>[]
 ): {
   internalEvaluators: InternalEvaluator<TContainer>[];
-  evalMetadata: Map<
-    string,
-    {
-      evalKind: 'singleTurn' | 'multiTurn' | 'scorer';
-      verdictPolicy?: VerdictPolicy;
-      sourceMetrics?: string[]; // Names of raw metrics for this eval
-    }
-  >;
+  evalMetadata: Map<string, EvalMetadataEntry>;
 } {
   const internalEvaluators: InternalEvaluator<TContainer>[] = [];
-  const evalMetadata = new Map<
-    string,
-    {
-      evalKind: 'singleTurn' | 'multiTurn' | 'scorer';
-      verdictPolicy?: VerdictPolicy;
-      sourceMetrics?: string[];
-    }
-  >();
+  const evalMetadata = new Map<string, EvalMetadataEntry>();
 
   // Check for duplicate eval names
   const evalNames = new Set<string>();
-  for (const eval_ of evals) {
-    if (evalNames.has(eval_.name)) {
-      throw new Error(
-        `Duplicate eval name: "${eval_.name}". Eval names must be unique.`,
-      );
+  for (const evalDef of evals) {
+    if (evalNames.has(evalDef.name)) {
+      throw new Error(`Duplicate eval name: "${evalDef.name}". Eval names must be unique.`);
     }
-    evalNames.add(eval_.name);
+    evalNames.add(evalDef.name);
   }
 
-  for (const eval_ of evals) {
-    if (eval_.kind === 'singleTurn') {
-      const singleTurnEval = eval_ as SingleTurnEval<TContainer>;
-      const internalEvaluator = buildSingleTurnEval(singleTurnEval);
-      internalEvaluators.push(internalEvaluator);
-      evalMetadata.set(eval_.name, {
+  for (const evalDef of evals) {
+    if (evalDef.kind === 'singleTurn') {
+      const singleTurnDef = evalDef as SingleTurnEval<SingleTurnContainer, MetricScalar>;
+      const internalEvaluator = buildSingleTurnEval(singleTurnDef);
+      internalEvaluators.push(internalEvaluator as InternalEvaluator<TContainer>);
+      const entry: EvalMetadataEntry = {
         evalKind: 'singleTurn',
-        verdictPolicy: singleTurnEval.verdict,
+        verdictPolicy: singleTurnDef.verdict as VerdictPolicy | undefined,
         sourceMetrics: internalEvaluator.metrics.map((m) => m.name),
-      });
-    } else if (eval_.kind === 'multiTurn') {
-      const multiTurnEval = eval_ as MultiTurnEval<TContainer>;
-      const internalEvaluator = buildMultiTurnEval(multiTurnEval);
-      internalEvaluators.push(internalEvaluator);
-      evalMetadata.set(eval_.name, {
+      };
+      evalMetadata.set(evalDef.name, entry);
+    } else if (evalDef.kind === 'multiTurn') {
+      const multiTurnDef = evalDef as MultiTurnEval<MultiTurnContainer, MetricScalar>;
+      const internalEvaluator = buildMultiTurnEval(multiTurnDef);
+      internalEvaluators.push(internalEvaluator as InternalEvaluator<TContainer>);
+      const entry: EvalMetadataEntry = {
         evalKind: 'multiTurn',
-        verdictPolicy: multiTurnEval.verdict,
+        verdictPolicy: multiTurnDef.verdict as VerdictPolicy | undefined,
         sourceMetrics: internalEvaluator.metrics.map((m) => m.name),
-      });
-    } else if (eval_.kind === 'scorer') {
-      const scorerEval = eval_ as ScorerEval<TContainer>;
-      const internalEvaluator = buildScorerEval(scorerEval);
+      };
+      evalMetadata.set(evalDef.name, entry);
+    } else if (evalDef.kind === 'scorer') {
+      const scorerDef = evalDef as ScorerEval;
+      const internalEvaluator = buildScorerEval<TContainer>(scorerDef);
       internalEvaluators.push(internalEvaluator);
-      evalMetadata.set(eval_.name, {
+      const entry: EvalMetadataEntry = {
         evalKind: 'scorer',
-        verdictPolicy: scorerEval.verdict,
+        verdictPolicy: scorerDef.verdict as VerdictPolicy | undefined,
         sourceMetrics: internalEvaluator.metrics.map((m) => m.name),
-      });
+      };
+      evalMetadata.set(evalDef.name, entry);
     }
   }
 
@@ -126,15 +123,15 @@ export function buildFromEvals<TContainer extends MetricContainer>(
  * Build internal evaluator from single-turn eval
  * Creates an identity scorer (single metric -> single output)
  */
-function buildSingleTurnEval<TContainer extends SingleTurnContainer>(
-  eval_: SingleTurnEval<TContainer>,
-): InternalEvaluator<TContainer> {
+function buildSingleTurnEval(
+  definition: SingleTurnEval<SingleTurnContainer, MetricScalar>
+): InternalEvaluator<SingleTurnContainer> {
   // Apply auto-normalization if needed
-  let metric = eval_.metric;
+  // Cast to MetricDef for internal processing - the eval union guarantees valid metric
+  let metric = definition.metric as MetricDef<MetricScalar, MetricContainer>;
   if (needsAutoNormalization(metric)) {
     const autoNormalizer =
-      eval_.autoNormalize ??
-      getDefaultAutoNormalizer(detectMetricValueType(metric));
+      definition.autoNormalize ?? getDefaultAutoNormalizer(detectMetricValueType(metric));
     if (autoNormalizer) {
       const normalization = applyAutoNormalization(metric, autoNormalizer);
       metric = { ...metric, normalization };
@@ -143,54 +140,59 @@ function buildSingleTurnEval<TContainer extends SingleTurnContainer>(
 
   // Create identity scorer: single metric -> single output
   const outputMetric: BaseMetricDef<number> = defineBaseMetric({
-    name: `${eval_.name}_score`,
+    name: `${definition.name}_score`,
     valueType: 'number',
-    description: `Normalized score for ${eval_.name}`,
+    description: `Normalized score for ${definition.name}`,
   });
 
   const scorerInput: ScorerInput = defineInput({
-    metric: metric as MetricDefFor<TContainer>,
+    metric: metric as MetricDefFor<SingleTurnContainer>,
     weight: 1.0,
   });
 
   const scorer: Scorer = defineScorer({
-    name: `${eval_.name}_scorer`,
+    name: `${definition.name}_scorer`,
     output: outputMetric,
     inputs: [scorerInput],
     normalizeWeights: false, // Single input, no need to normalize
     combineScores: (scores: InputScores<readonly [ScorerInput]>) => {
-      // Identity: return the single input score
-      const metricName = metric.name;
-      return scores[metricName as keyof typeof scores] as Score;
+      // Identity scorer: single input -> single output
+      // For single-input scorers, get the first (and only) score value
+      const scoreValues = Object.values(scores) as Score[];
+      const score = scoreValues[0];
+      if (score === undefined) {
+        throw new Error(`No score found for metric ${metric.name}`);
+      }
+      return score;
     },
   });
 
-  return {
-    name: `${eval_.name}_evaluator`,
-    description: eval_.description,
-    metrics: [metric as MetricDefFor<TContainer>],
+  const result: InternalEvaluator<SingleTurnContainer> = {
+    name: `${definition.name}_evaluator`,
+    description: definition.description,
+    metrics: [metric as MetricDefFor<SingleTurnContainer>],
     scorer,
-    context: eval_.context,
-    metadata: eval_.metadata,
-    evalName: eval_.name,
+    context: definition.context,
+    metadata: definition.metadata,
+    evalName: definition.name,
     evalKind: 'singleTurn',
-    verdictPolicy: eval_.verdict,
+    verdictPolicy: definition.verdict as VerdictPolicy | undefined,
   };
+  return result;
 }
 
 /**
  * Build internal evaluator from multi-turn eval
  * Creates an identity scorer (single metric -> single output)
  */
-function buildMultiTurnEval<TContainer extends MultiTurnContainer>(
-  eval_: MultiTurnEval<TContainer>,
-): InternalEvaluator<TContainer> {
+function buildMultiTurnEval(
+  definition: MultiTurnEval<MultiTurnContainer, MetricScalar>
+): InternalEvaluator<MultiTurnContainer> {
   // Apply auto-normalization if needed
-  let metric = eval_.metric;
+  let metric = definition.metric as MetricDef<MetricScalar, MetricContainer>;
   if (needsAutoNormalization(metric)) {
     const autoNormalizer =
-      eval_.autoNormalize ??
-      getDefaultAutoNormalizer(detectMetricValueType(metric));
+      definition.autoNormalize ?? getDefaultAutoNormalizer(detectMetricValueType(metric));
     if (autoNormalizer) {
       const normalization = applyAutoNormalization(metric, autoNormalizer);
       metric = { ...metric, normalization };
@@ -199,39 +201,45 @@ function buildMultiTurnEval<TContainer extends MultiTurnContainer>(
 
   // Create identity scorer: single metric -> single output
   const outputMetric: BaseMetricDef<number> = defineBaseMetric({
-    name: `${eval_.name}_score`,
+    name: `${definition.name}_score`,
     valueType: 'number',
-    description: `Normalized score for ${eval_.name}`,
+    description: `Normalized score for ${definition.name}`,
   });
 
   const scorerInput: ScorerInput = defineInput({
-    metric: metric as MetricDefFor<TContainer>,
+    metric: metric as MetricDefFor<MultiTurnContainer>,
     weight: 1.0,
   });
 
   const scorer: Scorer = defineScorer({
-    name: `${eval_.name}_scorer`,
+    name: `${definition.name}_scorer`,
     output: outputMetric,
     inputs: [scorerInput],
     normalizeWeights: false, // Single input, no need to normalize
     combineScores: (scores: InputScores<readonly [ScorerInput]>) => {
-      // Identity: return the single input score
-      const metricName = metric.name;
-      return scores[metricName as keyof typeof scores] as Score;
+      // Identity scorer: single input -> single output
+      // For single-input scorers, get the first (and only) score value
+      const scoreValues = Object.values(scores) as Score[];
+      const score = scoreValues[0];
+      if (score === undefined) {
+        throw new Error(`No score found for metric ${metric.name}`);
+      }
+      return score;
     },
   });
 
-  return {
-    name: `${eval_.name}_evaluator`,
-    description: eval_.description,
-    metrics: [metric as MetricDefFor<TContainer>],
+  const result: InternalEvaluator<MultiTurnContainer> = {
+    name: `${definition.name}_evaluator`,
+    description: definition.description,
+    metrics: [metric as MetricDefFor<MultiTurnContainer>],
     scorer,
-    context: eval_.context,
-    metadata: eval_.metadata,
-    evalName: eval_.name,
+    context: definition.context,
+    metadata: definition.metadata,
+    evalName: definition.name,
     evalKind: 'multiTurn',
-    verdictPolicy: eval_.verdict,
+    verdictPolicy: definition.verdict as VerdictPolicy | undefined,
   };
+  return result;
 }
 
 /**
@@ -239,18 +247,23 @@ function buildMultiTurnEval<TContainer extends MultiTurnContainer>(
  * Uses the scorer as-is
  */
 function buildScorerEval<TContainer extends MetricContainer>(
-  eval_: ScorerEval,
+  definition: ScorerEval
 ): InternalEvaluator<TContainer> {
-  return {
-    name: `${eval_.name}_evaluator`,
-    description: eval_.description,
-    // Cast inputs to container-specific MetricDef list for internal pipeline
-    metrics: eval_.inputs as unknown as MetricDefFor<TContainer>[],
-    scorer: eval_.scorer,
-    context: eval_.context,
-    metadata: eval_.metadata,
-    evalName: eval_.name,
+  const inputMetrics = (definition.scorer.inputs as readonly { metric: unknown }[]).map(
+    (input) => input.metric,
+  );
+
+  const result: InternalEvaluator<TContainer> = {
+    name: `${definition.name}_evaluator`,
+    description: definition.description,
+    // Derive dependency metrics directly from scorer inputs
+    metrics: inputMetrics as unknown as MetricDefFor<TContainer>[],
+    scorer: definition.scorer,
+    context: definition.context,
+    metadata: definition.metadata,
+    evalName: definition.name,
     evalKind: 'scorer',
-    verdictPolicy: eval_.verdict,
+    verdictPolicy: definition.verdict as VerdictPolicy | undefined,
   };
+  return result;
 }

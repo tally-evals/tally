@@ -6,6 +6,11 @@ import { score, verdict } from './colors';
 
 export type MetricScalar = number | boolean | string;
 
+function clamp01(value: number): number {
+  if (Number.isNaN(value)) return 0;
+  return Math.max(0, Math.min(1, value));
+}
+
 /**
  * Normalize a metric value to [0, 1] range
  */
@@ -26,22 +31,42 @@ export function normalizeMetricValue(value: MetricScalar): number {
 }
 
 /**
- * Format a score with color based on value
+ * Apply a [0,1] heatmap color to any text.
+ */
+export function colorByRate01(value: number, text: string): string {
+  const normalized = clamp01(value);
+
+  if (normalized >= 0.8) {
+    return score.excellent(text);
+  }
+  if (normalized >= 0.6) {
+    return score.good(text);
+  }
+  if (normalized >= 0.4) {
+    return score.fair(text);
+  }
+  return score.poor(text);
+}
+
+/**
+ * Format a [0,1] rate (passRate, failRate, unknownRate, etc.) with heatmap.
+ */
+export function formatRate01(value: number): string {
+  const normalized = clamp01(value);
+  const formatted = normalized.toFixed(3);
+  return colorByRate01(normalized, formatted);
+}
+
+/**
+ * Format a score with color based on value.
+ *
+ * NOTE: This accepts values that may be 0-1 or 0-5 (LLM rubric) and normalizes.
+ * Prefer `formatRate01` when you already know it's a [0,1] rate.
  */
 export function formatScore(value: number): string {
   const normalized = normalizeMetricValue(value);
   const formatted = normalized.toFixed(3);
-
-  if (normalized >= 0.8) {
-    return score.excellent(formatted);
-  }
-  if (normalized >= 0.6) {
-    return score.good(formatted);
-  }
-  if (normalized >= 0.4) {
-    return score.fair(formatted);
-  }
-  return score.poor(formatted);
+  return colorByRate01(normalized, formatted);
 }
 
 /**
@@ -57,6 +82,44 @@ export function formatVerdict(
     return verdict.fail();
   }
   return verdict.unknown();
+}
+
+/**
+ * Format a serializable verdict policy into a short "pass at" rule string.
+ * This is intended for UI display (TUI).
+ */
+export function formatPassAt(policy: unknown): string {
+  if (!policy || typeof policy !== 'object') return '-';
+  const p = policy as Record<string, unknown>;
+  const kind = p.kind;
+  if (kind === 'none') return '-';
+  if (kind === 'custom') return 'custom';
+  if (kind === 'boolean') {
+    return typeof p.passWhen === 'boolean' ? String(p.passWhen) : '-';
+  }
+  if (kind === 'ordinal') {
+    return Array.isArray(p.passWhenIn) ? `in [${p.passWhenIn.map(String).join(', ')}]` : '-';
+  }
+  if (kind === 'number') {
+    const type = p.type;
+    const inclusive = p.inclusive === true;
+    if (type === 'threshold') {
+      return typeof p.passAt === 'number'
+        ? `${inclusive ? '≥' : '>'} ${p.passAt}`
+        : '-';
+    }
+    if (type === 'range') {
+      const min = typeof p.min === 'number' ? p.min : undefined;
+      const max = typeof p.max === 'number' ? p.max : undefined;
+      if (min !== undefined && max !== undefined) {
+        return `between ${min}-${max}${inclusive ? '' : ' (exclusive)'}`;
+      }
+      if (min !== undefined) return `${inclusive ? '≥' : '>'} ${min}`;
+      if (max !== undefined) return `${inclusive ? '≤' : '<'} ${max}`;
+      return '-';
+    }
+  }
+  return '-';
 }
 
 /**

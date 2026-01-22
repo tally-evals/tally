@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { TallyStore, findConfigFile } from '@tally-evals/core';
-import type { Conversation, EvaluationReport, RunRef } from '@tally-evals/core';
+import type { Conversation, RunRef, TallyRunArtifact } from '@tally-evals/core';
 
 const TALLY_DIR = '.tally';
 
@@ -55,7 +55,7 @@ export async function loadConversationAndTallyReport(args: {
   store: TallyStore;
   conversationId: string;
   runId: string;
-}): Promise<{ conversation: Conversation; report: EvaluationReport }> {
+}): Promise<{ conversation: Conversation; report: TallyRunArtifact }> {
   const { store, conversationId, runId } = args;
 
   const convRef = await store.getConversation(conversationId);
@@ -72,6 +72,6 @@ export async function loadConversationAndTallyReport(args: {
     throw new Error(`Run '${runId}' is not a tally report run`);
   }
 
-  const report = (await runRef.load()) as EvaluationReport;
+  const report = (await runRef.load()) as TallyRunArtifact;
   return { conversation, report };
 }

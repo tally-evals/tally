@@ -217,12 +217,6 @@ const goalCompletionEval = defineMultiTurnEval({
 
 const overallQualityEval = defineScorerEval({
   name: 'Overall Quality',
-  inputs: [
-    relevanceMetric,
-    completenessMetric,
-    roleAdherenceMetric,
-    goalCompletionMetric,
-  ],
   scorer: qualityScorer,
   verdict: thresholdVerdict(0.7), // Pass if score >= 0.7
 })
@@ -255,9 +249,18 @@ formatReportAsTables(report, conversations)
 console.log('Eval summaries:', report.evalSummaries)
 console.log('Per-target results:', report.perTargetResults)
 
-// Check verdicts for each conversation
+// Check eval summaries
+report.evalSummaries.forEach((summary, evalName) => {
+  console.log(`${evalName}:`)
+  console.log(`  Mean score: ${summary.aggregations.score.mean}`)
+  if (summary.verdictSummary) {
+    console.log(`  Pass rate: ${summary.verdictSummary.passRate}`)
+  }
+})
+
+// Check verdicts for each target
 report.perTargetResults.forEach((result) => {
-  console.log(`Conversation ${result.targetId}:`)
+  console.log(`Target ${result.targetId}:`)
   result.verdicts.forEach((verdict, evalName) => {
     console.log(`  ${evalName}: ${verdict.verdict} (score: ${verdict.score})`)
   })
@@ -272,7 +275,7 @@ report.perTargetResults.forEach((result) => {
 
 1. **Single-Turn Evals** - Evaluate individual conversation steps or dataset items
 2. **Multi-Turn Evals** - Evaluate entire conversations
-3. **Scorer Evals** - Combine multiple metrics using a scorer
+3. **Scorer Evals** - Combine multiple metrics using a scorer (the eval automatically uses the scorer's configured inputs)
 
 ### Verdict Policies
 
@@ -284,16 +287,41 @@ Verdict policies define pass/fail criteria:
 - `ordinalVerdict(categories)` - Pass if value matches allowed categories
 - `customVerdict(fn)` - Custom pass/fail logic function
 
+### Aggregators
+
+Aggregators compute summary statistics across evaluation results. They are type-safe and discriminated by `kind`:
+
+```typescript
+import {
+  // Custom aggregator definitions
+  defineNumericAggregator,
+  defineBooleanAggregator,
+  defineCategoricalAggregator,
+  // Prebuilt aggregators
+  createMeanAggregator,
+  createPercentileAggregator,
+  createThresholdAggregator,
+  createTrueRateAggregator,
+  createDistributionAggregator,
+  // Default aggregators by value type
+  getDefaultAggregators,
+} from '@tally-evals/tally'
+```
+
+- **Numeric**: `createMeanAggregator()`, `createPercentileAggregator()`, `createThresholdAggregator()`
+- **Boolean**: `createTrueRateAggregator()`, `createFalseRateAggregator()`
+- **Categorical**: `createDistributionAggregator()`, `createModeAggregator()`
+
 ### Report Structure
 
-The `EvaluationReport` includes:
+`tally.run()` returns a **`TallyRunReport`** (SDK-facing). It contains:
 
-- `evalSummaries` - Aggregated statistics per eval (mean, percentiles, pass rates)
-- `perTargetResults` - Detailed results per conversation/dataset item
-  - `rawMetrics` - Raw metric values
-  - `derivedMetrics` - Scorer outputs
-  - `verdicts` - Pass/fail verdicts per eval
-- `aggregateSummaries` - Legacy aggregator results (deprecated, use evalSummaries)
+- `result.summaries.byEval[evalName]` — per-eval summary rollups
+- `result.singleTurn[evalName].byStepIndex[stepIndex]` — single-turn results (step-indexed, with `null` holes)
+- `result.multiTurn[evalName]` — conversation-level (multi-turn) results
+- `result.scorers[evalName]` — scorer outputs (explicitly scalar vs series)
+
+For read-only tooling (CLI/viewer/dev server), persist a **`TallyRunArtifact`** via `report.toArtifact()`.
 
 ## Development
 

@@ -5,30 +5,181 @@
  */
 
 // =============================================================================
-// Types
+// Types - Primitives
 // =============================================================================
 
-// Message types (re-export from AI SDK)
-export type { ModelMessage } from './types/messages';
+export type {
+  MetricScalar,
+  Score,
+  ValueTypeFor,
+  MetricScope,
+  DatasetItem,
+} from './types/primitives';
 
-// Conversation types
+export { toScore } from './types/primitives';
+
+// =============================================================================
+// Types - Messages & Conversations
+// =============================================================================
+
+export type { ModelMessage } from './types/messages';
 export type { Conversation, ConversationStep } from './types/conversation';
 
-// Trajectory types
+// =============================================================================
+// Types - Trajectories
+// =============================================================================
+
 export type { StepTrace, TrajectoryStopReason } from './types/stepTrace';
 export type { TrajectoryMeta } from './types/trajectoryMeta';
 
-// Run metadata types
+// =============================================================================
+// Types - Run Metadata
+// =============================================================================
+
 export type { TrajectoryRunMeta, TallyRunMeta } from './types/runs';
 
-// Tool call types
+// =============================================================================
+// Types - Tool Calls
+// =============================================================================
+
 export type { ExtractedToolCall, ExtractedToolResult } from './types/toolCalls';
+
+// =============================================================================
+// Types - Normalization
+// =============================================================================
+
+export type {
+  NumericNormalizationContext,
+  BooleanNormalizationContext,
+  OrdinalNormalizationContext,
+  NormalizationContextFor,
+  MetricInfo,
+  NormalizeToScore,
+  NormalizerSpec,
+  MetricNormalization,
+} from './types/normalization';
+
+// =============================================================================
+// Types - Metrics
+// =============================================================================
+
+export type {
+  // Container types
+  SingleTurnContainer,
+  MultiTurnContainer,
+  MetricContainer,
+  SingleTargetFor,
+
+  // LLM types
+  LanguageModelLike,
+  ModelProvider,
+  VarsTuple,
+  PromptTemplate,
+  LLMMetricFields,
+  CodeMetricFields,
+
+  // Metric definition types
+  BaseMetricDef,
+  SingleTurnMetricDef,
+  MultiTurnMetricDef,
+  SingleTurnMetricVariants,
+  MultiTurnMetricVariants,
+  MetricDef,
+  MetricDefFor,
+  AnyMetricDefFor,
+  Metric,
+
+  // Aggregator types
+  NumericAggregatorDef,
+  BooleanAggregatorDef,
+  CategoricalAggregatorDef,
+  AggregatorDef,
+  CompatibleAggregator,
+  Aggregator,
+} from './types/metrics';
+
+// =============================================================================
+// Types - Scorers
+// =============================================================================
+
+export type { ScorerInput, InputScores, Scorer } from './types/scorers';
+
+// =============================================================================
+// Types - Evaluators
+// =============================================================================
+
+export type {
+  // Run policy types
+  SingleTurnRunPolicy,
+  EvaluationContext,
+
+  // Verdict types
+  VerdictPolicyFor,
+  VerdictPolicy,
+  AutoNormalizer,
+
+  // Eval types
+  SingleTurnEval,
+  MultiTurnEval,
+  ScorerEval,
+  Eval,
+
+  // Evaluator type
+  Evaluator,
+} from './types/evaluators';
+
+// =============================================================================
+// Types - Run Artifacts (canonical stored run schema)
+// =============================================================================
+
+export type {
+  MetricName,
+  EvalName,
+  ScorerName,
+  RunId,
+  ConversationId,
+  Verdict,
+  MetricScalarOrNull,
+  Measurement,
+  VerdictPolicyInfo,
+  EvalOutcome,
+  StepEvalResult,
+  ConversationEvalResult,
+  SingleTurnEvalSeries,
+  ConversationResult,
+  MetricDefSnap,
+  EvalDefSnap,
+  ScorerCombineKind,
+  ScorerInputSnap,
+  ScorerDefSnap,
+  RunDefs,
+  AggregationValue,
+  Aggregations as ArtifactAggregations,
+  VerdictSummary as ArtifactVerdictSummary,
+  EvalSummarySnap,
+  Summaries,
+  NormalizerSpecSnap,
+  MetricNormalizationSnap,
+  TallyRunArtifact,
+} from './types/runArtifact';
+
+// =============================================================================
+// Types - SDK Report/View
+// =============================================================================
+
+export type { TargetRunView } from './types/runView';
+export type { TallyRunReport } from './types/runReport';
+
+// =============================================================================
+// Types - Tally Container
+// =============================================================================
+
+export type { Tally } from './types/tally';
 
 // =============================================================================
 // Configuration
 // =============================================================================
 
-// Config types
 export type {
   TallyConfig,
   TallyConfigInput,
@@ -38,7 +189,6 @@ export type {
   EvaluationConfig,
 } from './config';
 
-// Config functions
 export {
   defineConfig,
   resolveConfig,
@@ -51,21 +201,15 @@ export {
   isInTallyProject,
 } from './config';
 
-// Config constants
 export { DEFAULT_CONFIG, CONFIG_FILE_NAMES } from './config';
 
 // =============================================================================
 // Storage
 // =============================================================================
 
-// Storage types
 export type { IStorage, StorageEntry, StorageConfig } from './storage';
-
-// Storage adapters
 export { LocalStorage, S2Storage, RedisStorage } from './storage';
 export type { S2Config, RedisConfig } from './storage';
-
-// Storage factory
 export { createStorage } from './storage';
 
 // =============================================================================
@@ -83,12 +227,9 @@ export {
   ConversationCodec,
   decodeConversation,
   encodeConversation,
-  EvaluationReportCodec,
-  decodeReport,
-  encodeReport,
+  decodeRunArtifact,
+  encodeRunArtifact,
 } from './codecs';
-
-export type { EvaluationReport } from './codecs';
 
 // =============================================================================
 // Conversion
@@ -109,7 +250,6 @@ export type {
 // Utils - Message Extraction
 // =============================================================================
 
-// Tool call extraction
 export {
   extractToolCallFromMessage,
   extractToolCallsFromMessages,
@@ -123,7 +263,6 @@ export {
   assertToolCallSequence,
 } from './utils';
 
-// Text extraction
 export {
   extractTextFromMessage,
   extractTextFromMessages,
@@ -136,7 +275,6 @@ export {
 // Utils - Directory & IDs
 // =============================================================================
 
-// Directory scanning
 export {
   scanTallyDirectory,
   hasTallyDirectory,
@@ -145,7 +283,6 @@ export {
   getRunsPath,
 } from './utils';
 
-// ID generation
 export {
   generateRunId,
   generateConversationId,

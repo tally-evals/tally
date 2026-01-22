@@ -50,9 +50,16 @@ export function Conversation({ children, className, ...props }: ConversationComp
 
   // Auto-stick to bottom when new content arrives *if* user is already at bottom.
   const lastScrollHeightRef = useRef<number>(0);
+  const hasMountedRef = useRef(false);
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
+    // Do not auto-scroll on initial mount; only follow new content after first paint.
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      lastScrollHeightRef.current = el.scrollHeight;
+      return;
+    }
     const prev = lastScrollHeightRef.current;
     const next = el.scrollHeight;
     lastScrollHeightRef.current = next;
