@@ -66,7 +66,7 @@ import type {
   // Utility types
   ExtractedToolCall,
   NormalizerSpec,
-  ScoringContext,
+  NormalizationContextFor,
 } from '@tally-evals/core';
 
 // Helper function

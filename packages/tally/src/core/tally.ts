@@ -29,6 +29,8 @@ import type {
   Tally,
   Score,
   MetricScalarOrNull,
+  MetricNormalizationSnap,
+  NormalizerSpecSnap,
 } from '@tally/core/types';
 import { match, P } from 'ts-pattern';
 import { generateRunId } from '../utils/ids';
@@ -129,12 +131,40 @@ function buildRunDefs(args: {
     const primaryMetric = ie.metrics[0];
     if (primaryMetric) {
       const scope = 'scope' in primaryMetric ? primaryMetric.scope : 'single';
+
+      const normalizationSnap: MetricNormalizationSnap | undefined = (() => {
+        const n = (primaryMetric as { normalization?: unknown }).normalization as
+          | {
+              normalizer?: unknown;
+              calibrate?: unknown;
+            }
+          | undefined;
+        if (!n || !n.normalizer) return undefined;
+
+        const normalizer = n.normalizer;
+        const normalizerSnap: NormalizerSpecSnap =
+          typeof normalizer === 'function'
+            ? { type: 'custom', note: 'not-serializable' }
+            : (normalizer as { type?: unknown }).type === 'custom'
+              ? { type: 'custom', note: 'not-serializable' }
+              : (normalizer as NormalizerSpecSnap);
+
+        const calibrate =
+          typeof n.calibrate === 'function' ? { note: 'not-serializable' } : n.calibrate;
+
+        return {
+          normalizer: normalizerSnap,
+          ...(calibrate !== undefined ? { calibrate } : {}),
+        };
+      })();
+
       metrics[primaryMetric.name] = {
         name: primaryMetric.name,
         scope: scope === 'multi' ? 'multi' : 'single',
         valueType: primaryMetric.valueType,
         ...(primaryMetric.description ? { description: primaryMetric.description } : {}),
         ...(primaryMetric.metadata ? { metadata: primaryMetric.metadata } : {}),
+        ...(normalizationSnap ? { normalization: normalizationSnap } : {}),
       };
     }
 

@@ -3,7 +3,7 @@
  *
  * Orchestrates the evaluation process:
  * 1. Measure: Execute all metrics (single-turn + multi-turn)
- * 2. Resolve Context: Resolve normalization contexts for each metric
+ * 2. Resolve Calibration: Resolve metric calibration for each metric
  * 3. Normalize: Transform raw values to Scores
  * 4. Score: Execute scorers to produce derived metrics
  * 5. Compute Verdicts: Calculate pass/fail verdicts for each eval
@@ -21,9 +21,9 @@ import {
   type MetricContainer,
   type MetricDef,
   type MetricScalar,
+  type NormalizationContextFor,
   type NumericAggregatorDef,
   type Score,
-  type ScoringContext,
   type SingleTargetFor,
   type SingleTurnContainer,
   type SingleTurnRunPolicy,
@@ -45,7 +45,10 @@ import type { RunMultiTurnOptions } from './execution/runMultiTurn';
 import { runSingleTurnMetrics } from './execution/runSingleTurn';
 import type { RunSingleTurnOptions } from './execution/runSingleTurn';
 import { applyNormalization } from './normalization/apply';
-import { resolveContext } from './normalization/context';
+import {
+  createCalibrationCache,
+  resolveCalibration,
+} from './normalization/context';
 import { isConversation, isDatasetItem } from '@tally/utils/guards';
 
 // ============================================================================
@@ -57,7 +60,7 @@ import { isConversation, isDatasetItem } from '@tally/utils/guards';
  */
 export interface PipelineState {
   readonly rawMetrics: ReadonlyMap<string, readonly Metric<MetricScalar>[]>;
-  readonly contexts: ReadonlyMap<string, ScoringContext>;
+  readonly calibrations: ReadonlyMap<string, unknown>;
   readonly normalizedScores: ReadonlyMap<
     string,
     ReadonlyMap<string, readonly Score[]>
@@ -315,17 +318,18 @@ const phaseMeasure = async <TContainer extends DatasetItem | Conversation>(
 };
 
 // ============================================================================
-// Phase 2: Resolve Context
+// Phase 2: Resolve Calibration
 // ============================================================================
 
-const phaseResolveContext = async <
+const phaseResolveCalibration = async <
   TContainer extends DatasetItem | Conversation,
 >(
   data: readonly TContainer[],
   internalEvaluators: readonly InternalEvaluator<TContainer>[],
   rawMetrics: ReadonlyMap<string, readonly Metric<MetricScalar>[]>,
-): Promise<ReadonlyMap<string, ScoringContext>> => {
+): Promise<ReadonlyMap<string, unknown>> => {
   const uniqueMetrics = getUniqueMetrics(internalEvaluators);
+  const cache = createCalibrationCache();
 
   const entries = await Promise.all(
     uniqueMetrics.map(async ({ metricName, metricDef }) => {
@@ -334,14 +338,15 @@ const phaseResolveContext = async <
         .filter((m) => m.metricDef.name === metricName)
         .map((m) => m.value);
 
-      const context = await resolveContext(
+      const calibration = await resolveCalibration(
         metricDef.normalization,
         data,
         rawValues,
         metricName,
+        cache,
       );
 
-      return [metricName, context] as const;
+      return [metricName, calibration] as const;
     }),
   );
 
@@ -354,22 +359,22 @@ const phaseResolveContext = async <
 
 const phaseNormalize = (
   rawMetrics: ReadonlyMap<string, readonly Metric<MetricScalar>[]>,
-  contexts: ReadonlyMap<string, ScoringContext>,
+  calibrations: ReadonlyMap<string, unknown>,
 ): ReadonlyMap<string, ReadonlyMap<string, readonly Score[]>> =>
   new Map(
     Array.from(rawMetrics.entries()).map(([targetId, metrics]) => {
       const scoresByMetric = metrics.reduce((acc, metric) => {
-        const context = contexts.get(metric.metricDef.name);
-        if (!context) {
+        const calibration = calibrations.get(metric.metricDef.name);
+        if (!calibration) {
           throw new Error(
-            `Missing context for metric: ${metric.metricDef.name}`,
+            `Missing calibration for metric: ${metric.metricDef.name}`,
           );
         }
 
         const score = applyNormalization(
           metric.value,
-          metric.metricDef.normalization?.default ?? { type: 'identity' },
-          context,
+          metric.metricDef.normalization?.normalizer ?? { type: 'identity' },
+          calibration as NormalizationContextFor<typeof metric.value>,
           metric.metricDef as MetricDef<MetricScalar, MetricContainer>,
         );
 
@@ -891,15 +896,15 @@ export async function executePipeline<
   // Phase 1: Measure
   const rawMetrics = await phaseMeasure(data, internalEvaluators, options);
 
-  // Phase 2: Resolve Context
-  const contexts = await phaseResolveContext(
+  // Phase 2: Resolve Calibration
+  const calibrations = await phaseResolveCalibration(
     data,
     internalEvaluators,
     rawMetrics,
   );
 
   // Phase 3: Normalize
-  const normalizedScores = phaseNormalize(rawMetrics, contexts);
+  const normalizedScores = phaseNormalize(rawMetrics, calibrations);
 
   // Phase 4: Score
   const derivedScores = phaseScore(

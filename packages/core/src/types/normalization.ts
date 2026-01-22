@@ -7,23 +7,49 @@
 import type { MetricScalar, Score } from './primitives';
 
 // ============================================================================
-// Scoring Context
+// Normalization Context (typed by metric value type)
 // ============================================================================
 
 /**
- * Scoring context for normalization
- * Provides metadata needed for normalization algorithms
+ * Normalization context for number-valued metrics.
+ *
+ * This is typically produced by `calibrate` (static or dataset-derived) and/or
+ * consumed by numeric normalizers (min-max, z-score, threshold, linear).
  */
-export interface ScoringContext {
+export interface NumericNormalizationContext {
   direction?: 'higher' | 'lower';
   range?: { min: number; max: number };
   distribution?: { mean: number; stdDev: number };
   thresholds?: { pass: number; warn?: number };
-  ordinalMap?: Record<string | number, number>;
   unit?: string;
   clip?: boolean;
-  extra?: Record<string, unknown>;
 }
+
+/**
+ * Normalization context for boolean-valued metrics.
+ *
+ * Useful for custom normalizers that want to map true/false to configurable scores.
+ */
+export interface BooleanNormalizationContext {
+  trueScore?: number; // default 1
+  falseScore?: number; // default 0
+}
+
+/**
+ * Normalization context for string/ordinal-valued metrics.
+ */
+export interface OrdinalNormalizationContext {
+  map?: Record<string, number>; // values must be in [0,1]
+}
+
+/**
+ * Map a raw metric value type to its corresponding normalization context type.
+ */
+export type NormalizationContextFor<T extends MetricScalar> = T extends number
+  ? NumericNormalizationContext
+  : T extends boolean
+    ? BooleanNormalizationContext
+    : OrdinalNormalizationContext;
 
 // ============================================================================
 // Normalizer Types
@@ -45,7 +71,7 @@ export interface MetricInfo {
  */
 export type NormalizeToScore<
   TRawValue extends MetricScalar = number,
-  TContext = unknown,
+  TContext = NormalizationContextFor<TRawValue>,
 > = (
   value: TRawValue,
   args: { context: TContext; metric: MetricInfo },
@@ -57,7 +83,7 @@ export type NormalizeToScore<
  */
 export type NormalizerSpec<
   TRawValue extends MetricScalar = MetricScalar,
-  TContext = unknown,
+  TContext = NormalizationContextFor<TRawValue>,
 > =
   | { type: 'identity' }
   | {
@@ -83,21 +109,21 @@ export type NormalizerSpec<
       clip?: [number, number];
       direction?: 'higher' | 'lower';
     }
-  | { type: 'ordinal-map'; map: Record<string | number, number> }
+  | { type: 'ordinal-map'; map: Record<string, number> }
   | { type: 'custom'; normalize: NormalizeToScore<TRawValue, TContext> };
 
 /**
  * Metric normalization configuration
- * Defines default normalizer and optional context resolver
+ * Defines the metric normalizer and optional calibration resolver.
  */
 export interface MetricNormalization<
   TRawValue extends MetricScalar = MetricScalar,
-  TContext = ScoringContext,
+  TContext = NormalizationContextFor<TRawValue>,
 > {
-  default:
+  normalizer:
     | NormalizerSpec<TRawValue, TContext>
     | NormalizeToScore<TRawValue, TContext>;
-  context?:
+  calibrate?:
     | TContext
     | ((args: {
         dataset: readonly unknown[];

@@ -9,13 +9,11 @@ import type { LanguageModel } from 'ai';
 import type { Conversation, ConversationStep } from './conversation';
 import type {
   MetricNormalization,
-  ScoringContext,
+  NormalizationContextFor,
 } from './normalization';
 import type {
   MetricScalar,
-  Score,
   ValueTypeFor,
-  MetricScope,
   DatasetItem,
 } from './primitives';
 
@@ -151,7 +149,7 @@ export interface BaseMetricDef<T extends MetricScalar = MetricScalar> {
   valueType: ValueTypeFor<T>;
   metadata?: Record<string, unknown>;
   // Normalization is owned by the metric definition
-  normalization?: MetricNormalization<T, ScoringContext>;
+  normalization?: MetricNormalization<T, NormalizationContextFor<T>>;
 }
 
 /**

@@ -14,9 +14,9 @@ import type {
   MetricScalar,
   MultiTurnContainer,
   MultiTurnMetricDef,
+  NormalizationContextFor,
   NormalizeToScore,
   NormalizerSpec,
-  ScoringContext,
   SingleTurnContainer,
   SingleTurnMetricDef,
   VarsTuple,
@@ -90,17 +90,19 @@ class SingleTurnMetricDefBuilder<
   }
 
   withNormalization(
-    defaultNormalizer: NormalizerSpec<T, ScoringContext> | NormalizeToScore<T, ScoringContext>,
-    context?:
-      | ScoringContext
+    normalizer:
+      | NormalizerSpec<T, NormalizationContextFor<T>>
+      | NormalizeToScore<T, NormalizationContextFor<T>>,
+    calibrate?:
+      | NormalizationContextFor<T>
       | ((args: {
           dataset: readonly unknown[];
           rawValues: readonly T[];
-        }) => Promise<ScoringContext> | ScoringContext)
+        }) => Promise<NormalizationContextFor<T>> | NormalizationContextFor<T>)
   ): this {
-    const normalization: MetricNormalization<T, ScoringContext> = {
-      default: defaultNormalizer,
-      ...(context !== undefined && { context }),
+    const normalization: MetricNormalization<T, NormalizationContextFor<T>> = {
+      normalizer,
+      ...(calibrate !== undefined && { calibrate }),
     };
     (this.base as BaseMetricDef<T>).normalization = normalization;
     return this;
@@ -212,17 +214,19 @@ class MultiTurnMetricDefBuilder<
   }
 
   withNormalization(
-    defaultNormalizer: NormalizerSpec<T, ScoringContext> | NormalizeToScore<T, ScoringContext>,
-    context?:
-      | ScoringContext
+    normalizer:
+      | NormalizerSpec<T, NormalizationContextFor<T>>
+      | NormalizeToScore<T, NormalizationContextFor<T>>,
+    calibrate?:
+      | NormalizationContextFor<T>
       | ((args: {
           dataset: readonly unknown[];
           rawValues: readonly T[];
-        }) => Promise<ScoringContext> | ScoringContext)
+        }) => Promise<NormalizationContextFor<T>> | NormalizationContextFor<T>)
   ): this {
-    const normalization: MetricNormalization<T, ScoringContext> = {
-      default: defaultNormalizer,
-      ...(context !== undefined && { context }),
+    const normalization: MetricNormalization<T, NormalizationContextFor<T>> = {
+      normalizer,
+      ...(calibrate !== undefined && { calibrate }),
     };
     (this.base as BaseMetricDef<T>).normalization = normalization;
     return this;

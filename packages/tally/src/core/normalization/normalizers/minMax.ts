@@ -7,7 +7,7 @@
  * Supports clipping and direction preference
  */
 
-import type { NormalizerSpec, Score, ScoringContext } from '@tally/core/types';
+import type { NormalizerSpec, NumericNormalizationContext, Score } from '@tally/core/types';
 import { toScore } from '@tally/core/types';
 
 /**
@@ -15,12 +15,12 @@ import { toScore } from '@tally/core/types';
  */
 export function normalizeMinMax(
   value: number,
-  spec: Extract<NormalizerSpec<number, ScoringContext>, { type: 'min-max' }>,
-  context: ScoringContext
+  spec: Extract<NormalizerSpec<number, NumericNormalizationContext>, { type: 'min-max' }>,
+  context: NumericNormalizationContext
 ): Score {
   // Read min/max from spec, with fallback to context
-  const min = spec.min ?? context.range?.min ?? (context.extra?.min as number | undefined);
-  const max = spec.max ?? context.range?.max ?? (context.extra?.max as number | undefined);
+  const min = spec.min ?? context.range?.min;
+  const max = spec.max ?? context.range?.max;
 
   if (min === undefined || max === undefined) {
     throw new Error('Min-max normalizer requires min and max values in spec or context.range');

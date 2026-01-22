@@ -158,7 +158,47 @@ const MetricDefSnapSchema = z
         })
       )
       .optional(),
-    normalization: z.unknown().optional(),
+    normalization: z
+      .object({
+        normalizer: z.union([
+          z.object({ type: z.literal('identity') }),
+          z.object({
+            type: z.literal('min-max'),
+            min: z.number().optional(),
+            max: z.number().optional(),
+            clip: z.boolean().optional(),
+            direction: z.enum(['higher', 'lower']).optional(),
+          }),
+          z.object({
+            type: z.literal('z-score'),
+            mean: z.number().optional(),
+            stdDev: z.number().optional(),
+            to: z.enum(['0-1', '0-100']).optional(),
+            clip: z.boolean().optional(),
+            direction: z.enum(['higher', 'lower']).optional(),
+          }),
+          z.object({
+            type: z.literal('threshold'),
+            threshold: z.number(),
+            above: z.number().optional(),
+            below: z.number().optional(),
+          }),
+          z.object({
+            type: z.literal('linear'),
+            slope: z.number(),
+            intercept: z.number(),
+            clip: z.tuple([z.number(), z.number()]).optional(),
+            direction: z.enum(['higher', 'lower']).optional(),
+          }),
+          z.object({
+            type: z.literal('ordinal-map'),
+            map: z.record(z.string(), z.number()),
+          }),
+          z.object({ type: z.literal('custom'), note: z.literal('not-serializable') }),
+        ]),
+        calibrate: z.unknown().optional(),
+      })
+      .optional(),
   })
   .passthrough();
 
@@ -262,7 +302,9 @@ const TallyRunArtifactSchema = z
 
 export function decodeRunArtifact(content: string): TallyRunArtifact {
   const parsed = JSON.parse(content);
-  return TallyRunArtifactSchema.parse(parsed) as TallyRunArtifact;
+  // Zod schema validates numeric ranges, but cannot express branded `Score` types.
+  // Cast through `unknown` after validation.
+  return TallyRunArtifactSchema.parse(parsed) as unknown as TallyRunArtifact;
 }
 
 export function encodeRunArtifact(artifact: TallyRunArtifact): string {

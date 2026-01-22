@@ -9,6 +9,7 @@
 
 import type { MetricScalar, Score } from './primitives';
 import type { Scorer, ScorerInput } from './scorers';
+import type { NormalizerSpec } from './normalization';
 
 // ============================================================================
 // Common primitives
@@ -27,6 +28,31 @@ export type Verdict = 'pass' | 'fail' | 'unknown';
  * so the artifact permits null for rawValue even though MetricScalar excludes it.
  */
 export type MetricScalarOrNull = MetricScalar | null;
+
+// ============================================================================
+// Normalization snapshot (serializable)
+// ============================================================================
+
+/**
+ * Serializable normalizer snapshot.
+ *
+ * Custom normalizers (functions) are not serializable; those are represented as
+ * `{ type: 'custom', note: 'not-serializable' }`.
+ */
+export type NormalizerSpecSnap =
+  | Exclude<NormalizerSpec, { type: 'custom' }>
+  | { type: 'custom'; note: 'not-serializable' };
+
+/**
+ * Serializable metric normalization snapshot.
+ *
+ * `calibrate` is either a plain object (serializable) or `{ note: 'not-serializable' }`
+ * when the calibration is a function.
+ */
+export type MetricNormalizationSnap = {
+  normalizer: NormalizerSpecSnap;
+  calibrate?: unknown | { note: 'not-serializable' };
+};
 
 // ============================================================================
 // Measurement vs Outcome
@@ -152,7 +178,7 @@ export interface MetricDefSnap {
     config?: unknown;
   }>;
 
-  normalization?: unknown;
+  normalization?: MetricNormalizationSnap;
 }
 
 export interface EvalDefSnap {

@@ -49,7 +49,10 @@ export type { ExtractedToolCall, ExtractedToolResult } from './types/toolCalls';
 // =============================================================================
 
 export type {
-  ScoringContext,
+  NumericNormalizationContext,
+  BooleanNormalizationContext,
+  OrdinalNormalizationContext,
+  NormalizationContextFor,
   MetricInfo,
   NormalizeToScore,
   NormalizerSpec,
@@ -155,6 +158,8 @@ export type {
   VerdictSummary as ArtifactVerdictSummary,
   EvalSummarySnap,
   Summaries,
+  NormalizerSpecSnap,
+  MetricNormalizationSnap,
   TallyRunArtifact,
 } from './types/runArtifact';
 
