@@ -13,16 +13,16 @@ This directory contains examples demonstrating how to use the Tally evaluation f
 
 ```bash
 # Install dependencies
-bun install
+pnpm install
 
 # Run examples
-bun run dev
+pnpm dev
 
 # Run tests
-bun run test
+pnpm test
 
 # Lint code
-bun run lint
+pnpm lint
 ```
 
 ## Integration with Agent Kit
@@ -40,6 +40,6 @@ This is part of the Tally monorepo. To work on these examples:
 
 ```bash
 # From the monorepo root
-bun install
-bun run --filter=@tally/examples-agent-kit dev
+pnpm install
+pnpm dev --filter=@tally/examples-agent-kit
 ```

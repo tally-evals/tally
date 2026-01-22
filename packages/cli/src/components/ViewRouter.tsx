@@ -2,20 +2,18 @@
  * Router component for switching between summary and turn-by-turn views
  */
 
-import type { Conversation, TallyRunArtifact } from '@tally-evals/core';
+import React, { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
-import type React from 'react';
-import { useState } from 'react';
-import type { ViewMode } from '../types/index';
-import { colors } from '../utils/colors';
-import { SummaryView } from './SummaryView';
-import { TurnByTurnView } from './TurnByTurnView';
-import { KeyboardHelp } from './shared/KeyboardHelp';
-import { BreadCrumbs } from './shared/BreadCrumbs';
+import { colors } from '../utils/colors.js';
+import { SummaryView } from './SummaryView.js';
+import { TurnByTurnView } from './TurnByTurnView.js';
+import { KeyboardHelp } from './shared/KeyboardHelp.js';
+import type { ViewMode } from '../types/index.js';
+import { Conversation, EvaluationReport } from '@tally-evals/tally';
 
 interface ViewRouterProps {
   conversation: Conversation;
-  report: TallyRunArtifact;
+  report: EvaluationReport;
   onBack?: () => void;
 }
 
@@ -40,7 +38,6 @@ export function ViewRouter({
 
   return (
     <Box flexDirection="column">
-      <BreadCrumbs breadcrumbs={[conversation.id, 'Runs', report.runId]} />
       <Box paddingX={1} paddingTop={1}>
         <Text>
           {colors.bold('View Mode:')}{' '}
@@ -74,7 +71,7 @@ export function ViewRouter({
           { key: 'q', description: 'Quit' },
           ...(viewMode === 'turn-by-turn'
             ? [
-                { key: '⇄', description: 'Navigate turns' },
+                { key: '↑↓', description: 'Navigate turns' },
                 { key: 'e', description: 'Expand/Clip' },
               ]
             : []),

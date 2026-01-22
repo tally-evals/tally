@@ -39,7 +39,10 @@ export const demandLetterGoldenTrajectory: Trajectory = {
 		terminals: ['step-3'],
 	},
 	maxTurns: 10,
-	conversationId: 'demand-letter-golden',
+	storage: {
+		strategy: 'local',
+		conversationId: 'demand-letter-golden',
+	},
 	userModel: google('models/gemini-2.5-flash-lite'),
 };
 
@@ -81,7 +84,10 @@ export const demandLetterCurveTrajectory: Trajectory = {
 		terminals: ['step-4'],
 	},
 	maxTurns: 10,
-	conversationId: 'demand-letter-curve',
+	storage: {
+		strategy: 'local',
+		conversationId: 'demand-letter-curve',
+	},
 	userModel: google('models/gemini-2.5-flash-lite'),
 };
 

@@ -14,16 +14,12 @@ export function toJSONL(result: TrajectoryResult): string[] {
 			conversationId: `trajectory-${step.timestamp.getTime()}`,
 			stepIndex: index,
 			turnIndex: step.turnIndex,
-			stepId: step.stepId,
-			selection: step.selection,
 			input: step.userMessage,
 			output: step.agentMessages,
 			timestamp: step.timestamp.toISOString(),
 			metadata: {
 				completed: result.completed,
 				reason: result.reason,
-				...(result.summary !== undefined && { summary: result.summary }),
-				...(step.end !== undefined && { end: step.end }),
 			},
 		};
 		return JSON.stringify(jsonlEntry);
@@ -44,9 +40,6 @@ export function toConversation(
 		timestamp: step.timestamp,
 		metadata: {
 			turnIndex: step.turnIndex,
-			stepId: step.stepId,
-			selection: step.selection,
-			...(step.end !== undefined && { end: step.end }),
 		},
 	}));
 

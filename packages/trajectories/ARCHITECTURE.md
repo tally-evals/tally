@@ -18,7 +18,7 @@ Status: Implemented. The code reflects the concepts below; specifics are noted w
   - `withMastraAgent(agent)` for Mastra agents
 - Internally rely on AI SDK-style `ModelMessage` for message flow.
 - Do not expose a separate "user adapter"; provide an internal AI-as-user generator.
-- Use an internal **AgentMemory** (ephemeral message buffer) for agent invocation. This is not part of the public API surface.
+- Provide built-in, configurable storage for conversation history (can be disabled) without requiring external persistence.
 - Produce artifacts compatible with Tally:
   - One line per step in JSONL
   - `Conversation` conversion for metrics
@@ -30,7 +30,7 @@ Status: Implemented. The code reflects the concepts below; specifics are noted w
 
 - No UI/CLI tooling beyond minimal helpers (future work).
 - No baked-in evaluation metrics (handled by Tally).
-- No standalone persistence layer inside `@tally-evals/trajectories` (durable persistence is handled via core `TallyStore`).
+- No external persistence layer beyond built-in local storage.
 
 ---
 
@@ -49,7 +49,7 @@ packages/trajectories/
       steps/
         types.ts           # StepDefinition, StepGraph, Precondition, etc.
       execution/
-        storage.ts         # initialize internal AgentMemory
+        storage.ts         # initialize storage from config/overrides
         policyEvaluator.ts # create/evaluate policies, build context
         agentInvoker.ts    # call agent and normalize messages
         stepSelector.ts    # unified step selection (precondition-first, LLM fallback)
@@ -60,17 +60,17 @@ packages/trajectories/
         loopDetector.ts    # consecutive same step detection
         utils/
           messageFormatting.ts # utilities for formatting messages from step traces
-      memory/
+      storage/
         interface.ts
-        InMemoryAgentMemory.ts
-        NoopAgentMemory.ts
+        localStorage.ts
+        noopStorage.ts
     policies/
       index.ts             # DefaultPolicy
     wrappers/
       index.ts             # withAISdkAgent, withMastraAgent
     utils/
       messageFormatting.ts # extract and format messages from step traces
-      prompt.ts            # build prompts from messages
+      prompt.ts            # build prompts/messages
       output.ts            # JSONL + Tally conversion + summary
       logger.ts            # pretty console logs (optional)
 ```
@@ -100,12 +100,6 @@ interface StepDefinition {
   timeoutMs?: number;
   isSatisfied?: (ctx: SatisfactionContext) => boolean | Promise<boolean>;
 }
-interface SatisfactionContext {
-  stepTraces: readonly StepTrace[];
-  snapshot: { satisfied: Set<StepId>; attemptsByStep: Map<StepId, number> };
-  step: StepDefinition;
-  state: StepRuntimeState;
-}
 
 interface StepGraph {
   steps: readonly StepDefinition[];
@@ -123,7 +117,7 @@ type Precondition =
     };
 
 interface PreconditionContext {
-  stepTraces: readonly StepTrace[];  // Canonical state (messages can be derived when needed)
+  history: readonly ModelMessage[];  // Built from stepTraces internally
   snapshot: {
     satisfied: Set<StepId>;
     attemptsByStep: Map<StepId, number>;
@@ -137,12 +131,19 @@ interface StepRuntimeState {
   lastUpdatedAt: Date;
 }
 
+interface StorageConfig {
+  strategy: 'local' | 'none';
+  ttlMs?: number;
+  capacity?: number;
+  conversationId?: string;
+}
+
 interface Trajectory {
   goal: string;
   persona: Persona;
   steps?: StepGraph;                      // Step graph (replaces old TrajectoryStep[])
   maxTurns?: number;
-  conversationId?: string;
+  storage?: StorageConfig;                 // built-in storage; defaults to 'local'
   userModel?: LanguageModel;               // AI SDK model function for user message generation
   metadata?: Record<string, unknown>;
   // Loop detection
@@ -169,34 +170,28 @@ interface StepTrace {
   userMessage: ModelMessage;
   agentMessages: readonly ModelMessage[];  // Includes assistant and tool messages
   timestamp: Date;
-  stepId: string | null;                   // The step selected for this turn
-  selection: {
-    method: 'start' | 'preconditions-ordered' | 'llm-ranked' | 'none';
-    candidates?: readonly { stepId: string; score: number; reasons?: string[] }[];
-  };
-  end?: {                                  // Present only on the last trace
-    isFinal: true;
-    reason: TrajectoryStopReason;
-    completed: boolean;
-    summary?: string;
-  };
 }
 
 type TrajectoryStopReason =
   | 'goal-reached'      // Terminal step reached or all steps completed
   | 'max-turns'         // Maximum turns exceeded
   | 'policy-violation'  // Policy determined violation
-  | 'agent-loop'        // Loop detected (consecutive same step)
+  | 'agent-loop'        // Loop detected (same step or cycle)
+  | 'no-step-match'     // No step matches agent's questions
   | 'error';            // Error occurred
 
 interface TrajectoryResult {
-  steps: readonly StepTrace[];            // Canonical source of truth
+  steps: readonly StepTrace[];
+  completed: boolean;
+  reason: TrajectoryStopReason;
+  summary?: string;
+  traces?: unknown;
 }
 
 // Agent wrapper handle (returned by withAISdkAgent / withMastraAgent)
 interface AgentHandle {
   respond(
-    messages: readonly ModelMessage[]
+    history: readonly ModelMessage[]
   ): Promise<{
     messages: readonly ModelMessage[];
   }>;
@@ -205,20 +200,20 @@ interface AgentHandle {
 
 ### Agent Wrappers
 
-- Wrappers normalize each agent runtime to a consistent `AgentHandle.respond(messages)`.
-- Messages are represented as AI SDK `ModelMessage` throughout (AgentMemory snapshot).
+- Wrappers normalize each agent runtime to a consistent `AgentHandle.respond(history)`.
+- History is represented as AI SDK `ModelMessage` throughout.
 - `withAISdkAgent` supports two patterns:
   1. AI SDK Agent instance (with `generate` method)
   2. `generateText` input config (without `messages`/`prompt`, which are added from history)
-- AgentMemory is internal; it is not configurable via the public API.
+- Built-in local storage is provided and configurable; it can be disabled with `strategy: 'none'`.
   - When using `generateText` config, wrapper converts `steps` responses and `text` into `ModelMessage[]`.
 
 ### Prompt Utilities
 
-- `buildPromptFromMessages()` - Builds AI SDK `Prompt` object from messages (AgentMemory snapshot)
+- `buildPromptFromHistory()` - Builds AI SDK `Prompt` object from conversation history
   - Supports both `messages` and `prompt` string formats
   - Handles system message injection
-- `messagesToMessages()` - Clones a `ModelMessage[]` array
+- `historyToMessages()` - Converts history to `ModelMessage[]` array
 - These utilities ensure consistent prompt construction for both `agent.generate()` and `generateText()` calls
 
 ---
@@ -253,7 +248,7 @@ Steps can define preconditions that must be satisfied before selection:
 
 - **`stepSatisfied`**: Declarative precondition requiring another step to be satisfied
 - **`custom`**: Procedural precondition with custom async evaluation function
-  - Can inspect `stepTraces` and step snapshot
+  - Can inspect conversation history and step snapshot
   - Supports both sync and async evaluation
   - All preconditions evaluated in parallel for performance
 
@@ -271,7 +266,7 @@ Steps can define custom `isSatisfied` function, or use default heuristic (user r
 
 ### Execution Loop (implemented)
 
-1. Initialize internal AgentMemory (ephemeral message buffer) and determine `conversationId`.
+1. Initialize storage and conversationId (built-in storage).
 2. Build `StepsSnapshot` from current step graph and runtime states.
 3. Determine eligible steps by checking preconditions (parallel evaluation, uses stepTraces).
 4. Select next step using unified selection:
@@ -287,17 +282,13 @@ Steps can define custom `isSatisfied` function, or use default heuristic (user r
    - Uses stepTraces (last N steps, default: 2) for conversation context
    - Includes tool messages in context
    - Generates message based on persona, goal, and selected step (if any)
-8. Call `agent.respond(messages)` with the full `ModelMessage[]` (AgentMemory snapshot).
+8. Call `agent.respond(history)` with full `ModelMessage` history.
 9. Collect all agent response messages (assistant and tool messages).
 10. Update step runtime state (attempts, status, satisfaction).
-11. Append all messages to internal AgentMemory.
-12. Emit `StepTrace` with user message, all agent messages, and selection metadata.
+11. Append all messages to history via Storage.
+12. Emit `StepTrace` with user message and all agent messages.
 13. Update current step ID to chosen step (if any).
 14. Repeat until policy stops the trajectory.
-15. If a `store` is provided, persist unified artifacts:
-    - `conversation.jsonl`: Canonical history
-    - `stepTraces.json`: Full StepTrace[] execution history
-    - `trajectory.meta.json`: Static trajectory definition
 
 ### Policies
 
@@ -306,12 +297,11 @@ Steps can define custom `isSatisfied` function, or use default heuristic (user r
   - Checks step graph terminals for completion
   - Works for all trajectories regardless of step selection approach
 
-## Loop Detection
+### Loop Detection
 
-Loop detection is **stateless** and derived directly from the step history in `StepTrace[]`:
+Loop detection tracks consecutive same step selections:
 
 - **Consecutive Same Step**: Same step selected N times in a row (configurable via `loopDetection.maxConsecutiveSameStep`, default: 3)
-- **Derivation**: Orchestrator analyzes `stepTraces.map(t => t.stepId)` on every turn.
 - Stops the trajectory with reason `'agent-loop'` when threshold is exceeded
 - Always active (not mode-specific)
 
@@ -345,6 +335,7 @@ function runTrajectory(
 ): Promise<TrajectoryResult>;
 
 interface RunTrajectoryOptions {
+  storage?: Storage; // override built-in storage if desired
   userModel?: LanguageModel; // override trajectory userModel
   generateLogs?: boolean; // pretty console logging (default: false)
 }
@@ -363,12 +354,12 @@ function withMastraAgent(agent: { generate: (input: { messages: ModelMessage[] }
 // Uses stepTraces for conversation context (includes tool messages)
 
 // Prompt utilities
-function buildPromptFromMessages(options: {
-  messages: readonly ModelMessage[];
+function buildPromptFromHistory(options: {
+  history: readonly ModelMessage[];
   system?: string;
   useMessages?: boolean;
 }): Prompt;
-function messagesToMessages(messages: readonly ModelMessage[]): ModelMessage[];
+function historyToMessages(history: readonly ModelMessage[]): ModelMessage[];
 
 // Helpers
 function toJSONL(result: TrajectoryResult): string[];    // one step per line
@@ -383,20 +374,23 @@ function summarize(result: TrajectoryResult): string;    // short human-readable
 
 ---
 
-## AgentMemory (internal)
+## Storage Strategy
 
-- **Built-in In-Memory AgentMemory** (internal only):
+- **Built-in Local Storage**:
   - `Map<string, readonly ModelMessage[]>`
   - Optional `ttlMs` and `capacity` for pruning
-  - Always append user + assistant + tool messages in order (as provided by the agent runtime)
+  - Always append user + assistant + tool messages in order
   - Tool-call/result pairing is preserved
-  - Implemented via `InMemoryAgentMemory` class
-- **AgentMemory Interface**:
+  - Implemented via `LocalStorage` class
+- **Disable Option**:
+  - `strategy: 'none'` to avoid storing history (stateless execution)
+  - Implemented via `NoopStorage` class
+- **Storage Interface**:
   - `get(conversationId): readonly ModelMessage[]`
   - `set(conversationId, messages): void`
   - `clear(conversationId): void`
  - **Initialization**:
-   - `initializeAgentMemory()` returns an internal `InMemoryAgentMemory`.
+   - `initializeStorage(trajectory, options)` resolves to `NoopStorage` or `LocalStorage` with configured `ttlMs`, `capacity`, and supports overriding via runtime `options.storage`.
 
 ---
 
@@ -426,14 +420,14 @@ The system provides utilities for extracting and formatting messages from step t
 
 These utilities are used by:
 - LLM ranker for step selection context
-- User generator for conversation context
+- User generator for conversation history
 - Any component that needs to format conversation context from step traces
 
 ## Validation & Testing Plan
 
 - Unit:
   - Policy behaviors (DefaultPolicy)
-  - InMemoryAgentMemory (eviction rules, TTL) [internal]
+  - LocalStorage (eviction rules, TTL)
   - Agent wrapper normalization and error propagation
   - Prompt utility correctness (messages vs prompt format)
   - Message formatting utilities (extractMessageContent, formatConversationFromTraces)
@@ -449,7 +443,7 @@ These utilities are used by:
 
 - v0:
   - ✅ Types and public API
-  - ✅ Agent wrappers (AI SDK + generateText, Mastra)
+  - ✅ Agent wrappers (AI SDK + generateText, Mastra) and LocalStorage
   - ✅ Prompt utilities for consistent message handling
   - ✅ JSONL writer + Tally conversion helpers
   - ✅ Step graph architecture with StepDefinition and StepGraph
@@ -479,7 +473,7 @@ These utilities are used by:
 - ✅ Define and run trajectories with or without steps using unified selection
 - ✅ Accept agents via functional wrappers (`withAISdkAgent`, `withMastraAgent`) without changing orchestration code
   - `withAISdkAgent` supports both Agent instances and `generateText` config
-- ✅ Internal AgentMemory works out-of-the-box for agent invocation
+- ✅ Built-in storage works out-of-the-box and can be disabled
 - ✅ Prompt utilities ensure consistent message handling for both agent and generateText patterns
 - ✅ Step graph architecture with StepDefinition, StepGraph, and step IDs
 - ✅ Preconditions support (declarative `stepSatisfied` and custom async functions)

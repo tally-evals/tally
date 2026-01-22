@@ -8,6 +8,7 @@
 export type {
 	Trajectory,
 	Persona,
+	StorageConfig,
 	StepTrace,
 	TrajectoryResult,
 	TrajectoryStopReason,
@@ -28,7 +29,9 @@ export type {
 } from './core/steps/types.js';
 
 // Storage
-// NOTE: AgentMemory is intentionally internal-only. The public API persists via core TallyStore.
+export type { Storage } from './core/storage/interface.js';
+export { LocalStorage } from './core/storage/localStorage.js';
+export { NoopStorage } from './core/storage/noopStorage.js';
 
 // Orchestrator
 export { createTrajectory, runTrajectory } from './core/orchestrator.js';
@@ -46,7 +49,7 @@ export { generateUserMessage } from './core/userGenerator.js';
 export type { UserMessageContext } from './core/userGenerator.js';
 
 // Prompt utilities
-export { buildPromptFromMessages, messagesToMessages } from './utils/prompt.js';
+export { buildPromptFromHistory, historyToMessages } from './utils/prompt.js';
 
 // Logger utilities
 export { logStep, logTrajectoryStart, logTrajectoryEnd } from './utils/logger.js';

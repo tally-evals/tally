@@ -6,23 +6,21 @@
  */
 
 import { config } from 'dotenv';
-import { rm } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { resolve, dirname } from 'node:path';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import type { Trajectory, TrajectoryResult } from '@tally-evals/trajectories';
 import {
 	createTrajectory,
 	runTrajectory,
 	withAISdkAgent,
+	toConversation,
 } from '@tally-evals/trajectories';
+import type { Conversation, ConversationStep } from '@tally-evals/tally';
 import type { Prompt } from 'ai';
 import type { ModelMessage } from 'ai';
-import { TallyStore, stepTracesToConversation } from '@tally-evals/core';
-import type { Conversation, ConversationStep } from '@tally-evals/core';
-import type { TallyRunArtifact } from '@tally-evals/core';
 
-// Load app-local .env.local (tests run from monorepo root in CI/dev)
-const APP_ROOT = resolve(__dirname, '..', '..');
-config({ path: resolve(APP_ROOT, '.env.local') });
+// Load .env.local if it exists
+config({ path: resolve(process.cwd(), '.env.local') });
 
 const RECORD_MODE = process.env.RECORD_TRAJECTORIES === '1';
 
@@ -34,6 +32,8 @@ export interface RunCaseOptions {
 	trajectory: Trajectory;
 	/** AI SDK Agent instance (Experimental_Agent) */
 	agent: { generate: (input: Prompt) => Promise<{ response: { messages: readonly import('ai').ModelMessage[] } }> };
+	/** Path to recorded fixture file (relative to tests directory) */
+	recordedPath: string;
 	/** Conversation ID for the trajectory */
 	conversationId: string;
 	/** Whether to generate logs (default: false) */
@@ -50,100 +50,128 @@ export interface RunCaseResult {
 	mode: 'record' | 'playback';
 }
 
-export async function saveTallyReportToStore(args: {
-	conversationId: string;
-	report: TallyRunArtifact;
-	/**
-	 * Optional override for the run id used as the report filename.
-	 * Defaults to `report.runId` (if present).
-	 */
-	runId?: string;
-}): Promise<{ runId: string }> {
-	// Resolve app root (stable cwd for config discovery)
-	const appRoot = resolve(__dirname, '..', '..');
-	const store = await TallyStore.open({ cwd: appRoot });
-
-	const inferredRunId = typeof args.report?.runId === 'string' ? args.report.runId : undefined;
-	const runId = args.runId ?? inferredRunId;
-	if (!runId) {
-		throw new Error('saveTallyReportToStore: runId is required (either pass args.runId or provide a report with runId:string)');
-	}
-
-	const convRef = (await store.getConversation(args.conversationId)) ?? (await store.createConversation(args.conversationId));
-	const runRef = await convRef.createRun({ type: 'tally', runId });
-	await runRef.save(args.report as never);
-
-	return { runId };
-}
-
 /**
  * Run a trajectory test case
  * 
- * In record mode: runs the trajectory and persists via core TallyStore
- * In playback mode: loads StepTrace[] via core TallyStore and converts to Conversation
+ * In record mode: runs the trajectory and saves to recordedPath
+ * In playback mode: loads conversation from recordedPath
  */
 export async function runCase(
 	options: RunCaseOptions
 ): Promise<RunCaseResult> {
-	const { trajectory, agent, conversationId, generateLogs = true } = options;
+	const { trajectory, agent, recordedPath, conversationId, generateLogs = false } = options;
 
-	// Resolve app root (stable cwd for config discovery)
-	const appRoot = resolve(__dirname, '..', '..');
-	const store = await TallyStore.open({ cwd: appRoot });
+		// Resolve absolute path to fixture
+		const fixturePath = resolve(process.cwd(), 'tests', recordedPath);
 
 	if (RECORD_MODE) {
-		// Overwrite semantics: if we're re-recording a trajectory, remove stale runs.
-		// (Trajectories will overwrite step traces/meta, but runs are appended and must be cleared explicitly.)
-		await rm(resolve(appRoot, '.tally', 'conversations', conversationId, 'runs'), {
-			recursive: true,
-			force: true,
-		});
-
-		// Record mode: run trajectory and persist
+		// Record mode: run trajectory and save
 		console.log(`📹 Recording trajectory: ${conversationId}`);
 		
 		// Cast to remove readonly - withAISdkAgent accepts mutable arrays internally
 		const wrappedAgent = withAISdkAgent(agent as { generate: (input: Prompt) => Promise<{ response: { messages: import('ai').ModelMessage[] } }> });
-		const trajectoryInstance = createTrajectory(
-			{ ...trajectory, conversationId },
-			wrappedAgent
-		);
+		const trajectoryInstance = createTrajectory(trajectory, wrappedAgent);
 		
-		const result: TrajectoryResult = await runTrajectory(trajectoryInstance, {
-			generateLogs,
-			store,
-			trajectoryId: conversationId,
-		});
-		const conversation = stepTracesToConversation(result.steps, conversationId);
-		console.log(`✅ Persisted ${result.steps.length} steps to store for ${conversationId}`);
+		const result: TrajectoryResult = await runTrajectory(trajectoryInstance, { generateLogs });
+		const conversation = toConversation(result, conversationId);
+
+		// Save conversation steps to JSONL
+		const dir = dirname(fixturePath);
+		mkdirSync(dir, { recursive: true });
+
+		// Save as JSONL with one step per line
+		const stepsJsonl = `${conversation.steps
+			.map((step: Conversation['steps'][0]) => {
+				return JSON.stringify({
+					conversationId: conversation.id,
+					stepIndex: step.stepIndex,
+					input: step.input,
+					output: step.output,
+					timestamp: step.timestamp,
+					metadata: {
+						...(conversation.metadata || {}),
+						...(step.metadata || {}),
+					},
+				});
+			})
+			.join('\n')}\n`;
+
+		writeFileSync(fixturePath, stepsJsonl, 'utf-8');
+		console.log(`✅ Saved ${conversation.steps.length} steps to ${recordedPath}`);
 
 		return { conversation, mode: 'record' };
 	}
 	
-	// Playback mode: load from store
-	console.log(`📖 Playing back from store: ${conversationId}`);
-	
-	// Try loading conversation.jsonl first (preferred format)
-	const convRef = await store.getConversation(conversationId);
-	if (convRef) {
-		try {
-			const conversation = await convRef.load();
-			return { conversation, mode: 'playback' };
-		} catch {
-			// conversation.jsonl doesn't exist or is invalid, fall back to stepTraces
+	// Playback mode: load from fixture
+	console.log(`📖 Playing back from fixture: ${recordedPath}`);
+
+	// Load conversation steps from JSONL (each line is a step)
+	const conversation = await loadConversationSteps(fixturePath, conversationId);
+
+	return { conversation, mode: 'playback' };
+}
+
+/**
+ * Load conversation steps from JSONL file
+ * 
+ * Helper for loading recorded conversations that were saved step-by-step
+ * Each line in the JSONL file is a step with conversationId
+ */
+export async function loadConversationSteps(
+	filePath: string,
+	conversationId: string
+): Promise<Conversation> {
+	// Read file line by line
+	const { readFileSync } = await import('node:fs');
+	const lines = readFileSync(filePath, 'utf-8')
+		.split('\n')
+		.filter((line) => line.trim() !== '');
+
+	// Collect steps for the requested conversation
+	const steps: ConversationStep[] = [];
+	let metadata: Record<string, unknown> = {};
+
+	for (const line of lines) {
+		const stepData = JSON.parse(line) as {
+			conversationId: string;
+			stepIndex: number;
+			input: unknown;
+			output: unknown;
+			timestamp?: string;
+			metadata?: Record<string, unknown>;
+		};
+
+		// Only collect steps for the requested conversation
+		if (stepData.conversationId === conversationId) {
+			steps.push({
+				stepIndex: stepData.stepIndex,
+				input: stepData.input as ConversationStep['input'],
+				output: stepData.output as ConversationStep['output'],
+				...(stepData.timestamp && { timestamp: new Date(stepData.timestamp) }),
+				metadata: stepData.metadata || {},
+			});
+
+			// Merge metadata from steps
+			if (stepData.metadata) {
+				metadata = { ...metadata, ...stepData.metadata };
+			}
 		}
 	}
-	
-	// Fall back to stepTraces.json
-	const traces = await store.loadTrajectoryStepTraces(conversationId);
-	if (traces) {
-		const conversation = stepTracesToConversation(traces, conversationId);
-		return { conversation, mode: 'playback' };
+
+	if (steps.length === 0) {
+		throw new Error(
+			`No steps found for conversation ${conversationId} in fixture: ${filePath}. Run with RECORD_TRAJECTORIES=1 to create it.`
+		);
 	}
-	
-	throw new Error(
-		`No stored conversation or StepTrace[] found for '${conversationId}'. Run with RECORD_TRAJECTORIES=1 to record it.`
-	);
+
+	// Sort steps by stepIndex
+	steps.sort((a, b) => a.stepIndex - b.stepIndex);
+
+	return {
+		id: conversationId,
+		steps,
+		metadata,
+	};
 }
 
 /**

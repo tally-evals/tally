@@ -2,34 +2,25 @@
  * Individual conversation turn display component
  */
 
-import type { ConversationStep } from '@tally-evals/core';
+import React from 'react';
 import { Box, Text } from 'ink';
-import type React from 'react';
-import { colors } from '../../utils/colors';
+import { colors } from '../../utils/colors.js';
 import {
   extractTextFromMessage,
   extractTextFromMessages,
   extractToolCallsFromMessages,
-  type MetricScalar,
   sanitizeText,
   truncateText,
-} from '../../utils/formatters';
-import { MetricsTable } from './MetricsTable';
+} from '../../utils/formatters.js';
+import { MetricsTable } from './MetricsTable.js';
+import { ConversationStep, Metric } from '@tally-evals/tally';
 import { ToolCallList } from './ToolCallList.jsx';
-
-export type CliMetricRow = {
-  name: string;
-  score?: number;
-  verdict?: 'pass' | 'fail' | 'unknown';
-  passAt?: string;
-  reasoning?: string;
-  rawValue?: MetricScalar;
-};
 
 interface ConversationTurnProps {
   stepIndex: number;
   step: ConversationStep;
-  metrics: CliMetricRow[];
+  metrics: Metric[];
+  verdicts?: Map<string, { verdict: 'pass' | 'fail' | 'unknown' }>;
   expanded?: boolean;
 }
 
@@ -37,14 +28,15 @@ export function ConversationTurn({
   stepIndex,
   step,
   metrics,
+  verdicts,
   expanded = false,
 }: ConversationTurnProps): React.ReactElement {
   const inputText = sanitizeText(extractTextFromMessage(step.input));
   const outputText = sanitizeText(extractTextFromMessages(step.output));
   const toolCalls = extractToolCallsFromMessages(step.output);
 
-  const displayInput = expanded ? inputText : truncateText(inputText, 80);
-  const displayOutput = expanded ? outputText : truncateText(outputText, 80);
+  const displayInput = truncateText(inputText, expanded ? 200 : 80);
+  const displayOutput = truncateText(outputText, expanded ? 200 : 80);
 
   return (
     <Box
@@ -75,6 +67,7 @@ export function ConversationTurn({
           <Box>
             <MetricsTable
               metrics={metrics}
+              verdicts={verdicts ?? undefined}
               maxReasoningLength={expanded ? 100 : 40}
             />
           </Box>

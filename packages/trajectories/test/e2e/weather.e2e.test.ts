@@ -5,10 +5,10 @@
  * - GOOGLE_GENERATIVE_AI_API_KEY environment variable
  * - Set E2E_TRAJECTORIES=1 to run (or run in CI)
  * 
- * Run with: bun run --filter=@tally-evals/trajectories test:e2e
+ * Run with: pnpm --filter=@tally-evals/trajectories test:e2e
  */
 
-import { describe, it, expect, beforeAll } from 'bun:test';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { google } from '@ai-sdk/google';
 import { Experimental_Agent as Agent, stepCountIs, tool } from 'ai';
 import { z } from 'zod';
@@ -18,6 +18,8 @@ import {
 	withAISdkAgent,
 	toJSONL,
 	toConversation,
+	LocalStorage,
+	NoopStorage,
 } from '../../src/index.js';
 import { shouldRunE2E, hasApiKey } from './setup.js';
 
@@ -83,7 +85,7 @@ describeE2E('Trajectories E2E Tests', () => {
 						terminals: ['step-1'],
 					},
 					maxTurns: 3,
-					conversationId: 'e2e-agent-instance',
+					storage: { strategy: 'local', conversationId: 'e2e-agent-instance' },
 					userModel,
 					
 				},
@@ -125,7 +127,7 @@ describeE2E('Trajectories E2E Tests', () => {
 						terminals: ['step-0'],
 					},
 					maxTurns: 2,
-					conversationId: 'e2e-separation',
+					storage: { strategy: 'local', conversationId: 'e2e-separation' },
 					userModel,
 				},
 				agent
@@ -160,7 +162,7 @@ describeE2E('Trajectories E2E Tests', () => {
 						terminals: ['step-0'],
 					},
 					maxTurns: 2,
-					conversationId: 'e2e-generatetext',
+					storage: { strategy: 'local', conversationId: 'e2e-generatetext' },
 					userModel,
 				},
 				agent
@@ -180,6 +182,76 @@ describeE2E('Trajectories E2E Tests', () => {
 		});
 	});
 
+	describe('Storage Strategies', () => {
+		it('should work with local storage strategy', async () => {
+			const storage = new LocalStorage();
+			const conversationId = 'e2e-local-storage';
+
+			const agent = withAISdkAgent(weatherAgent);
+
+			const trajectory = createTrajectory(
+				{
+					goal: 'Get weather information',
+					persona: {
+						description: 'You need weather information. When asking for weather, always include both the city and state (e.g., "San Francisco, CA").',
+					},
+					steps: {
+						steps: [{ id: 'step-0', instruction: 'Ask for current weather in San Francisco, CA' }],
+						start: 'step-0',
+						terminals: ['step-0'],
+					},
+					maxTurns: 2,
+					storage: { strategy: 'local', conversationId },
+					userModel,
+				},
+				agent
+			);
+
+			const result = await runTrajectory(trajectory, { storage, generateLogs: true });
+
+			// Verify storage accumulated history
+			const history = storage.get(conversationId);
+			expect(history.length).toBeGreaterThanOrEqual(2); // At least user + assistant messages
+
+			// Verify result
+			expect(result.steps.length).toBeGreaterThan(0);
+		});
+
+		it('should work with noop storage strategy', async () => {
+			const storage = new NoopStorage();
+			const conversationId = 'e2e-noop-storage';
+
+			const agent = withAISdkAgent(weatherAgent);
+
+			const trajectory = createTrajectory(
+				{
+					goal: 'Get weather information',
+					persona: {
+						description: 'You need weather information. When asking for weather, always include both the city and state (e.g., "San Francisco, CA").',
+					},
+					steps: {
+						steps: [{ id: 'step-0', instruction: 'Ask for current weather in San Francisco, CA' }],
+						start: 'step-0',
+						terminals: ['step-0'],
+					},
+					maxTurns: 2,
+					storage: { strategy: 'none', conversationId },
+					userModel,
+				},
+				agent
+			);
+
+			const result = await runTrajectory(trajectory, { storage, generateLogs: true });
+
+			// Verify noop storage doesn't store anything
+			const history = storage.get(conversationId);
+			expect(history.length).toBe(0);
+
+			// But trajectory should still complete
+			expect(result.steps.length).toBeGreaterThan(0);
+		});
+	});
+
 	describe('Output Conversions', () => {
 		it('should convert result to JSONL format', async () => {
 			const agent = withAISdkAgent(weatherAgent);
@@ -196,7 +268,7 @@ describeE2E('Trajectories E2E Tests', () => {
 						terminals: ['step-0'],
 					},
 					maxTurns: 2,
-					conversationId: 'e2e-jsonl',
+					storage: { strategy: 'local', conversationId: 'e2e-jsonl' },
 					userModel,
 				},
 				agent
@@ -234,7 +306,7 @@ describeE2E('Trajectories E2E Tests', () => {
 						terminals: ['step-0'],
 					},
 					maxTurns: 2,
-					conversationId: 'e2e-conversation',
+					storage: { strategy: 'local', conversationId: 'e2e-conversation' },
 					userModel,
 				},
 				agent
@@ -277,7 +349,7 @@ describeE2E('Trajectories E2E Tests', () => {
 						terminals: ['step-1'],
 					},
 					maxTurns: 3,
-					conversationId: 'e2e-turn-indexing',
+					storage: { strategy: 'local', conversationId: 'e2e-turn-indexing' },
 					userModel,
 				},
 				agent
@@ -309,7 +381,7 @@ describeE2E('Trajectories E2E Tests', () => {
 						terminals: ['step-0'],
 					},
 					maxTurns: 2,
-					conversationId: 'e2e-logging',
+					storage: { strategy: 'local', conversationId: 'e2e-logging' },
 					userModel,
 				},
 				agent

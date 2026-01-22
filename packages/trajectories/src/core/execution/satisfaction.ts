@@ -3,28 +3,37 @@
  */
 
 import type { StepDefinition, StepRuntimeState, SatisfactionContext } from '../steps/types.js';
-import type { StepTrace } from '../types.js';
+import type { ModelMessage } from 'ai';
 
 /**
  * Default satisfaction heuristic: check if user responded to assistant's question
  */
 function defaultSatisfactionHeuristic(
 	step: StepDefinition,
-	stepTraces: readonly StepTrace[]
+	history: readonly ModelMessage[]
 ): boolean {
-	// StepTrace-first heuristic:
-	// If we have at least two traces, treat the newest user message as a response
-	// to the previous trace's assistant output.
-	if (stepTraces.length < 2) return false;
-	const lastTrace = stepTraces[stepTraces.length - 1];
-	const prevTrace = stepTraces[stepTraces.length - 2];
-	if (!lastTrace || !prevTrace) return false;
+	// Find last assistant message
+	const lastAssistant = [...history]
+		.reverse()
+		.find((msg) => msg.role === 'assistant');
 
-	const prevHasAssistant = prevTrace.agentMessages.some((m) => m.role === 'assistant');
-	if (!prevHasAssistant) return false;
+	if (!lastAssistant) {
+		return false;
+	}
 
-	const contentStr =
-		typeof lastTrace.userMessage.content === 'string' ? lastTrace.userMessage.content : '';
+	// Find last user message after assistant
+	const lastUserIndex = history.findIndex(
+		(msg, idx) =>
+			msg.role === 'user' &&
+			idx > history.indexOf(lastAssistant)
+	);
+
+	if (lastUserIndex === -1) {
+		return false;
+	}
+
+	const lastUser = history[lastUserIndex] as ModelMessage;
+	const contentStr = typeof lastUser.content === 'string' ? lastUser.content : '';
 
 	// Light relevance check using step content (ensures 'step' is meaningfully read)
 	const instructionHints = [
@@ -51,7 +60,7 @@ function defaultSatisfactionHeuristic(
 export async function evaluateSatisfaction(
 	step: StepDefinition,
 	state: StepRuntimeState,
-	stepTraces: readonly StepTrace[],
+	history: readonly ModelMessage[],
 	snapshot: {
 		satisfied: Set<string>;
 		attemptsByStep: Map<string, number>;
@@ -60,7 +69,7 @@ export async function evaluateSatisfaction(
 	// Use custom isSatisfied if provided
 	if (step.isSatisfied) {
 		const context: SatisfactionContext = {
-			stepTraces,
+			history,
 			snapshot,
 			step,
 			state,
@@ -69,6 +78,6 @@ export async function evaluateSatisfaction(
 	}
 
 	// Fall back to default heuristic
-	return defaultSatisfactionHeuristic(step, stepTraces);
+	return defaultSatisfactionHeuristic(step, history);
 }
 

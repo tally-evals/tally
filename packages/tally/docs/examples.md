@@ -14,22 +14,23 @@ Both examples keep LLM-based and code-based metrics as first-class value objects
 ```ts
 import {
   createTally,
-  createEvaluator,
   defineBaseMetric,
   withNormalization,
   createSingleTurnLLM,
   createMultiTurnLLM,
   defineInput,
-  defineSingleTurnEval,
-  defineMultiTurnEval,
-  defineScorerEval,
-  runSelectedSteps,
-  thresholdVerdict,
+  runSpecificSteps,
+  toScore,
   type Conversation,
+  type DatasetItem,
+  type Score,
+  type Evaluator,
+  type Aggregator,
   type SingleTurnMetricDef,
   type MultiTurnMetricDef,
 } from '@tally-evals/tally';
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
+import { createMeanAggregator } from '@tally-evals/tally/aggregators';
 import { openai } from '@ai-sdk/openai';
 import type { ModelMessage } from 'ai';
 
@@ -39,7 +40,7 @@ const roleAdherenceBase = defineBaseMetric<number>({
   valueType: 'number',
 });
 const ROLE_ADHERENCE: MultiTurnMetricDef<number, Conversation> = createMultiTurnLLM({
-  base: withNormalization({ metric: roleAdherenceBase, normalizer: { type: 'identity' } }),
+  base: withNormalization({ metric: roleAdherenceBase, default: { type: 'identity' } }),
   provider: openai('gpt-4.1'),
   prompt: {
     instruction: 'Score the assistant on how well it adheres to system and role instructions (0-1).',
@@ -54,11 +55,12 @@ const answerRelevanceBase = defineBaseMetric<number>({
   valueType: 'number',
 });
 const ANSWER_RELEVANCE: SingleTurnMetricDef<number, Conversation> = createSingleTurnLLM({
-  base: withNormalization({ metric: answerRelevanceBase, normalizer: { type: 'identity' } }),
+  base: withNormalization({ metric: answerRelevanceBase, default: { type: 'identity' } }),
   provider: openai('gpt-4.1'),
   prompt: {
     instruction: 'Rate how relevant the assistant reply is to the paired user message (0-1).',
   },
+  runOnSelected: async (_step) => 0.82,
 });
 
 // Scorer (weighted average) over the two normalized metrics
@@ -93,34 +95,27 @@ const conversations: Conversation[] = [
   }
 ];
 
-const answerRelevanceEval = defineSingleTurnEval({
-  name: 'Answer Relevance',
-  metric: ANSWER_RELEVANCE,
-  verdict: thresholdVerdict(0.5),
-});
-
-const roleAdherenceEval = defineMultiTurnEval({
-  name: 'Role Adherence',
-  metric: ROLE_ADHERENCE,
-  verdict: thresholdVerdict(0.7),
-});
-
-const overallQualityEval = defineScorerEval({
-  name: 'Overall Quality',
-  inputs: [ANSWER_RELEVANCE, ROLE_ADHERENCE],
-  scorer: CONVERSATION_SCORER,
-  verdict: thresholdVerdict(0.6),
-});
-
-const conversationEvaluator = createEvaluator({
+const conversationEvaluator: Evaluator<
+  Conversation,
+  readonly [typeof ANSWER_RELEVANCE, typeof ROLE_ADHERENCE]
+> = {
   name: 'Conversation Quality',
-  evals: [answerRelevanceEval, roleAdherenceEval, overallQualityEval],
-  context: runSelectedSteps([1]),
-});
+  metrics: [ANSWER_RELEVANCE, ROLE_ADHERENCE],
+  scorer: CONVERSATION_SCORER,
+  context: runSpecificSteps([1]),
+};
+
+const conversationAggregators: readonly Aggregator[] = [
+  createMeanAggregator({
+    metric: CONVERSATION_SCORER.output,
+    options: { description: 'Average conversation quality' },
+  }),
+];
 
 const scenarioRun = createTally<Conversation>({
   data: conversations,
   evaluators: [conversationEvaluator],
+  aggregators: conversationAggregators,
 });
 
 const scenarioReport = await scenarioRun.run();
@@ -131,19 +126,19 @@ const scenarioReport = await scenarioRun.run();
 ```ts
 import {
   createTally,
-  createEvaluator,
   defineBaseMetric,
   withNormalization,
   createSingleTurnCode,
   defineInput,
-  defineSingleTurnEval,
-  defineScorerEval,
-  runAllTargets,
-  thresholdVerdict,
+  toScore,
   type DatasetItem,
+  type Score,
+  type Evaluator,
+  type Aggregator,
   type SingleTurnMetricDef,
 } from '@tally-evals/tally';
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
+import { createMeanAggregator } from '@tally-evals/tally/aggregators';
 
 const computeAnswerRelevance = (item: DatasetItem) =>
   item.prompt.split(' ').some((word) => item.completion.includes(word)) ? 1 : 0;
@@ -160,7 +155,7 @@ const ANSWER_RELEVANCE_DATASET: SingleTurnMetricDef<number, DatasetItem> = creat
   number,
   DatasetItem
 >({
-  base: withNormalization({ metric: answerRelevanceBase, normalizer: { type: 'identity' } }),
+  base: withNormalization({ metric: answerRelevanceBase, default: { type: 'identity' } }),
   runOnSelected: (item) => computeAnswerRelevance(item),
   compute: ({ data }) => computeAnswerRelevance(data as DatasetItem),
   cacheable: true,
@@ -173,13 +168,14 @@ const latencyBase = defineBaseMetric<number>({
 });
 const LATENCY_SCORE: SingleTurnMetricDef<number, DatasetItem> = createSingleTurnCode<number, DatasetItem>(
   {
-    base: withNormalization({ metric: latencyBase, normalizer: {
+    base: withNormalization({ metric: latencyBase, default: {
       type: 'min-max',
       min: 0,
       max: 1000,
       direction: 'lower',
       clip: true,
     }}),
+    runOnSelected: (item) => computeLatencyMs(item),
     compute: ({ data }) => computeLatencyMs(data as DatasetItem & { latencyMs?: number }),
     cacheable: true,
   }
@@ -201,36 +197,31 @@ const datasetItems: DatasetItem[] = [
   { id: 'item-2', prompt: 'Capital of Japan?', completion: 'Tokyo, Japan.', latencyMs: 120 }
 ];
 
-const answerRelevanceEval = defineSingleTurnEval({
-  name: 'Answer Relevance',
-  metric: ANSWER_RELEVANCE_DATASET,
-});
-
-const latencyEval = defineSingleTurnEval({
-  name: 'Latency Score',
-  metric: LATENCY_SCORE,
-});
-
-const overallQualityEval = defineScorerEval({
-  name: 'Overall Quality',
-  inputs: [ANSWER_RELEVANCE_DATASET, LATENCY_SCORE],
-  scorer: DATASET_SCORER,
-  verdict: thresholdVerdict(0.6),
-});
-
-const datasetEvaluator = createEvaluator({
+const datasetEvaluator: Evaluator<
+  DatasetItem,
+  readonly [typeof ANSWER_RELEVANCE_DATASET, typeof LATENCY_SCORE]
+> = {
   name: 'Dataset Quality',
-  evals: [answerRelevanceEval, latencyEval, overallQualityEval],
-  context: runAllTargets(),
-});
+  metrics: [ANSWER_RELEVANCE_DATASET, LATENCY_SCORE],
+  scorer: DATASET_SCORER,
+  context: { singleTurn: { run: 'all' } }
+};
+
+const datasetAggregators: readonly Aggregator[] = [
+  createMeanAggregator({
+    metric: DATASET_SCORER.output,
+    options: { description: 'Average per-example quality' },
+  }),
+];
 
 const evalRun = createTally<DatasetItem>({
   data: datasetItems,
   evaluators: [datasetEvaluator],
+  aggregators: datasetAggregators,
 });
 
 const evalReport = await evalRun.run();
 ```
 
-Both examples keep metrics, scorers, and evals as **values**. Multi-turn metrics always consume entire conversations, while the `EvaluationContext` controls which single-turn targets are scored—no runtime shape conversions required.
+Both examples keep metrics, scorers, evaluators, and aggregators as **values**. Multi-turn metrics always consume entire conversations, while the `EvaluationContext` controls which single-turn targets are scored—no runtime shape conversions required.
 

@@ -2,65 +2,26 @@
  * Side-by-side comparison view for two reports
  */
 
-import type { Conversation, TallyRunArtifact } from '@tally-evals/core';
-
-/**
- * Safely get a numeric aggregation value from an Aggregations object
- * Returns undefined if the value doesn't exist or isn't a number
- */
-function getNumericAggregation(
-  aggregations: Record<string, number | Record<string, number>> | undefined,
-  key: string,
-): number | undefined {
-  if (!aggregations) return undefined;
-
-  const candidates: string[] = [key];
-
-  // Common naming conventions in artifacts:
-  // - pipeline uses aggregator.name ("Mean", "P50", ...)
-  // - some consumers historically expect normalized keys ("mean", "p50", ...)
-  const lower = key.toLowerCase();
-  const upper = key.toUpperCase();
-  candidates.push(lower, upper);
-
-  // "mean" -> "Mean"
-  if (lower === 'mean') {
-    candidates.push('Mean');
-  }
-
-  // "p50" -> "P50"
-  if (/^p\d+$/.test(lower)) {
-    candidates.push(`P${lower.slice(1)}`);
-  }
-
-  for (const k of candidates) {
-    const value = aggregations[k];
-    if (typeof value === 'number') return value;
-  }
-
-  return undefined;
-}
-import Table from 'cli-table3';
+import React, { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
-import type React from 'react';
-import { useState } from 'react';
-import { colors } from '../utils/colors';
+import Table from 'cli-table3';
+import { colors } from '../utils/colors.js';
 import {
+  formatScore,
   extractTextFromMessage,
   extractTextFromMessages,
   extractToolCallsFromMessages,
-  formatScore,
   sanitizeText,
   truncateText,
-} from '../utils/formatters';
-import { KeyboardHelp } from './shared/KeyboardHelp';
+} from '../utils/formatters.js';
+import { KeyboardHelp } from './shared/KeyboardHelp.js';
+import { Conversation, EvaluationReport } from '@tally-evals/tally';
 import { ToolCallList } from './shared/ToolCallList.jsx';
-import { BreadCrumbs } from './shared/BreadCrumbs.js';
 
 interface CompareViewProps {
   conversation: Conversation;
-  leftReport: TallyRunArtifact;
-  rightReport: TallyRunArtifact;
+  leftReport: EvaluationReport;
+  rightReport: EvaluationReport;
   onBack?: () => void;
 }
 
@@ -89,12 +50,34 @@ export function CompareView({
     }
   });
 
-  const evalNames = Array.from(
-    new Set([
-      ...Object.keys(leftReport.result.singleTurn ?? {}),
-      ...Object.keys(rightReport.result.singleTurn ?? {}),
-    ]),
-  ).sort();
+  const leftResult = leftReport.perTargetResults[0];
+  const rightResult = rightReport.perTargetResults[0];
+
+  if (!leftResult || !rightResult) {
+    return (
+      <Text>{colors.error('One or both reports missing target results')}</Text>
+    );
+  }
+
+  const getMetricsForStep = (
+    targetMetrics: typeof leftResult.rawMetrics,
+    stepIdx: number,
+  ) => {
+    const metricArray: typeof targetMetrics = [];
+    let metricCount = 0;
+
+    for (const metric of targetMetrics) {
+      const scopeInfo = metric.metricDef as unknown as { scope?: string };
+      if (scopeInfo.scope === 'single') {
+        if (metricCount === stepIdx) {
+          metricArray.push(metric);
+        }
+        metricCount++;
+      }
+    }
+
+    return metricArray;
+  };
 
   const currentStep = conversation.steps[scrollPosition];
   if (!currentStep) {
@@ -111,9 +94,15 @@ export function CompareView({
   );
   const toolCalls = extractToolCallsFromMessages(currentStep.output);
 
+  const leftMetrics = getMetricsForStep(leftResult.rawMetrics, scrollPosition);
+  const rightMetrics = getMetricsForStep(
+    rightResult.rawMetrics,
+    scrollPosition,
+  );
+
   const table = new Table({
     head: [
-      colors.bold('Eval'),
+      colors.bold('Metric'),
       colors.bold('Left'),
       colors.bold('Right'),
       colors.bold('Delta'),
@@ -126,49 +115,68 @@ export function CompareView({
     colWidths: [20, 12, 12, 12],
   });
 
-  for (const evalName of evalNames) {
-    const leftStep =
-      leftReport.result.singleTurn?.[evalName]?.byStepIndex?.[scrollPosition] ??
-      null;
-    const rightStep =
-      rightReport.result.singleTurn?.[evalName]?.byStepIndex?.[scrollPosition] ??
-      null;
+  const allMetricNames = new Set<string>();
+  for (const m of leftMetrics) {
+    allMetricNames.add(m.metricDef.name);
+  }
+  for (const m of rightMetrics) {
+    allMetricNames.add(m.metricDef.name);
+  }
 
-    const leftScoreNum = leftStep?.measurement.score;
-    const rightScoreNum = rightStep?.measurement.score;
+  for (const metricName of Array.from(allMetricNames).sort()) {
+    const leftMetric = leftMetrics.find((m) => m.metricDef.name === metricName);
+    const rightMetric = rightMetrics.find(
+      (m) => m.metricDef.name === metricName,
+    );
 
-    const leftScore =
-      leftScoreNum !== undefined ? formatScore(leftScoreNum) : colors.muted('-');
-    const rightScore =
-      rightScoreNum !== undefined ? formatScore(rightScoreNum) : colors.muted('-');
+    let leftNormalized = 0;
+    let rightNormalized = 0;
+
+    const leftScore = leftMetric
+      ? typeof leftMetric.value === 'number'
+        ? (() => {
+            leftNormalized =
+              leftMetric.value >= 0 && leftMetric.value <= 5
+                ? leftMetric.value / 5
+                : leftMetric.value;
+            return formatScore(leftMetric.value);
+          })()
+        : String(leftMetric.value)
+      : colors.muted('-');
+    const rightScore = rightMetric
+      ? typeof rightMetric.value === 'number'
+        ? (() => {
+            rightNormalized =
+              rightMetric.value >= 0 && rightMetric.value <= 5
+                ? rightMetric.value / 5
+                : rightMetric.value;
+            return formatScore(rightMetric.value);
+          })()
+        : String(rightMetric.value)
+      : colors.muted('-');
 
     let deltaText = colors.muted('-');
-    if (typeof leftScoreNum === 'number' && typeof rightScoreNum === 'number') {
-      const delta = rightScoreNum - leftScoreNum;
+    if (
+      typeof leftMetric?.value === 'number' &&
+      typeof rightMetric?.value === 'number'
+    ) {
+      const delta = rightNormalized - leftNormalized;
       deltaText =
         delta > 0.01
           ? colors.success(`+${delta.toFixed(3)}`)
           : delta < -0.01
-            ? colors.error(delta.toFixed(3))
-            : colors.muted(delta.toFixed(3));
+          ? colors.error(delta.toFixed(3))
+          : colors.muted(delta.toFixed(3));
     }
 
-    table.push([evalName, leftScore, rightScore, deltaText]);
+    table.push([metricName, leftScore, rightScore, deltaText]);
   }
 
   return (
     <Box flexDirection="column">
-      <BreadCrumbs
-        breadcrumbs={[
-          conversation.id,
-          'Runs',
-          'Comparison',
-          `${leftReport.runId} ${colors.muted('↔')} ${rightReport.runId}`,
-        ]}
-      />
-
       <Box paddingTop={1} paddingX={1}>
         <Text>
+          {colors.bold(`Comparing: ${conversation.id}`)}{' '}
           {colors.muted(
             `(Turn ${scrollPosition + 1}/${conversation.steps.length})`,
           )}
@@ -222,39 +230,20 @@ export function CompareView({
             colWidths: [20, 12, 12, 12],
           });
 
-          const leftSummaries = leftReport.result.summaries?.byEval ?? {};
-          const rightSummaries = rightReport.result.summaries?.byEval ?? {};
+          for (const [evalName, leftSummary] of leftReport.evalSummaries) {
+            const rightSummary = rightReport.evalSummaries.get(evalName);
+            if (!rightSummary) continue;
 
-          const allEvalNames = new Set<string>([
-            ...Object.keys(leftSummaries),
-            ...Object.keys(rightSummaries),
-          ]);
-
-          for (const evalName of Array.from(allEvalNames).sort()) {
-            const leftSummary = leftSummaries[evalName];
-            const rightSummary = rightSummaries[evalName];
-            if (!leftSummary || !rightSummary) continue;
-
-            // Prefer raw aggregations for display; fall back to score (e.g. scorers).
-            const leftAggs = leftSummary.aggregations?.raw ?? leftSummary.aggregations?.score;
-            const rightAggs = rightSummary.aggregations?.raw ?? rightSummary.aggregations?.score;
-            const leftMeanValue = getNumericAggregation(leftAggs, 'mean');
-            const rightMeanValue = getNumericAggregation(rightAggs, 'mean');
-
-            if (leftMeanValue === undefined || rightMeanValue === undefined) {
-              summaryTable.push([evalName, colors.muted('-'), colors.muted('-'), colors.muted('-')]);
-              continue;
-            }
-
-            const leftMean = leftMeanValue.toFixed(3);
-            const rightMean = rightMeanValue.toFixed(3);
-            const delta = rightMeanValue - leftMeanValue;
+            const leftMean = leftSummary.aggregations.mean.toFixed(3);
+            const rightMean = rightSummary.aggregations.mean.toFixed(3);
+            const delta =
+              rightSummary.aggregations.mean - leftSummary.aggregations.mean;
             const deltaText =
               delta > 0.01
                 ? colors.success(`+${delta.toFixed(3)}`)
                 : delta < -0.01
-                  ? colors.error(delta.toFixed(3))
-                  : colors.muted(delta.toFixed(3));
+                ? colors.error(delta.toFixed(3))
+                : colors.muted(delta.toFixed(3));
 
             summaryTable.push([evalName, leftMean, rightMean, deltaText]);
           }

@@ -3,6 +3,7 @@
  */
 
 import type { StepDefinition, StepsSnapshot, Precondition } from '../steps/types.js';
+import type { ModelMessage } from 'ai';
 import type { StepTrace } from '../types.js';
 
 /**
@@ -12,7 +13,7 @@ import type { StepTrace } from '../types.js';
 async function checkPrecondition(
 	precondition: Precondition,
 	context: {
-		stepTraces: readonly StepTrace[];
+		history: readonly ModelMessage[];
 		snapshot: {
 			satisfied: Set<string>;
 			attemptsByStep: Map<string, number>;
@@ -27,12 +28,26 @@ async function checkPrecondition(
 	if (precondition.type === 'custom') {
 		// Custom precondition - can be sync or async, await handles both
 		return await precondition.evaluate({
-			stepTraces: context.stepTraces,
+			history: context.history,
 			snapshot: context.snapshot,
 		});
 	}
 
 	return false;
+}
+
+/**
+ * Build history from step traces for precondition evaluation
+ */
+function buildHistoryFromTraces(stepTraces: readonly StepTrace[]): readonly ModelMessage[] {
+	const history: ModelMessage[] = [];
+	for (const trace of stepTraces) {
+		// Add user message
+		history.push(trace.userMessage);
+		// Add all agent messages (assistant + tool)
+		history.push(...trace.agentMessages);
+	}
+	return history;
 }
 
 /**
@@ -45,6 +60,9 @@ export async function getEligibleSteps(
 	stepTraces: readonly StepTrace[]
 ): Promise<StepDefinition[]> {
 	const eligible: StepDefinition[] = [];
+
+	// Build history from step traces for custom preconditions
+	const history = buildHistoryFromTraces(stepTraces);
 
 	// Build snapshot context once for all precondition checks
 	const snapshotContext = {
@@ -72,7 +90,7 @@ export async function getEligibleSteps(
 		const preconditionsMet = await Promise.all(
 			stepDef.preconditions.map((precondition) =>
 				checkPrecondition(precondition, {
-					stepTraces,
+					history,
 					snapshot: snapshotContext,
 				})
 			)

@@ -5,10 +5,10 @@
  * - GOOGLE_GENERATIVE_AI_API_KEY environment variable
  * - Set E2E_TRAJECTORIES=1 to run (or run in CI)
  * 
- * Run with: bun run --filter=@tally-evals/trajectories test:e2e travelPlanner
+ * Run with: pnpm --filter=@tally-evals/trajectories test:e2e travelPlanner
  */
 
-import { describe, it, expect, beforeAll } from 'bun:test';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { google } from '@ai-sdk/google';
 import { Experimental_Agent as Agent, stepCountIs, tool } from 'ai';
 import { z } from 'zod';
@@ -248,7 +248,7 @@ describeE2E('Travel Planner E2E Tests', () => {
 						terminals: ['step-12'],
 					},
 					maxTurns: 20,
-					conversationId: 'travel-planner-e2e',
+					storage: { strategy: 'local', conversationId: 'travel-planner-e2e' },
 					userModel,
 					
 				},
@@ -348,7 +348,7 @@ describeE2E('Travel Planner E2E Tests', () => {
 						terminals: ['step-4'],
 					},
 					maxTurns: 10,
-					conversationId: 'travel-planner-preconditions',
+					storage: { strategy: 'local', conversationId: 'travel-planner-preconditions' },
 					userModel,
 				},
 				agent

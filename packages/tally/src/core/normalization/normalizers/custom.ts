@@ -1,36 +1,31 @@
 /**
  * Custom normalizer wrapper
- *
+ * 
  * Wraps a custom normalization function
  * The function is responsible for ensuring the output is in [0, 1] range
  */
 
-import type {
-  MetricContainer,
-  MetricDef,
-  MetricScalar,
-  NormalizeToScore,
-  Score,
-} from '@tally/core/types';
+import type { Score, MetricScalar, MetricDef, MetricContainer, NormalizeToScore } from '@tally/core/types';
 import { toScore } from '@tally/core/types';
 
 /**
  * Apply custom normalization
  */
 export function normalizeCustom<T extends MetricScalar, C = unknown>(
-  value: T,
-  normalizeFn: NormalizeToScore<T, C>,
-  context: C,
-  metric: MetricDef<T, MetricContainer>
+	value: T,
+	normalizeFn: NormalizeToScore<T, C>,
+	context: C,
+	metric: MetricDef<T, MetricContainer>
 ): Score {
-  const result = normalizeFn(value, { context, metric });
+	const result = normalizeFn(value, { context, metric });
 
-  // Validate the result is a valid Score
-  if (typeof result !== 'number' || result < 0 || result > 1) {
-    throw new Error(
-      `Custom normalizer returned invalid Score: ${result}. Score must be a number in [0, 1] range.`
-    );
-  }
+	// Validate the result is a valid Score
+	if (typeof result !== 'number' || result < 0 || result > 1) {
+		throw new Error(
+			`Custom normalizer returned invalid Score: ${result}. Score must be a number in [0, 1] range.`
+		);
+	}
 
-  return toScore(result);
+	return toScore(result);
 }
+

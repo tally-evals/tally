@@ -2,7 +2,7 @@
  * Core step types for trajectory execution
  */
 
-import type { StepTrace } from '../types.js';
+import type { ModelMessage } from 'ai';
 
 export type StepId = string;
 
@@ -23,7 +23,7 @@ export interface StepGraph {
 }
 
 export interface PreconditionContext {
-	stepTraces: readonly StepTrace[];
+	history: readonly ModelMessage[];
 	snapshot: {
 		satisfied: Set<StepId>;
 		attemptsByStep: Map<StepId, number>;
@@ -65,7 +65,7 @@ export interface StepsSnapshot {
 }
 
 export interface SatisfactionContext {
-	stepTraces: readonly StepTrace[];
+	history: readonly ModelMessage[];
 	snapshot: {
 		satisfied: Set<StepId>;
 		attemptsByStep: Map<StepId, number>;

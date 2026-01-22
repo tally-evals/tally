@@ -2,9 +2,14 @@
   "name": "@tally-evals/trajectories",
   "version": "0.0.0",
   "description": "A framework-agnostic trajectory generation package for building multi-turn conversation trajectories",
-  "main": "./dist/index.cjs",
+  "main": "./dist/index.js",
   "module": "./dist/index.mjs",
-  "types": "./dist/index.d.mts",
+  "types": "./dist/index.d.ts",
+  "typesVersions": {
+    "*": {
+      "*": ["./dist/index.d.ts"]
+    }
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/tally-evals/tally.git",
@@ -12,25 +17,20 @@
   },
   "exports": {
     ".": {
-      "import": {
-        "types": "./dist/index.d.mts",
-        "default": "./dist/index.mjs"
-      },
-      "require": {
-        "types": "./dist/index.d.cts",
-        "default": "./dist/index.cjs"
-      }
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsdown",
-    "dev": "tsdown --watch",
-    "test": "bun test --timeout=30000",
-    "test:watch": "bun test --watch",
-    "test:e2e": "E2E_TRAJECTORIES=1 bun test test/e2e",
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "E2E_TRAJECTORIES=1 vitest run test/e2e",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "clean": "rm -rf dist"
@@ -45,22 +45,22 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@tally-evals/core": "workspace:*",
-    "ai": "^5.0.121"
+    "ai": "^5.0.89"
   },
   "peerDependencies": {
     "@tally-evals/tally": "workspace:*"
   },
   "devDependencies": {
-    "@ai-sdk/google": "^2.0.52",
+    "@ai-sdk/google": "^2.0.29",
     "@tally-evals/biome-config": "workspace:*",
     "@tally-evals/tally": "workspace:*",
     "@tally-evals/typescript-config": "workspace:*",
-    "@types/bun": "latest",
     "@types/node": "24.6.2",
     "dotenv": "^17.2.3",
-    "tsdown": "^0.20.0-beta.3",
+    "tsup": "^8.0.1",
     "typescript": "^5.3.3",
+    "vitest": "^1.1.0",
     "zod": "^3.25.76"
   }
 }
+

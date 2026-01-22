@@ -1,7 +1,0 @@
-# Test artifacts (should not be created, but just in case)
-conversations/
-*-test
-test-*
-
-# Keep fixtures
-!test/fixtures/

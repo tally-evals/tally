@@ -1,12 +1,7 @@
-import {
-  Conversation,
-  createMultiTurnLLM,
-  defineBaseMetric,
-  MultiTurnMetricDef,
-} from '@tally-evals/tally';
-import { extractTextFromMessage } from '@tally-evals/tally/metrics';
-import { createMinMaxNormalizer } from '@tally-evals/tally/normalization';
-import { LanguageModel } from 'ai';
+import { Conversation, createMultiTurnLLM, defineBaseMetric, MultiTurnMetricDef } from "@tally-evals/tally";
+import { extractTextFromMessage } from "@tally-evals/tally/metrics";
+import { createMinMaxNormalizer } from "@tally-evals/tally/normalization";
+import { LanguageModel } from "ai";
 
 export interface KnowledgeRetentionOptions {
   /**
@@ -26,7 +21,7 @@ export const createKnowledgeRetentionMetric = (
 ) => {
   const { parameters, provider } = options;
 
-  const base = defineBaseMetric<number>({
+  const base = defineBaseMetric({
     name: 'knowledgeRetention',
     valueType: 'number',
     description:
@@ -44,9 +39,8 @@ export const createKnowledgeRetentionMetric = (
             .map(extractTextFromMessage)
             .filter((text) => text.length > 0)
             .join('\n\n');
-          return `Turn ${
-            index + 1
-          }:\nUser: ${userText}\nAssistant: ${assistantText}`;
+          return `Turn ${index + 1
+            }:\nUser: ${userText}\nAssistant: ${assistantText}`;
         })
         .join('\n\n');
 
@@ -58,11 +52,10 @@ export const createKnowledgeRetentionMetric = (
     prompt: {
       instruction: `You are evaluating knowledge retention in a travel planning conversation.
 
-      **Parameters to Track:** ${
-        parameters
+      **Parameters to Track:** ${parameters
           ? parameters.join(', ')
           : 'Things like (destination, dates, preferences) if they are brought up'
-      }
+        }
 
       For each parameter, analyze the ENTIRE conversation and:
       1. Identify when the parameter value is first established
@@ -86,11 +79,10 @@ export const createKnowledgeRetentionMetric = (
     },
     rubric: {
       criteria: `Evaluate knowledge retention based on:
-1. Information Recall: Does the assistant remember key details (${
-        parameters
+1. Information Recall: Does the assistant remember key details (${parameters
           ? `SPECIFICALLY ${parameters.join(', ')}`
           : 'destinations, dates, preferences'
-      }) mentioned earlier?
+        }) mentioned earlier?
 2. Reference Quality: When the assistant references earlier information, are the references accurate and helpful?
 3. Consistency: Are details about the same trip elements consistent across the conversation?
 4. Integration: How well does the assistant integrate earlier information into new responses?
@@ -131,7 +123,7 @@ export const createKnowledgeRetentionMetric = (
       ],
     },
     normalization: {
-      normalizer: createMinMaxNormalizer({
+      default: createMinMaxNormalizer({
         min: 0,
         max: 5,
         clip: true,

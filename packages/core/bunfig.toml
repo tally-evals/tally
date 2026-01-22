@@ -1,3 +1,0 @@
-[test]
-# Timeout for tests (30s for e2e tests with network calls)
-timeout = 30000

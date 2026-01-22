@@ -18,7 +18,6 @@ export interface StepSelectionResult {
 	stepToUse: StepDefinition | undefined;
 	chosenStepId?: StepId;
 	candidates?: readonly { stepId: StepId; score: number; reasons?: string[] }[];
-	method: StepTrace['selection']['method'];
 }
 
 /**
@@ -67,7 +66,6 @@ export async function determineStep(
 	if (!trajectory.steps) {
 		return {
 			stepToUse: undefined,
-			method: 'none',
 		};
 	}
 
@@ -76,7 +74,6 @@ export async function determineStep(
 	if (!snapshot) {
 		return {
 			stepToUse: undefined,
-			method: 'none',
 		};
 	}
 
@@ -88,7 +85,6 @@ export async function determineStep(
 			return {
 				stepToUse: startStep,
 				chosenStepId: startId,
-				method: 'start',
 				candidates: [
 					{
 						stepId: startId,
@@ -130,7 +126,6 @@ export async function determineStep(
 			return {
 				stepToUse: nextStep,
 				chosenStepId: nextStep.id,
-				method: 'preconditions-ordered',
 				candidates: [
 					{
 						stepId: nextStep.id,
@@ -175,7 +170,6 @@ export async function determineStep(
 	return {
 		stepToUse,
 		...(selectorResult.chosen && { chosenStepId: selectorResult.chosen }),
-		method: selectorResult.chosen ? 'llm-ranked' : 'none',
 		candidates: selectorResult.candidates,
 	};
 }

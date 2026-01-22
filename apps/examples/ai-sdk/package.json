@@ -14,31 +14,25 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "bun test",
-    "test:watch": "bun test --watch",
-    "cli:build": "bun run --filter @tally-evals/cli build",
-    "tui": "bun run cli:build && bunx --no-install tally browse",
-    "dev:server": "bun run cli:build && bunx --no-install tally dev server",
+    "test": "vitest",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "ai": "^5.0.121",
-    "@ai-sdk/google": "^2.0.52",
-    "@tally-evals/cli": "workspace:*",
+    "ai": "^5.0.89",
+    "@ai-sdk/google": "^2.0.29",
     "zod": "^3.23.8",
-    "@tally-evals/core": "workspace:*",
     "@tally-evals/tally": "workspace:*",
     "@tally-evals/trajectories": "workspace:*"
   },
   "devDependencies": {
     "@tally-evals/typescript-config": "workspace:*",
     "@tally-evals/biome-config": "workspace:*",
-    "@types/bun": "latest",
     "@types/node": "^24.6.2",
     "typescript": "^5.3.3",
     "tsx": "^4.7.0",
+    "vitest": "^1.1.0",
     "dotenv": "^17.2.3"
   }
 }

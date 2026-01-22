@@ -1,3 +1,0 @@
-[test]
-# Timeout for trajectory e2e tests (2 minutes for LLM calls)
-timeout = 120000

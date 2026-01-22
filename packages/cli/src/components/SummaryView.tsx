@@ -2,92 +2,37 @@
  * Summary view showing aggregate metrics
  */
 
-import type { TallyRunArtifact } from '@tally-evals/core';
-import Table from 'cli-table3';
+import React from 'react';
 import { Box, Text } from 'ink';
-import type React from 'react';
+import Table from 'cli-table3';
 import { colors } from 'src/utils/colors';
-// Note: raw values (top line) are green; score values (bottom line) are muted.
-import { colorByRate01, formatRate01 } from 'src/utils/formatters';
-
-/**
- * Safely get a numeric aggregation value from an Aggregations object
- * Returns undefined if the value doesn't exist or isn't a number
- */
-function getNumericAggregation(
-  aggregations: Record<string, number | Record<string, number>> | undefined,
-  key: string,
-): number | undefined {
-  if (!aggregations) return undefined;
-
-  const candidates: string[] = [key];
-
-  // Common naming conventions in artifacts:
-  // - pipeline uses aggregator.name ("Mean", "P50", ...)
-  // - some consumers historically expect normalized keys ("mean", "p50", ...)
-  const lower = key.toLowerCase();
-  const upper = key.toUpperCase();
-  candidates.push(lower, upper);
-
-  // "mean" -> "Mean"
-  if (lower === 'mean') {
-    candidates.push('Mean');
-  }
-
-  // "p50" -> "P50"
-  if (/^p\d+$/.test(lower)) {
-    candidates.push(`P${lower.slice(1)}`);
-  }
-
-  for (const k of candidates) {
-    const value = aggregations[k];
-    if (typeof value === 'number') return value;
-  }
-
-  return undefined;
-}
+import { score } from 'src/utils/colors';
+import { EvaluationReport } from '@tally-evals/tally';
 
 interface SummaryViewProps {
-  report: TallyRunArtifact;
+  report: EvaluationReport;
 }
 
-function formatScoreNumber(value: number): string {
-  // Score is a 0-1 number; we render it as a plain value when shown as the
-  // secondary (dim/grey) line under the raw value.
-  return value.toFixed(3);
-}
+/**
+ * Format a score value with color coding
+ * Assumes value is already in 0-1 range
+ */
+function formatScoreValue(value: number): string {
+  const formatted = value.toFixed(3);
 
-function formatRawValue(value: number): string {
-  // Raw values can be outside 0-1; avoid score color scale.
-  return value.toFixed(3);
-}
-
-function formatDualValue(args: {
-  raw: number | undefined;
-  score: number | undefined;
-}): string {
-  const rawText = args.raw !== undefined ? formatRawValue(args.raw) : '-';
-  const rawLine =
-    args.raw !== undefined
-      ? // Color raw using the normalized score (when available).
-        // This makes raw “inherit” the same heatmap meaning as the score line.
-        args.score !== undefined
-        ? colorByRate01(args.score, rawText)
-        : colors.success(rawText)
-      : colors.muted('-');
-  // Terminal can't actually render smaller text; use muted grey as the
-  // "secondary" (smaller-feeling) line.
-  const scoreLine =
-    args.score !== undefined
-      ? colors.muted(formatScoreNumber(args.score))
-      : colors.muted('-');
-  return `${rawLine}\n${scoreLine}`;
+  if (value >= 0.8) {
+    return score.excellent(formatted);
+  } else if (value >= 0.6) {
+    return score.good(formatted);
+  } else if (value >= 0.4) {
+    return score.fair(formatted);
+  } else {
+    return score.poor(formatted);
+  }
 }
 
 export function SummaryView({ report }: SummaryViewProps): React.ReactElement {
-  const summaries = report.result.summaries?.byEval ?? {};
-  const summaryEntries = Object.entries(summaries);
-  if (summaryEntries.length === 0) {
+  if (report.evalSummaries.size === 0) {
     return <Text>{colors.muted('No evaluation summaries available')}</Text>;
   }
 
@@ -110,45 +55,16 @@ export function SummaryView({ report }: SummaryViewProps): React.ReactElement {
     colWidths: [20, 15, 10, 10, 10, 10, 12],
   });
 
-  for (const [evalName, summary] of summaryEntries) {
-    const scoreAggs = summary.aggregations?.score;
-    const rawAggs = summary.aggregations?.raw;
-
-    // For single-turn/scorer we expect Mean/Pxx keys; for multi-turn we expect `value`.
-    const scoreMeanOrValue =
-      getNumericAggregation(scoreAggs, 'mean') ??
-      getNumericAggregation(scoreAggs, 'value');
-    const rawMeanOrValue =
-      getNumericAggregation(rawAggs, 'mean') ?? getNumericAggregation(rawAggs, 'value');
-
-    const scoreP50 = getNumericAggregation(scoreAggs, 'p50');
-    const scoreP75 = getNumericAggregation(scoreAggs, 'p75');
-    const scoreP90 = getNumericAggregation(scoreAggs, 'p90');
-
-    const rawP50 = getNumericAggregation(rawAggs, 'p50');
-    const rawP75 = getNumericAggregation(rawAggs, 'p75');
-    const rawP90 = getNumericAggregation(rawAggs, 'p90');
-
-    const def = report.defs.evals?.[evalName];
-    const kindLabel =
-      summary.kind === 'scorer'
-        ? `scorer/${def?.outputShape === 'seriesByStepIndex' ? 'series' : 'scalar'}`
-        : summary.kind;
-
-    const meanCell = formatDualValue({ raw: rawMeanOrValue, score: scoreMeanOrValue });
-    const p50Cell = formatDualValue({ raw: rawP50, score: scoreP50 });
-    const p75Cell = formatDualValue({ raw: rawP75, score: scoreP75 });
-    const p90Cell = formatDualValue({ raw: rawP90, score: scoreP90 });
-
+  for (const [evalName, summary] of report.evalSummaries) {
     const row = [
       evalName,
-      kindLabel,
-      meanCell,
-      p50Cell,
-      p75Cell,
-      p90Cell,
-      summary.verdictSummary?.passRate !== undefined
-        ? formatRate01(summary.verdictSummary.passRate)
+      summary.evalKind,
+      formatScoreValue(summary.aggregations.mean),
+      formatScoreValue(summary.aggregations.percentiles.p50),
+      formatScoreValue(summary.aggregations.percentiles.p75),
+      formatScoreValue(summary.aggregations.percentiles.p90),
+      summary.verdictSummary?.passRate
+        ? formatScoreValue(summary.verdictSummary.passRate)
         : colors.muted('-'),
     ];
 

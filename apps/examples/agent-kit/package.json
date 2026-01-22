@@ -19,6 +19,6 @@
     "@tally-evals/biome-config": "workspace:*",
     "typescript": "^5.3.3",
     "tsx": "^4.7.0",
-    "vitest": "^4.0.16"
+    "vitest": "^1.1.0"
   }
 }

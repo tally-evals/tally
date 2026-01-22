@@ -2,6 +2,7 @@
   "extends": "@tally-evals/typescript-config/strict.json",
   "compilerOptions": {
     "outDir": "dist",
+    "rootDir": "src",
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,

@@ -6,7 +6,7 @@ import { DefaultPolicy } from '../../policies/index.js';
 import type { PolicyContext, PolicyResult } from '../../policies/index.js';
 import type { Trajectory } from '../types.js';
 import type { StepDefinition } from '../steps/types.js';
-import type { StepTrace } from '../types.js';
+import type { ModelMessage } from 'ai';
 
 /**
  * Create policy instance (single default policy)
@@ -31,13 +31,13 @@ export function evaluatePolicy(
  */
 export function buildPolicyContext(
 	trajectory: Trajectory,
-	stepTraces: readonly StepTrace[],
+	history: readonly ModelMessage[],
 	currentStepId: string | undefined,
 	stepToUse?: StepDefinition
 ): PolicyContext {
 	const context: PolicyContext = {
 		trajectory,
-		stepTraces,
+		history,
 		...(currentStepId !== undefined && { currentStepId }),
 	};
 	if (stepToUse !== undefined) {

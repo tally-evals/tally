@@ -1,362 +1,355 @@
-import { describe, expect, it, vi } from 'bun:test';
-import * as promptsModule from '../../../src/core/execution/llm/prompts';
-import { createTopicAdherenceMetric, runMultiTurnMetric } from '../../_exports';
-import type { Conversation } from '../../_exports';
-import { conversationExampleA, conversationExampleB } from '../../_fixtures/conversation.examples';
+import { describe, it, expect, vi } from 'vitest';
+import {
+	createTopicAdherenceMetric,
+	runMultiTurnMetric,
+} from '../../_exports';
 import { makeMockLanguageModelReturningObject } from '../../_mocks/mockModel';
+import { conversationExampleA, conversationExampleB } from '../../_fixtures/conversation.examples';
+import type { Conversation } from '../../_exports';
+import * as promptsModule from '../../../src/core/execution/llm/prompts';
 
 describe('Integration | Metrics | Topic Adherence', () => {
-  it('creates topic adherence metric', () => {
-    const mockProvider = makeMockLanguageModelReturningObject('{"value": 4.5}');
-    const metric = createTopicAdherenceMetric({
-      topics: ['weather', 'forecast'],
-      provider: mockProvider,
-    });
+	it('creates topic adherence metric', () => {
+		const mockProvider = makeMockLanguageModelReturningObject('{"value": 4.5}');
+		const metric = createTopicAdherenceMetric({
+			topics: ['weather', 'forecast'],
+			provider: mockProvider,
+		});
 
-    expect(metric).toBeDefined();
-    expect(metric.name).toBe('topicAdherence');
-    expect(metric.valueType).toBe('number');
-    expect(metric.scope).toBe('multi');
-  });
+		expect(metric).toBeDefined();
+		expect(metric.name).toBe('topicAdherence');
+		expect(metric.valueType).toBe('number');
+		expect(metric.scope).toBe('multi');
+	});
 
-  it('executes topic adherence metric on conversation', async () => {
-    const mockProvider = makeMockLanguageModelReturningObject('{"value": 4.0}');
-    const metric = createTopicAdherenceMetric({
-      topics: ['technical support', 'troubleshooting'],
-      provider: mockProvider,
-    });
+	it('executes topic adherence metric on conversation', async () => {
+		const mockProvider = makeMockLanguageModelReturningObject('{"value": 4.0}');
+		const metric = createTopicAdherenceMetric({
+			topics: ['technical support', 'troubleshooting'],
+			provider: mockProvider,
+		});
 
-    const result = await runMultiTurnMetric(metric, conversationExampleA);
+		const result = await runMultiTurnMetric(metric, conversationExampleA);
 
-    expect(result).toBeDefined();
-    expect(result.value).toBeGreaterThanOrEqual(0);
-    expect(result.value).toBeLessThanOrEqual(5);
-    expect(result.executionTime).toBeGreaterThanOrEqual(0);
-  });
+		expect(result).toBeDefined();
+		expect(result.value).toBeGreaterThanOrEqual(0);
+		expect(result.value).toBeLessThanOrEqual(5);
+		expect(result.executionTime).toBeGreaterThanOrEqual(0);
+	});
 
-  it('executes topic adherence metric with topic transitions enabled', async () => {
-    const mockProvider = makeMockLanguageModelReturningObject('{"value": 4.2}');
-    const metric = createTopicAdherenceMetric({
-      topics: ['travel planning', 'destinations'],
-      provider: mockProvider,
-      allowTopicTransitions: true,
-    });
+	it('executes topic adherence metric with topic transitions enabled', async () => {
+		const mockProvider = makeMockLanguageModelReturningObject('{"value": 4.2}');
+		const metric = createTopicAdherenceMetric({
+			topics: ['travel planning', 'destinations'],
+			provider: mockProvider,
+			allowTopicTransitions: true,
+		});
 
-    const result = await runMultiTurnMetric(metric, conversationExampleB);
+		const result = await runMultiTurnMetric(metric, conversationExampleB);
 
-    expect(result).toBeDefined();
-    expect(result.value).toBeGreaterThanOrEqual(0);
-    expect(result.value).toBeLessThanOrEqual(5);
-    expect(result.executionTime).toBeGreaterThanOrEqual(0);
-  });
+		expect(result).toBeDefined();
+		expect(result.value).toBeGreaterThanOrEqual(0);
+		expect(result.value).toBeLessThanOrEqual(5);
+		expect(result.executionTime).toBeGreaterThanOrEqual(0);
+	});
 
-  it('executes topic adherence metric with topic transitions disabled', async () => {
-    const mockProvider = makeMockLanguageModelReturningObject('{"value": 3.5}');
-    const metric = createTopicAdherenceMetric({
-      topics: ['cooking', 'recipes'],
-      provider: mockProvider,
-      allowTopicTransitions: false,
-    });
+	it('executes topic adherence metric with topic transitions disabled', async () => {
+		const mockProvider = makeMockLanguageModelReturningObject('{"value": 3.5}');
+		const metric = createTopicAdherenceMetric({
+			topics: ['cooking', 'recipes'],
+			provider: mockProvider,
+			allowTopicTransitions: false,
+		});
 
-    const result = await runMultiTurnMetric(metric, conversationExampleA);
+		const result = await runMultiTurnMetric(metric, conversationExampleA);
 
-    expect(result).toBeDefined();
-    expect(result.value).toBeGreaterThanOrEqual(0);
-    expect(result.value).toBeLessThanOrEqual(5);
-    expect(result.executionTime).toBeGreaterThanOrEqual(0);
-  });
+		expect(result).toBeDefined();
+		expect(result.value).toBeGreaterThanOrEqual(0);
+		expect(result.value).toBeLessThanOrEqual(5);
+		expect(result.executionTime).toBeGreaterThanOrEqual(0);
+	});
 
-  it('executes topic adherence metric with strict mode enabled', async () => {
-    const mockProvider = makeMockLanguageModelReturningObject('{"value": 3.0}');
-    const metric = createTopicAdherenceMetric({
-      topics: ['financial advice', 'investments'],
-      provider: mockProvider,
-      strictMode: true,
-    });
+	it('executes topic adherence metric with strict mode enabled', async () => {
+		const mockProvider = makeMockLanguageModelReturningObject('{"value": 3.0}');
+		const metric = createTopicAdherenceMetric({
+			topics: ['financial advice', 'investments'],
+			provider: mockProvider,
+			strictMode: true,
+		});
 
-    const result = await runMultiTurnMetric(metric, conversationExampleB);
+		const result = await runMultiTurnMetric(metric, conversationExampleB);
 
-    expect(result).toBeDefined();
-    expect(result.value).toBeGreaterThanOrEqual(0);
-    expect(result.value).toBeLessThanOrEqual(5);
-    expect(result.executionTime).toBeGreaterThanOrEqual(0);
-  });
+		expect(result).toBeDefined();
+		expect(result.value).toBeGreaterThanOrEqual(0);
+		expect(result.value).toBeLessThanOrEqual(5);
+		expect(result.executionTime).toBeGreaterThanOrEqual(0);
+	});
 
-  it('executes topic adherence metric with all options enabled', async () => {
-    const mockProvider = makeMockLanguageModelReturningObject('{"value": 4.8}');
-    const metric = createTopicAdherenceMetric({
-      topics: ['healthcare', 'medical advice'],
-      provider: mockProvider,
-      allowTopicTransitions: true,
-      strictMode: true,
-    });
+	it('executes topic adherence metric with all options enabled', async () => {
+		const mockProvider = makeMockLanguageModelReturningObject('{"value": 4.8}');
+		const metric = createTopicAdherenceMetric({
+			topics: ['healthcare', 'medical advice'],
+			provider: mockProvider,
+			allowTopicTransitions: true,
+			strictMode: true,
+		});
 
-    const result = await runMultiTurnMetric(metric, conversationExampleB);
+		const result = await runMultiTurnMetric(metric, conversationExampleB);
 
-    expect(result).toBeDefined();
-    expect(result.value).toBeGreaterThanOrEqual(0);
-    expect(result.value).toBeLessThanOrEqual(5);
-    expect(result.executionTime).toBeGreaterThanOrEqual(0);
-  });
+		expect(result).toBeDefined();
+		expect(result.value).toBeGreaterThanOrEqual(0);
+		expect(result.value).toBeLessThanOrEqual(5);
+		expect(result.executionTime).toBeGreaterThanOrEqual(0);
+	});
 
-  it('creates topic adherence metric with different topic arrays', () => {
-    const mockProvider = makeMockLanguageModelReturningObject('{"value": 5}');
+	it('creates topic adherence metric with different topic arrays', () => {
+		const mockProvider = makeMockLanguageModelReturningObject('{"value": 5}');
+		
+		const metric1 = createTopicAdherenceMetric({
+			topics: ['weather'],
+			provider: mockProvider,
+		});
+		expect(metric1).toBeDefined();
 
-    const metric1 = createTopicAdherenceMetric({
-      topics: ['weather'],
-      provider: mockProvider,
-    });
-    expect(metric1).toBeDefined();
+		const metric2 = createTopicAdherenceMetric({
+			topics: ['travel', 'destinations', 'accommodations'],
+			provider: mockProvider,
+		});
+		expect(metric2).toBeDefined();
 
-    const metric2 = createTopicAdherenceMetric({
-      topics: ['travel', 'destinations', 'accommodations'],
-      provider: mockProvider,
-    });
-    expect(metric2).toBeDefined();
+		const metric3 = createTopicAdherenceMetric({
+			topics: ['technical support', 'troubleshooting', 'software issues', 'hardware problems'],
+			provider: mockProvider,
+		});
+		expect(metric3).toBeDefined();
+	});
 
-    const metric3 = createTopicAdherenceMetric({
-      topics: ['technical support', 'troubleshooting', 'software issues', 'hardware problems'],
-      provider: mockProvider,
-    });
-    expect(metric3).toBeDefined();
-  });
+	it('executes topic adherence metric on conversation with multiple steps', async () => {
+		const mockProvider = makeMockLanguageModelReturningObject('{"value": 4.2}');
+		const metric = createTopicAdherenceMetric({
+			topics: ['education', 'learning'],
+			provider: mockProvider,
+			allowTopicTransitions: true,
+			strictMode: false,
+		});
 
-  it('executes topic adherence metric on conversation with multiple steps', async () => {
-    const mockProvider = makeMockLanguageModelReturningObject('{"value": 4.2}');
-    const metric = createTopicAdherenceMetric({
-      topics: ['education', 'learning'],
-      provider: mockProvider,
-      allowTopicTransitions: true,
-      strictMode: false,
-    });
+		// Test with conversationExampleB which has 3 steps
+		const result = await runMultiTurnMetric(metric, conversationExampleB);
 
-    // Test with conversationExampleB which has 3 steps
-    const result = await runMultiTurnMetric(metric, conversationExampleB);
+		expect(result).toBeDefined();
+		expect(result.value).toBeGreaterThanOrEqual(0);
+		expect(result.value).toBeLessThanOrEqual(5);
+		expect(result.executionTime).toBeGreaterThanOrEqual(0);
+	});
 
-    expect(result).toBeDefined();
-    expect(result.value).toBeGreaterThanOrEqual(0);
-    expect(result.value).toBeLessThanOrEqual(5);
-    expect(result.executionTime).toBeGreaterThanOrEqual(0);
-  });
+	it('topic adherence metric includes topics in metadata', () => {
+		const mockProvider = makeMockLanguageModelReturningObject('{"value": 4.0}');
+		const topics = ['weather', 'forecast'];
+		const metric = createTopicAdherenceMetric({
+			topics,
+			provider: mockProvider,
+		});
 
-  it('topic adherence metric includes topics in metadata', () => {
-    const mockProvider = makeMockLanguageModelReturningObject('{"value": 4.0}');
-    const topics = ['weather', 'forecast'];
-    const metric = createTopicAdherenceMetric({
-      topics,
-      provider: mockProvider,
-    });
+		expect(metric.metadata).toBeDefined();
+		expect(metric.metadata?.topics).toEqual(topics);
+		expect(metric.metadata?.allowTopicTransitions).toBe(true); // default value
+		expect(metric.metadata?.strictMode).toBe(false); // default value
+	});
 
-    expect(metric.metadata).toBeDefined();
-    expect(metric.metadata?.topics).toEqual(topics);
-    expect(metric.metadata?.allowTopicTransitions).toBe(true); // default value
-    expect(metric.metadata?.strictMode).toBe(false); // default value
-  });
+	it('topic adherence metric includes all options in metadata', () => {
+		const mockProvider = makeMockLanguageModelReturningObject('{"value": 4.0}');
+		const topics = ['technical support', 'troubleshooting'];
+		const metric = createTopicAdherenceMetric({
+			topics,
+			provider: mockProvider,
+			allowTopicTransitions: false,
+			strictMode: true,
+		});
 
-  it('topic adherence metric includes all options in metadata', () => {
-    const mockProvider = makeMockLanguageModelReturningObject('{"value": 4.0}');
-    const topics = ['technical support', 'troubleshooting'];
-    const metric = createTopicAdherenceMetric({
-      topics,
-      provider: mockProvider,
-      allowTopicTransitions: false,
-      strictMode: true,
-    });
+		expect(metric.metadata).toBeDefined();
+		expect(metric.metadata?.topics).toEqual(topics);
+		expect(metric.metadata?.allowTopicTransitions).toBe(false);
+		expect(metric.metadata?.strictMode).toBe(true);
+	});
 
-    expect(metric.metadata).toBeDefined();
-    expect(metric.metadata?.topics).toEqual(topics);
-    expect(metric.metadata?.allowTopicTransitions).toBe(false);
-    expect(metric.metadata?.strictMode).toBe(true);
-  });
+	it('handles empty topics array', () => {
+		const mockProvider = makeMockLanguageModelReturningObject('{"value": 3.0}');
+		const topics: string[] = [];
+		
+		expect(() => {
+			createTopicAdherenceMetric({
+				topics,
+				provider: mockProvider,
+			});
+		}).not.toThrow();
+	});
 
-  it('handles empty topics array', () => {
-    const mockProvider = makeMockLanguageModelReturningObject('{"value": 3.0}');
-    const topics: string[] = [];
+	it('handles single topic array', () => {
+		const mockProvider = makeMockLanguageModelReturningObject('{"value": 4.5}');
+		const topics = ['weather'];
+		const metric = createTopicAdherenceMetric({
+			topics,
+			provider: mockProvider,
+		});
 
-    expect(() => {
-      createTopicAdherenceMetric({
-        topics,
-        provider: mockProvider,
-      });
-    }).not.toThrow();
-  });
+		expect(metric).toBeDefined();
+		expect(metric.metadata?.topics).toEqual(topics);
+	});
 
-  it('handles single topic array', () => {
-    const mockProvider = makeMockLanguageModelReturningObject('{"value": 4.5}');
-    const topics = ['weather'];
-    const metric = createTopicAdherenceMetric({
-      topics,
-      provider: mockProvider,
-    });
+	describe('Prompt Construction', () => {
+		it('verifies prompt is built with substituted values, not template variables', async () => {
+			const mockProvider = makeMockLanguageModelReturningObject('{"value": 4.0}');
+			const topics = ['weather', 'forecast'];
+			const metric = createTopicAdherenceMetric({
+				topics,
+				provider: mockProvider,
+			});
 
-    expect(metric).toBeDefined();
-    expect(metric.metadata?.topics).toEqual(topics);
-  });
+			// Save original implementation and spy on buildPrompt
+			const originalBuildPrompt = promptsModule.buildPrompt;
+			const buildPromptSpy = vi.spyOn(promptsModule, 'buildPrompt').mockImplementation((template, context) => {
+				return originalBuildPrompt(template, context);
+			});
+			
+			await runMultiTurnMetric(metric, conversationExampleA);
 
-  describe('Prompt Construction', () => {
-    it('verifies prompt is built with substituted values, not template variables', async () => {
-      const mockProvider = makeMockLanguageModelReturningObject('{"value": 4.0}');
-      const topics = ['weather', 'forecast'];
-      const metric = createTopicAdherenceMetric({
-        topics,
-        provider: mockProvider,
-      });
+			// Verify buildPrompt was called
+			expect(buildPromptSpy).toHaveBeenCalled();
 
-      // Save original implementation and spy on buildPrompt
-      const originalBuildPrompt = promptsModule.buildPrompt;
-      const buildPromptSpy = vi
-        .spyOn(promptsModule, 'buildPrompt')
-        .mockImplementation((template, context) => {
-          return originalBuildPrompt(template, context);
-        });
+			// Get the final built prompt string from the return value
+			const finalPrompt = buildPromptSpy.mock.results[0]?.value as string;
 
-      await runMultiTurnMetric(metric, conversationExampleA);
+			// Verify the final prompt contains actual substituted values, NOT template variables
+			expect(finalPrompt).toBeDefined();
+			// Topics should be substituted (they'll be stringified in the prompt)
+			expect(finalPrompt).not.toContain('{{topics}}'); // Template variable should be replaced
+			expect(finalPrompt).toContain('Turn 1:'); // Actual conversation content
+			expect(finalPrompt).toContain('Hello!'); // Actual conversation content
+			expect(finalPrompt).not.toContain('{{conversationText}}'); // Template variable should be replaced
+			expect(finalPrompt).toContain('Criteria:'); // Rubric should be formatted
+			expect(finalPrompt).not.toContain('{{rubric}}'); // Template variable should be replaced
 
-      // Verify buildPrompt was called
-      expect(buildPromptSpy).toHaveBeenCalled();
+			buildPromptSpy.mockRestore();
+		});
 
-      // Get the final built prompt string from the return value
-      const finalPrompt = buildPromptSpy.mock.results[0]?.value as string;
+		it('verifies prompt includes topic transitions text when enabled', async () => {
+			const mockProvider = makeMockLanguageModelReturningObject('{"value": 4.0}');
+			const metric = createTopicAdherenceMetric({
+				topics: ['test topic'],
+				provider: mockProvider,
+				allowTopicTransitions: true,
+			});
 
-      // Verify the final prompt contains actual substituted values, NOT template variables
-      expect(finalPrompt).toBeDefined();
-      // Topics should be substituted (they'll be stringified in the prompt)
-      expect(finalPrompt).not.toContain('{{topics}}'); // Template variable should be replaced
-      expect(finalPrompt).toContain('Turn 1:'); // Actual conversation content
-      expect(finalPrompt).toContain('Hello!'); // Actual conversation content
-      expect(finalPrompt).not.toContain('{{conversationText}}'); // Template variable should be replaced
-      expect(finalPrompt).toContain('Criteria:'); // Rubric should be formatted
-      expect(finalPrompt).not.toContain('{{rubric}}'); // Template variable should be replaced
+			const originalBuildPrompt = promptsModule.buildPrompt;
+			const buildPromptSpy = vi.spyOn(promptsModule, 'buildPrompt').mockImplementation((template, context) => {
+				return originalBuildPrompt(template, context);
+			});
 
-      buildPromptSpy.mockRestore();
-    });
+			await runMultiTurnMetric(metric, conversationExampleA);
 
-    it('verifies prompt includes topic transitions text when enabled', async () => {
-      const mockProvider = makeMockLanguageModelReturningObject('{"value": 4.0}');
-      const metric = createTopicAdherenceMetric({
-        topics: ['test topic'],
-        provider: mockProvider,
-        allowTopicTransitions: true,
-      });
+			const finalPrompt = buildPromptSpy.mock.results[0]?.value as string;
+			expect(finalPrompt).toContain('transitions');
 
-      const originalBuildPrompt = promptsModule.buildPrompt;
-      const buildPromptSpy = vi
-        .spyOn(promptsModule, 'buildPrompt')
-        .mockImplementation((template, context) => {
-          return originalBuildPrompt(template, context);
-        });
+			buildPromptSpy.mockRestore();
+		});
 
-      await runMultiTurnMetric(metric, conversationExampleA);
+		it('verifies prompt includes strict mode text when enabled', async () => {
+			const mockProvider = makeMockLanguageModelReturningObject('{"value": 4.0}');
+			const metric = createTopicAdherenceMetric({
+				topics: ['test topic'],
+				provider: mockProvider,
+				strictMode: true,
+			});
 
-      const finalPrompt = buildPromptSpy.mock.results[0]?.value as string;
-      expect(finalPrompt).toContain('transitions');
+			const originalBuildPrompt = promptsModule.buildPrompt;
+			const buildPromptSpy = vi.spyOn(promptsModule, 'buildPrompt').mockImplementation((template, context) => {
+				return originalBuildPrompt(template, context);
+			});
 
-      buildPromptSpy.mockRestore();
-    });
+			await runMultiTurnMetric(metric, conversationExampleA);
 
-    it('verifies prompt includes strict mode text when enabled', async () => {
-      const mockProvider = makeMockLanguageModelReturningObject('{"value": 4.0}');
-      const metric = createTopicAdherenceMetric({
-        topics: ['test topic'],
-        provider: mockProvider,
-        strictMode: true,
-      });
+			const finalPrompt = buildPromptSpy.mock.results[0]?.value as string;
+			expect(finalPrompt).toContain('strict evaluation');
 
-      const originalBuildPrompt = promptsModule.buildPrompt;
-      const buildPromptSpy = vi
-        .spyOn(promptsModule, 'buildPrompt')
-        .mockImplementation((template, context) => {
-          return originalBuildPrompt(template, context);
-        });
+			buildPromptSpy.mockRestore();
+		});
 
-      await runMultiTurnMetric(metric, conversationExampleA);
+		it('verifies rubric structure is correct', () => {
+			const mockProvider = makeMockLanguageModelReturningObject('{"value": 4.0}');
+			const metric = createTopicAdherenceMetric({
+				topics: ['test topic'],
+				provider: mockProvider,
+			});
 
-      const finalPrompt = buildPromptSpy.mock.results[0]?.value as string;
-      expect(finalPrompt).toContain('strict evaluation');
+			if (metric.type === 'llm-based' && metric.rubric) {
+				expect(metric.rubric.criteria).toBeDefined();
+				expect(metric.rubric.scale).toBeDefined();
+				expect(metric.rubric.examples).toBeDefined();
+				expect(Array.isArray(metric.rubric.examples)).toBe(true);
+				expect(metric.rubric.examples.length).toBeGreaterThan(0);
 
-      buildPromptSpy.mockRestore();
-    });
+				// Verify rubric examples have correct structure
+				for (const example of metric.rubric.examples) {
+					expect(example).toHaveProperty('score');
+					expect(example).toHaveProperty('reasoning');
+					expect(typeof example.score).toBe('number');
+					expect(typeof example.reasoning).toBe('string');
+				}
+			}
+		});
 
-    it('verifies rubric structure is correct', () => {
-      const mockProvider = makeMockLanguageModelReturningObject('{"value": 4.0}');
-      const metric = createTopicAdherenceMetric({
-        topics: ['test topic'],
-        provider: mockProvider,
-      });
+		it('verifies conversation text is properly formatted and substituted in final prompt', async () => {
+			const mockProvider = makeMockLanguageModelReturningObject('{"value": 4.0}');
+			const metric = createTopicAdherenceMetric({
+				topics: ['test topic'],
+				provider: mockProvider,
+			});
 
-      if (metric.type === 'llm-based' && metric.rubric) {
-        expect(metric.rubric.criteria).toBeDefined();
-        expect(metric.rubric.scale).toBeDefined();
-        expect(metric.rubric.examples).toBeDefined();
-        expect(Array.isArray(metric.rubric.examples)).toBe(true);
-        expect(metric.rubric.examples.length).toBeGreaterThan(0);
+			const originalBuildPrompt = promptsModule.buildPrompt;
+			const buildPromptSpy = vi.spyOn(promptsModule, 'buildPrompt').mockImplementation((template, context) => {
+				return originalBuildPrompt(template, context);
+			});
+			
+			await runMultiTurnMetric(metric, conversationExampleA);
 
-        // Verify rubric examples have correct structure
-        for (const example of metric.rubric.examples) {
-          expect(example).toHaveProperty('score');
-          expect(example).toHaveProperty('reasoning');
-          expect(typeof example.score).toBe('number');
-          expect(typeof example.reasoning).toBe('string');
-        }
-      }
-    });
+			const finalPrompt = buildPromptSpy.mock.results[0]?.value as string;
+			
+			// Verify conversation text is substituted in final prompt (not as template variable)
+			expect(finalPrompt).toContain('Turn 1:');
+			expect(finalPrompt).toContain('User:');
+			expect(finalPrompt).toContain('Assistant:');
+			expect(finalPrompt).toContain('Hello!');
+			expect(finalPrompt).toContain('What is the capital of Japan?');
+			expect(finalPrompt).not.toContain('{{conversationText}}');
 
-    it('verifies conversation text is properly formatted and substituted in final prompt', async () => {
-      const mockProvider = makeMockLanguageModelReturningObject('{"value": 4.0}');
-      const metric = createTopicAdherenceMetric({
-        topics: ['test topic'],
-        provider: mockProvider,
-      });
+			buildPromptSpy.mockRestore();
+		});
 
-      const originalBuildPrompt = promptsModule.buildPrompt;
-      const buildPromptSpy = vi
-        .spyOn(promptsModule, 'buildPrompt')
-        .mockImplementation((template, context) => {
-          return originalBuildPrompt(template, context);
-        });
+		it('verifies topics are properly substituted in final prompt', async () => {
+			const mockProvider = makeMockLanguageModelReturningObject('{"value": 4.0}');
+			const topics = ['weather', 'forecast', 'climate'];
+			const metric = createTopicAdherenceMetric({
+				topics,
+				provider: mockProvider,
+			});
 
-      await runMultiTurnMetric(metric, conversationExampleA);
+			const originalBuildPrompt = promptsModule.buildPrompt;
+			const buildPromptSpy = vi.spyOn(promptsModule, 'buildPrompt').mockImplementation((template, context) => {
+				return originalBuildPrompt(template, context);
+			});
+			
+			await runMultiTurnMetric(metric, conversationExampleA);
 
-      const finalPrompt = buildPromptSpy.mock.results[0]?.value as string;
+			const finalPrompt = buildPromptSpy.mock.results[0]?.value as string;
 
-      // Verify conversation text is substituted in final prompt (not as template variable)
-      expect(finalPrompt).toContain('Turn 1:');
-      expect(finalPrompt).toContain('User:');
-      expect(finalPrompt).toContain('Assistant:');
-      expect(finalPrompt).toContain('Hello!');
-      expect(finalPrompt).toContain('What is the capital of Japan?');
-      expect(finalPrompt).not.toContain('{{conversationText}}');
+			// Topics should be substituted (they'll be stringified as an array in the prompt)
+			expect(finalPrompt).not.toContain('{{topics}}');
+			// The topics array will be stringified, so check for individual topic values
+			expect(finalPrompt).toContain('weather');
+			expect(finalPrompt).toContain('forecast');
+			expect(finalPrompt).toContain('climate');
 
-      buildPromptSpy.mockRestore();
-    });
-
-    it('verifies topics are properly substituted in final prompt', async () => {
-      const mockProvider = makeMockLanguageModelReturningObject('{"value": 4.0}');
-      const topics = ['weather', 'forecast', 'climate'];
-      const metric = createTopicAdherenceMetric({
-        topics,
-        provider: mockProvider,
-      });
-
-      const originalBuildPrompt = promptsModule.buildPrompt;
-      const buildPromptSpy = vi
-        .spyOn(promptsModule, 'buildPrompt')
-        .mockImplementation((template, context) => {
-          return originalBuildPrompt(template, context);
-        });
-
-      await runMultiTurnMetric(metric, conversationExampleA);
-
-      const finalPrompt = buildPromptSpy.mock.results[0]?.value as string;
-
-      // Topics should be substituted (they'll be stringified as an array in the prompt)
-      expect(finalPrompt).not.toContain('{{topics}}');
-      // The topics array will be stringified, so check for individual topic values
-      expect(finalPrompt).toContain('weather');
-      expect(finalPrompt).toContain('forecast');
-      expect(finalPrompt).toContain('climate');
-
-      buildPromptSpy.mockRestore();
-    });
-  });
+			buildPromptSpy.mockRestore();
+		});
+	});
 });

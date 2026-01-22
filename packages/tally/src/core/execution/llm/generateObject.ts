@@ -5,19 +5,19 @@
  * variable substitution. Uses generateObject's built-in type-safe schema validation.
  */
 
-import type { MetricScalar, ModelProvider, PromptTemplate } from '@tally/core/types';
 import { generateObject } from 'ai';
 import type { LanguageModel } from 'ai';
 import { z } from 'zod';
-import { createValueTypeSchema } from './parse';
+import type { ModelProvider, PromptTemplate, MetricScalar } from '@tally/core/types';
 import { buildPrompt } from './prompts';
+import { createValueTypeSchema } from './parse';
 
 /**
  * Options for LLM generation
  */
 export interface GenerateObjectOptions {
-  maxRetries?: number;
-  temperature?: number;
+	maxRetries?: number;
+	temperature?: number;
 }
 
 /**
@@ -27,10 +27,10 @@ export interface GenerateObjectOptions {
  * @returns LanguageModel instance
  */
 function resolveProvider(provider: ModelProvider): LanguageModel {
-  if (typeof provider === 'function') {
-    return provider();
-  }
-  return provider;
+	if (typeof provider === 'function') {
+		return provider();
+	}
+	return provider;
 }
 
 /**
@@ -44,32 +44,32 @@ function resolveProvider(provider: ModelProvider): LanguageModel {
  * @returns Object with value, confidence, and reasoning
  */
 export async function generateMetricValue<T extends MetricScalar>(
-  provider: ModelProvider,
-  prompt: PromptTemplate,
-  valueType: 'number' | 'boolean' | 'string' | 'ordinal',
-  context: Record<string, unknown>,
-  options?: GenerateObjectOptions
+	provider: ModelProvider,
+	prompt: PromptTemplate,
+	valueType: 'number' | 'boolean' | 'string' | 'ordinal',
+	context: Record<string, unknown>,
+	options?: GenerateObjectOptions
 ): Promise<{
-  value: T;
-  confidence?: number;
-  reasoning?: string;
+	value: T;
+	confidence?: number;
+	reasoning?: string;
 }> {
-  const model = resolveProvider(provider);
-  const fullPrompt = buildPrompt(prompt, context);
+	const model = resolveProvider(provider);
+	const fullPrompt = buildPrompt(prompt, context);
 
-  // Create zod schema for the expected value type
-  const valueSchema = createValueTypeSchema(valueType);
+	// Create zod schema for the expected value type
+	const valueSchema = createValueTypeSchema(valueType);
 
-  // Create output schema that includes optional confidence and reasoning
-  const outputSchema = z.object({
-    value: valueSchema,
-    confidence: z.number().min(0).max(1).optional(),
-    reasoning: z.string().optional(),
-  });
+	// Create output schema that includes optional confidence and reasoning
+	const outputSchema = z.object({
+		value: valueSchema,
+		confidence: z.number().min(0).max(1).optional(),
+		reasoning: z.string().optional(),
+	});
 
-  try {
-    // Add explicit output format instructions to the prompt
-    const outputFormatInstructions = `\n\nIMPORTANT: You must respond with a JSON object matching this exact format:
+	try {
+		// Add explicit output format instructions to the prompt
+		const outputFormatInstructions = `\n\nIMPORTANT: You must respond with a JSON object matching this exact format:
 {
   "value": <your score as a number>,
   "confidence": <optional, a number between 0 and 1 indicating your confidence in the score>,
@@ -78,31 +78,32 @@ export async function generateMetricValue<T extends MetricScalar>(
 
 Note: The "confidence" field must be a decimal number between 0.0 and 1.0 (e.g., 0.8, 0.95), NOT a score on a 0-5 scale.`;
 
-    const promptWithFormat = fullPrompt + outputFormatInstructions;
+		const promptWithFormat = fullPrompt + outputFormatInstructions;
 
-    // generateObject already validates against the schema and returns type-safe results
-    const result = await generateObject({
-      model,
-      prompt: promptWithFormat,
-      schema: outputSchema,
-      maxRetries: options?.maxRetries ?? 1,
-      ...(options?.temperature !== undefined && { temperature: options.temperature }),
-    });
+		// generateObject already validates against the schema and returns type-safe results
+		const result = await generateObject({
+			model,
+			prompt: promptWithFormat,
+			schema: outputSchema,
+			maxRetries: options?.maxRetries ?? 1,
+			...(options?.temperature !== undefined && { temperature: options.temperature }),
+		});
 
-    // result.object is already validated and type-safe based on the schema
-    return {
-      value: result.object.value as T,
-      ...(result.object.confidence !== undefined && {
-        confidence: result.object.confidence,
-      }),
-      ...(result.object.reasoning !== undefined && {
-        reasoning: result.object.reasoning,
-      }),
-    };
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(`LLM generation failed: ${error.message}`);
-    }
-    throw error;
-  }
+		// result.object is already validated and type-safe based on the schema
+		return {
+			value: result.object.value as T,
+			...(result.object.confidence !== undefined && {
+				confidence: result.object.confidence,
+			}),
+			...(result.object.reasoning !== undefined && {
+				reasoning: result.object.reasoning,
+			}),
+		};
+	} catch (error) {
+		if (error instanceof Error) {
+			throw new Error(`LLM generation failed: ${error.message}`);
+		}
+		throw error;
+	}
 }
+

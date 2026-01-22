@@ -85,7 +85,7 @@ packages/tally/src/
 │   │       └── parse.ts              # LLM output parsing/validation
 │   │
 │   ├── pipeline.ts                   # [Phase 8] 5-phase pipeline state machine (LAST)
-│   └── tally.ts                      # [Phase 8] Tally<T> container class (LAST) → returns TallyRunReport
+│   └── tally.ts                      # [Phase 8] Tally<T> container class (LAST)
 │
 ├── metrics/                          # [Phase 3,6] OOB metric definitions only
 │   ├── common/                       # Shared metric utilities
@@ -120,8 +120,12 @@ packages/tally/src/
 │   ├── validate.ts                   # Shape validation/guards
 │   └── shape.ts                      # Data shape adapters
 │
-├── view/                             # [Phase 8] Test/DX helpers (views over run outputs)
-│   └── targetRunView.ts              # createTargetRunView / report.view()
+├── report/                           # [Phase 8] Report generation (LAST)
+│   ├── types.ts                      # Report type definitions
+│   ├── builder.ts                    # Report construction logic
+│   └── formatters/
+│       ├── json.ts                   # JSON formatter
+│       └── csv.ts                    # CSV formatter
 │
 └── utils/                            # [Phase 1] Shared utilities
     ├── text.ts                       # String/text utilities
@@ -166,7 +170,7 @@ packages/tally/src/
 
 // Normalization types
 - NormalizeToScore<T, C>
-- NormalizationContextFor<T>
+- ScoringContext
 - NormalizerSpec<T, C>
 - MetricNormalization<T, C>
 
@@ -183,9 +187,10 @@ packages/tally/src/
 // Aggregator types
 - Aggregator
 
-// Run outputs
-- TallyRunReport
-- TallyRunArtifact
+// Report types
+- PerTargetResult
+- AggregateSummary
+- EvaluationReport
 
 // Main container
 - Tally<TContainer>
@@ -454,8 +459,10 @@ packages/tally/src/
 **Files to implement:**
 - `src/core/pipeline.ts` - 5-phase pipeline state machine
 - `src/core/tally.ts` - Tally<T> container class
-- `src/view/targetRunView.ts` - Test/DX view over run outputs (`report.view()`)
-- `src/utils/reportFormatter.ts` - CLI-friendly table formatting for artifacts
+- `src/report/types.ts` - Report type definitions
+- `src/report/builder.ts` - Report construction logic
+- `src/report/formatters/json.ts` - JSON formatter
+- `src/report/formatters/csv.ts` - CSV formatter
 - `src/data/loaders/jsonl.ts` - JSONL loader
 - `src/data/validate.ts` - Shape validation/guards
 - `src/data/shape.ts` - Data shape adapters
@@ -473,14 +480,15 @@ Implement the 5-phase pipeline:
 
 **`core/tally.ts`:**
 - Tally<T> class implementation
-- Constructor: accept `{ data, evaluators }`
-- `run(options?): Promise<TallyRunReport>` - orchestrate full pipeline
+- Constructor: accept data, evaluators, aggregators
+- `run(): Promise<EvaluationReport>` - orchestrate full pipeline
 - Validation of inputs
 - Error handling and reporting
 
-**Reporting:**
-- Construct `TallyRunArtifact` (defs + results + summaries) from pipeline results
-- Return `TallyRunReport` (SDK-facing wrapper) with `view()` + `toArtifact()`
+**`report/builder.ts`:**
+- Construct EvaluationReport from pipeline results
+- Organize per-target results
+- Compute aggregate summaries
 - Add metadata and timestamps
 
 **`report/formatters/json.ts`:**
@@ -533,7 +541,8 @@ Implement the 5-phase pipeline:
 **Deliverables:**
 - ✅ Complete 5-phase pipeline executes correctly
 - ✅ Tally container orchestrates full evaluation flow
-- ✅ Reporting produces valid TallyRunArtifact/TallyRunReport
+- ✅ Report builder produces valid EvaluationReport
+- ✅ JSON and CSV formatters work correctly
 - ✅ JSONL loader handles large files
 - ✅ Data validation works for DatasetItem and Conversation
 - ✅ Public API exports all necessary components
@@ -659,7 +668,7 @@ All components are first-class values:
 
 **Phase 8:**
 - End-to-end: minimal dataset + scorer + aggregator
-- `Tally.run()` returns `TallyRunReport`
+- `Tally.run()` returns `EvaluationReport`
 - JSON/CSV formatters emit valid strings
 
 ### Integration Tests (Post-Phase 8)
@@ -712,7 +721,7 @@ All components are first-class values:
 
 ### Phase 8
 - [ ] Pipeline executes all 5 phases in order
-- [ ] Tally.run() produces valid TallyRunReport
+- [ ] Tally.run() produces valid EvaluationReport
 - [ ] Error handling works at each phase
 - [ ] JSONL loader handles large files
 - [ ] Report formatters produce valid output
@@ -729,7 +738,7 @@ All components are first-class values:
 
 **Installation:**
 ```bash
-bun add ai zod
+pnpm -w add ai zod
 ```
 
 **Note:** Types for LLM metrics are defined in Phase 1 (`core/types.ts`), but the actual runtime dependencies (`ai` and `zod`) are only needed when implementing the execution engine in Phase 7.

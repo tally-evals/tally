@@ -1,37 +1,37 @@
 /**
- * Utilities for building AI SDK prompts from messages
+ * Utilities for building prompts and messages from conversation history
  */
 
 import type { ModelMessage, Prompt } from 'ai';
 
 /**
- * Convert messages to a new array of ModelMessage
+ * Convert history to an array of ModelMessage
  */
-export function messagesToMessages(
-	messages: readonly ModelMessage[]
+export function historyToMessages(
+	history: readonly ModelMessage[]
 ): ModelMessage[] {
-	return [...messages];
+	return [...history];
 }
 
 /**
- * Build a Prompt object from messages
+ * Build a Prompt object from conversation history
  * 
  * @param options - Options for building the prompt
- * @param options.messages - Conversation messages (AgentMemory snapshot)
+ * @param options.history - Conversation history
  * @param options.system - Optional system message
  * @param options.useMessages - If true, uses messages format; if false, uses prompt string format
  * @returns A Prompt object compatible with AI SDK
  */
-export function buildPromptFromMessages(options: {
-	messages: readonly ModelMessage[];
+export function buildPromptFromHistory(options: {
+	history: readonly ModelMessage[];
 	system?: string;
 	useMessages?: boolean;
 }): Prompt {
-	const { messages, system, useMessages = true } = options;
+	const { history, system, useMessages = true } = options;
 
 	if (useMessages) {
 		const prompt: Prompt = {
-			messages: messagesToMessages(messages),
+			messages: historyToMessages(history),
 		};
 		if (system !== undefined) {
 			prompt.system = system;
@@ -40,7 +40,7 @@ export function buildPromptFromMessages(options: {
 	}
 
 	// Convert messages to a string prompt
-	const promptText = messages
+	const promptText = history
 		.map((msg) => {
 			if (typeof msg.content === 'string') {
 				return `${msg.role}: ${msg.content}`;
