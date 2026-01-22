@@ -150,8 +150,8 @@ export interface Measurement {
 export type VerdictPolicyInfo =
   | { kind: "none" }
   | { kind: "boolean"; passWhen: boolean }
-  | { kind: "number"; type: "threshold"; passAt: number; inclusive?: true }
-  | { kind: "number"; type: "range"; min?: number; max?: number; inclusive?: true }
+  | { kind: "number"; type: "threshold"; passAt: number }
+  | { kind: "number"; type: "range"; min?: number; max?: number }
   | { kind: "ordinal"; passWhenIn: readonly string[] }
   | { kind: "custom"; note: "not-serializable" };
 
