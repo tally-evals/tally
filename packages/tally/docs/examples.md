@@ -40,7 +40,7 @@ const roleAdherenceBase = defineBaseMetric<number>({
   valueType: 'number',
 });
 const ROLE_ADHERENCE: MultiTurnMetricDef<number, Conversation> = createMultiTurnLLM({
-  base: withNormalization({ metric: roleAdherenceBase, default: { type: 'identity' } }),
+  base: withNormalization({ metric: roleAdherenceBase, normalizer: { type: 'identity' } }),
   provider: openai('gpt-4.1'),
   prompt: {
     instruction: 'Score the assistant on how well it adheres to system and role instructions (0-1).',
@@ -55,7 +55,7 @@ const answerRelevanceBase = defineBaseMetric<number>({
   valueType: 'number',
 });
 const ANSWER_RELEVANCE: SingleTurnMetricDef<number, Conversation> = createSingleTurnLLM({
-  base: withNormalization({ metric: answerRelevanceBase, default: { type: 'identity' } }),
+  base: withNormalization({ metric: answerRelevanceBase, normalizer: { type: 'identity' } }),
   provider: openai('gpt-4.1'),
   prompt: {
     instruction: 'Rate how relevant the assistant reply is to the paired user message (0-1).',
@@ -155,7 +155,7 @@ const ANSWER_RELEVANCE_DATASET: SingleTurnMetricDef<number, DatasetItem> = creat
   number,
   DatasetItem
 >({
-  base: withNormalization({ metric: answerRelevanceBase, default: { type: 'identity' } }),
+  base: withNormalization({ metric: answerRelevanceBase, normalizer: { type: 'identity' } }),
   runOnSelected: (item) => computeAnswerRelevance(item),
   compute: ({ data }) => computeAnswerRelevance(data as DatasetItem),
   cacheable: true,
@@ -168,7 +168,7 @@ const latencyBase = defineBaseMetric<number>({
 });
 const LATENCY_SCORE: SingleTurnMetricDef<number, DatasetItem> = createSingleTurnCode<number, DatasetItem>(
   {
-    base: withNormalization({ metric: latencyBase, default: {
+    base: withNormalization({ metric: latencyBase, normalizer: {
       type: 'min-max',
       min: 0,
       max: 1000,

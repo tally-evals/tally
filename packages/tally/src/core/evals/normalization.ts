@@ -11,8 +11,8 @@ import type {
   MetricDef,
   MetricNormalization,
   MetricScalar,
+  NormalizationContextFor,
   NormalizeToScore,
-  ScoringContext,
 } from '@tally-evals/core';
 import { toScore } from '@tally-evals/core';
 
@@ -54,7 +54,7 @@ export function needsAutoNormalization<T extends MetricScalar>(
 export function applyAutoNormalization<T extends MetricScalar>(
   _metric: MetricDef<T, MetricContainer>,
   autoNormalizer: AutoNormalizer
-): MetricNormalization<T, ScoringContext> {
+): MetricNormalization<T, NormalizationContextFor<T>> {
   if (autoNormalizer.kind === 'boolean') {
     const trueScore = autoNormalizer.trueScore ?? 1.0;
     const falseScore = autoNormalizer.falseScore ?? 0.0;
@@ -66,12 +66,12 @@ export function applyAutoNormalization<T extends MetricScalar>(
       );
     }
 
-    const normalizeFn: NormalizeToScore<T, ScoringContext> = (value) => {
+    const normalizeFn: NormalizeToScore<T, NormalizationContextFor<T>> = (value) => {
       return toScore((value as boolean) ? trueScore : falseScore);
     };
 
     return {
-      default: { type: 'custom', normalize: normalizeFn },
+      normalizer: { type: 'custom', normalize: normalizeFn },
     };
   }
 
@@ -90,7 +90,7 @@ export function applyAutoNormalization<T extends MetricScalar>(
       }
     }
 
-    const normalizeFn: NormalizeToScore<T, ScoringContext> = (value) => {
+    const normalizeFn: NormalizeToScore<T, NormalizationContextFor<T>> = (value) => {
       const weight = weights[value as string];
       if (weight === undefined) {
         // Unknown value - default to 0 or throw?
@@ -101,13 +101,13 @@ export function applyAutoNormalization<T extends MetricScalar>(
     };
 
     return {
-      default: { type: 'custom', normalize: normalizeFn },
+      normalizer: { type: 'custom', normalize: normalizeFn },
     };
   }
 
   // kind === 'number' - use identity or metric's existing normalization
   return {
-    default: { type: 'identity' },
+    normalizer: { type: 'identity' },
   };
 }
 

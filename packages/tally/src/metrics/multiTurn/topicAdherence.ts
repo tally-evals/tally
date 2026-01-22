@@ -152,7 +152,7 @@ Based on your analysis and the rubric, provide your score as a number between 0 
       ],
     },
     normalization: {
-      default: createMinMaxNormalizer({
+      normalizer: createMinMaxNormalizer({
         min: 0,
         max: 5,
         clip: true,

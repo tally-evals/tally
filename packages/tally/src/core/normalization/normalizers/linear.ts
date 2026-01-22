@@ -6,7 +6,7 @@
  * Supports direction preference
  */
 
-import type { NormalizerSpec, Score, ScoringContext } from '@tally/core/types';
+import type { NormalizerSpec, NumericNormalizationContext, Score } from '@tally/core/types';
 import { toScore } from '@tally/core/types';
 
 /**
@@ -14,15 +14,15 @@ import { toScore } from '@tally/core/types';
  */
 export function normalizeLinear(
   value: number,
-  spec: Extract<NormalizerSpec<number, ScoringContext>, { type: 'linear' }>,
-  context: ScoringContext
+  spec: Extract<NormalizerSpec<number, NumericNormalizationContext>, { type: 'linear' }>,
+  context: NumericNormalizationContext
 ): Score {
-  // Read slope/intercept from spec, with fallback to context
-  const slope = spec.slope ?? (context.extra?.slope as number | undefined);
-  const intercept = spec.intercept ?? (context.extra?.intercept as number | undefined);
+  // Slope/intercept must be provided by the spec
+  const slope = spec.slope;
+  const intercept = spec.intercept;
 
   if (slope === undefined || intercept === undefined) {
-    throw new Error('Linear normalizer requires slope and intercept in spec or context.extra');
+    throw new Error('Linear normalizer requires slope and intercept in spec');
   }
 
   // Apply linear transformation

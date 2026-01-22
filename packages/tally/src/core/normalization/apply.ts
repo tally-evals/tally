@@ -9,10 +9,10 @@ import type {
   MetricContainer,
   MetricDef,
   MetricScalar,
+  NormalizationContextFor,
   NormalizeToScore,
   NormalizerSpec,
   Score,
-  ScoringContext,
 } from '@tally/core/types';
 import { normalizeCustom } from './normalizers/custom';
 import { normalizeIdentity } from './normalizers/identity';
@@ -33,8 +33,10 @@ import { normalizeZScore } from './normalizers/zScore';
  */
 export function applyNormalization<T extends MetricScalar>(
   value: T,
-  normalizerSpec: NormalizerSpec<T, ScoringContext> | NormalizeToScore<T, ScoringContext>,
-  context: ScoringContext,
+  normalizerSpec:
+    | NormalizerSpec<T, NormalizationContextFor<T>>
+    | NormalizeToScore<T, NormalizationContextFor<T>>,
+  context: NormalizationContextFor<T>,
   metric: MetricDef<T, MetricContainer>
 ): Score {
   // Handle function-based normalizers (custom functions)
@@ -48,23 +50,58 @@ export function applyNormalization<T extends MetricScalar>(
       return normalizeIdentity(value);
 
     case 'min-max': {
-      return normalizeMinMax(value as number, normalizerSpec, context);
+      return normalizeMinMax(
+        value as number,
+        normalizerSpec as Extract<
+          NormalizerSpec<number, NormalizationContextFor<number>>,
+          { type: 'min-max' }
+        >,
+        context as NormalizationContextFor<number>
+      );
     }
 
     case 'z-score': {
-      return normalizeZScore(value as number, normalizerSpec, context);
+      return normalizeZScore(
+        value as number,
+        normalizerSpec as Extract<
+          NormalizerSpec<number, NormalizationContextFor<number>>,
+          { type: 'z-score' }
+        >,
+        context as NormalizationContextFor<number>
+      );
     }
 
     case 'threshold': {
-      return normalizeThreshold(value as number, normalizerSpec, context);
+      return normalizeThreshold(
+        value as number,
+        normalizerSpec as Extract<
+          NormalizerSpec<number, NormalizationContextFor<number>>,
+          { type: 'threshold' }
+        >,
+        context as NormalizationContextFor<number>
+      );
     }
 
     case 'linear': {
-      return normalizeLinear(value as number, normalizerSpec, context);
+      return normalizeLinear(
+        value as number,
+        normalizerSpec as Extract<
+          NormalizerSpec<number, NormalizationContextFor<number>>,
+          { type: 'linear' }
+        >,
+        context as NormalizationContextFor<number>
+      );
     }
 
     case 'ordinal-map': {
-      return normalizeOrdinalMap(value, normalizerSpec, context);
+      return normalizeOrdinalMap(
+        value,
+        normalizerSpec as Extract<
+          NormalizerSpec<string, NormalizationContextFor<string>>,
+          { type: 'ordinal-map' }
+        >,
+        context as NormalizationContextFor<string>
+      );
     }
 
     case 'custom': {

@@ -1,18 +1,20 @@
 /**
- * Context resolution utilities
+ * Calibration resolution utilities
  *
- * Resolves static vs dynamic normalization contexts
- * Computes distribution statistics when needed
- * Caches resolved contexts per metric
+ * Resolves static vs dynamic metric calibration contexts.
+ *
+ * NOTE: Caching is intentionally scoped to a single run invocation. Do not
+ * use a module-global cache keyed only by metric name, as that can leak
+ * calibration between different datasets within the same process.
  */
 
-import type { MetricNormalization, MetricScalar, ScoringContext } from '@tally/core/types';
+import type {
+  MetricNormalization,
+  MetricScalar,
+  NormalizationContextFor,
+} from '@tally/core/types';
 
-/**
- * Cache for resolved contexts
- * Key: metric name, Value: resolved context
- */
-const contextCache = new Map<string, ScoringContext>();
+export type CalibrationCache = Map<string, unknown>;
 
 /**
  * Compute distribution statistics (mean, stdDev) from raw values
@@ -62,62 +64,48 @@ export function computeRange(rawValues: readonly number[]): { min: number; max: 
 }
 
 /**
- * Resolve normalization context
+ * Resolve metric calibration context
  *
- * Handles both static contexts and dynamic context resolvers
- * Caches resolved contexts per metric to avoid recomputation
+ * Handles both static calibration objects and dynamic calibration resolvers.
  *
  * @param normalization - Metric normalization configuration
- * @param dataset - Full dataset for context resolution
+ * @param dataset - Full dataset for calibration resolution
  * @param rawValues - Raw metric values for this metric
- * @param metricName - Name of the metric (for caching)
- * @returns Resolved ScoringContext
+ * @param metricName - Name of the metric (for per-run caching)
+ * @param cache - Per-run cache
+ * @returns Resolved calibration context
  */
-export async function resolveContext<T extends MetricScalar>(
-  normalization: MetricNormalization<T, ScoringContext> | undefined,
+export async function resolveCalibration<T extends MetricScalar>(
+  normalization: MetricNormalization<T, NormalizationContextFor<T>> | undefined,
   dataset: readonly unknown[],
   rawValues: readonly T[],
-  metricName: string
-): Promise<ScoringContext> {
-  // Check cache first
-  const cached = contextCache.get(metricName);
-  if (cached) {
-    return cached;
+  metricName: string,
+  cache: CalibrationCache
+): Promise<NormalizationContextFor<T>> {
+  const cached = cache.get(metricName) as NormalizationContextFor<T> | undefined;
+  if (cached) return cached;
+
+  // If no normalization config, or no calibrate, return empty calibration object
+  if (!normalization || !normalization.calibrate) {
+    const empty = {} as NormalizationContextFor<T>;
+    cache.set(metricName, empty);
+    return empty;
   }
 
-  // If no normalization config, return empty context
-  if (!normalization || !normalization.context) {
-    const emptyContext: ScoringContext = {};
-    contextCache.set(metricName, emptyContext);
-    return emptyContext;
+  const { calibrate } = normalization;
+
+  // Static calibration object
+  if (typeof calibrate !== 'function') {
+    cache.set(metricName, calibrate);
+    return calibrate;
   }
 
-  const { context } = normalization;
-
-  // Handle static context
-  if (typeof context !== 'function') {
-    contextCache.set(metricName, context);
-    return context;
-  }
-
-  // Handle dynamic context resolver
-  const resolvedContext = await context({ dataset, rawValues });
-  contextCache.set(metricName, resolvedContext);
-  return resolvedContext;
+  // Dynamic calibration resolver
+  const resolved = await calibrate({ dataset, rawValues });
+  cache.set(metricName, resolved);
+  return resolved;
 }
 
-/**
- * Clear the context cache
- * Useful for testing or when dataset changes
- */
-export function clearContextCache(): void {
-  contextCache.clear();
-}
-
-/**
- * Get cached context for a metric
- * Returns undefined if not cached
- */
-export function getCachedContext(metricName: string): ScoringContext | undefined {
-  return contextCache.get(metricName);
+export function createCalibrationCache(): CalibrationCache {
+  return new Map();
 }

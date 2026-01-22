@@ -222,7 +222,7 @@ export function createToolCallAccuracyMetric<
     },
     cacheable: true,
     normalization: {
-      default: createIdentityNormalizer(),
+      normalizer: createIdentityNormalizer(),
     },
   });
 

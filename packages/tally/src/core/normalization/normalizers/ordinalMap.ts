@@ -5,7 +5,12 @@
  * Values not in the map are not supported (will throw error)
  */
 
-import type { MetricScalar, NormalizerSpec, Score, ScoringContext } from '@tally/core/types';
+import type {
+  MetricScalar,
+  NormalizerSpec,
+  OrdinalNormalizationContext,
+  Score,
+} from '@tally/core/types';
 import { toScore } from '@tally/core/types';
 
 /**
@@ -13,21 +18,18 @@ import { toScore } from '@tally/core/types';
  */
 export function normalizeOrdinalMap(
   value: MetricScalar,
-  spec: Extract<NormalizerSpec<string | number, ScoringContext>, { type: 'ordinal-map' }>,
-  context: ScoringContext
+  spec: Extract<NormalizerSpec<string, OrdinalNormalizationContext>, { type: 'ordinal-map' }>,
+  context: OrdinalNormalizationContext
 ): Score {
   // Read map from spec, with fallback to context
-  const map =
-    spec.map ??
-    context.ordinalMap ??
-    (context.extra?.map as Record<string | number, number> | undefined);
+  const map = spec.map ?? context.map;
 
   if (!map) {
-    throw new Error('Ordinal map normalizer requires map in spec or context.ordinalMap');
+    throw new Error('Ordinal map normalizer requires map in spec or context.map');
   }
 
   // Look up the value in the map
-  const mappedValue = map[value as string | number];
+  const mappedValue = map[String(value)];
 
   if (mappedValue === undefined) {
     throw new Error(

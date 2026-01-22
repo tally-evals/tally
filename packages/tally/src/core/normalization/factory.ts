@@ -10,10 +10,12 @@ import type {
   MetricContainer,
   MetricDef,
   MetricScalar,
+  NormalizationContextFor,
+  NumericNormalizationContext,
+  OrdinalNormalizationContext,
   NormalizeToScore,
   NormalizerSpec,
   Score,
-  ScoringContext,
 } from '@tally/core/types';
 
 /**
@@ -29,8 +31,8 @@ export function createMinMaxNormalizer(args: {
   max: number;
   clip?: boolean;
   direction?: 'higher' | 'lower';
-}): NormalizerSpec<number, ScoringContext> {
-  const spec: NormalizerSpec<number, ScoringContext> = {
+}): NormalizerSpec<number, NumericNormalizationContext> {
+  const spec: NormalizerSpec<number, NumericNormalizationContext> = {
     type: 'min-max',
     min: args.min,
     max: args.max,
@@ -58,8 +60,8 @@ export function createZScoreNormalizer(args: {
   clip?: boolean;
   direction?: 'higher' | 'lower';
   to?: '0-1' | '0-100';
-}): NormalizerSpec<number, ScoringContext> {
-  const spec: NormalizerSpec<number, ScoringContext> = {
+}): NormalizerSpec<number, NumericNormalizationContext> {
+  const spec: NormalizerSpec<number, NumericNormalizationContext> = {
     type: 'z-score',
     mean: args.mean,
     stdDev: args.stdDev,
@@ -88,7 +90,7 @@ export function createThresholdNormalizer(args: {
   threshold: number;
   above?: number;
   below?: number;
-}): NormalizerSpec<number, ScoringContext> {
+}): NormalizerSpec<number, NumericNormalizationContext> {
   // Validate above and below are in [0, 1] range
   const above = args.above ?? 1.0;
   const below = args.below ?? 0.0;
@@ -119,8 +121,8 @@ export function createLinearNormalizer(args: {
   intercept: number;
   clip?: [number, number];
   direction?: 'higher' | 'lower';
-}): NormalizerSpec<number, ScoringContext> {
-  const spec: NormalizerSpec<number, ScoringContext> = {
+}): NormalizerSpec<number, NumericNormalizationContext> {
+  const spec: NormalizerSpec<number, NumericNormalizationContext> = {
     type: 'linear',
     slope: args.slope,
     intercept: args.intercept,
@@ -141,8 +143,8 @@ export function createLinearNormalizer(args: {
  * @returns Ordinal map normalizer spec
  */
 export function createOrdinalMapNormalizer(args: {
-  map: Record<string | number, number>;
-}): NormalizerSpec<string | number, ScoringContext> {
+  map: Record<string, number>;
+}): NormalizerSpec<string, OrdinalNormalizationContext> {
   // Validate all mapped values are in [0, 1] range
   for (const [key, value] of Object.entries(args.map)) {
     if (value < 0 || value > 1) {
@@ -168,7 +170,7 @@ export function createOrdinalMapNormalizer(args: {
  */
 export function createIdentityNormalizer<
   T extends MetricScalar = number,
-  C = ScoringContext,
+  C = NormalizationContextFor<T>,
 >(): NormalizerSpec<T, C> {
   return {
     type: 'identity',
@@ -186,7 +188,7 @@ export function createIdentityNormalizer<
  */
 export function createCustomNormalizer<
   T extends MetricScalar = MetricScalar,
-  C = ScoringContext,
+  C = NormalizationContextFor<T>,
 >(args: {
   normalize: (value: T, args: { context: C; metric: MetricDef<T, MetricContainer> }) => Score;
 }): NormalizerSpec<T, C> {

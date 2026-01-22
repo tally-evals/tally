@@ -6,7 +6,7 @@
  * - Values < threshold: map to `below` score (default: 0.0)
  */
 
-import type { NormalizerSpec, Score, ScoringContext } from '@tally/core/types';
+import type { NormalizerSpec, NumericNormalizationContext, Score } from '@tally/core/types';
 import { toScore } from '@tally/core/types';
 
 /**
@@ -14,19 +14,18 @@ import { toScore } from '@tally/core/types';
  */
 export function normalizeThreshold(
   value: number,
-  spec: Extract<NormalizerSpec<number, ScoringContext>, { type: 'threshold' }>,
-  context: ScoringContext
+  spec: Extract<NormalizerSpec<number, NumericNormalizationContext>, { type: 'threshold' }>,
+  context: NumericNormalizationContext
 ): Score {
   // Read threshold from spec, with fallback to context
-  const threshold =
-    spec.threshold ?? context.thresholds?.pass ?? (context.extra?.threshold as number | undefined);
+  const threshold = spec.threshold ?? context.thresholds?.pass;
 
   if (threshold === undefined) {
     throw new Error('Threshold normalizer requires threshold in spec or context.thresholds.pass');
   }
 
-  const above = spec.above ?? (context.extra?.above as number | undefined) ?? 1.0;
-  const below = spec.below ?? (context.extra?.below as number | undefined) ?? 0.0;
+  const above = spec.above ?? 1.0;
+  const below = spec.below ?? 0.0;
 
   // Validate above and below are in [0, 1] range
   if (above < 0 || above > 1 || below < 0 || below > 1) {
