@@ -2,6 +2,7 @@
  * Formatter utilities for metrics and text
  */
 
+import { VerdictPolicyInfo } from '@tally-evals/core';
 import { score, verdict } from './colors';
 
 export type MetricScalar = number | boolean | string;
@@ -88,9 +89,9 @@ export function formatVerdict(
  * Format a serializable verdict policy into a short "pass at" rule string.
  * This is intended for UI display (TUI).
  */
-export function formatPassAt(policy: unknown): string {
+export function formatPassAt(policy: VerdictPolicyInfo): string {
   if (!policy || typeof policy !== 'object') return '-';
-  const p = policy as Record<string, unknown>;
+  const p = policy;
   const kind = p.kind;
   if (kind === 'none') return '-';
   if (kind === 'custom') return 'custom';
@@ -102,20 +103,19 @@ export function formatPassAt(policy: unknown): string {
   }
   if (kind === 'number') {
     const type = p.type;
-    const inclusive = p.inclusive === true;
     if (type === 'threshold') {
       return typeof p.passAt === 'number'
-        ? `${inclusive ? '≥' : '>'} ${p.passAt}`
+        ? `≥ ${p.passAt}`
         : '-';
     }
     if (type === 'range') {
       const min = typeof p.min === 'number' ? p.min : undefined;
       const max = typeof p.max === 'number' ? p.max : undefined;
       if (min !== undefined && max !== undefined) {
-        return `between ${min}-${max}${inclusive ? '' : ' (exclusive)'}`;
+        return `between ${min}-${max}`;
       }
-      if (min !== undefined) return `${inclusive ? '≥' : '>'} ${min}`;
-      if (max !== undefined) return `${inclusive ? '≤' : '<'} ${max}`;
+      if (min !== undefined) return `≥ ${min}`;
+      if (max !== undefined) return `≤ ${max}`;
       return '-';
     }
   }

@@ -37,14 +37,12 @@ const VerdictPolicyInfoSchema = z.union([
     kind: z.literal('number'),
     type: z.literal('threshold'),
     passAt: z.number(),
-    inclusive: z.literal(true).optional(),
   }),
   z.object({
     kind: z.literal('number'),
     type: z.literal('range'),
     min: z.number().optional(),
     max: z.number().optional(),
-    inclusive: z.literal(true).optional(),
   }),
   z.object({
     kind: z.literal('ordinal'),

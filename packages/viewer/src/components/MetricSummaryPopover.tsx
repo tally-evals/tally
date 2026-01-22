@@ -1,4 +1,4 @@
-import type { TallyRunArtifact } from "@tally-evals/core";
+import type { TallyRunArtifact, VerdictPolicyInfo } from "@tally-evals/core";
 import { HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMemo } from "react";
@@ -45,7 +45,7 @@ function collectAggregationKeys(args: {
   return Array.from(keys).sort((a, b) => a.localeCompare(b));
 }
 
-function formatVerdictPolicy(policy: unknown): {
+function formatVerdictPolicy(policy: VerdictPolicyInfo): {
   ruleType: string;
   passAt?: string;
   note?: string;
@@ -81,12 +81,11 @@ function formatVerdictPolicy(policy: unknown): {
 
   if (policy.kind === "number") {
     const type = policy.type;
-    const inclusive = policy.inclusive === true;
 
     if (type === "threshold") {
       const passAt = policy.passAt;
       if (typeof passAt === "number") {
-        return { ruleType: "Threshold", passAt: `${inclusive ? "≥" : ">"} ${passAt}` };
+        return { ruleType: "Threshold", passAt: `≥ ${passAt}` };
       }
       return { ruleType: "Threshold", passAt: "—" };
     }
@@ -98,14 +97,14 @@ function formatVerdictPolicy(policy: unknown): {
       if (min !== undefined && max !== undefined) {
         return {
           ruleType: "Range",
-          passAt: `${inclusive ? "Between" : "Between"} ${min}–${max}${inclusive ? "" : " (exclusive)"}`,
+          passAt: `Between ${min}-${max}`,
         };
       }
       if (min !== undefined) {
-        return { ruleType: "Range", passAt: `${inclusive ? "≥" : ">"} ${min}` };
+        return { ruleType: "Range", passAt: `≥ ${min}` };
       }
       if (max !== undefined) {
-        return { ruleType: "Range", passAt: `${inclusive ? "≤" : "<"} ${max}` };
+        return { ruleType: "Range", passAt: `≤ ${max}` };
       }
       return { ruleType: "Range", passAt: "—" };
     }
