@@ -195,23 +195,35 @@ export function extractToolCallsFromMessage(
     const msg = message as { content?: unknown };
     if (Array.isArray(msg.content)) {
       for (const part of msg.content) {
-        if (
-          part &&
-          typeof part === 'object' &&
-          'type' in part &&
-          part.type === 'tool-call'
-        ) {
-          const toolPart = part as {
-            toolName?: string;
-            toolCallId?: string;
-            output?: unknown;
-          };
-          if (toolPart.toolName) {
-            toolCalls.push({
-              toolName: toolPart.toolName,
-              toolCallId: toolPart.toolCallId ?? '',
-              output: toolPart.output,
-            });
+        if (part && typeof part === 'object' && 'type' in part) {
+          if (part.type === 'tool-call') {
+            const toolCallPart = part as {
+              toolName?: string;
+              toolCallId?: string;
+            };
+
+            if (toolCallPart.toolName && toolCallPart.toolCallId) {
+              toolCalls.push({
+                toolName: toolCallPart.toolName,
+                toolCallId: toolCallPart.toolCallId,
+                output: undefined,
+              });
+            }
+          }
+          else if (part.type === 'tool-result') {
+            const toolResultPart = part as {
+              toolName?: string;
+              toolCallId?: string;
+              output?: unknown;
+            };
+
+            if (toolResultPart.toolCallId) {
+              toolCalls.push({
+                toolName: toolResultPart.toolName ?? '',
+                toolCallId: toolResultPart.toolCallId,
+                output: toolResultPart.output,
+              });
+            }
           }
         }
       }
@@ -227,20 +239,24 @@ export function extractToolCallsFromMessage(
 export function extractToolCallsFromMessages(
   messages: readonly unknown[],
 ): { toolName: string; toolCallId: string; output?: unknown }[] {
-  const allToolCalls = new Set<{
+  const allToolCalls = new Map<string, {
     toolName: string;
     toolCallId: string;
     output?: unknown;
   }>();
+  
   for (const message of messages) {
     const toolCalls = extractToolCallsFromMessage(message);
     for (const tc of toolCalls) {
-      allToolCalls.add({
-        toolName: tc.toolName,
+      const existing = allToolCalls.get(tc.toolCallId);
+      
+      allToolCalls.set(tc.toolCallId, {
+        toolName: existing?.toolName || tc.toolName,
         toolCallId: tc.toolCallId,
-        output: tc.output,
+        output: tc.output ?? existing?.output,
       });
     }
   }
-  return Array.from(allToolCalls);
+
+  return Array.from(allToolCalls.values());
 }
