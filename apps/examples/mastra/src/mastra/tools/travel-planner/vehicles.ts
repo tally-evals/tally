@@ -1,5 +1,5 @@
 import { createTool } from '@mastra/core/tools';
-import { searchVehiclesParamsSchema, vehicleSchema, type SearchVehiclesParams, type Vehicle } from '~/schemas/travel-planner/vehicle';
+import { searchVehiclesParamsSchema, vehicleSchema, type Vehicle } from '~/schemas/travel-planner/vehicle';
 import { z } from 'zod';
 import { faker } from '@faker-js/faker';
 
@@ -248,7 +248,6 @@ export const searchVehiclesTool = createTool({
         const {
             location,
             startDate,
-            endDate,
             type,
             make,
             capacity,

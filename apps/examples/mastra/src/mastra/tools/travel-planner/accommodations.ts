@@ -1,5 +1,5 @@
 import { createTool } from '@mastra/core/tools';
-import { searchAccommodationsParamsSchema, accommodationSchema, type SearchAccommodationsParams, type Accommodation } from '~/schemas/travel-planner/accommodations';
+import { searchAccommodationsParamsSchema, accommodationSchema, type Accommodation } from '~/schemas/travel-planner/accommodations';
 import { z } from 'zod';
 import { faker } from '@faker-js/faker';
 
@@ -126,7 +126,6 @@ export const searchAccommodationsTool = createTool({
         const {
             location,
             checkIn,
-            checkOut,
             type,
             minRating,
             maxPricePerNight,

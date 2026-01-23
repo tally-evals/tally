@@ -1,5 +1,5 @@
 import { createTool } from '@mastra/core/tools';
-import { searchFlightsParamsSchema, flightSchema, type SearchFlightsParams, type Flight } from '~/schemas/travel-planner/flights';
+import { searchFlightsParamsSchema, flightSchema, type Flight } from '~/schemas/travel-planner/flights';
 import { z } from 'zod';
 import { faker } from '@faker-js/faker';
 
@@ -64,6 +64,9 @@ function generateDepartureTime(seededFaker: typeof faker): string {
  */
 function calculateArrivalTime(departureTime: string, durationMinutes: number): string {
     const [hours, minutes] = departureTime.split(':').map(Number);
+    if (hours === undefined || minutes === undefined) {
+        return '00:00'; // fallback
+    }
     const totalMinutes = hours * 60 + minutes + durationMinutes;
     const arrivalHours = Math.floor(totalMinutes / 60) % 24;
     const arrivalMinutes = totalMinutes % 60;
@@ -132,7 +135,7 @@ export const searchFlightsTool = createTool({
         
         for (let i = 0; i < MIN_GENERATED_FLIGHTS; i++) {
             const airline = faker.helpers.arrayElement(airlinePool);
-            const airlineCode = airline.split(' ')[0].substring(0, 2).toUpperCase();
+            const airlineCode = airline?.split(' ')?.[0]?.substring(0, 2)?.toUpperCase() || 'XX';
             const flightNumber = `${airlineCode}${faker.number.int({ min: 100, max: 999 })}`;
             
             const stops = faker.helpers.weightedArrayElement([
