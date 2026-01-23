@@ -133,7 +133,7 @@ describe('Travel Planner Agent - Curve Ball', () => {
 
     const overallQualitySummary = report.result.summaries?.byEval?.['Overall Quality'];
     if (overallQualitySummary) {
-      const mean = (overallQualitySummary.aggregations?.score as any)?.mean;
+      const mean = (overallQualitySummary.aggregations?.score as any)?.Mean;
       if (typeof mean === 'number') {
         expect(mean).toBeGreaterThan(0.4);
       }

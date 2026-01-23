@@ -170,7 +170,7 @@ describe('Travel Planner Agent - Golden Path', () => {
 		const overallQualitySummary = report.result.summaries?.byEval?.['Overall Quality'];
 		console.log('📊 Evaluation Results:');
 		console.log(`   Steps evaluated: ${conversation.steps.length}`);
-		console.log(`   Overall Quality mean: ${(overallQualitySummary?.aggregations?.score as any)?.mean}`);
+		console.log(`   Overall Quality mean: ${(overallQualitySummary?.aggregations?.score as any)?.Mean}`);
 
 		expect(report).toBeDefined();
 		expect(report.result.stepCount).toBeGreaterThan(0);
@@ -178,7 +178,7 @@ describe('Travel Planner Agent - Golden Path', () => {
 
 		// Check mean score
 		if (overallQualitySummary) {
-			const mean = (overallQualitySummary.aggregations?.score as any)?.mean;
+			const mean = (overallQualitySummary.aggregations?.score as any)?.Mean;
 			if (typeof mean === 'number') {
 				expect(mean).toBeGreaterThan(0.2);
 			}

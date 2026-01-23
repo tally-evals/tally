@@ -7,10 +7,11 @@
 
 import { config } from 'dotenv';
 import { resolve } from 'node:path';
-import type { AgentHandle, Trajectory, TrajectoryResult } from '@tally-evals/trajectories';
+import type {  Trajectory, TrajectoryResult } from '@tally-evals/trajectories';
 import {
 	createTrajectory,
 	runTrajectory,
+	withMastraAgent,
 } from '@tally-evals/trajectories';
 import type { Conversation, ConversationStep, TallyRunArtifact } from '@tally-evals/tally';
 import type { ModelMessage } from 'ai';
@@ -22,8 +23,6 @@ import { rm } from 'node:fs/promises';
 config({ path: resolve(process.cwd(), '.env.local') });
 
 const RECORD_MODE = process.env.RECORD_TRAJECTORIES === '1';
-
-console.log(process.env.RECORD_TRAJECTORIES);
 
 /**
  * Options for running a test case
@@ -100,55 +99,13 @@ export async function runCase(
 			force: true,
 		});
 
-
-		// Record mode: run trajectory and save
 		console.log(`📹 Recording trajectory: ${conversationId}`);
 
-		// TODO: should use the withMastraAgent wrapper instead
-		const agentHandle: AgentHandle = {
-			respond: async (history: readonly ModelMessage[]) => {
-				const _history = structuredClone(history) as ModelMessage[];
-				const result = await agent.generate(_history, { format: 'mastra' });
-				const messages: ModelMessage[] = [];
-				if (result.text) {
-					messages.push({
-						role: 'assistant',
-						content: result.text,
-					});
-				}
-				// If there are steps with tool calls/results, convert them to messages
-				// The steps array contains the full conversation including tool calls
-				// We'll extract the relevant messages from the steps
-				if (result.steps && result.steps.length > 0) {
-					// The last step contains the final response
-					// Earlier steps may contain tool calls and results
-					// We'll use the response messages from the steps if available
-					for (const step of result.steps) {
-						if (step.response?.messages) {
-							// Add messages from the step response
-							for (const msg of step.response.messages) {
-								// Avoid duplicates - if we already added a text message, skip it
-								if (msg.role === 'assistant' && typeof msg.content === 'string' && result.text && msg.content === result.text) {
-									continue;
-								}
-								messages.push(msg);
-							}
-						}
-					}
-				}
-
-				// If no messages were added, ensure we have at least the text response
-				if (messages.length === 0 && result.text) {
-					messages.push({
-						role: 'assistant',
-						content: result.text,
-					});
-				}
-
-				return { messages };
-			}
-		}
-		const trajectoryInstance = createTrajectory(trajectory, agentHandle);
+		const wrappedAgent = withMastraAgent(agent);
+		const trajectoryInstance = createTrajectory(
+			{ ...trajectory, conversationId },
+			wrappedAgent
+		);
 
 		const result: TrajectoryResult = await runTrajectory(trajectoryInstance, { generateLogs, store, trajectoryId: conversationId });
 
