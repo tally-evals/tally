@@ -1,5 +1,5 @@
 import { createTool } from '@mastra/core/tools';
-import { searchDiningParamsSchema, diningSchema, type SearchDiningParams, type Dining } from '~/schemas/travel-planner/dining';
+import { searchDiningParamsSchema, diningSchema, type Dining } from '~/schemas/travel-planner/dining';
 import { z } from 'zod';
 import { faker } from '@faker-js/faker';
 
@@ -22,7 +22,7 @@ const DINING_TYPES = ['restaurant', 'cafe', 'bar', 'bistro', 'food truck', 'fine
 const AMBIANCE_TYPES = ['casual', 'formal', 'romantic', 'family-friendly', 'trendy', 'traditional', 'outdoor'];
 
 /** Dress codes */
-const DRESS_CODES = ['casual', 'smart casual', 'business casual', 'formal', 'no dress code'];
+// const DRESS_CODES = ['casual', 'smart casual', 'business casual', 'formal', 'no dress code'];
 
 /** Dietary options pool */
 const DIETARY_OPTIONS = ['vegetarian', 'vegan', 'gluten-free', 'halal', 'kosher', 'dairy-free', 'nut-free'];
@@ -115,7 +115,7 @@ function generateDiningName(seededFaker: typeof faker, cuisine: string, type: st
 /**
  * Generates operating hours
  */
-function generateHours(seededFaker: typeof faker, type: string): Dining['hours'] {
+function generateHours(type: string): Dining['hours'] {
     const isCafe = type === 'cafe';
     const isBar = type === 'bar';
     const isFineDining = type === 'fine dining';
@@ -176,7 +176,6 @@ export const searchDiningTool = createTool({
             location,
             cuisine,
             type,
-            guests = 1,
             minRating,
             maxPricePerPerson,
             dietaryOptions,
@@ -260,7 +259,7 @@ export const searchDiningTool = createTool({
                         ? `${faker.number.int({ min: 5, max: 45 })}-${faker.number.int({ min: 10, max: 60 })} min`
                         : 'N/A',
                 },
-                hours: generateHours(faker, diningType),
+                hours: generateHours(diningType),
                 distance: {
                     cityCenter: Number((faker.number.float({ min: 0.1, max: 8 })).toFixed(1)),
                 },

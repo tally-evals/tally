@@ -1,6 +1,4 @@
 import { Agent } from '@mastra/core/agent';
-import { Memory } from '@mastra/memory';
-import { LibSQLStore } from '@mastra/libsql';
 import { searchAccommodationsTool } from '../tools/travel-planner/accommodations';
 import { searchFlightsTool } from '../tools/travel-planner/flights';
 import { searchDiningTool } from '../tools/travel-planner/dining';

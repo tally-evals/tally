@@ -2,13 +2,27 @@
   "name": "@tally-evals/examples-mastra",
   "version": "1.0.0",
   "description": "Mastra evaluation examples using the Tally framework",
-  "main": "index.js",
+  "main": "./src/mastra/index.ts",
+  "types": "./src/mastra/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/mastra/index.ts",
+      "import": "./src/mastra/index.ts",
+      "require": "./src/mastra/index.ts"
+    }
+  },
   "scripts": {
+    "dev": "mastra dev",
+    "start": "mastra start",
+    "build": "tsc",
     "test": "bun test",
     "test:watch": "bun test --watch",
-    "dev": "mastra dev",
-    "build": "mastra build",
-    "start": "mastra start"
+    "cli:build": "bun run --filter @tally-evals/cli build",
+    "tui": "bun run cli:build && bunx --no-install tally browse",
+    "dev:server": "bun run cli:build && bunx --no-install tally dev server",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "clean": "rm -rf dist"
   },
   "keywords": [],
   "author": "",
