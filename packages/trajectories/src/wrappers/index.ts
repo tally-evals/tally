@@ -9,7 +9,7 @@ import { generateText, convertToModelMessages } from 'ai';
 import type { Prompt, ModelMessage } from 'ai';
 import type { AgentHandle } from '../core/types.js';
 import { buildPromptFromMessages, messagesToMessages } from '../utils/prompt.js';
-import { Agent, convertMessages } from '@mastra/core/agent';
+import { Agent } from '@mastra/core/agent';
 
 type GenerateTextInput = Parameters<typeof generateText>[0];
 
@@ -154,32 +154,23 @@ export function withMastraAgent(
 	}
 ): AgentHandle {
 	return {
-		respond: async (agentMemoryMessages: readonly ModelMessage[]) => {
-			let modelMessages: readonly ModelMessage[] = agentMemoryMessages;
-			try {
-				modelMessages = convertToModelMessages(agentMemoryMessages as unknown as never) as unknown as ModelMessage[];
-			} catch {
-				// If conversion fails, fall back to the provided messages.
-			}
-
-			const promptInput = buildPromptFromMessages({
-				messages: modelMessages,
-				useMessages: true,
-			});
-			const result = await agent.generate(promptInput);
-			const rawOut = result.response.messages as unknown as Array<{ role?: unknown; content?: unknown }>;
-			const hasPartsContent = rawOut.some((m) => Array.isArray(m?.content));
-
-			let outMessages: ModelMessage[] = convertMessages(result.response.messages).to("AIV5.Model")
-			if (hasPartsContent) {
-				try {
-					const converted = convertToModelMessages(result.response.messages as unknown as never) as unknown as ModelMessage[];
-					if (Array.isArray(converted) && converted.length > 0) {
-						outMessages = converted;
-					}
-				} catch {
-					// keep original
+		respond: async (history: readonly ModelMessage[]) => {
+			const result = await agent.generate(history);
+			
+			let outMessages: ModelMessage[] = [];
+			
+			if (result.steps && result.steps.length > 0) {
+				const lastStep = result.steps[result.steps.length - 1];
+				if (lastStep && lastStep.response?.messages) {
+					outMessages = lastStep.response.messages;
 				}
+			}
+			
+			if (outMessages.length === 0 && result.text) {
+				outMessages = [{
+					role: 'assistant',
+					content: result.text,
+				}];
 			}
 
 			return { messages: outMessages };
