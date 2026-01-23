@@ -45,6 +45,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@mastra/core": "^0.24.9",
     "@tally-evals/core": "workspace:*",
     "ai": "^5.0.121"
   },
