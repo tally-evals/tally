@@ -206,6 +206,13 @@
         "@tally-evals/tally": "workspace:*",
       },
     },
+    "packages/types-lab": {
+      "name": "@tally/types-lab",
+      "version": "0.0.1",
+      "devDependencies": {
+        "typescript": "^5.9.3",
+      },
+    },
     "packages/typescript-config": {
       "name": "@tally-evals/typescript-config",
       "version": "0.0.0",
@@ -1142,6 +1149,8 @@
     "@tally-evals/typescript-config": ["@tally-evals/typescript-config@workspace:packages/typescript-config"],
 
     "@tally-evals/viewer": ["@tally-evals/viewer@workspace:packages/viewer"],
+
+    "@tally/types-lab": ["@tally/types-lab@workspace:packages/types-lab"],
 
     "@tybys/wasm-util": ["@tybys/wasm-util@0.10.1", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg=="],
 

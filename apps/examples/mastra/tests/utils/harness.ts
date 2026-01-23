@@ -13,7 +13,7 @@ import {
 	runTrajectory,
 } from '@tally-evals/trajectories';
 import type { Conversation, ConversationStep, TallyRunArtifact } from '@tally-evals/tally';
-import type { ModelMessage } from 'ai';
+import type { ModelMessage } from '@tally-evals/core';
 import type { Agent } from '@mastra/core/agent';
 import { stepTracesToConversation, TallyStore } from '@tally-evals/core';
 import { rm } from 'node:fs/promises';
