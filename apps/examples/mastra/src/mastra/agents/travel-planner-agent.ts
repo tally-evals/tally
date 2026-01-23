@@ -3,6 +3,7 @@ import { searchAccommodationsTool } from '../tools/travel-planner/accommodations
 import { searchFlightsTool } from '../tools/travel-planner/flights';
 import { searchDiningTool } from '../tools/travel-planner/dining';
 import { searchVehiclesTool } from '../tools/travel-planner/vehicles';
+import { weatherTool } from '~/tools/weather-tool';
 
 const DEFAULT_MODEL_ID = 'google/gemini-2.5-flash-lite';
 const DEFAULT_MAX_STEPS = 20;
@@ -61,6 +62,7 @@ export const travelPlannerAgent = new Agent({
       searchFlightsTool,
       searchDiningTool,
       searchVehiclesTool,
+      getWeather: weatherTool
    },
    defaultGenerateOptions: {
       maxSteps: DEFAULT_MAX_STEPS,
