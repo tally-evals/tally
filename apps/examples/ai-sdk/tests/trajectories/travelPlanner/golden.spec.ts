@@ -232,7 +232,7 @@ describe('Travel Planner Agent - Golden Path', () => {
 
     const overallQualitySummary =
       report.result.summaries?.byEval?.['Overall Quality'];
-    const mean = (overallQualitySummary?.aggregations?.score as any)?.mean;
+    const mean = (overallQualitySummary?.aggregations?.score as any)?.Mean;
     if (typeof mean === 'number') expect(mean).toBeGreaterThanOrEqual(0.6);
   }, 300000); // 5 minute timeout for trajectory execution
 });
