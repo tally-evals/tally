@@ -34,8 +34,11 @@ export interface ThresholdAggregatorOptions {
  * Counts the proportion of values that meet or exceed a threshold.
  * This is a simple numeric comparison, not a verdict policy evaluation.
  *
+ * Uses `const` type parameter for threshold to enable type-safe names like `Threshold >= 0.7`.
+ *
+ * @typeParam TThreshold - Literal number type for threshold value
  * @param options - Optional configuration including threshold (default: 0.5)
- * @returns NumericAggregatorDef that calculates the proportion of values >= threshold
+ * @returns NumericAggregatorDef with name based on threshold
  *
  * @example
  * ```ts
@@ -47,12 +50,13 @@ export interface ThresholdAggregatorOptions {
  *   threshold: 0.7,
  *   description: 'Proportion of scores >= 70%'
  * });
+ * // typeof strictThreshold.name is 'Threshold >= 0.7'
  * ```
  */
-export function createThresholdAggregator(
-  options?: ThresholdAggregatorOptions
-): NumericAggregatorDef {
-  const threshold = options?.threshold ?? 0.5;
+export function createThresholdAggregator<const TThreshold extends number = 0.5>(
+  options?: ThresholdAggregatorOptions & { threshold?: TThreshold }
+): NumericAggregatorDef<`Threshold >= ${TThreshold}`> {
+  const threshold = (options?.threshold ?? 0.5) as TThreshold;
 
   if (threshold < 0 || threshold > 1) {
     throw new Error(`Threshold aggregator: threshold must be in [0, 1] range, got ${threshold}`);
@@ -60,7 +64,7 @@ export function createThresholdAggregator(
 
   return {
     kind: 'numeric',
-    name: options?.name ?? `Threshold >= ${threshold}`,
+    name: (options?.name ?? `Threshold >= ${threshold}`) as `Threshold >= ${TThreshold}`,
     description: options?.description ?? `Proportion of values >= ${threshold}`,
     aggregate: (values: readonly number[]) => {
       if (isEmpty(values)) {

@@ -19,17 +19,20 @@ export interface MeanAggregatorOptions {
 /**
  * Create a mean aggregator
  *
+ * Returns a NumericAggregatorDef with literal name type 'Mean'.
+ *
  * @param options - Optional configuration
- * @returns NumericAggregatorDef that calculates the mean of numeric values
+ * @returns NumericAggregatorDef<'Mean'> that calculates the mean of numeric values
  *
  * @example
  * ```ts
  * const meanAggregator = createMeanAggregator({
  *   description: 'Average quality score across all evaluations'
  * });
+ * // typeof meanAggregator.name is 'Mean'
  * ```
  */
-export function createMeanAggregator(options?: MeanAggregatorOptions): NumericAggregatorDef {
+export function createMeanAggregator(options?: MeanAggregatorOptions): NumericAggregatorDef<'Mean'> {
   return {
     kind: 'numeric',
     name: 'Mean',

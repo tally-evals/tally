@@ -4,6 +4,9 @@
  * Use these functions to define custom aggregators for your metrics.
  * Each function ensures the correct `kind` is set for type safety.
  *
+ * Uses `const` type parameters to preserve literal aggregator names
+ * for type-safe report access.
+ *
  * @example
  * ```ts
  * // Custom standard deviation aggregator
@@ -16,6 +19,7 @@
  *     return Math.sqrt(squaredDiffs.reduce((a, b) => a + b, 0) / values.length);
  *   },
  * });
+ * // typeof stdDevAggregator.name is 'StdDev' (literal type)
  * ```
  */
 
@@ -29,9 +33,14 @@ import type {
 // Numeric Aggregator Definition
 // ============================================================================
 
-export interface DefineNumericAggregatorArgs {
+/**
+ * Args for defining a numeric aggregator.
+ *
+ * @typeParam TName - Literal string type for aggregator name
+ */
+export interface DefineNumericAggregatorArgs<TName extends string = string> {
   /** Name of the aggregator (appears in reports) */
-  name: string;
+  name: TName;
   /** Description of what this aggregator computes */
   description?: string;
   /** The aggregation function - receives array of numbers, returns a number */
@@ -47,8 +56,11 @@ export interface DefineNumericAggregatorArgs {
  * - Normalized scores (always numbers 0-1)
  * - Raw values from number-typed metrics
  *
+ * Uses `const` type parameter to preserve literal name type for type-safe reports.
+ *
+ * @typeParam TName - Literal string type for aggregator name
  * @param args - Aggregator configuration
- * @returns A NumericAggregatorDef ready to use with metrics
+ * @returns A NumericAggregatorDef with preserved name type
  *
  * @example
  * ```ts
@@ -57,6 +69,7 @@ export interface DefineNumericAggregatorArgs {
  *   description: 'Minimum value',
  *   aggregate: (values) => Math.min(...values),
  * });
+ * // typeof minAggregator.name is 'Min'
  *
  * const stdDevAggregator = defineNumericAggregator({
  *   name: 'StdDev',
@@ -69,7 +82,9 @@ export interface DefineNumericAggregatorArgs {
  * });
  * ```
  */
-export function defineNumericAggregator(args: DefineNumericAggregatorArgs): NumericAggregatorDef {
+export function defineNumericAggregator<const TName extends string>(
+  args: DefineNumericAggregatorArgs<TName>
+): NumericAggregatorDef<TName> {
   return {
     kind: 'numeric',
     name: args.name,
@@ -83,9 +98,14 @@ export function defineNumericAggregator(args: DefineNumericAggregatorArgs): Nume
 // Boolean Aggregator Definition
 // ============================================================================
 
-export interface DefineBooleanAggregatorArgs {
+/**
+ * Args for defining a boolean aggregator.
+ *
+ * @typeParam TName - Literal string type for aggregator name
+ */
+export interface DefineBooleanAggregatorArgs<TName extends string = string> {
   /** Name of the aggregator (appears in reports) */
-  name: string;
+  name: TName;
   /** Description of what this aggregator computes */
   description?: string;
   /** The aggregation function - receives array of booleans, returns a number */
@@ -102,8 +122,11 @@ export interface DefineBooleanAggregatorArgs {
  *
  * Note: For normalized scores, use numeric aggregators (scores are always numbers).
  *
+ * Uses `const` type parameter to preserve literal name type for type-safe reports.
+ *
+ * @typeParam TName - Literal string type for aggregator name
  * @param args - Aggregator configuration
- * @returns A BooleanAggregatorDef ready to use with boolean metrics
+ * @returns A BooleanAggregatorDef with preserved name type
  *
  * @example
  * ```ts
@@ -119,9 +142,12 @@ export interface DefineBooleanAggregatorArgs {
  *     return maxStreak;
  *   },
  * });
+ * // typeof consecutiveTrueAggregator.name is 'MaxTrueStreak'
  * ```
  */
-export function defineBooleanAggregator(args: DefineBooleanAggregatorArgs): BooleanAggregatorDef {
+export function defineBooleanAggregator<const TName extends string>(
+  args: DefineBooleanAggregatorArgs<TName>
+): BooleanAggregatorDef<TName> {
   return {
     kind: 'boolean',
     name: args.name,
@@ -135,9 +161,14 @@ export function defineBooleanAggregator(args: DefineBooleanAggregatorArgs): Bool
 // Categorical Aggregator Definition
 // ============================================================================
 
-export interface DefineCategoricalAggregatorArgs {
+/**
+ * Args for defining a categorical aggregator.
+ *
+ * @typeParam TName - Literal string type for aggregator name
+ */
+export interface DefineCategoricalAggregatorArgs<TName extends string = string> {
   /** Name of the aggregator (appears in reports) */
-  name: string;
+  name: TName;
   /** Description of what this aggregator computes */
   description?: string;
   /** The aggregation function - receives array of strings, returns a record of counts/proportions */
@@ -155,8 +186,11 @@ export interface DefineCategoricalAggregatorArgs {
  *
  * Note: For normalized scores, use numeric aggregators (scores are always numbers).
  *
+ * Uses `const` type parameter to preserve literal name type for type-safe reports.
+ *
+ * @typeParam TName - Literal string type for aggregator name
  * @param args - Aggregator configuration
- * @returns A CategoricalAggregatorDef ready to use with string/ordinal metrics
+ * @returns A CategoricalAggregatorDef with preserved name type
  *
  * @example
  * ```ts
@@ -176,11 +210,12 @@ export interface DefineCategoricalAggregatorArgs {
  *     return { entropy };
  *   },
  * });
+ * // typeof entropyAggregator.name is 'Entropy'
  * ```
  */
-export function defineCategoricalAggregator(
-  args: DefineCategoricalAggregatorArgs
-): CategoricalAggregatorDef {
+export function defineCategoricalAggregator<const TName extends string>(
+  args: DefineCategoricalAggregatorArgs<TName>
+): CategoricalAggregatorDef<TName> {
   return {
     kind: 'categorical',
     name: args.name,

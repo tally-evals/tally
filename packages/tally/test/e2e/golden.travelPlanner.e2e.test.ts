@@ -15,13 +15,11 @@ import {
   thresholdVerdict,
 } from '../../src/evals';
 import {
-  createEvaluator,
   createTally,
   defineBaseMetric,
   defineInput,
   formatReportAsTables,
   loadConversationStepsFromJSONL,
-  runAllTargets,
 } from '../_exports';
 import {
   createAnswerRelevanceMetric,
@@ -139,8 +137,8 @@ describe.skipIf(!process.env.GOOGLE_GENERATIVE_AI_API_KEY)(
         verdict: thresholdVerdict(0.6), // Adjusted from 0.7, actual scores ~0.64-0.84
       });
 
-      const evaluator = createEvaluator({
-        name: 'Travel Planner Agent Quality',
+      const tally = createTally({
+        data: [conversation],
         evals: [
           answerRelevanceEval,
           completenessEval,
@@ -149,12 +147,6 @@ describe.skipIf(!process.env.GOOGLE_GENERATIVE_AI_API_KEY)(
           topicAdherenceEval,
           overallQualityEval,
         ],
-        context: runAllTargets(),
-      });
-
-      const tally = createTally({
-        data: [conversation],
-        evaluators: [evaluator],
       });
 
       // Run with deterministic LLM options for reproducibility
