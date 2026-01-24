@@ -11,8 +11,6 @@ import type {
   BaseMetricDef,
   CodeMetricFields,
   CompatibleAggregator,
-  EvaluationContext,
-  Evaluator,
   InputScores,
   LLMMetricFields,
   MetricContainer,
@@ -32,19 +30,32 @@ import type {
   VarsTuple,
 } from '@tally/core/types';
 import { getDefaultAggregators } from 'src/aggregators/default';
-import type { Eval } from './evals/types';
 
 // -----------------------------------------------------------------------------
 // Base Metric Definition
 // -----------------------------------------------------------------------------
 
-export function defineBaseMetric<T extends MetricScalar>(args: {
+/**
+ * Creates a base metric definition.
+ *
+ * @typeParam TMetricValue - The metric value type (number, boolean, or string)
+ *
+ * @example
+ * ```typescript
+ * const base = defineBaseMetric({
+ *   name: 'relevance',
+ *   valueType: 'number',
+ *   description: 'Measures answer relevance',
+ * });
+ * ```
+ */
+export function defineBaseMetric<TMetricValue extends MetricScalar>(args: {
   name: string;
-  valueType: BaseMetricDef<T>['valueType'];
+  valueType: BaseMetricDef<TMetricValue>['valueType'];
   description?: string;
   metadata?: Record<string, unknown>;
-  normalization?: MetricNormalization<T, NormalizationContextFor<T>>;
-}): BaseMetricDef<T> {
+  normalization?: MetricNormalization<TMetricValue, NormalizationContextFor<TMetricValue>>;
+}): BaseMetricDef<TMetricValue> {
   const { name, valueType, description, metadata, normalization } = args;
   return {
     name,
@@ -55,22 +66,28 @@ export function defineBaseMetric<T extends MetricScalar>(args: {
   };
 }
 
+/**
+ * Adds normalization configuration to a metric.
+ *
+ * @typeParam TMetricValue - The metric value type
+ * @typeParam TMetric - The metric definition type
+ */
 export function withNormalization<
-  T extends MetricScalar,
-  TMetric extends (BaseMetricDef<T> | MetricDef<T, MetricContainer>) & object,
+  TMetricValue extends MetricScalar,
+  TMetric extends (BaseMetricDef<TMetricValue> | MetricDef<TMetricValue, MetricContainer>) & object,
 >(args: {
   metric: TMetric;
   normalizer:
-    | NormalizerSpec<T, NormalizationContextFor<T>>
-    | NormalizeToScore<T, NormalizationContextFor<T>>;
+    | NormalizerSpec<TMetricValue, NormalizationContextFor<TMetricValue>>
+    | NormalizeToScore<TMetricValue, NormalizationContextFor<TMetricValue>>;
   calibrate?:
-    | NormalizationContextFor<T>
+    | NormalizationContextFor<TMetricValue>
     | ((args: {
         dataset: readonly unknown[];
-        rawValues: readonly T[];
-      }) => Promise<NormalizationContextFor<T>> | NormalizationContextFor<T>);
+        rawValues: readonly TMetricValue[];
+      }) => Promise<NormalizationContextFor<TMetricValue>> | NormalizationContextFor<TMetricValue>);
 }): TMetric {
-  const normalization: MetricNormalization<T, NormalizationContextFor<T>> = {
+  const normalization: MetricNormalization<TMetricValue, NormalizationContextFor<TMetricValue>> = {
     normalizer: args.normalizer,
     ...(args.calibrate !== undefined && { calibrate: args.calibrate }),
   };
@@ -80,46 +97,64 @@ export function withNormalization<
   } as TMetric;
 }
 
+/**
+ * Adds metadata to a metric definition.
+ *
+ * @typeParam TMetricValue - The metric value type
+ * @typeParam TMetric - The metric definition type
+ */
 export function withMetadata<
-  T extends MetricScalar,
-  TMetric extends BaseMetricDef<T> | MetricDef<T, MetricContainer>,
+  TMetricValue extends MetricScalar,
+  TMetric extends BaseMetricDef<TMetricValue> | MetricDef<TMetricValue, MetricContainer>,
 >(metric: TMetric, metadata: Record<string, unknown>): TMetric {
   return {
     ...metric,
     metadata: {
-      ...((metric as BaseMetricDef<T>).metadata || {}),
+      ...((metric as BaseMetricDef<TMetricValue>).metadata || {}),
       ...metadata,
     },
   } as TMetric;
 }
 
-export function withMetric<T extends MetricScalar, TContainer extends SingleTurnContainer>(
-  metric: SingleTurnMetricDef<T, TContainer>,
-  aggregator: CompatibleAggregator<T>
-): Aggregator<T, TContainer> {
+/**
+ * Binds an aggregator to a metric.
+ *
+ * @typeParam TMetricValue - The metric value type
+ * @typeParam TContainer - The container type
+ */
+export function withMetric<TMetricValue extends MetricScalar, TContainer extends SingleTurnContainer>(
+  metric: SingleTurnMetricDef<TMetricValue, TContainer>,
+  aggregator: CompatibleAggregator<TMetricValue>
+): Aggregator<TMetricValue, TContainer> {
   return {
     ...aggregator,
     metric,
-  } as Aggregator<T, TContainer>;
+  } as Aggregator<TMetricValue, TContainer>;
 }
 
 // -----------------------------------------------------------------------------
 // Single-Turn Metric Factories
 // -----------------------------------------------------------------------------
 
+/**
+ * Creates a code-based single-turn metric.
+ *
+ * @typeParam TMetricValue - The metric value type
+ * @typeParam TContainer - The container type
+ */
 export function createSingleTurnCode<
-  T extends MetricScalar,
+  TMetricValue extends MetricScalar,
   TContainer extends SingleTurnContainer = SingleTurnContainer,
 >(args: {
-  base: BaseMetricDef<T>;
-  preProcessor?: SingleTurnMetricDef<T, TContainer>['preProcessor'];
-  compute: CodeMetricFields<T>['compute'];
-  dependencies?: CodeMetricFields<T>['dependencies'];
-  cacheable?: CodeMetricFields<T>['cacheable'];
-  normalization?: MetricNormalization<T, NormalizationContextFor<T>>;
+  base: BaseMetricDef<TMetricValue>;
+  preProcessor?: SingleTurnMetricDef<TMetricValue, TContainer>['preProcessor'];
+  compute: CodeMetricFields<TMetricValue>['compute'];
+  dependencies?: CodeMetricFields<TMetricValue>['dependencies'];
+  cacheable?: CodeMetricFields<TMetricValue>['cacheable'];
+  normalization?: MetricNormalization<TMetricValue, NormalizationContextFor<TMetricValue>>;
   metadata?: Record<string, unknown>;
-  aggregators?: CompatibleAggregator<T>[];
-}): MetricDef<T, TContainer> {
+  aggregators?: CompatibleAggregator<TMetricValue>[];
+}): MetricDef<TMetricValue, TContainer> {
   const {
     base,
     preProcessor,
@@ -130,7 +165,7 @@ export function createSingleTurnCode<
     metadata,
     aggregators,
   } = args;
-  const mergedBase: SingleTurnMetricDef<T, TContainer> = {
+  const mergedBase: SingleTurnMetricDef<TMetricValue, TContainer> = {
     scope: 'single',
     ...base,
     ...(normalization !== undefined && { normalization }),
@@ -145,27 +180,34 @@ export function createSingleTurnCode<
     ...(dependencies !== undefined && { dependencies }),
     ...(cacheable !== undefined && { cacheable }),
     ...(preProcessor !== undefined && { preProcessor }),
-    aggregators: [...(aggregators ?? []), ...getDefaultAggregators<T>(base.valueType)].map(
-      (aggregator) => withMetric<T, TContainer>(mergedBase, aggregator)
+    aggregators: [...(aggregators ?? []), ...getDefaultAggregators<TMetricValue>(base.valueType)].map(
+      (aggregator) => withMetric<TMetricValue, TContainer>(mergedBase, aggregator)
     ),
-  } as MetricDef<T, TContainer>;
+  } as MetricDef<TMetricValue, TContainer>;
 }
 
+/**
+ * Creates an LLM-based single-turn metric.
+ *
+ * @typeParam TMetricValue - The metric value type
+ * @typeParam TContainer - The container type
+ * @typeParam TPromptVars - Prompt template variable names
+ */
 export function createSingleTurnLLM<
-  T extends MetricScalar,
+  TMetricValue extends MetricScalar,
   TContainer extends SingleTurnContainer = SingleTurnContainer,
-  V extends VarsTuple = readonly [],
+  TPromptVars extends VarsTuple = readonly [],
 >(args: {
-  base: BaseMetricDef<T>;
-  preProcessor?: SingleTurnMetricDef<T, TContainer>['preProcessor'];
-  provider: LLMMetricFields<T, V>['provider'];
-  prompt: LLMMetricFields<T, V>['prompt'];
-  rubric?: LLMMetricFields<T, V>['rubric'];
-  postProcessing?: LLMMetricFields<T, V>['postProcessing'];
-  normalization?: MetricNormalization<T, NormalizationContextFor<T>>;
+  base: BaseMetricDef<TMetricValue>;
+  preProcessor?: SingleTurnMetricDef<TMetricValue, TContainer>['preProcessor'];
+  provider: LLMMetricFields<TMetricValue, TPromptVars>['provider'];
+  prompt: LLMMetricFields<TMetricValue, TPromptVars>['prompt'];
+  rubric?: LLMMetricFields<TMetricValue, TPromptVars>['rubric'];
+  postProcessing?: LLMMetricFields<TMetricValue, TPromptVars>['postProcessing'];
+  normalization?: MetricNormalization<TMetricValue, NormalizationContextFor<TMetricValue>>;
   metadata?: Record<string, unknown>;
-  aggregators?: CompatibleAggregator<T>[];
-}): MetricDef<T, TContainer> {
+  aggregators?: CompatibleAggregator<TMetricValue>[];
+}): MetricDef<TMetricValue, TContainer> {
   const {
     base,
     preProcessor,
@@ -177,7 +219,7 @@ export function createSingleTurnLLM<
     metadata,
     aggregators,
   } = args;
-  const mergedBase: SingleTurnMetricDef<T> = {
+  const mergedBase: SingleTurnMetricDef<TMetricValue> = {
     scope: 'single',
     ...base,
     ...(normalization !== undefined && { normalization }),
@@ -190,33 +232,38 @@ export function createSingleTurnLLM<
     prompt,
     ...(rubric !== undefined && { rubric }),
     ...(postProcessing !== undefined && { postProcessing }),
-  } as unknown as Omit<LLMMetricFields<T, readonly []>, 'type'>;
+  } as unknown as Omit<LLMMetricFields<TMetricValue, readonly []>, 'type'>;
   return {
     ...mergedBase,
     type: 'llm-based',
     ...llmFields,
     ...(preProcessor !== undefined && { preProcessor }),
-    aggregators: [...(aggregators ?? []), ...getDefaultAggregators<T>(base.valueType)].map(
-      (aggregator) => withMetric<T, TContainer>(mergedBase, aggregator)
+    aggregators: [...(aggregators ?? []), ...getDefaultAggregators<TMetricValue>(base.valueType)].map(
+      (aggregator) => withMetric<TMetricValue, TContainer>(mergedBase, aggregator)
     ),
-  } as MetricDef<T, TContainer>;
+  } as MetricDef<TMetricValue, TContainer>;
 }
 
 // -----------------------------------------------------------------------------
 // Multi-Turn Metric Factories
 // -----------------------------------------------------------------------------
 
-export function createMultiTurnCode<T extends MetricScalar>(args: {
-  base: BaseMetricDef<T>;
-  runOnContainer: MultiTurnMetricDef<T, MultiTurnContainer>['runOnContainer'];
-  compute: CodeMetricFields<T>['compute'];
-  dependencies?: CodeMetricFields<T>['dependencies'];
-  cacheable?: CodeMetricFields<T>['cacheable'];
-  normalization?: MetricNormalization<T, NormalizationContextFor<T>>;
+/**
+ * Creates a code-based multi-turn metric.
+ *
+ * @typeParam TMetricValue - The metric value type
+ */
+export function createMultiTurnCode<TMetricValue extends MetricScalar>(args: {
+  base: BaseMetricDef<TMetricValue>;
+  runOnContainer: MultiTurnMetricDef<TMetricValue, MultiTurnContainer>['runOnContainer'];
+  compute: CodeMetricFields<TMetricValue>['compute'];
+  dependencies?: CodeMetricFields<TMetricValue>['dependencies'];
+  cacheable?: CodeMetricFields<TMetricValue>['cacheable'];
+  normalization?: MetricNormalization<TMetricValue, NormalizationContextFor<TMetricValue>>;
   metadata?: Record<string, unknown>;
-}): MetricDef<T, MultiTurnContainer> {
+}): MetricDef<TMetricValue, MultiTurnContainer> {
   const { base, runOnContainer, compute, dependencies, cacheable, normalization, metadata } = args;
-  const mergedBase: BaseMetricDef<T> = {
+  const mergedBase: BaseMetricDef<TMetricValue> = {
     ...base,
     ...(normalization !== undefined && { normalization }),
     ...(metadata !== undefined && {
@@ -231,23 +278,30 @@ export function createMultiTurnCode<T extends MetricScalar>(args: {
     ...(dependencies !== undefined && { dependencies }),
     ...(cacheable !== undefined && { cacheable }),
     runOnContainer,
-  } as MetricDef<T, MultiTurnContainer>;
+  } as MetricDef<TMetricValue, MultiTurnContainer>;
 }
 
+/**
+ * Creates an LLM-based multi-turn metric.
+ *
+ * @typeParam TMetricValue - The metric value type
+ * @typeParam TContainer - The container type
+ * @typeParam TPromptVars - Prompt template variable names
+ */
 export function createMultiTurnLLM<
-  T extends MetricScalar,
+  TMetricValue extends MetricScalar,
   TContainer extends MultiTurnContainer = MultiTurnContainer,
-  V extends VarsTuple = readonly [],
+  TPromptVars extends VarsTuple = readonly [],
 >(args: {
-  base: BaseMetricDef<T>;
-  runOnContainer: MultiTurnMetricDef<T, TContainer>['runOnContainer'];
-  provider: LLMMetricFields<T, V>['provider'];
-  prompt: LLMMetricFields<T, V>['prompt'];
-  rubric?: LLMMetricFields<T, V>['rubric'];
-  postProcessing?: LLMMetricFields<T, V>['postProcessing'];
-  normalization?: MetricNormalization<T, NormalizationContextFor<T>>;
+  base: BaseMetricDef<TMetricValue>;
+  runOnContainer: MultiTurnMetricDef<TMetricValue, TContainer>['runOnContainer'];
+  provider: LLMMetricFields<TMetricValue, TPromptVars>['provider'];
+  prompt: LLMMetricFields<TMetricValue, TPromptVars>['prompt'];
+  rubric?: LLMMetricFields<TMetricValue, TPromptVars>['rubric'];
+  postProcessing?: LLMMetricFields<TMetricValue, TPromptVars>['postProcessing'];
+  normalization?: MetricNormalization<TMetricValue, NormalizationContextFor<TMetricValue>>;
   metadata?: Record<string, unknown>;
-}): MetricDef<T, TContainer> {
+}): MetricDef<TMetricValue, TContainer> {
   const {
     base,
     runOnContainer,
@@ -258,49 +312,62 @@ export function createMultiTurnLLM<
     normalization,
     metadata,
   } = args;
-  const mergedBase: BaseMetricDef<T> = {
+  const mergedBase: BaseMetricDef<TMetricValue> = {
     ...base,
     ...(normalization !== undefined && { normalization }),
     ...(metadata !== undefined && {
       metadata: { ...(base.metadata || {}), ...metadata },
     }),
   };
-  // Cast LLM fields to the default TVars = readonly [] expected by MetricDef union
   const llmFields = {
     provider,
     prompt,
     ...(rubric !== undefined && { rubric }),
     ...(postProcessing !== undefined && { postProcessing }),
-  } as unknown as Omit<LLMMetricFields<T, readonly []>, 'type'>;
+  } as unknown as Omit<LLMMetricFields<TMetricValue, readonly []>, 'type'>;
   return {
     ...mergedBase,
     scope: 'multi',
     type: 'llm-based',
     ...llmFields,
     runOnContainer,
-  } as MetricDef<T, TContainer>;
+  } as MetricDef<TMetricValue, TContainer>;
 }
 
 // -----------------------------------------------------------------------------
 // Scorer Factories
 // -----------------------------------------------------------------------------
 
+/**
+ * Creates a scorer input configuration.
+ *
+ * @typeParam TMetric - The metric definition type
+ * @typeParam TMetricValue - The metric value type (inferred from metric)
+ *
+ * @example
+ * ```typescript
+ * const input = defineInput({
+ *   metric: relevanceMetric,
+ *   weight: 0.4,
+ * });
+ * ```
+ */
 export function defineInput<
-  // biome-ignore lint/suspicious/noExplicitAny: Accept any TRawValue and TContainer to avoid variance issues
-  M extends SingleTurnMetricDef<any, any> | MultiTurnMetricDef<any, any>,
-  // biome-ignore lint/suspicious/noExplicitAny: Infer TRawValue from the metric type
-  TRawValue extends MetricScalar = M extends SingleTurnMetricDef<infer T, any>
-    ? T
-    : // biome-ignore lint/suspicious/noExplicitAny: Infer TRawValue from MultiTurnMetricDef
-      M extends MultiTurnMetricDef<infer T, any>
-      ? T
+  // biome-ignore lint/suspicious/noExplicitAny: Accept any TMetricValue and TContainer to avoid variance issues
+  TMetric extends SingleTurnMetricDef<any, any> | MultiTurnMetricDef<any, any>,
+  // biome-ignore lint/suspicious/noExplicitAny: Infer TMetricValue from the metric type
+  TMetricValue extends MetricScalar = TMetric extends SingleTurnMetricDef<infer V, any>
+    ? V
+    : // biome-ignore lint/suspicious/noExplicitAny: Infer TMetricValue from MultiTurnMetricDef
+      TMetric extends MultiTurnMetricDef<infer V, any>
+      ? V
       : MetricScalar,
 >(args: {
-  metric: M;
+  metric: TMetric;
   weight: number;
   normalizerOverride?:
-    | NormalizerSpec<TRawValue, NormalizationContextFor<TRawValue>>
-    | NormalizeToScore<TRawValue, NormalizationContextFor<TRawValue>>;
+    | NormalizerSpec<TMetricValue, NormalizationContextFor<TMetricValue>>
+    | NormalizeToScore<TMetricValue, NormalizationContextFor<TMetricValue>>;
   required?: boolean;
 }): ScorerInput<MetricDef<MetricScalar, MetricContainer>, NormalizationContextFor<MetricScalar>> {
   return {
@@ -313,6 +380,20 @@ export function defineInput<
   } as ScorerInput<MetricDef<MetricScalar, MetricContainer>, NormalizationContextFor<MetricScalar>>;
 }
 
+/**
+ * Creates a scorer definition.
+ *
+ * @typeParam TInputs - The scorer inputs tuple
+ *
+ * @example
+ * ```typescript
+ * const scorer = defineScorer({
+ *   name: 'QualityScore',
+ *   output: qualityMetric,
+ *   inputs: [relevanceInput, accuracyInput],
+ * });
+ * ```
+ */
 export function defineScorer<
   TInputs extends readonly ScorerInput[] = readonly ScorerInput[],
 >(args: {
@@ -347,33 +428,3 @@ export function defineScorer<
   };
 }
 
-// -----------------------------------------------------------------------------
-// Evaluator Factory
-// -----------------------------------------------------------------------------
-
-/**
- * Create an evaluator with evals (new API)
- * Accepts any eval types to allow mixing single-turn and multi-turn evals
- */
-export function createEvaluator<TContainer extends MetricContainer = MetricContainer>(args: {
-  name: string;
-  evals: readonly Eval<MetricContainer>[];
-  context: EvaluationContext; // REQUIRED
-  description?: string;
-  metadata?: Record<string, unknown>;
-}): Evaluator<TContainer> {
-  const { name, evals, context, description, metadata } = args;
-  if (!Array.isArray(evals) || evals.length === 0) {
-    throw new Error('createEvaluator: evals must be a non-empty array');
-  }
-  if (!context) {
-    throw new Error('createEvaluator: context is required');
-  }
-  return {
-    name,
-    ...(description !== undefined && { description }),
-    evals: evals as readonly Eval<TContainer>[],
-    context,
-    ...(metadata !== undefined && { metadata }),
-  };
-}

@@ -32,26 +32,30 @@ export { toScore } from './primitives';
 // ============================================================================
 
 /**
- * Valid container types for single-turn metrics
- * Single-turn metrics measure individual steps or items
+ * Valid container types for single-turn metrics.
+ *
+ * Single-turn metrics evaluate individual items:
+ * - `ConversationStep` - One turn in a multi-turn conversation
+ * - `DatasetItem` - A standalone prompt/completion pair
  */
 export type SingleTurnContainer = ConversationStep | DatasetItem;
 
 /**
- * Valid container types for multi-turn metrics
- * Multi-turn metrics measure entire conversations
+ * Valid container types for multi-turn metrics.
+ *
+ * Multi-turn metrics evaluate entire conversations.
  */
 export type MultiTurnContainer = Conversation;
 
 /**
- * Valid container types for metrics
- * Union of all possible container types
+ * Union of all valid container types for metrics.
  */
 export type MetricContainer = SingleTurnContainer | MultiTurnContainer;
 
 /**
- * Single target type for a container
- * Extracts the single target type based on container type
+ * Extracts the single evaluation target from a container type.
+ *
+ * @typeParam TContainer - The container type
  */
 export type SingleTargetFor<TContainer> = TContainer extends Conversation
   ? ConversationStep
@@ -64,43 +68,67 @@ export type SingleTargetFor<TContainer> = TContainer extends Conversation
 // ============================================================================
 
 /**
- * Language model provider type
- * Can be a direct instance or a factory function
+ * AI SDK language model type.
  */
 export type LanguageModelLike = LanguageModel;
+
+/**
+ * Language model provider - direct instance or factory function.
+ *
+ * @example
+ * ```typescript
+ * import { openai } from '@ai-sdk/openai';
+ * const provider: ModelProvider = openai('gpt-4');
+ * ```
+ */
 export type ModelProvider = LanguageModelLike | (() => LanguageModelLike);
 
 /**
- * Variables tuple for prompt templates
+ * Tuple of variable names for prompt templates.
  */
 export type VarsTuple = readonly string[];
 
 /**
- * Prompt template with variable substitution support
- * Uses {{variable}} syntax for template variables
+ * Prompt template with variable substitution support.
+ *
+ * Uses `{{variable}}` syntax for template variables.
+ *
+ * @typeParam TPromptVars - Tuple of available variable names
  */
-export type PromptTemplate<TVars extends VarsTuple = readonly []> = {
-  instruction: string; // Template with {{variable}} substitutions
-  variables?: TVars; // Available substitution variables
+export type PromptTemplate<TPromptVars extends VarsTuple = readonly []> = {
+  /** Template string with {{variable}} placeholders */
+  instruction: string;
+  /** Available substitution variable names */
+  variables?: TPromptVars;
+  /** Few-shot examples for the LLM */
   examples?: Array<{
-    input: Record<TVars[number], unknown>;
+    input: Record<TPromptVars[number], unknown>;
     expectedOutput: string;
   }>;
 };
 
 /**
- * Shared fields for LLM-based metrics
- * Uses AI SDK's generateObject for structured outputs
+ * Configuration fields for LLM-based metrics.
+ *
+ * Uses AI SDK's `generateObject` for structured outputs.
+ *
+ * @typeParam TMetricValue - The metric value type
+ * @typeParam TPromptVars - Tuple of prompt template variable names
  */
 export interface LLMMetricFields<
-  TRawValue extends MetricScalar = number,
-  TVars extends VarsTuple = readonly [],
+  TMetricValue extends MetricScalar = number,
+  TPromptVars extends VarsTuple = readonly [],
 > {
+  /** Discriminator for metric implementation type */
   type: 'llm-based';
-  // AI SDK provider: pass a LanguageModel instance or factory used for generation
-  // e.g., openai('gpt-4.1') from '@ai-sdk/openai'
+  /**
+   * AI SDK provider instance or factory.
+   * @example openai('gpt-4') from '@ai-sdk/openai'
+   */
   provider: ModelProvider;
-  prompt: PromptTemplate<TVars>;
+  /** Prompt template for LLM evaluation */
+  prompt: PromptTemplate<TPromptVars>;
+  /** Optional rubric for consistent LLM scoring */
   rubric?: {
     criteria: string;
     scale?: string;
@@ -109,9 +137,10 @@ export interface LLMMetricFields<
       reasoning: string;
     }>;
   };
+  /** Optional post-processing of LLM output */
   postProcessing?: {
     normalize?: boolean;
-    transform?: (rawOutput: string) => TRawValue;
+    transform?: (rawOutput: string) => TMetricValue;
   };
 }
 
@@ -120,18 +149,25 @@ export interface LLMMetricFields<
 // ============================================================================
 
 /**
- * Shared fields for code-based metrics
- * Computes metric values programmatically
+ * Configuration fields for code-based metrics.
+ *
+ * Computes metric values programmatically using custom logic.
+ *
+ * @typeParam TMetricValue - The metric value type
  */
 export interface CodeMetricFields<
-  TRawValue extends MetricScalar = MetricScalar,
+  TMetricValue extends MetricScalar = MetricScalar,
 > {
+  /** Discriminator for metric implementation type */
   type: 'code-based';
+  /** Function that computes the metric value from input data */
   compute: (args: {
     data: unknown;
     metadata?: Record<string, unknown>;
-  }) => TRawValue;
+  }) => TMetricValue;
+  /** Other metrics this metric depends on */
   dependencies?: BaseMetricDef[];
+  /** Whether results can be cached */
   cacheable?: boolean;
 }
 
@@ -140,112 +176,152 @@ export interface CodeMetricFields<
 // ============================================================================
 
 /**
- * Base Metric Definition (passed around as a value)
- * All metric definitions extend this base interface
+ * Base metric definition shared by all metric types.
+ *
+ * @typeParam TMetricValue - The value type this metric produces (number, boolean, or string)
+ *
+ * @example
+ * ```typescript
+ * const base: BaseMetricDef<number> = {
+ *   name: 'relevance',
+ *   valueType: 'number',
+ *   description: 'Measures answer relevance',
+ * };
+ * ```
  */
-export interface BaseMetricDef<T extends MetricScalar = MetricScalar> {
+export interface BaseMetricDef<TMetricValue extends MetricScalar = MetricScalar> {
+  /** Unique metric name */
   name: string;
+  /** Human-readable description */
   description?: string;
-  valueType: ValueTypeFor<T>;
+  /** The value type this metric produces */
+  valueType: ValueTypeFor<TMetricValue>;
+  /** Custom metadata */
   metadata?: Record<string, unknown>;
-  // Normalization is owned by the metric definition
-  normalization?: MetricNormalization<T, NormalizationContextFor<T>>;
+  /** Normalization configuration for converting to Score */
+  normalization?: MetricNormalization<TMetricValue, NormalizationContextFor<TMetricValue>>;
 }
 
 /**
- * Single-turn metric definition
- * Measures a single target (DatasetItem or ConversationStep)
+ * Single-turn metric definition.
+ *
+ * Evaluates individual items (DatasetItem or ConversationStep).
+ *
+ * @typeParam TMetricValue - The value type this metric produces
+ * @typeParam TContainer - The container type (SingleTurnContainer)
  */
 export interface SingleTurnMetricDef<
-  TRawValue extends MetricScalar,
-  TContainerData extends SingleTurnContainer = SingleTurnContainer,
-> extends BaseMetricDef<TRawValue> {
+  TMetricValue extends MetricScalar,
+  TContainer extends SingleTurnContainer = SingleTurnContainer,
+> extends BaseMetricDef<TMetricValue> {
+  /** Metric scope discriminator */
   scope: 'single';
   /**
-   * Prepares the selected target into a normalized payload suitable for execution.
-   * For DatasetItem/ConversationStep, the default shape should expose { input, output }.
-   * Implementations may return any shape required by the metric.
+   * Prepares the selected target into a normalized payload for execution.
+   * Default shape exposes `{ input, output }`.
    */
   preProcessor?: (
-    selected: SingleTargetFor<TContainerData>,
+    selected: SingleTargetFor<TContainer>,
   ) => Promise<unknown> | unknown;
-  aggregators?: Aggregator<TRawValue, TContainerData>[];
+  /** Aggregators for combining results across items */
+  aggregators?: Aggregator<TMetricValue, TContainer>[];
 }
 
 /**
- * Multi-turn metric definition
- * Measures an entire Conversation
+ * Multi-turn metric definition.
+ *
+ * Evaluates entire conversations.
+ *
+ * @typeParam TMetricValue - The value type this metric produces
+ * @typeParam TContainer - The container type (MultiTurnContainer)
  */
 export interface MultiTurnMetricDef<
-  TRawValue extends MetricScalar,
+  TMetricValue extends MetricScalar,
   TContainer extends MultiTurnContainer = MultiTurnContainer,
-> extends BaseMetricDef<TRawValue> {
+> extends BaseMetricDef<TMetricValue> {
+  /** Metric scope discriminator */
   scope: 'multi';
   /**
-   * Prepare a conversation for downstream execution (LLM or code).
-   * Should return a serializable payload containing exactly what the metric needs.
+   * Prepares a conversation for downstream execution (LLM or code).
+   * Returns a serializable payload containing what the metric needs.
    */
   preprocessContainer?: (container: TContainer) => Promise<unknown> | unknown;
   /**
-   * @deprecated Use preprocessContainer instead. This legacy field will be treated
-   * as the preprocessor during execution if provided.
+   * @deprecated Use preprocessContainer instead.
    */
   runOnContainer?: (container: TContainer) => Promise<unknown> | unknown;
 }
 
 /**
- * Single-turn metric variants (LLM or Code-based)
+ * Single-turn metric variants (LLM or Code-based).
+ *
+ * @typeParam TMetricValue - The value type this metric produces
+ * @typeParam TContainer - The container type
+ * @typeParam TPromptVars - Prompt template variables (for LLM metrics)
  */
 export type SingleTurnMetricVariants<
-  TRawValue extends MetricScalar,
-  TContainerData extends SingleTurnContainer = SingleTurnContainer,
-  TVars extends VarsTuple = readonly [],
+  TMetricValue extends MetricScalar,
+  TContainer extends SingleTurnContainer = SingleTurnContainer,
+  TPromptVars extends VarsTuple = readonly [],
 > =
-  | (SingleTurnMetricDef<TRawValue, TContainerData> &
-      LLMMetricFields<TRawValue, TVars>)
-  | (SingleTurnMetricDef<TRawValue, TContainerData> &
-      CodeMetricFields<TRawValue>);
+  | (SingleTurnMetricDef<TMetricValue, TContainer> &
+      LLMMetricFields<TMetricValue, TPromptVars>)
+  | (SingleTurnMetricDef<TMetricValue, TContainer> &
+      CodeMetricFields<TMetricValue>);
 
 /**
- * Multi-turn metric variants (LLM or Code-based)
+ * Multi-turn metric variants (LLM or Code-based).
+ *
+ * @typeParam TMetricValue - The value type this metric produces
+ * @typeParam TContainer - The container type
+ * @typeParam TPromptVars - Prompt template variables (for LLM metrics)
  */
 export type MultiTurnMetricVariants<
-  TRawValue extends MetricScalar,
+  TMetricValue extends MetricScalar,
   TContainer extends MultiTurnContainer = MultiTurnContainer,
-  TVars extends VarsTuple = readonly [],
+  TPromptVars extends VarsTuple = readonly [],
 > =
-  | (MultiTurnMetricDef<TRawValue, TContainer> &
-      LLMMetricFields<TRawValue, TVars>)
-  | (MultiTurnMetricDef<TRawValue, TContainer> & CodeMetricFields<TRawValue>);
+  | (MultiTurnMetricDef<TMetricValue, TContainer> &
+      LLMMetricFields<TMetricValue, TPromptVars>)
+  | (MultiTurnMetricDef<TMetricValue, TContainer> & CodeMetricFields<TMetricValue>);
 
 /**
- * Metric definition union type
- * Can be single-turn or multi-turn, LLM-based or code-based
+ * Complete metric definition union type.
+ *
+ * Can be single-turn or multi-turn, LLM-based or code-based.
+ *
+ * @typeParam TMetricValue - The value type this metric produces
+ * @typeParam TContainer - The container type
  */
 export type MetricDef<
-  TRawValue extends MetricScalar = MetricScalar,
-  TContainerData extends MetricContainer = MetricContainer,
+  TMetricValue extends MetricScalar = MetricScalar,
+  TContainer extends MetricContainer = MetricContainer,
 > =
   | SingleTurnMetricVariants<
-      TRawValue,
-      TContainerData extends SingleTurnContainer
-        ? TContainerData
+      TMetricValue,
+      TContainer extends SingleTurnContainer
+        ? TContainer
         : SingleTurnContainer
     >
-  | (TContainerData extends MultiTurnContainer
-      ? MultiTurnMetricVariants<TRawValue, TContainerData>
+  | (TContainer extends MultiTurnContainer
+      ? MultiTurnMetricVariants<TMetricValue, TContainer>
       : never);
 
 /**
- * Any MetricDef for a container type
+ * Shorthand for any MetricDef compatible with a container type.
+ *
+ * @typeParam TContainer - The container type
  */
 export type MetricDefFor<TContainer extends MetricContainer> =
   AnyMetricDefFor<TContainer>;
 
 /**
- * Accepts any MetricDef for a container type, regardless of TRawValue
- * Uses MetricScalar (number | boolean | string) to maintain type safety
- * while accepting all valid metric value types
+ * Accepts any MetricDef for a container type, regardless of value type.
+ *
+ * Uses MetricScalar union to maintain type safety while accepting
+ * all valid metric value types.
+ *
+ * @typeParam TContainer - The container type
  */
 export type AnyMetricDefFor<TContainer extends MetricContainer> =
   TContainer extends SingleTurnContainer
@@ -255,16 +331,26 @@ export type AnyMetricDefFor<TContainer extends MetricContainer> =
       : SingleTurnMetricDef<MetricScalar, SingleTurnContainer> | MultiTurnMetricDef<MetricScalar, MultiTurnContainer>;
 
 /**
- * Runtime Metric (result of executing a MetricDef)
- * Contains the raw value and execution metadata
+ * Runtime metric result.
+ *
+ * Contains the computed value and execution metadata.
+ *
+ * @typeParam TMetricValue - The value type this metric produces
  */
-export interface Metric<TRawValue extends MetricScalar = MetricScalar> {
-  metricDef: MetricDef<TRawValue, MetricContainer>; // Direct reference to the definition that produced this value
-  value: TRawValue;
-  confidence?: number; // For LLM metrics
-  reasoning?: string; // For LLM metrics
+export interface Metric<TMetricValue extends MetricScalar = MetricScalar> {
+  /** Reference to the definition that produced this value */
+  metricDef: MetricDef<TMetricValue, MetricContainer>;
+  /** The computed metric value */
+  value: TMetricValue;
+  /** Confidence level (for LLM metrics) */
+  confidence?: number;
+  /** Reasoning explanation (for LLM metrics) */
+  reasoning?: string;
+  /** Execution time in milliseconds */
   executionTime: number;
+  /** When the metric was computed */
   timestamp: Date;
+  /** Additional metadata */
   metadata?: Record<string, unknown>;
 }
 
@@ -273,79 +359,105 @@ export interface Metric<TRawValue extends MetricScalar = MetricScalar> {
 // ============================================================================
 
 /**
- * Base aggregator fields shared by all aggregator types
+ * Base aggregator fields shared by all aggregator types.
+ *
+ * @typeParam TName - Literal string type for aggregator name (enables type-safe report access)
  */
-interface BaseAggregatorDef {
-  name: string;
+interface BaseAggregatorDef<TName extends string = string> {
+  /** Aggregator name (preserved as literal type for type-safe reports) */
+  readonly name: TName;
+  /** Human-readable description */
   description?: string;
+  /** Custom metadata */
   metadata?: Record<string, unknown>;
 }
 
 /**
- * Numeric aggregator - operates on number arrays
- * Used for: scores (always), numeric raw values
+ * Numeric aggregator - operates on number arrays.
+ *
+ * Used for scores (always) and numeric raw values.
  * Examples: Mean, Percentile, Threshold, Min, Max, StdDev
+ *
+ * @typeParam TName - Literal string type for aggregator name
  */
-export interface NumericAggregatorDef extends BaseAggregatorDef {
+export interface NumericAggregatorDef<TName extends string = string> extends BaseAggregatorDef<TName> {
   readonly kind: 'numeric';
+  /** Aggregation function */
   aggregate: (values: readonly number[]) => number;
 }
 
 /**
- * Boolean aggregator - operates on boolean arrays
- * Used for: boolean raw values
+ * Boolean aggregator - operates on boolean arrays.
+ *
+ * Used for boolean raw values.
  * Examples: TrueRate, FalseRate
+ *
+ * @typeParam TName - Literal string type for aggregator name
  */
-export interface BooleanAggregatorDef extends BaseAggregatorDef {
+export interface BooleanAggregatorDef<TName extends string = string> extends BaseAggregatorDef<TName> {
   readonly kind: 'boolean';
+  /** Aggregation function returning a rate (0-1) */
   aggregate: (values: readonly boolean[]) => number;
 }
 
 /**
- * Categorical aggregator - operates on string arrays
- * Used for: string/ordinal raw values
+ * Categorical aggregator - operates on string arrays.
+ *
+ * Used for string/ordinal raw values.
  * Examples: Distribution, Mode
+ *
+ * @typeParam TName - Literal string type for aggregator name
  */
-export interface CategoricalAggregatorDef extends BaseAggregatorDef {
+export interface CategoricalAggregatorDef<TName extends string = string> extends BaseAggregatorDef<TName> {
   readonly kind: 'categorical';
+  /** Aggregation function returning category counts/frequencies */
   aggregate: (values: readonly string[]) => Record<string, number>;
 }
 
 /**
- * Union of all aggregator types (discriminated by `kind`)
+ * Union of all aggregator types (discriminated by `kind`).
+ *
+ * @typeParam TName - Literal string type for aggregator name
  */
-export type AggregatorDef =
-  | NumericAggregatorDef
-  | BooleanAggregatorDef
-  | CategoricalAggregatorDef;
+export type AggregatorDef<TName extends string = string> =
+  | NumericAggregatorDef<TName>
+  | BooleanAggregatorDef<TName>
+  | CategoricalAggregatorDef<TName>;
 
 /**
- * Maps metric value type to compatible aggregator types
+ * Maps metric value type to compatible aggregator types.
  *
- * Logic:
- * - Numeric aggregators always work on normalized scores (scores are numbers)
- * - For raw values, aggregator must match the metric's value type
+ * - `number` metrics: Numeric aggregators only
+ * - `boolean` metrics: Numeric (for scores) + Boolean (for raw values)
+ * - `string` metrics: Numeric (for scores) + Categorical (for raw values)
  *
- * Result:
- * - number metrics: Only numeric aggregators (raw values are numbers)
- * - boolean metrics: Numeric (for scores) + Boolean (for raw values)
- * - string metrics: Numeric (for scores) + Categorical (for raw values)
+ * @typeParam TMetricValue - The metric value type
+ * @typeParam TName - Literal string type for aggregator name
  */
-export type CompatibleAggregator<T extends MetricScalar> = T extends number
-  ? NumericAggregatorDef
-  : T extends boolean
-    ? NumericAggregatorDef | BooleanAggregatorDef
-    : T extends string
-      ? NumericAggregatorDef | CategoricalAggregatorDef
+export type CompatibleAggregator<
+  TMetricValue extends MetricScalar,
+  TName extends string = string,
+> = TMetricValue extends number
+  ? NumericAggregatorDef<TName>
+  : TMetricValue extends boolean
+    ? NumericAggregatorDef<TName> | BooleanAggregatorDef<TName>
+    : TMetricValue extends string
+      ? NumericAggregatorDef<TName> | CategoricalAggregatorDef<TName>
       : never;
 
 /**
- * Metric-bound aggregator
- * Links an aggregator to a specific metric for tracking
+ * Metric-bound aggregator.
+ *
+ * Links an aggregator to a specific metric for result tracking.
+ *
+ * @typeParam TMetricValue - The metric value type
+ * @typeParam TContainer - The container type
+ * @typeParam TName - Literal string type for aggregator name
  */
 export type Aggregator<
-  T extends MetricScalar,
+  TMetricValue extends MetricScalar,
   TContainer extends SingleTurnContainer,
-> = CompatibleAggregator<T> & {
-  metric: SingleTurnMetricDef<T, TContainer>;
+  TName extends string = string,
+> = CompatibleAggregator<TMetricValue, TName> & {
+  metric: SingleTurnMetricDef<TMetricValue, TContainer>;
 };

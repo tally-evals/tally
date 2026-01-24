@@ -5,7 +5,7 @@
  */
 
 import type { MetricContainer } from './metrics';
-import type { Evaluator } from './evaluators';
+import type { Eval, EvaluationContext } from './evaluators';
 import type { TallyRunReport } from './runReport';
 
 /**
@@ -25,12 +25,27 @@ export interface TallyRunOptions {
 
 /**
  * Tally container
- * Main evaluation container that orchestrates the entire evaluation flow
- * Accepts evaluators (which contain evals) - no aggregators needed
+ * Main evaluation container that orchestrates the entire evaluation flow.
+ *
+ * @typeParam TContainer - DatasetItem or Conversation
+ * @typeParam TEvals - Tuple of eval definitions (inferred from createTally).
+ *                     Enables type-safe report access with autocomplete.
  */
-export interface Tally<TContainer extends MetricContainer> {
-  data: readonly TContainer[];
-  // Allow evaluators over any metric container to avoid variance issues between data and eval targets
-  evaluators: readonly Evaluator<MetricContainer>[]; // Changed: no aggregators parameter
-  run(options?: TallyRunOptions): Promise<TallyRunReport>;
+export interface Tally<
+  TContainer extends MetricContainer,
+  TEvals extends readonly Eval[] = readonly Eval[],
+> {
+  readonly data: readonly TContainer[];
+
+  /** Array of evals to run */
+  readonly evals: TEvals;
+
+  /** Optional shared context for all evals */
+  readonly context?: EvaluationContext;
+
+  /**
+   * Run the evaluation pipeline.
+   * Returns a type-safe report with autocomplete for eval names.
+   */
+  run(options?: TallyRunOptions): Promise<TallyRunReport<TEvals>>;
 }

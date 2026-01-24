@@ -19,6 +19,16 @@
  *    Once literal types are preserved, the mapped type utilities
  *    correctly build typed result accessors.
  *
+ * 4. **Type-safe verdicts and normalization**
+ *    The `VerdictPolicyFor<T>` conditional type enforces that verdict
+ *    policies match the metric value type. `TypedEvalOutcome<T>` preserves
+ *    this in the report, enabling type-safe access to verdict configuration.
+ *
+ * 5. **Normalization context is typed to metric value**
+ *    `NormalizationContextFor<T>` maps number→NumericNormalizationContext,
+ *    boolean→BooleanNormalizationContext, string→OrdinalNormalizationContext.
+ *    This is preserved in `Measurement.normalization` for type-safe access.
+ *
  * ## What Works
  * - Pre-defined evals with literal names
  * - Inline eval definitions (with `const` on factories)
@@ -27,11 +37,24 @@
  * - Serialization roundtrip with type restoration
  * - Empty evals edge case
  * - Duplicate eval names (creates union type)
+ * - **Type-safe verdict policies** (policy.kind matches metric value type)
+ * - **Type-safe normalization** (calibration context typed to metric value)
+ * - **Type-safe observed values** (outcome.observed.rawValue typed to metric)
  *
  * ## Key Pattern
  * ```typescript
  * function defineSingleTurnEval<const TName extends string>(...)
  * function createTally<const TEvals extends readonly Eval[]>(...)
+ *
+ * // Type-safe verdict access
+ * if (outcome.policy.kind === 'number') {
+ *   const threshold = outcome.policy.passAt; // ✅ typed
+ * }
+ *
+ * // Type-safe normalization access
+ * if (measurement.normalization?.calibration) {
+ *   const range = calibration.range; // ✅ typed to NumericNormalizationContext
+ * }
  * ```
  */
 
@@ -126,6 +149,73 @@ type VerdictPolicyFor<T extends MetricScalar> = T extends boolean
       : { kind: "none" };
 
 // =============================================================================
+// Normalization Types (from @tally/core/types/normalization)
+// =============================================================================
+
+/** Normalization context for number-valued metrics */
+interface NumericNormalizationContext {
+  direction?: "higher" | "lower";
+  range?: { min: number; max: number };
+  distribution?: { mean: number; stdDev: number };
+  thresholds?: { pass: number; warn?: number };
+  unit?: string;
+  clip?: boolean;
+}
+
+/** Normalization context for boolean-valued metrics */
+interface BooleanNormalizationContext {
+  trueScore?: number;
+  falseScore?: number;
+}
+
+/** Normalization context for string/ordinal-valued metrics */
+interface OrdinalNormalizationContext {
+  map?: Record<string, number>;
+}
+
+/** Maps metric value type to normalization context */
+type NormalizationContextFor<T extends MetricScalar> = T extends number
+  ? NumericNormalizationContext
+  : T extends boolean
+    ? BooleanNormalizationContext
+    : OrdinalNormalizationContext;
+
+/** Built-in normalizer specifications */
+type NormalizerSpec<T extends MetricScalar = MetricScalar> =
+  | { type: "identity" }
+  | {
+      type: "min-max";
+      min?: number;
+      max?: number;
+      clip?: boolean;
+      direction?: "higher" | "lower";
+    }
+  | {
+      type: "z-score";
+      mean?: number;
+      stdDev?: number;
+      to?: "0-1" | "0-100";
+      clip?: boolean;
+      direction?: "higher" | "lower";
+    }
+  | { type: "threshold"; threshold: number; above?: number; below?: number }
+  | {
+      type: "linear";
+      slope: number;
+      intercept: number;
+      clip?: [number, number];
+      direction?: "higher" | "lower";
+    }
+  | { type: "ordinal-map"; map: Record<string, number> }
+  | { type: "custom"; note: "not-serializable" }; // Serializable snapshot
+
+/** Serializable normalization info in reports */
+interface NormalizationInfo<T extends MetricScalar = MetricScalar> {
+  normalizer: NormalizerSpec<T>;
+  calibration?: NormalizationContextFor<T>;
+}
+
+// =============================================================================
 // Eval Definitions (from @tally/core/types/evaluators)
 // =============================================================================
 
@@ -158,6 +248,7 @@ interface MultiTurnEval<
 interface ScorerEval<TName extends string = string> extends EvalBase<TName> {
   readonly kind: "scorer";
   readonly scorerName: string;
+  readonly verdict?: VerdictPolicyFor<number>; // Scorers always output numbers
 }
 
 type Eval<
@@ -173,6 +264,11 @@ type Eval<
 // Run Artifact Types (from @tally/core/types/runArtifact)
 // =============================================================================
 
+/**
+ * Type-safe Measurement with value type and normalization info.
+ *
+ * @typeParam TValue - The metric value type (number, boolean, string)
+ */
 interface Measurement<TValue extends MetricScalar = MetricScalar> {
   metricRef: string;
   score?: Score;
@@ -181,26 +277,69 @@ interface Measurement<TValue extends MetricScalar = MetricScalar> {
   reasoning?: string;
   executionTimeMs?: number;
   timestamp?: string;
+  /** Normalization applied to produce the score - typed to metric value */
+  normalization?: NormalizationInfo<TValue>;
 }
 
-interface EvalOutcome {
+/**
+ * Type-safe EvalOutcome with verdict policy typed to metric value.
+ *
+ * The policy and observed values are typed based on the metric's value type,
+ * enabling type-safe access to verdict configuration.
+ *
+ * @typeParam TValue - The metric value type
+ *
+ * @example
+ * ```typescript
+ * // For a number-valued eval
+ * const outcome: TypedEvalOutcome<number> = {
+ *   verdict: 'pass',
+ *   policy: { kind: 'number', type: 'threshold', passAt: 0.8 }, // ✅ type-safe
+ *   observed: { rawValue: 0.85, score: 0.85 as Score },
+ * };
+ *
+ * // Type error: can't use boolean policy with number value
+ * const bad: TypedEvalOutcome<number> = {
+ *   verdict: 'pass',
+ *   policy: { kind: 'boolean', passWhen: true }, // ❌ compile error
+ * };
+ * ```
+ */
+interface TypedEvalOutcome<TValue extends MetricScalar = MetricScalar> {
   verdict: Verdict;
-  policy: { kind: string; [key: string]: unknown };
-  observed?: { rawValue?: MetricScalar | null; score?: Score };
+  /** Policy typed to metric value - enforces matching policy kind */
+  policy: VerdictPolicyFor<TValue> | { kind: "none" };
+  /** Observed values typed to metric value */
+  observed?: { rawValue?: TValue | null; score?: Score };
 }
 
+/**
+ * Type-safe StepEvalResult with value type, verdict, and normalization.
+ *
+ * @typeParam TValue - The metric value type
+ */
 interface StepEvalResult<TValue extends MetricScalar = MetricScalar> {
   evalRef: string;
   measurement: Measurement<TValue>;
-  outcome?: EvalOutcome;
+  outcome?: TypedEvalOutcome<TValue>;
 }
 
+/**
+ * Type-safe ConversationEvalResult with value type, verdict, and normalization.
+ *
+ * @typeParam TValue - The metric value type
+ */
 interface ConversationEvalResult<TValue extends MetricScalar = MetricScalar> {
   evalRef: string;
   measurement: Measurement<TValue>;
-  outcome?: EvalOutcome;
+  outcome?: TypedEvalOutcome<TValue>;
 }
 
+/**
+ * Type-safe SingleTurnEvalSeries with value type preserved.
+ *
+ * @typeParam TValue - The metric value type
+ */
 interface SingleTurnEvalSeries<TValue extends MetricScalar = MetricScalar> {
   byStepIndex: Array<StepEvalResult<TValue> | null>;
 }
@@ -367,6 +506,12 @@ function createTally<const T extends readonly Eval[]>(args: {
 
       for (const evalDef of args.evals) {
         if (evalDef.kind === "singleTurn") {
+          const rawValue =
+            evalDef.metric.valueType === "boolean"
+              ? true
+              : evalDef.metric.valueType === "number"
+                ? 0.85
+                : "positive";
           const series: SingleTurnEvalSeries = {
             byStepIndex: [
               {
@@ -374,32 +519,68 @@ function createTally<const T extends readonly Eval[]>(args: {
                 measurement: {
                   metricRef: evalDef.metric.name,
                   score: 0.85 as Score,
-                  rawValue:
-                    evalDef.metric.valueType === "boolean"
-                      ? true
-                      : evalDef.metric.valueType === "number"
-                        ? 0.85
-                        : "positive",
+                  rawValue,
+                  // Include typed normalization info
+                  normalization:
+                    evalDef.metric.valueType === "number"
+                      ? {
+                          normalizer: { type: "min-max" as const, direction: "higher" as const },
+                          calibration: { range: { min: 0, max: 1 } },
+                        }
+                      : evalDef.metric.valueType === "boolean"
+                        ? {
+                            normalizer: { type: "identity" as const },
+                            calibration: { trueScore: 1, falseScore: 0 },
+                          }
+                        : {
+                            normalizer: { type: "ordinal-map" as const, map: { positive: 1, neutral: 0.5, negative: 0 } },
+                            calibration: { map: { positive: 1, neutral: 0.5, negative: 0 } },
+                          },
                 },
-                outcome: { verdict: "pass", policy: { kind: "none" } },
+                // Include typed verdict outcome
+                outcome: {
+                  verdict: "pass",
+                  policy: evalDef.verdict ?? { kind: "none" },
+                  observed: { rawValue, score: 0.85 as Score },
+                },
               },
             ],
           };
           (singleTurn as Record<string, unknown>)[evalDef.name] = series;
         } else if (evalDef.kind === "multiTurn") {
+          const rawValue =
+            evalDef.metric.valueType === "boolean"
+              ? false
+              : evalDef.metric.valueType === "number"
+                ? 0.9
+                : "neutral";
           const result: ConversationEvalResult = {
             evalRef: evalDef.name,
             measurement: {
               metricRef: evalDef.metric.name,
               score: 0.9 as Score,
-              rawValue:
-                evalDef.metric.valueType === "boolean"
-                  ? false
-                  : evalDef.metric.valueType === "number"
-                    ? 0.9
-                    : "neutral",
+              rawValue,
+              normalization:
+                evalDef.metric.valueType === "number"
+                  ? {
+                      normalizer: { type: "min-max" as const, direction: "higher" as const },
+                      calibration: { range: { min: 0, max: 1 } },
+                    }
+                  : evalDef.metric.valueType === "boolean"
+                    ? {
+                        normalizer: { type: "identity" as const },
+                        calibration: { trueScore: 1, falseScore: 0 },
+                      }
+                    : {
+                        normalizer: { type: "ordinal-map" as const, map: { positive: 1, neutral: 0.5, negative: 0 } },
+                        calibration: { map: { positive: 1, neutral: 0.5, negative: 0 } },
+                      },
             },
-            outcome: { verdict: "pass", policy: { kind: "none" } },
+            outcome: {
+              verdict: "pass",
+              policy: evalDef.verdict ?? { kind: "none" },
+              observed: { rawValue, score: 0.9 as Score },
+            },
           };
           (multiTurn as Record<string, unknown>)[evalDef.name] = result;
         } else if (evalDef.kind === "scorer") {
@@ -409,6 +590,15 @@ function createTally<const T extends readonly Eval[]>(args: {
               metricRef: evalDef.scorerName,
               score: 0.88 as Score,
               rawValue: 0.88,
+              normalization: {
+                normalizer: { type: "identity" as const },
+                calibration: { direction: "higher" as const },
+              },
+            },
+            outcome: {
+              verdict: "pass",
+              policy: evalDef.verdict ?? { kind: "none" },
+              observed: { rawValue: 0.88, score: 0.88 as Score },
             },
           };
           (scorers as Record<string, unknown>)[evalDef.name] = {
@@ -1099,6 +1289,213 @@ async function testDuplicateEvalNames() {
 }
 
 // =============================================================================
+// CRITICAL TEST 9: Type-Safe Verdicts and Normalization
+// Tests that verdict policies and normalization are typed to metric value
+// =============================================================================
+
+async function testTypeSafeVerdictsAndNormalization() {
+  // Create evals with different value types
+  const numberMetric = defineSingleTurnMetric<"score-metric", number>({
+    name: "score-metric",
+    valueType: "number",
+  });
+
+  const booleanMetric = defineSingleTurnMetric<"flag-metric", boolean>({
+    name: "flag-metric",
+    valueType: "boolean",
+  });
+
+  const stringMetric = defineMultiTurnMetric<"category-metric", string>({
+    name: "category-metric",
+    valueType: "string",
+  });
+
+  const typedTally = createTally({
+    data: [{ id: "conv-1", steps: [], metadata: {} }],
+    evals: [
+      defineSingleTurnEval({
+        name: "score-eval",
+        metric: numberMetric,
+        verdict: { kind: "number", type: "threshold", passAt: 0.8 },
+      }),
+      defineSingleTurnEval({
+        name: "flag-eval",
+        metric: booleanMetric,
+        verdict: { kind: "boolean", passWhen: false },
+      }),
+      defineMultiTurnEval({
+        name: "category-eval",
+        metric: stringMetric,
+        verdict: { kind: "ordinal", passWhenIn: ["good", "excellent"] },
+      }),
+    ],
+  });
+
+  const report = await typedTally.run();
+
+  // ============================================
+  // ✅ Type-safe verdict policy access
+  // ============================================
+
+  const scoreResult = report.result.singleTurn["score-eval"].byStepIndex[0];
+  if (scoreResult?.outcome) {
+    // Policy is typed to VerdictPolicyFor<number>
+    const policy = scoreResult.outcome.policy;
+    if (policy.kind === "number" && policy.type === "threshold") {
+      const threshold: number = policy.passAt;
+      console.log("Number threshold:", threshold);
+    }
+
+    // Observed rawValue is typed as number
+    const observed = scoreResult.outcome.observed;
+    if (observed) {
+      const raw: number | null | undefined = observed.rawValue;
+      console.log("Observed number value:", raw);
+    }
+  }
+
+  const flagResult = report.result.singleTurn["flag-eval"].byStepIndex[0];
+  if (flagResult?.outcome) {
+    // Policy is typed to VerdictPolicyFor<boolean>
+    const policy = flagResult.outcome.policy;
+    if (policy.kind === "boolean") {
+      const passWhen: true | false = policy.passWhen;
+      console.log("Boolean passWhen:", passWhen);
+    }
+
+    // Observed rawValue is typed as boolean
+    const observed = flagResult.outcome.observed;
+    if (observed) {
+      const raw: boolean | null | undefined = observed.rawValue;
+      console.log("Observed boolean value:", raw);
+    }
+  }
+
+  const categoryResult = report.result.multiTurn["category-eval"];
+  if (categoryResult?.outcome) {
+    // Policy is typed to VerdictPolicyFor<string>
+    const policy = categoryResult.outcome.policy;
+    if (policy.kind === "ordinal") {
+      const passWhenIn: readonly string[] = policy.passWhenIn;
+      console.log("Ordinal passWhenIn:", passWhenIn);
+    }
+
+    // Observed rawValue is typed as string
+    const observed = categoryResult.outcome.observed;
+    if (observed) {
+      const raw: string | null | undefined = observed.rawValue;
+      console.log("Observed string value:", raw);
+    }
+  }
+
+  // ============================================
+  // ✅ Type-safe normalization access
+  // ============================================
+
+  if (scoreResult?.measurement.normalization) {
+    const norm = scoreResult.measurement.normalization;
+    // Normalizer is typed to metric value
+    if (norm.normalizer.type === "min-max") {
+      const direction = norm.normalizer.direction; // 'higher' | 'lower' | undefined
+      console.log("Min-max direction:", direction);
+    }
+    // Calibration is typed as NumericNormalizationContext
+    if (norm.calibration) {
+      const range = norm.calibration.range; // { min: number, max: number } | undefined
+      console.log("Calibration range:", range);
+    }
+  }
+
+  if (flagResult?.measurement.normalization) {
+    const norm = flagResult.measurement.normalization;
+    // Calibration is typed as BooleanNormalizationContext
+    if (norm.calibration) {
+      const trueScore = norm.calibration.trueScore; // number | undefined
+      const falseScore = norm.calibration.falseScore; // number | undefined
+      console.log("Boolean calibration:", { trueScore, falseScore });
+    }
+  }
+
+  // ============================================
+  // ❌ Compile errors for mismatched types
+  // ============================================
+
+  // @ts-expect-error - Can't use boolean policy with number-valued eval
+  const _wrongPolicy: VerdictPolicyFor<number> = { kind: "boolean", passWhen: true };
+
+  // @ts-expect-error - Can't use number policy with boolean-valued eval
+  const _wrongPolicy2: VerdictPolicyFor<boolean> = { kind: "number", type: "threshold", passAt: 0.5 };
+
+  // @ts-expect-error - Ordinal passWhenIn expects readonly string[], not number[]
+  const _wrongOrdinal: VerdictPolicyFor<string> = { kind: "ordinal", passWhenIn: [1, 2, 3] };
+
+  console.log("Type-safe verdicts and normalization test passed", _wrongPolicy, _wrongPolicy2, _wrongOrdinal);
+}
+
+// =============================================================================
+// CRITICAL TEST 10: Verdict Policy Extraction from Eval
+// Tests utility types for extracting typed verdict policies from evals
+// =============================================================================
+
+/**
+ * Extract the verdict policy type from an eval.
+ * Preserves the type safety of the policy based on metric value type.
+ */
+type ExtractVerdictPolicy<E> = E extends {
+  kind: "singleTurn" | "multiTurn";
+  metric: { valueType: infer VT };
+}
+  ? VT extends "number" | "ordinal"
+    ? VerdictPolicyFor<number>
+    : VT extends "boolean"
+      ? VerdictPolicyFor<boolean>
+      : VerdictPolicyFor<string>
+  : E extends { kind: "scorer" }
+    ? VerdictPolicyFor<number>
+    : VerdictPolicyFor<MetricScalar>;
+
+/**
+ * Extract normalization context type from an eval.
+ */
+type ExtractNormalizationContext<E> = E extends {
+  kind: "singleTurn" | "multiTurn";
+  metric: { valueType: infer VT };
+}
+  ? VT extends "number" | "ordinal"
+    ? NumericNormalizationContext
+    : VT extends "boolean"
+      ? BooleanNormalizationContext
+      : OrdinalNormalizationContext
+  : E extends { kind: "scorer" }
+    ? NumericNormalizationContext
+    : NumericNormalizationContext | BooleanNormalizationContext | OrdinalNormalizationContext;
+
+async function testVerdictPolicyExtraction() {
+  // Verify extraction works correctly
+  type NumberPolicy = ExtractVerdictPolicy<typeof relevanceEval>;
+  type BooleanPolicy = ExtractVerdictPolicy<typeof toxicityEval>;
+  type StringPolicy = ExtractVerdictPolicy<typeof sentimentEval>;
+  type ScorerPolicy = ExtractVerdictPolicy<typeof overallScorer>;
+
+  // These compile only if extraction is correct
+  const _numPol: NumberPolicy = { kind: "number", type: "threshold", passAt: 0.5 };
+  const _boolPol: BooleanPolicy = { kind: "boolean", passWhen: true };
+  const _strPol: StringPolicy = { kind: "ordinal", passWhenIn: ["a", "b"] };
+  const _scorerPol: ScorerPolicy = { kind: "number", type: "range", min: 0.5 };
+
+  // Normalization context extraction
+  type NumericNorm = ExtractNormalizationContext<typeof relevanceEval>;
+  type BooleanNorm = ExtractNormalizationContext<typeof toxicityEval>;
+  type OrdinalNorm = ExtractNormalizationContext<typeof sentimentEval>;
+
+  const _numNorm: NumericNorm = { direction: "higher", range: { min: 0, max: 1 } };
+  const _boolNorm: BooleanNorm = { trueScore: 1, falseScore: 0 };
+  const _ordNorm: OrdinalNorm = { map: { good: 1, bad: 0 } };
+
+  console.log("Verdict policy extraction types verified");
+}
+
+// =============================================================================
 // RUN ALL CRITICAL TESTS
 // =============================================================================
 
@@ -1127,6 +1524,12 @@ async function runAllCriticalTests() {
   console.log("\n=== CRITICAL TEST 8: Duplicate Eval Names ===");
   await testDuplicateEvalNames();
 
+  console.log("\n=== CRITICAL TEST 9: Type-Safe Verdicts & Normalization ===");
+  await testTypeSafeVerdictsAndNormalization();
+
+  console.log("\n=== CRITICAL TEST 10: Verdict Policy Extraction ===");
+  await testVerdictPolicyExtraction();
+
   console.log("\n=== ALL CRITICAL TESTS PASSED ===");
 }
 
@@ -1146,12 +1549,13 @@ export {
   // Serialization helpers
   toArtifact,
   fromArtifact,
-  // Types
+  // Types - Core
   type Eval,
   type MetricDef,
   type MultiTurnEval,
   type SingleTurnEval,
   type ScorerEval,
+  // Types - Typed Report
   type TypedConversationResult,
   type TypedMultiTurnResults,
   type TypedSingleTurnResults,
@@ -1159,4 +1563,16 @@ export {
   type TypedTallyRunReport,
   type SerializedRunArtifact,
   type DynamicAccessibleResults,
+  // Types - Verdict (NEW)
+  type VerdictPolicyFor,
+  type TypedEvalOutcome,
+  type ExtractVerdictPolicy,
+  // Types - Normalization (NEW)
+  type NormalizerSpec,
+  type NormalizationContextFor,
+  type NumericNormalizationContext,
+  type BooleanNormalizationContext,
+  type OrdinalNormalizationContext,
+  type NormalizationInfo,
+  type ExtractNormalizationContext,
 };

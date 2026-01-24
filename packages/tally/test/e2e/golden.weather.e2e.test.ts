@@ -15,13 +15,11 @@ import {
   thresholdVerdict,
 } from '../../src/evals';
 import {
-  createEvaluator,
   createTally,
   defineBaseMetric,
   defineInput,
   formatReportAsTables,
   loadConversationStepsFromJSONL,
-  runAllTargets,
 } from '../_exports';
 import {
   createAnswerRelevanceMetric,
@@ -131,8 +129,8 @@ describe.skipIf(!process.env.GOOGLE_GENERATIVE_AI_API_KEY)('E2E | Metrics | Gold
       verdict: thresholdVerdict(0.7), // Adjusted from 0.7, actual scores ~0.84
     });
 
-    const evaluator = createEvaluator({
-      name: 'Weather Agent Quality',
+    const tally = createTally({
+      data: [conversation],
       evals: [
         answerRelevanceEval,
         completenessEval,
@@ -141,12 +139,6 @@ describe.skipIf(!process.env.GOOGLE_GENERATIVE_AI_API_KEY)('E2E | Metrics | Gold
         topicAdherenceEval,
         overallQualityEval,
       ],
-      context: runAllTargets(),
-    });
-
-    const tally = createTally({
-      data: [conversation],
-      evaluators: [evaluator],
     });
 
     // Run with deterministic LLM options for reproducibility

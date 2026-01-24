@@ -21,10 +21,10 @@ describe('Integration | Conversation | Selection', () => {
       },
       compute: async ({ data }) => {
         const step = data as ConversationStep;
-        const content =
-          step.output?.role === 'assistant' && typeof step.output.content === 'string'
-            ? step.output.content
-            : '';
+        const assistant = step.output?.find(
+          (o) => o.role === 'assistant' && typeof o.content === 'string',
+        );
+        const content = (assistant?.content as string) ?? '';
         const len = content.length;
         return Math.min(1, len / 50);
       },

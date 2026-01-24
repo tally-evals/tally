@@ -10,10 +10,12 @@ import { calculatePercentile, isEmpty, sortNumbers } from '@tally/core/aggregato
 import type { NumericAggregatorDef } from '@tally/core/types';
 
 /**
- * Options for percentile aggregator
+ * Options for percentile aggregator with typed percentile value.
+ *
+ * @typeParam TPercentile - Literal number type for the percentile value
  */
-export interface PercentileAggregatorOptions {
-  percentile: number; // 0-100
+export interface PercentileAggregatorOptions<TPercentile extends number = number> {
+  percentile: TPercentile; // 0-100
   description?: string;
   metadata?: Record<string, unknown>;
 }
@@ -21,8 +23,12 @@ export interface PercentileAggregatorOptions {
 /**
  * Create a percentile aggregator
  *
+ * Uses `const` type parameter to preserve literal percentile value,
+ * enabling type-safe access like `P50`, `P95`, etc.
+ *
+ * @typeParam TPercentile - Literal number type for the percentile value
  * @param options - Configuration including percentile value (0-100)
- * @returns NumericAggregatorDef that calculates the specified percentile
+ * @returns NumericAggregatorDef with name `P${percentile}`
  *
  * @example
  * ```ts
@@ -31,11 +37,12 @@ export interface PercentileAggregatorOptions {
  *   percentile: 95,
  *   description: '95th percentile latency'
  * });
+ * // typeof p95Aggregator.name is 'P95'
  * ```
  */
-export function createPercentileAggregator(
-  options: PercentileAggregatorOptions
-): NumericAggregatorDef {
+export function createPercentileAggregator<const TPercentile extends number>(
+  options: PercentileAggregatorOptions<TPercentile>
+): NumericAggregatorDef<`P${TPercentile}`> {
   const { percentile } = options;
 
   if (percentile < 0 || percentile > 100) {
@@ -46,7 +53,7 @@ export function createPercentileAggregator(
 
   return {
     kind: 'numeric',
-    name: `P${percentile}`,
+    name: `P${percentile}` as `P${TPercentile}`,
     description: options.description ?? `${percentile}th percentile`,
     aggregate: (values: readonly number[]) => {
       if (isEmpty(values)) {

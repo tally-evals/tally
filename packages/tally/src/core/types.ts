@@ -1,10 +1,10 @@
 /**
  * Core type definitions for the Tally evaluation framework
  *
- * This file re-exports core types from @tally-evals/core.
+ * This file re-exports core types from @tally/core.
  */
 
-// Re-export everything from @tally-evals/core
+// Re-export everything from @tally/core
 export type {
   // Primitives
   MetricScalar,
@@ -67,8 +67,7 @@ export type {
   MultiTurnEval,
   ScorerEval,
   Eval,
-  Evaluator,
-  // Run artifact types (canonical reporting schema)
+  // Core result types (unified)
   MetricName,
   EvalName,
   ScorerName,
@@ -76,26 +75,55 @@ export type {
   ConversationId,
   Verdict,
   MetricScalarOrNull,
-  Measurement,
+  NormalizerSpecSnap,
+  NormalizationInfo,
+  MetricNormalizationSnap,
   VerdictPolicyInfo,
+  Measurement,
   EvalOutcome,
   StepEvalResult,
-  ConversationEvalResult,
   SingleTurnEvalSeries,
+  ConversationEvalResult,
   ConversationResult,
+  // Type extraction utilities
+  ExtractEvalName,
+  ExtractValueType,
+  ExtractEvalKind,
+  FilterByKind,
+  EvalNamesOfKind,
+  HasEvalsOfKind,
+  ExtractVerdictPolicy,
+  ExtractNormalizationContext,
+  // Mapped result types
+  SingleTurnResults,
+  MultiTurnResults,
+  ScorerResults,
+  // Aggregations
+  AggregationValue,
+  ExtractAggregatorNames,
+  ExtractEvalAggregatorNames,
+  DefaultNumericAggregatorNames,
+  DefaultBooleanAggregatorNames,
+  DefaultCategoricalAggregatorNames,
+  AggregationResultFor,
+  ScoreAggregations,
+  RawAggregations,
+  // Summaries
+  VerdictSummary,
+  EvalSummary,
+  Summaries,
+  // Definition snapshots
   MetricDefSnap,
   EvalDefSnap,
-  RunDefs,
   ScorerCombineKind,
   ScorerInputSnap,
   ScorerDefSnap,
-  EvalSummarySnap,
-  Summaries,
-  MetricNormalizationSnap,
-  NormalizerSpecSnap,
+  RunDefs,
+  // Artifact & Report
   TallyRunArtifact,
   TargetRunView,
   TallyRunReport,
+  TallyRunOptions,
   // Tally container
   Tally,
 } from '@tally-evals/core';

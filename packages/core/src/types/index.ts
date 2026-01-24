@@ -126,16 +126,14 @@ export type {
   MultiTurnEval,
   ScorerEval,
   Eval,
-
-  // Evaluator type
-  Evaluator,
 } from './evaluators';
 
 // ============================================================================
-// Run artifact types (stored runs)
+// Core result types (unified)
 // ============================================================================
 
 export type {
+  // Primitives
   MetricName,
   EvalName,
   ScorerName,
@@ -143,28 +141,70 @@ export type {
   ConversationId,
   Verdict,
   MetricScalarOrNull,
-  Measurement,
+
+  // Normalization info
+  NormalizerSpecSnap,
+  NormalizationInfo,
+  MetricNormalizationSnap,
+
+  // Verdict policy
   VerdictPolicyInfo,
+
+  // Measurement & Outcome
+  Measurement,
   EvalOutcome,
+
+  // Result records
   StepEvalResult,
-  ConversationEvalResult,
   SingleTurnEvalSeries,
+  ConversationEvalResult,
   ConversationResult,
+
+  // Type extraction utilities
+  ExtractEvalName,
+  ExtractValueType,
+  ExtractEvalKind,
+  FilterByKind,
+  EvalNamesOfKind,
+  HasEvalsOfKind,
+  ExtractVerdictPolicy,
+  ExtractNormalizationContext,
+
+  // Mapped result types
+  SingleTurnResults,
+  MultiTurnResults,
+  ScorerResults,
+
+  // Aggregations
+  AggregationValue,
+  ExtractAggregatorNames,
+  ExtractEvalAggregatorNames,
+  DefaultNumericAggregatorNames,
+  DefaultBooleanAggregatorNames,
+  DefaultCategoricalAggregatorNames,
+  AggregationResultFor,
+  ScoreAggregations,
+  RawAggregations,
+
+  // Summaries
+  VerdictSummary,
+  EvalSummary,
+  Summaries,
+
+  // Definition snapshots
   MetricDefSnap,
   EvalDefSnap,
   ScorerCombineKind,
   ScorerInputSnap,
   ScorerDefSnap,
   RunDefs,
-  AggregationValue,
-  Aggregations as ArtifactAggregations,
-  VerdictSummary as ArtifactVerdictSummary,
-  EvalSummarySnap,
-  Summaries,
-  NormalizerSpecSnap,
-  MetricNormalizationSnap,
-  TallyRunArtifact,
-} from './runArtifact';
+} from './results';
+
+// ============================================================================
+// Run artifact (serialization)
+// ============================================================================
+
+export type { TallyRunArtifact } from './runArtifact';
 
 // ============================================================================
 // SDK report + view types
@@ -177,4 +217,4 @@ export type { TallyRunReport } from './runReport';
 // Tally container type
 // ============================================================================
 
-export type { Tally } from './tally';
+export type { Tally, TallyRunOptions } from './tally';

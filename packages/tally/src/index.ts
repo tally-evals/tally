@@ -42,6 +42,9 @@ export type {
   NormalizationContextFor,
   NormalizerSpec,
   MetricNormalization,
+  NormalizationInfo,
+  NormalizerSpecSnap,
+  MetricNormalizationSnap,
   // Scorer types
   ScorerInput,
   InputScores,
@@ -53,11 +56,10 @@ export type {
   AggregatorDef,
   CompatibleAggregator,
   Aggregator,
-  // Evaluator types (REFACTORED - now accepts evals)
+  // Eval context types
   SingleTurnRunPolicy,
   EvaluationContext,
-  Evaluator,
-  // Run artifact types (canonical reporting schema)
+  // Core result types (unified)
   MetricName,
   EvalName,
   RunId,
@@ -71,12 +73,41 @@ export type {
   ConversationEvalResult,
   SingleTurnEvalSeries,
   ConversationResult,
+  // Type extraction utilities
+  ExtractEvalName,
+  ExtractValueType,
+  ExtractEvalKind,
+  FilterByKind,
+  EvalNamesOfKind,
+  HasEvalsOfKind,
+  ExtractVerdictPolicy,
+  ExtractNormalizationContext,
+  // Mapped result types
+  SingleTurnResults,
+  MultiTurnResults,
+  ScorerResults,
+  // Aggregations
+  AggregationValue,
+  ExtractAggregatorNames,
+  ExtractEvalAggregatorNames,
+  DefaultNumericAggregatorNames,
+  DefaultBooleanAggregatorNames,
+  DefaultCategoricalAggregatorNames,
+  AggregationResultFor,
+  ScoreAggregations,
+  RawAggregations,
+  // Summaries
+  VerdictSummary,
+  EvalSummary,
+  Summaries,
+  // Definition snapshots
   MetricDefSnap,
   EvalDefSnap,
   RunDefs,
-  EvalSummarySnap,
-  Summaries,
+  // Artifact & Report
   TallyRunArtifact,
+  TallyRunReport,
+  TallyRunOptions,
   // Main container
   Tally,
 } from './core/types';
@@ -146,7 +177,6 @@ export {
   createMultiTurnLLM,
   defineInput,
   defineScorer,
-  createEvaluator,
 } from './core/factory';
 
 // ============================================================================
