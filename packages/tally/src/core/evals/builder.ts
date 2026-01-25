@@ -24,7 +24,7 @@ import type {
   SingleTurnEval,
   VerdictPolicy,
 } from '@tally/core/types';
-import { defineBaseMetric, defineInput, defineScorer } from '../factory';
+import { defineBaseMetric, defineInput, defineScorer } from '../primitives';
 import {
   applyAutoNormalization,
   detectMetricValueType,

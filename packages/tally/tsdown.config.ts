@@ -7,7 +7,6 @@ export default defineConfig({
     'src/scorers/index.ts',
     'src/aggregators/index.ts',
     'src/normalization/index.ts',
-    'src/data/index.ts',
   ],
   format: ['cjs', 'esm'],
   dts: true,
