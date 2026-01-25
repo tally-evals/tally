@@ -19,7 +19,7 @@ export function createTallyRunReport<TEvals extends readonly Eval[] = readonly E
     // Cast the string-keyed runtime data to typed accessors
     result: artifact.result as unknown as ConversationResult<TEvals>,
     ...(artifact.metadata ? { metadata: artifact.metadata } : {}),
-    view: () => createTargetRunView(artifact),
+    view: () => createTargetRunView<TEvals>(artifact, _evals),
     toArtifact: () => artifact,
   };
 }

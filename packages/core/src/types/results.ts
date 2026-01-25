@@ -298,6 +298,65 @@ export type ScorerResults<TEvals extends readonly Eval[]> = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// View Result Types (for TargetRunView)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Type-safe step results object for a single step.
+ * Keys are literal eval names with autocomplete.
+ *
+ * - Single-turn evals: guaranteed to exist at step level
+ * - Scorers: optional (only present if scorer produced seriesByStepIndex shape)
+ *
+ * @typeParam TEvals - The evals tuple for type-safe key inference
+ */
+export type StepResults<TEvals extends readonly Eval[]> = {
+  readonly [K in EvalNamesOfKind<TEvals, 'singleTurn'>]: StepEvalResult<
+    ExtractValueType<Extract<FilterByKind<TEvals, 'singleTurn'>, { name: K }>>
+  >;
+} & {
+  readonly [K in EvalNamesOfKind<TEvals, 'scorer'>]?: StepEvalResult<number>;
+};
+
+/**
+ * Step results with index, yielded by steps() generator.
+ *
+ * @typeParam TEvals - The evals tuple for type-safe key inference
+ */
+export type StepResultsWithIndex<TEvals extends readonly Eval[]> = StepResults<TEvals> & {
+  readonly index: number;
+};
+
+/**
+ * Type-safe conversation-level results.
+ * Keys are literal eval names with autocomplete.
+ *
+ * - Multi-turn evals: guaranteed to exist at conversation level
+ * - Scorers: optional (only present if scorer produced scalar shape)
+ *
+ * @typeParam TEvals - The evals tuple for type-safe key inference
+ */
+export type ConversationResults<TEvals extends readonly Eval[]> = {
+  readonly [K in EvalNamesOfKind<TEvals, 'multiTurn'>]: ConversationEvalResult<
+    ExtractValueType<Extract<FilterByKind<TEvals, 'multiTurn'>, { name: K }>>
+  >;
+} & {
+  readonly [K in EvalNamesOfKind<TEvals, 'scorer'>]?: ConversationEvalResult<number>;
+};
+
+/**
+ * Summary results keyed directly by eval name.
+ * Flat structure without byEval wrapper for ergonomic access.
+ *
+ * @typeParam TEvals - The evals tuple for type-safe key inference
+ */
+export type SummaryResults<TEvals extends readonly Eval[]> = {
+  readonly [K in ExtractEvalName<TEvals[number]>]: EvalSummary<
+    Extract<TEvals[number], { name: K }>
+  >;
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Aggregations
 // ─────────────────────────────────────────────────────────────────────────────
 

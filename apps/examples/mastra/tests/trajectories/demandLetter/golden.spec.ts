@@ -8,7 +8,6 @@ import { demandLetterGoldenTrajectory } from './definitions';
 import { runCase, assertToolCallSequence, saveTallyReportToStore } from '../../utils/harness';
 import {
 	createTally,
-	createEvaluator,
 	runAllTargets,
 	defineBaseMetric,
 	defineInput,
@@ -107,15 +106,10 @@ describe('Demand Letter Agent - Golden Path', () => {
 			verdict: thresholdVerdict(0.7),
 		});
 
-		const evaluator = createEvaluator({
-			name: 'Demand Letter Agent Quality',
-			evals: [answerRelevanceEval, completenessEval, overallQualityEval],
-			context: runAllTargets(),
-		});
-
 		const tally = createTally({
 			data: [conversation],
-			evaluators: [evaluator],
+			evals: [answerRelevanceEval, completenessEval, overallQualityEval],
+			context: runAllTargets(),
 		});
 
 		const report = await tally.run();

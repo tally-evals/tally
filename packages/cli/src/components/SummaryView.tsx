@@ -3,9 +3,11 @@
  */
 
 import type { TallyRunArtifact } from '@tally-evals/core';
+import { createTargetRunView } from '@tally-evals/tally';
 import Table from 'cli-table3';
 import { Box, Text } from 'ink';
 import type React from 'react';
+import { useMemo } from 'react';
 import { colors } from 'src/utils/colors';
 // Note: raw values (top line) are green; score values (bottom line) are muted.
 import { colorByRate01, formatRate01 } from 'src/utils/formatters';
@@ -85,7 +87,9 @@ function formatDualValue(args: {
 }
 
 export function SummaryView({ report }: SummaryViewProps): React.ReactElement {
-  const summaries = report.result.summaries?.byEval ?? {};
+  // Use the type-safe view API for summary access
+  const view = useMemo(() => createTargetRunView(report), [report]);
+  const summaries = view.summary() ?? {};
   const summaryEntries = Object.entries(summaries);
   if (summaryEntries.length === 0) {
     return <Text>{colors.muted('No evaluation summaries available')}</Text>;
@@ -129,10 +133,10 @@ export function SummaryView({ report }: SummaryViewProps): React.ReactElement {
     const rawP75 = getNumericAggregation(rawAggs, 'p75');
     const rawP90 = getNumericAggregation(rawAggs, 'p90');
 
-    const def = report.defs.evals?.[evalName];
+    const evalDef = view.eval(evalName);
     const kindLabel =
       summary.kind === 'scorer'
-        ? `scorer/${def?.outputShape === 'seriesByStepIndex' ? 'series' : 'scalar'}`
+        ? `scorer/${evalDef?.outputShape === 'seriesByStepIndex' ? 'series' : 'scalar'}`
         : summary.kind;
 
     const meanCell = formatDualValue({ raw: rawMeanOrValue, score: scoreMeanOrValue });

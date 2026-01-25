@@ -10,7 +10,6 @@ import { weatherGoldenTrajectory } from './definitions';
 import { runCase, saveTallyReportToStore } from '../../utils/harness';
 import {
 	createTally,
-	createEvaluator,
 	runAllTargets,
 	defineBaseMetric,
 	defineInput,
@@ -86,17 +85,11 @@ describe('Weather Agent - Golden Path', () => {
 			verdict: thresholdVerdict(0.7),
 		});
 
-		// Create evaluator
-		const evaluator = createEvaluator({
-			name: 'Weather Agent Quality',
-			evals: [answerRelevanceEval, completenessEval, overallQualityEval],
-			context: runAllTargets(),
-		});
-
 		// Run evaluation
 		const tally = createTally({
 			data: [conversation],
-			evaluators: [evaluator],
+			evals: [answerRelevanceEval, completenessEval, overallQualityEval],
+			context: runAllTargets(),
 		});
 
 		const report = await tally.run();

@@ -172,6 +172,12 @@ export type {
   MultiTurnResults,
   ScorerResults,
 
+  // View result types
+  StepResults,
+  StepResultsWithIndex,
+  ConversationResults,
+  SummaryResults,
+
   // Aggregations
   AggregationValue,
   ExtractAggregatorNames,

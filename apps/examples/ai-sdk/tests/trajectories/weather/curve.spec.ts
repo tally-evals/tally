@@ -10,7 +10,6 @@ import { weatherCurveTrajectory } from './definitions';
 import { runCase, saveTallyReportToStore } from '../../utils/harness';
 import {
 	createTally,
-	createEvaluator,
 	runAllTargets,
 	defineBaseMetric,
 	defineInput,
@@ -80,17 +79,11 @@ describe('Weather Agent - Curve Ball', () => {
 			verdict: thresholdVerdict(0.5), // Lower threshold for curve ball
 		});
 
-		// Create evaluator
-		const evaluator = createEvaluator({
-			name: 'Weather Agent Quality',
-			evals: [answerRelevanceEval, completenessEval, overallQualityEval],
-			context: runAllTargets(),
-		});
-
 		// Run evaluation
 		const tally = createTally({
 			data: [conversation],
-			evaluators: [evaluator],
+			evals: [answerRelevanceEval, completenessEval, overallQualityEval],
+			context: runAllTargets(),
 		});
 
 		const report = await tally.run();

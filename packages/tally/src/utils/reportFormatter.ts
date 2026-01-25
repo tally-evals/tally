@@ -5,6 +5,7 @@
  */
 
 import type { Conversation, TallyRunArtifact } from '@tally/core/types';
+import { createTargetRunView } from '../view/targetRunView';
 
 /**
  * Format evaluation report as console tables
@@ -39,33 +40,31 @@ function formatConversationTable(
   console.log(`CONVERSATION: ${conversation.id}`);
   console.log('-'.repeat(80));
 
-  const singleTurnEvalNames = Object.keys(artifact.result.singleTurn ?? {}).sort();
+  // Use the type-safe view API for unified access
+  const view = createTargetRunView(artifact);
 
-  // Create table rows for each step
+  // Create table rows for each step using the view.steps() generator
   const tableRows: Array<Record<string, string | number>> = [];
+  const stepEvalNames = new Set<string>();
 
-  // Add rows for each conversation step
-  for (let stepIdx = 0; stepIdx < conversation.steps.length; stepIdx++) {
-    const step = conversation.steps[stepIdx];
+  for (const stepWithIndex of view.steps()) {
+    const step = conversation.steps[stepWithIndex.index];
     if (!step) continue;
 
     const inputText = truncateText(extractTextFromMessage(step.input), 60);
     const outputText = truncateText(extractTextFromMessages(step.output), 60);
 
     const row: Record<string, string | number> = {
-      Turn: stepIdx + 1,
+      Turn: stepWithIndex.index + 1,
       Conversation: formatConversationText(inputText, outputText),
     };
 
-    for (const evalName of singleTurnEvalNames) {
-      const series = artifact.result.singleTurn?.[evalName];
-      const stepRes = series?.byStepIndex?.[stepIdx] ?? null;
-      if (!stepRes) {
-        row[evalName] = '-';
-        continue;
-      }
+    // Iterate over all step results (single-turn + step-indexed scorers)
+    for (const [evalName, stepRes] of Object.entries(stepWithIndex)) {
+      if (evalName === 'index') continue;
+      stepEvalNames.add(evalName);
 
-      const score = stepRes.measurement.score;
+      const score = stepRes.measurement?.score;
       const verdict = stepRes.outcome?.verdict;
       const verdictIcon =
         verdict === 'pass'
@@ -82,8 +81,11 @@ function formatConversationTable(
     tableRows.push(row);
   }
 
-  // Add multi-turn eval results as separate rows
-  for (const [evalName, res] of Object.entries(artifact.result.multiTurn ?? {})) {
+  // Add conversation-level results (multi-turn + scalar scorers) as separate rows
+  const conversationResults = view.conversation();
+  const sortedStepEvalNames = Array.from(stepEvalNames).sort();
+
+  for (const [evalName, res] of Object.entries(conversationResults)) {
     const score = res.measurement.score;
     const verdict = res.outcome?.verdict;
     const verdictIcon =
@@ -94,10 +96,10 @@ function formatConversationTable(
       Conversation: evalName,
     };
 
-    if (singleTurnEvalNames.length > 0) {
-      multiTurnRow[singleTurnEvalNames[0]!] = `${score !== undefined ? Number(score).toFixed(3) : '-'} ${verdictIcon}`;
-      for (let i = 1; i < singleTurnEvalNames.length; i++) {
-        multiTurnRow[singleTurnEvalNames[i]!] = '-';
+    if (sortedStepEvalNames.length > 0) {
+      multiTurnRow[sortedStepEvalNames[0]!] = `${score !== undefined ? Number(score).toFixed(3) : '-'} ${verdictIcon}`;
+      for (let i = 1; i < sortedStepEvalNames.length; i++) {
+        multiTurnRow[sortedStepEvalNames[i]!] = '-';
       }
     } else {
       multiTurnRow.Conversation = `${evalName}: ${score !== undefined ? Number(score).toFixed(3) : '-'} ${verdictIcon}`;
@@ -106,8 +108,8 @@ function formatConversationTable(
     tableRows.push(multiTurnRow);
   }
 
-  // Column order: only Turn, Conversation, and single-turn metrics
-  const allColumns = ['Turn', 'Conversation', ...singleTurnEvalNames];
+  // Column order: only Turn, Conversation, and step-level metrics
+  const allColumns = ['Turn', 'Conversation', ...sortedStepEvalNames];
 
   // Print table with custom formatter to handle newlines
   printTableWithNewlines(tableRows, allColumns);
@@ -184,11 +186,14 @@ function formatSummaryTable(artifact: TallyRunArtifact): void {
   console.log('EVAL SUMMARIES (SCORES)');
   console.log('-'.repeat(80));
 
+  // Use the type-safe view API for summary access
+  const view = createTargetRunView(artifact);
+  const summaries = view.summary() ?? {};
+
   const summaryRows: Array<Record<string, string | number>> = [];
   const allColumns = new Set<string>(['Eval', 'Kind']);
 
   // First pass: collect all unique columns
-  const summaries = artifact.result.summaries?.byEval ?? {};
   for (const [, summary] of Object.entries(summaries)) {
     if (summary.verdictSummary) {
       allColumns.add('Pass Rate');

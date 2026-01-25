@@ -3,6 +3,23 @@
  */
 
 import type { Conversation, TallyRunArtifact } from '@tally-evals/core';
+import { createTargetRunView } from '@tally-evals/tally';
+import Table from 'cli-table3';
+import { Box, Text, useInput } from 'ink';
+import type React from 'react';
+import { useMemo, useState } from 'react';
+import { colors } from '../utils/colors';
+import {
+  extractTextFromMessage,
+  extractTextFromMessages,
+  extractToolCallsFromMessages,
+  formatScore,
+  sanitizeText,
+  truncateText,
+} from '../utils/formatters';
+import { KeyboardHelp } from './shared/KeyboardHelp';
+import { ToolCallList } from './shared/ToolCallList.jsx';
+import { BreadCrumbs } from './shared/BreadCrumbs.js';
 
 /**
  * Safely get a numeric aggregation value from an Aggregations object
@@ -40,22 +57,6 @@ function getNumericAggregation(
 
   return undefined;
 }
-import Table from 'cli-table3';
-import { Box, Text, useInput } from 'ink';
-import type React from 'react';
-import { useState } from 'react';
-import { colors } from '../utils/colors';
-import {
-  extractTextFromMessage,
-  extractTextFromMessages,
-  extractToolCallsFromMessages,
-  formatScore,
-  sanitizeText,
-  truncateText,
-} from '../utils/formatters';
-import { KeyboardHelp } from './shared/KeyboardHelp';
-import { ToolCallList } from './shared/ToolCallList.jsx';
-import { BreadCrumbs } from './shared/BreadCrumbs.js';
 
 interface CompareViewProps {
   conversation: Conversation;
@@ -89,10 +90,19 @@ export function CompareView({
     }
   });
 
+  // Use the type-safe view API for unified access to step results
+  const leftView = useMemo(() => createTargetRunView(leftReport), [leftReport]);
+  const rightView = useMemo(() => createTargetRunView(rightReport), [rightReport]);
+
+  // Get step results from both views
+  const leftStepResults = leftView.step(scrollPosition);
+  const rightStepResults = rightView.step(scrollPosition);
+
+  // Collect all eval names from both views' step results
   const evalNames = Array.from(
     new Set([
-      ...Object.keys(leftReport.result.singleTurn ?? {}),
-      ...Object.keys(rightReport.result.singleTurn ?? {}),
+      ...Object.keys(leftStepResults),
+      ...Object.keys(rightStepResults),
     ]),
   ).sort();
 
@@ -127,12 +137,8 @@ export function CompareView({
   });
 
   for (const evalName of evalNames) {
-    const leftStep =
-      leftReport.result.singleTurn?.[evalName]?.byStepIndex?.[scrollPosition] ??
-      null;
-    const rightStep =
-      rightReport.result.singleTurn?.[evalName]?.byStepIndex?.[scrollPosition] ??
-      null;
+    const leftStep = leftStepResults[evalName] ?? null;
+    const rightStep = rightStepResults[evalName] ?? null;
 
     const leftScoreNum = leftStep?.measurement.score;
     const rightScoreNum = rightStep?.measurement.score;
@@ -222,8 +228,9 @@ export function CompareView({
             colWidths: [20, 12, 12, 12],
           });
 
-          const leftSummaries = leftReport.result.summaries?.byEval ?? {};
-          const rightSummaries = rightReport.result.summaries?.byEval ?? {};
+          // Use the view API for summary access
+          const leftSummaries = leftView.summary() ?? {};
+          const rightSummaries = rightView.summary() ?? {};
 
           const allEvalNames = new Set<string>([
             ...Object.keys(leftSummaries),

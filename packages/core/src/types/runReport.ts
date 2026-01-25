@@ -35,6 +35,12 @@ export interface TallyRunReport<TEvals extends readonly Eval[] = readonly Eval[]
 
   readonly metadata?: Record<string, unknown>;
 
-  view(): TargetRunView;
+  /**
+   * Type-safe view for ergonomic access.
+   * Returns lazy accessors over result data.
+   */
+  view(): TargetRunView<TEvals>;
+
+  /** Serialize to artifact for persistence */
   toArtifact(): TallyRunArtifact;
 }

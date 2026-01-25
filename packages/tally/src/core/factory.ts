@@ -29,7 +29,7 @@ import type {
   SingleTurnMetricDef,
   VarsTuple,
 } from '@tally/core/types';
-import { getDefaultAggregators } from 'src/aggregators/default';
+import { getDefaultAggregators } from '../aggregators/default';
 
 // -----------------------------------------------------------------------------
 // Base Metric Definition

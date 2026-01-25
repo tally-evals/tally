@@ -153,8 +153,14 @@ export type { TallyContainer as TallyContainerType } from './core/tally';
 // SDK/Test Views
 // ============================================================================
 
-export { createTargetRunView } from './view/targetRunView';
-export type { TargetRunView } from './core/types';
+export { createTargetRunView, TargetRunViewImpl } from './view/targetRunView';
+export type {
+  TargetRunView,
+  StepResults,
+  StepResultsWithIndex,
+  ConversationResults,
+  SummaryResults,
+} from '@tally-evals/core';
 
 // ============================================================================
 // Builders
