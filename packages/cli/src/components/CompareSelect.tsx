@@ -2,15 +2,16 @@
  * Compare selection component - allows user to select two runs to compare
  */
 
-import React, { useState, useEffect } from 'react';
+import type { ConversationRef, RunRef } from '@tally-evals/core';
 import { Box, Text, useInput } from 'ink';
-import { colors } from '../utils/colors.js';
-import { KeyboardHelp } from './shared/KeyboardHelp.js';
-import type { ConversationFile, RunFile } from '@tally-evals/store';
+import type React from 'react';
+import { useEffect, useState } from 'react';
+import { colors } from '../utils/colors';
+import { KeyboardHelp } from './shared/KeyboardHelp';
 
 interface CompareSelectProps {
-  conversation: ConversationFile;
-  onSelect: (leftRun: RunFile, rightRun: RunFile) => void;
+  conversation: ConversationRef;
+  onSelect: (leftRun: RunRef, rightRun: RunRef) => void;
   onCancel: () => void;
 }
 
@@ -19,20 +20,18 @@ export function CompareSelect({
   onSelect,
   onCancel,
 }: CompareSelectProps): React.ReactElement {
-  const [runs, setRuns] = useState<RunFile[]>([]);
+  const [runs, setRuns] = useState<RunRef[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(
-    new Set(),
-  );
+  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
   const [cursorPosition, setCursorPosition] = useState(0);
 
   useEffect(() => {
     const loadRuns = async () => {
       try {
         setLoading(true);
-        const availableRuns = await conversation.runs();
+        const availableRuns = await conversation.listRuns();
         setRuns(availableRuns);
-      } catch (err) {
+      } catch (_err) {
       } finally {
         setLoading(false);
       }
@@ -85,8 +84,7 @@ export function CompareSelect({
       <Box flexDirection="column">
         <Text>{colors.error('Not enough runs to compare')}</Text>
         <Text>
-          {colors.info('Found')} {runs.length}{' '}
-          {colors.info('run(s), need at least 2')}
+          {colors.info('Found')} {runs.length} {colors.info('run(s), need at least 2')}
         </Text>
         <KeyboardHelp shortcuts={[{ key: 'q', description: 'Back' }]} />
       </Box>
@@ -111,8 +109,8 @@ export function CompareSelect({
           const label = isCursor
             ? colors.info(run.id ?? 'unknown')
             : isSelected
-            ? colors.success(run.id ?? 'unknown')
-            : run.id ?? 'unknown';
+              ? colors.success(run.id ?? 'unknown')
+              : (run.id ?? 'unknown');
 
           return (
             <Text key={run.id ?? `run-${index}`}>

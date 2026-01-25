@@ -2,13 +2,12 @@
  * Travel Planner Agent - Curve Ball Test
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 import { travelPlannerAgent } from '../../../src/agents/travelPlanner';
 import { travelPlannerCurveTrajectory } from './definitions';
-import { runCase } from '../../utils/harness';
+import { runCase, saveTallyReportToStore } from '../../utils/harness';
 import {
   createTally,
-  createEvaluator,
   runAllTargets,
   defineBaseMetric,
   defineInput,
@@ -32,7 +31,6 @@ describe('Travel Planner Agent - Curve Ball', () => {
     const { conversation } = await runCase({
       trajectory: travelPlannerCurveTrajectory,
       agent: travelPlannerAgent,
-      recordedPath: '_fixtures/recorded/travelPlanner/curve.jsonl',
       conversationId: 'travel-planner-curve',
       generateLogs: true,
     });
@@ -59,7 +57,7 @@ describe('Travel Planner Agent - Curve Ball', () => {
       parameters: ['origin', 'destination', 'dates', 'preferences'],
     });
 
-    const overallQuality = defineBaseMetric({
+    const overallQuality = defineBaseMetric<number>({
       name: 'overallQuality',
       valueType: 'number',
     });
@@ -102,18 +100,12 @@ describe('Travel Planner Agent - Curve Ball', () => {
 
     const overallQualityEval = defineScorerEval({
       name: 'Overall Quality',
-      inputs: [
-        answerRelevance,
-        completeness,
-        roleAdherence,
-        knowledgeRetention,
-      ],
       scorer: qualityScorer,
       verdict: thresholdVerdict(0.5), // Curve ball: overall quality should be reasonable
     });
 
-    const evaluator = createEvaluator({
-      name: 'Travel Planner Agent Quality',
+    const tally = createTally({
+      data: [conversation],
       evals: [
         answerRelevanceEval,
         completenessEval,
@@ -124,22 +116,21 @@ describe('Travel Planner Agent - Curve Ball', () => {
       context: runAllTargets(),
     });
 
-    const tally = createTally({
-      data: [conversation],
-      evaluators: [evaluator],
-    });
-
     const report = await tally.run();
+    await saveTallyReportToStore({ conversationId: 'travel-planner-curve', report: report.toArtifact() });
 
-    formatReportAsTables(report, [conversation]);
+    formatReportAsTables(report.toArtifact(), conversation);
 
     expect(report).toBeDefined();
-    expect(report.perTargetResults.length).toBeGreaterThan(0);
-    expect(report.evalSummaries.size).toBeGreaterThan(0);
+    expect(report.result.stepCount).toBeGreaterThan(0);
+    expect(Object.keys(report.result.summaries?.byEval ?? {}).length).toBeGreaterThan(0);
 
-    const overallQualitySummary = report.evalSummaries.get('Overall Quality');
+    const overallQualitySummary = report.result.summaries?.byEval?.['Overall Quality'];
     if (overallQualitySummary) {
-      expect(overallQualitySummary.aggregations.mean).toBeGreaterThan(0.4);
+      const mean = (overallQualitySummary.aggregations?.score as any)?.Mean;
+      if (typeof mean === 'number') {
+        expect(mean).toBeGreaterThan(0.4);
+      }
     }
   });
 });

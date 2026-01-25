@@ -1,0 +1,361 @@
+---
+title: Evals
+description: Define evals, select targets, and compute verdicts.
+---
+
+import { PropertyTable } from '@/components/PropertyTable';
+
+# Evals
+
+The **Eval API** is the primary user-facing API for building evaluations.
+
+## Import
+
+```ts
+import {
+  defineSingleTurnEval,
+  defineMultiTurnEval,
+  defineScorerEval,
+  runAllTargets,
+  runSelectedSteps,
+  runSelectedItems,
+  booleanVerdict,
+  thresholdVerdict,
+  rangeVerdict,
+  ordinalVerdict,
+  customVerdict,
+} from 'tally';
+```
+
+### `defineSingleTurnEval()`
+
+Creates an eval that applies a verdict policy to a single-turn metric. Use this to evaluate individual conversation steps or dataset items with pass/fail criteria.
+
+<PropertyTable
+  content={[
+    { name: 'name', type: 'string', description: 'Eval name.' },
+    {
+      name: 'description',
+      type: 'string',
+      description: 'Optional description for this eval.',
+      isOptional: true,
+    },
+    {
+      name: 'metric',
+      type: 'SingleTurnMetricDef',
+      description: 'Single-turn metric definition to evaluate.',
+    },
+    {
+      name: 'verdict',
+      type: 'VerdictPolicyFor<TMetricValue>',
+      description: 'Optional verdict policy inferred from the metric value type.',
+      isOptional: true,
+    },
+    {
+      name: 'autoNormalize',
+      type: 'AutoNormalizer',
+      description: 'Optional auto-normalization for boolean/ordinal metrics.',
+      isOptional: true,
+      properties: [
+        {
+          type: 'AutoNormalizer',
+          parameters: [
+            {
+              name: 'kind',
+              type: "'boolean' | 'ordinal' | 'number'",
+              description: 'Auto-normalization mode.',
+            },
+            {
+              name: 'trueScore',
+              type: 'number',
+              description: 'Score for true (boolean mode).',
+              isOptional: true,
+            },
+            {
+              name: 'falseScore',
+              type: 'number',
+              description: 'Score for false (boolean mode).',
+              isOptional: true,
+            },
+            {
+              name: 'weights',
+              type: 'Record<string | number, number>',
+              description: 'Ordinal weight map (ordinal mode).',
+              isOptional: true,
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'context',
+      type: 'EvaluationContext',
+      description: 'Optional evaluation context (run policy for single-turn).',
+      isOptional: true,
+      properties: [
+        {
+          type: 'EvaluationContext',
+          parameters: [
+            {
+              name: 'singleTurn',
+              type: 'SingleTurnRunPolicy',
+              description: 'Single-turn run policy.',
+              isOptional: true,
+            },
+            {
+              name: 'metadata',
+              type: 'Record<string, unknown>',
+              description: 'Optional metadata for this run.',
+              isOptional: true,
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'metadata',
+      type: 'Record<string, unknown>',
+      description: 'Optional metadata for this eval.',
+      isOptional: true,
+    },
+  ]}
+/>
+
+### `defineMultiTurnEval()`
+
+Creates an eval that applies a verdict policy to a multi-turn metric. Use this to evaluate entire conversations with pass/fail criteria for goals like completion or role adherence.
+
+<PropertyTable
+  content={[
+    { name: 'name', type: 'string', description: 'Eval name.' },
+    {
+      name: 'description',
+      type: 'string',
+      description: 'Optional description for this eval.',
+      isOptional: true,
+    },
+    {
+      name: 'metric',
+      type: 'MultiTurnMetricDef',
+      description: 'Multi-turn metric definition to evaluate.',
+    },
+    {
+      name: 'verdict',
+      type: 'VerdictPolicyFor<TMetricValue>',
+      description: 'Optional verdict policy inferred from the metric value type.',
+      isOptional: true,
+    },
+    {
+      name: 'autoNormalize',
+      type: 'AutoNormalizer',
+      description: 'Optional auto-normalization for boolean/ordinal metrics.',
+      isOptional: true,
+      properties: [
+        {
+          type: 'AutoNormalizer',
+          parameters: [
+            {
+              name: 'kind',
+              type: "'boolean' | 'ordinal' | 'number'",
+              description: 'Auto-normalization mode.',
+            },
+            {
+              name: 'trueScore',
+              type: 'number',
+              description: 'Score for true (boolean mode).',
+              isOptional: true,
+            },
+            {
+              name: 'falseScore',
+              type: 'number',
+              description: 'Score for false (boolean mode).',
+              isOptional: true,
+            },
+            {
+              name: 'weights',
+              type: 'Record<string | number, number>',
+              description: 'Ordinal weight map (ordinal mode).',
+              isOptional: true,
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'context',
+      type: 'EvaluationContext',
+      description: 'Optional evaluation context (run policy for single-turn).',
+      isOptional: true,
+      properties: [
+        {
+          type: 'EvaluationContext',
+          parameters: [
+            {
+              name: 'singleTurn',
+              type: 'SingleTurnRunPolicy',
+              description: 'Single-turn run policy.',
+              isOptional: true,
+            },
+            {
+              name: 'metadata',
+              type: 'Record<string, unknown>',
+              description: 'Optional metadata for this run.',
+              isOptional: true,
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'metadata',
+      type: 'Record<string, unknown>',
+      description: 'Optional metadata for this eval.',
+      isOptional: true,
+    },
+  ]}
+/>
+
+### `defineScorerEval()`
+
+Creates an eval that applies a verdict policy to a scorer's combined output. Use this when quality depends on multiple weighted factors combined into a single score.
+
+<PropertyTable
+  content={[
+    { name: 'name', type: 'string', description: 'Eval name.' },
+    {
+      name: 'description',
+      type: 'string',
+      description: 'Optional description for this eval.',
+      isOptional: true,
+    },
+    {
+      name: 'scorer',
+      type: 'Scorer',
+      description: 'Scorer definition to combine input metrics.',
+    },
+    {
+      name: 'verdict',
+      type: 'VerdictPolicyFor<number>',
+      description: 'Optional verdict policy for the derived score.',
+      isOptional: true,
+    },
+    {
+      name: 'context',
+      type: 'EvaluationContext',
+      description: 'Optional evaluation context (run policy for single-turn).',
+      isOptional: true,
+      properties: [
+        {
+          type: 'EvaluationContext',
+          parameters: [
+            {
+              name: 'singleTurn',
+              type: 'SingleTurnRunPolicy',
+              description: 'Single-turn run policy.',
+              isOptional: true,
+            },
+            {
+              name: 'metadata',
+              type: 'Record<string, unknown>',
+              description: 'Optional metadata for this run.',
+              isOptional: true,
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'metadata',
+      type: 'Record<string, unknown>',
+      description: 'Optional metadata for this eval.',
+      isOptional: true,
+    },
+  ]}
+/>
+
+## Target selection policies
+
+### `runAllTargets()`
+
+Runs the eval on all available targets (all steps in a conversation, or all items in a dataset). This is the default behavior.
+
+No options.
+
+### `runSelectedSteps()`
+
+Runs the eval only on specific conversation steps by index. Use this to focus evaluation on particular turns (e.g., only the first and last step).
+
+<PropertyTable
+  content={[
+    { name: 'steps', type: 'number[]', description: 'Step indices to evaluate.' },
+  ]}
+/>
+
+### `runSelectedItems()`
+
+Runs the eval only on specific dataset items by index. Use this to focus evaluation on particular items in a dataset.
+
+<PropertyTable
+  content={[
+    { name: 'indices', type: 'number[]', description: 'Dataset item indices to evaluate.' },
+  ]}
+/>
+
+## Verdict helpers
+
+### `booleanVerdict()`
+
+Creates a verdict policy for boolean metrics. Passes when the raw value matches the specified boolean.
+
+<PropertyTable
+  content={[
+    { name: 'passWhen', type: 'boolean', description: 'Pass when raw value matches this boolean.' },
+  ]}
+/>
+
+### `thresholdVerdict()`
+
+Creates a verdict policy that passes when the normalized score meets or exceeds a threshold. The most common way to set a quality bar.
+
+<PropertyTable
+  content={[
+    { name: 'passAt', type: 'number', description: 'Pass when score >= passAt.' },
+  ]}
+/>
+
+### `rangeVerdict()`
+
+Creates a verdict policy that passes when the score falls within a specified range. Useful for balanced checks (e.g., "neither too brief nor too verbose").
+
+<PropertyTable
+  content={[
+    { name: 'min', type: 'number', description: 'Optional minimum pass threshold.', isOptional: true },
+    { name: 'max', type: 'number', description: 'Optional maximum pass threshold.', isOptional: true },
+  ]}
+/>
+
+### `ordinalVerdict()`
+
+Creates a verdict policy for ordinal (string) metrics. Passes when the raw value is one of the allowed categories.
+
+<PropertyTable
+  content={[
+    { name: 'passWhenIn', type: 'readonly string[]', description: 'Allowed ordinal values for pass.' },
+  ]}
+/>
+
+### `customVerdict()`
+
+Creates a verdict policy with custom logic. Use this when your pass/fail rules are complex and can't be expressed with built-in policies.
+
+<PropertyTable
+  content={[
+    {
+      name: 'verdict',
+      type: "(score: Score, rawValue: T) => 'pass' | 'fail' | 'unknown'",
+      description: 'Custom verdict function.',
+    },
+  ]}
+/>
+
+

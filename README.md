@@ -35,15 +35,15 @@
   - **Single-Turn Eval**: Evaluates individual steps with a threshold or custom policy — *per-turn quality gates*
   - **Multi-Turn Eval**: Evaluates entire conversations with a threshold or custom policy — *conversation-level quality gates*
   - **Scorer Eval**: Combines multiple metrics via a scorer, then applies a verdict — *composite quality gates*
-- **Evaluator**: A set of evals + a run policy (which steps/items to evaluate) — *groups related evaluations together*
 - **Report**: The output, including per-target details and eval summaries with aggregations — *actionable results for CI/CD*
 
 ## Getting Started
 
 ```bash
-pnpm add @tally-evals/tally
+bun add @tally-evals/tally
 # Optional: conversation generation
-pnpm add @tally-evals/trajectories
+bun add @tally-evals/trajectories
+bun add @tally-evals/core
 ```
 
 ## Packages
@@ -52,6 +52,9 @@ This monorepo contains:
 
 - **[`@tally-evals/tally`](./packages/tally)** - Core evaluation framework
 - **[`@tally-evals/trajectories`](./packages/trajectories)** - Generate simulated conversations
+- **[`@tally-evals/core`](./packages/core)** - Shared types, configuration, and storage
+- **[`@tally-evals/cli`](./packages/cli)** - Interactive CLI for viewing results
+- **[`@tally-evals/viewer`](./packages/viewer)** - Web-based results viewer
 - **[Examples](./apps/examples)** - Example agents (AI SDK, Mastra, Agent Kit)
 
 ## Quick Start
@@ -67,6 +70,7 @@ import {
   withAISdkAgent,
   toConversation,
 } from '@tally-evals/trajectories'
+import { TallyStore } from '@tally-evals/core'
 import { weatherAgent } from '@tally-evals/examples-ai-sdk'
 import { google } from '@ai-sdk/google'
 
@@ -101,7 +105,11 @@ const trajectory = createTrajectory(
 )
 
 // Run the trajectory
-const result = await runTrajectory(trajectory)
+const store = await TallyStore.open({ cwd: process.cwd() })
+const result = await runTrajectory(trajectory, {
+  store,
+  trajectoryId: 'weather-trajectory',
+})
 
 // Convert to Tally Conversation format
 const conversation = toConversation(result, 'weather-trajectory')
@@ -114,10 +122,8 @@ Evaluate your agents using datasets and conversations with evals (recommended ap
 ```typescript
 import {
   createTally,
-  createEvaluator,
   defineInput,
   defineBaseMetric,
-  runAllTargets,
   defineSingleTurnEval,
   defineMultiTurnEval,
   defineScorerEval,
@@ -160,7 +166,7 @@ const model = google('models/gemini-2.5-flash-lite')
 const relevanceMetric = createAnswerRelevanceMetric({ provider: model })
 const completenessMetric = createCompletenessMetric({ provider: model })
 
-// Create multi-turn metric
+// Create multi-turn metrics
 const roleAdherenceMetric = createRoleAdherenceMetric({
   expectedRole: 'weather information assistant',
   provider: model,
@@ -211,19 +217,13 @@ const goalCompletionEval = defineMultiTurnEval({
 
 const overallQualityEval = defineScorerEval({
   name: 'Overall Quality',
-  inputs: [
-    relevanceMetric,
-    completenessMetric,
-    roleAdherenceMetric,
-    goalCompletionMetric,
-  ],
   scorer: qualityScorer,
   verdict: thresholdVerdict(0.7), // Pass if score >= 0.7
 })
 
-// Create evaluator with evals
-const evaluator = createEvaluator({
-  name: 'Agent Quality Evaluation',
+// Create Tally instance with evals and run evaluation
+const tally = createTally({
+  data: conversations,
   evals: [
     relevanceEval,
     completenessEval,
@@ -231,31 +231,34 @@ const evaluator = createEvaluator({
     goalCompletionEval,
     overallQualityEval,
   ],
-  context: runAllTargets(), // Evaluate all conversation steps
-})
-
-// Create Tally instance and run evaluation
-const tally = createTally({
-  data: conversations,
-  evaluators: [evaluator],
 })
 
 const report = await tally.run()
 
 // Format and display results as tables
-formatReportAsTables(report, conversations)
+formatReportAsTables(report.toArtifact(), conversations[0])
 
 // Access results programmatically
-console.log('Eval summaries:', report.evalSummaries)
-console.log('Per-target results:', report.perTargetResults)
+const summaries = report.result.summaries?.byEval
 
-// Check verdicts for each conversation
-report.perTargetResults.forEach((result) => {
-  console.log(`Conversation ${result.targetId}:`)
-  result.verdicts.forEach((verdict, evalName) => {
-    console.log(`  ${evalName}: ${verdict.verdict} (score: ${verdict.score})`)
-  })
-})
+// Check eval summaries
+if (summaries) {
+  for (const [evalName, summary] of Object.entries(summaries)) {
+    console.log(`${evalName}:`)
+    const mean = (summary.aggregations?.score as { mean?: number })?.mean
+    if (mean !== undefined) {
+      console.log(`  Mean score: ${mean}`)
+    }
+    if (summary.verdictSummary) {
+      console.log(`  Pass rate: ${summary.verdictSummary.passRate}`)
+    }
+  }
+}
+
+// Use the type-safe view for test assertions
+const view = report.view()
+const step0 = view.step(0) // Get all eval results for step 0
+const convResults = view.conversation() // Get multi-turn/scorer results
 ```
 
 ## Evals API
@@ -266,7 +269,7 @@ report.perTargetResults.forEach((result) => {
 
 1. **Single-Turn Evals** - Evaluate individual conversation steps or dataset items
 2. **Multi-Turn Evals** - Evaluate entire conversations
-3. **Scorer Evals** - Combine multiple metrics using a scorer
+3. **Scorer Evals** - Combine multiple metrics using a scorer (the eval automatically uses the scorer's configured inputs)
 
 ### Verdict Policies
 
@@ -278,56 +281,89 @@ Verdict policies define pass/fail criteria:
 - `ordinalVerdict(categories)` - Pass if value matches allowed categories
 - `customVerdict(fn)` - Custom pass/fail logic function
 
+### Aggregators
+
+Aggregators compute summary statistics across evaluation results. They are type-safe and discriminated by `kind`:
+
+```typescript
+import {
+  // Custom aggregator definitions
+  defineNumericAggregator,
+  defineBooleanAggregator,
+  defineCategoricalAggregator,
+  // Prebuilt aggregators
+  createMeanAggregator,
+  createPercentileAggregator,
+  createThresholdAggregator,
+  createTrueRateAggregator,
+  createDistributionAggregator,
+  // Default aggregators by value type
+  getDefaultAggregators,
+} from '@tally-evals/tally'
+```
+
+- **Numeric**: `createMeanAggregator()`, `createPercentileAggregator()`, `createThresholdAggregator()`
+- **Boolean**: `createTrueRateAggregator()`, `createFalseRateAggregator()`
+- **Categorical**: `createDistributionAggregator()`, `createModeAggregator()`
+
 ### Report Structure
 
-The `EvaluationReport` includes:
+`tally.run()` returns a **`TallyRunReport`** with type-safe access to results:
 
-- `evalSummaries` - Aggregated statistics per eval (mean, percentiles, pass rates)
-- `perTargetResults` - Detailed results per conversation/dataset item
-  - `rawMetrics` - Raw metric values
-  - `derivedMetrics` - Scorer outputs
-  - `verdicts` - Pass/fail verdicts per eval
-- `aggregateSummaries` - Legacy aggregator results (deprecated, use evalSummaries)
+```typescript
+// Direct access to results
+report.result.singleTurn['Answer Relevance']     // Step-indexed series
+report.result.multiTurn['Role Adherence']        // Conversation-level result
+report.result.scorers['Overall Quality']         // Scorer output
+report.result.summaries?.byEval                  // Aggregated summaries
+
+// Type-safe view for test assertions
+const view = report.view()
+view.step(0)        // All eval results for step 0
+view.conversation() // Multi-turn and scalar scorer results
+view.summary()      // Aggregated summaries by eval
+```
+
+For read-only tooling (CLI/viewer/dev server), persist a **`TallyRunArtifact`** via `report.toArtifact()`.
 
 ## Development
 
-This is a monorepo managed with pnpm workspaces and Turbo.
+This is a monorepo managed with Bun workspaces and Turbo.
 
 ### Prerequisites
 
-- Node.js 18+
-- pnpm 8.15.0+
+- Bun 1.2+
 
 ### Setup
 
 ```bash
 # Install dependencies
-pnpm install
+bun install
 
 # Build all packages
-pnpm build
+bun run build
 
 # Run tests
-pnpm test
+bun run test
 
 # Run linting
-pnpm lint
+bun run lint
 
 # Start development mode
-pnpm dev
+bun run dev
 ```
 
 ### Working on Specific Packages
 
 ```bash
 # Build a specific package
-pnpm --filter=tally build
+bun run --filter=tally build
 
 # Run tests for a specific package
-pnpm --filter=tally test
+bun run --filter=tally test
 
 # Run in development mode
-pnpm --filter=tally dev
+bun run --filter=tally dev
 ```
 
 ## Project Structure
@@ -343,10 +379,13 @@ tally/
 ├── packages/
 │   ├── tally/             # Core evaluation framework
 │   ├── trajectories/      # Trajectory generation package
+│   ├── core/              # Shared types, config, storage
+│   ├── cli/               # Interactive CLI
+│   ├── viewer/            # Web-based viewer
 │   ├── biome-config/      # Shared Biome configuration
 │   └── typescript-config/ # Shared TypeScript configurations
 ├── package.json           # Root workspace configuration
-├── pnpm-workspace.yaml    # pnpm workspace definition
+├── bun.lock               # Bun lockfile
 └── turbo.json            # Turbo pipeline configuration
 ```
 

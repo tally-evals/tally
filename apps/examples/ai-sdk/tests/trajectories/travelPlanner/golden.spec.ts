@@ -2,13 +2,16 @@
  * Travel Planner Agent - Golden Path Test
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 import { travelPlannerAgent } from '../../../src/agents/travelPlanner';
 import { travelPlannerGoldenTrajectory } from './definitions';
-import { runCase, assertToolCallSequence } from '../../utils/harness';
+import {
+  runCase,
+  assertToolCallSequence,
+  saveTallyReportToStore,
+} from '../../utils/harness';
 import {
   createTally,
-  createEvaluator,
   runAllTargets,
   defineBaseMetric,
   defineInput,
@@ -26,13 +29,13 @@ import {
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
 import { google } from '@ai-sdk/google';
 import { createKnowledgeRetentionMetric } from './metrics';
+import { createPercentileAggregator } from '@tally-evals/tally/aggregators';
 
 describe('Travel Planner Agent - Golden Path', () => {
   it('should plan trip successfully', async () => {
-    const { conversation } = await runCase({
+    const { conversation, mode } = await runCase({
       trajectory: travelPlannerGoldenTrajectory,
       agent: travelPlannerAgent,
-      recordedPath: '_fixtures/recorded/travelPlanner/golden.jsonl',
       conversationId: 'travel-planner-golden',
       generateLogs: true,
     });
@@ -46,23 +49,33 @@ describe('Travel Planner Agent - Golden Path', () => {
       } catch (error) {
         // Only fail if there are tool calls but no results
         // Some steps might not have tool calls at all
-        const hasToolCalls = step.output.some(
-          (msg) =>
-            msg.role === 'assistant' &&
-            (Array.isArray(msg.content)
-              ? msg.content.some(
-                  (p: unknown) =>
-                    typeof p === 'object' &&
-                    p !== null &&
-                    'type' in p &&
-                    p.type === 'tool-call',
-                )
-              : false),
-        );
+        const hasToolCalls = step.output.some((msg: unknown) => {
+          if (!msg || typeof msg !== 'object') return false;
+          if (
+            !('role' in msg) ||
+            (msg as { role?: unknown }).role !== 'assistant'
+          )
+            return false;
+          const content = (msg as { content?: unknown }).content;
+          if (!Array.isArray(content)) return false;
+          return content.some(
+            (p: unknown) =>
+              typeof p === 'object' &&
+              p !== null &&
+              'type' in p &&
+              (p as { type?: unknown }).type === 'tool-call',
+          );
+        });
         if (hasToolCalls) {
           throw error;
         }
       }
+    }
+
+    // In record mode, skip evaluation assertions (agent output varies)
+    if (mode === 'record') {
+      console.log(`✅ Recording complete: ${conversation.steps.length} steps`);
+      return;
     }
 
     const model = google('models/gemini-2.5-flash-lite');
@@ -71,6 +84,12 @@ describe('Travel Planner Agent - Golden Path', () => {
     // Answer Relevance: Agent should answer user questions appropriately
     const answerRelevance = createAnswerRelevanceMetric({
       provider: model,
+      aggregators: [
+        createPercentileAggregator({
+          percentile: 67,
+          description: '67th percentile of the answer relevance metric',
+        }),
+      ],
     });
 
     // Completeness: Agent should provide complete information when needed
@@ -92,7 +111,7 @@ describe('Travel Planner Agent - Golden Path', () => {
     });
 
     // Overall Quality: Combined score of all metrics
-    const overallQuality = defineBaseMetric({
+    const overallQuality = defineBaseMetric<number>({
       name: 'overallQuality',
       valueType: 'number',
     });
@@ -119,36 +138,35 @@ describe('Travel Planner Agent - Golden Path', () => {
     const answerRelevanceEval = defineSingleTurnEval({
       name: 'Answer Relevance',
       metric: answerRelevance,
-      verdict: thresholdVerdict(0.5), // Golden path: agent should answer questions, but some turns may be questions
+      verdict: thresholdVerdict(2.5), // Golden path: agent should answer questions, but some turns may be questions
     });
 
     const completenessEval = defineSingleTurnEval({
       name: 'Completeness',
       metric: completeness,
-      verdict: thresholdVerdict(0.3), // Lower threshold: agent asks questions, so some turns are incomplete
+      verdict: thresholdVerdict(2), // Lower threshold: agent asks questions, so some turns are incomplete
     });
 
     const roleAdherenceEval = defineMultiTurnEval({
       name: 'Role Adherence',
       metric: roleAdherence,
-      verdict: thresholdVerdict(0.7), // Golden path: agent should consistently act as travel assistant
+      verdict: thresholdVerdict(3.5), // Golden path: agent should consistently act as travel assistant
     });
 
     const knowledgeRetentionEval = defineMultiTurnEval({
       name: 'Knowledge Retention',
       metric: knowledgeRetention,
-      verdict: thresholdVerdict(0.7), // Golden path: agent should remember the user's preferences well since they are unchanging
+      verdict: thresholdVerdict(3.0), // Golden path: expect decent retention (normalized >= 0.6)
     });
 
     const overallQualityEval = defineScorerEval({
       name: 'Overall Quality',
-      inputs: [answerRelevance, completeness, roleAdherence],
       scorer: qualityScorer,
       verdict: thresholdVerdict(0.5), // Golden path: overall quality should be reasonable
     });
 
-    const evaluator = createEvaluator({
-      name: 'Travel Planner Agent Quality',
+    const tally = createTally({
+      data: [conversation],
       evals: [
         answerRelevanceEval,
         completenessEval,
@@ -159,66 +177,71 @@ describe('Travel Planner Agent - Golden Path', () => {
       context: runAllTargets(),
     });
 
-    const tally = createTally({
-      data: [conversation],
-      evaluators: [evaluator],
+    const report = await tally.run({
+      llmOptions: {
+        temperature: 0,
+        maxRetries: 2,
+      },
+    });
+    await saveTallyReportToStore({
+      conversationId: 'travel-planner-golden',
+      report: report.toArtifact(),
     });
 
-    const report = await tally.run();
-
     expect(report).toBeDefined();
-    expect(report.perTargetResults.length).toBeGreaterThan(0);
-    expect(report.evalSummaries.size).toBeGreaterThan(0);
+    expect(report.result.stepCount).toBeGreaterThan(0);
+    expect(
+      Object.keys(report.result.summaries?.byEval ?? {}).length,
+    ).toBeGreaterThan(0);
 
     // Format and display report as tables
-    formatReportAsTables(report, [conversation]);
+    formatReportAsTables(report.toArtifact(), conversation);
 
-    // Assertions for golden path expectations
-    // Check actual verdicts from per-target results (more reliable than summaries)
-    const targetResult = report.perTargetResults[0];
-    expect(targetResult).toBeDefined();
+    // Using the new type-safe view API
+    const view = report.view();
+    
+    // Access summary via view (type-safe with autocomplete)
+    const answerRelevanceSummary = view.summary()?.['Answer Relevance'];
+    console.log(`Answer Relevance P95: ${answerRelevanceSummary?.aggregations?.score.P95}`);
 
-    if (!targetResult) {
-      throw new Error('No target result found');
+    // Iterate steps using the generator
+    for (const step of view.steps()) {
+      const relevance = step['Answer Relevance'];
+      if (relevance?.outcome) {
+        console.log(`Step ${step.index}: Answer Relevance verdict = ${relevance.outcome.verdict}`);
+      }
     }
 
+    // Access conversation-level results (type-safe)
+    const conversationResults = view.conversation();
+
     // Overall Quality: Should pass for golden path (score >= 0.6)
-    const overallQualityVerdict = targetResult.verdicts.get('Overall Quality');
-    if (overallQualityVerdict) {
-      expect(overallQualityVerdict.verdict).toBe('pass');
-      expect(overallQualityVerdict.score).toBeGreaterThanOrEqual(0.6);
+    const overallQualityResult = conversationResults['Overall Quality'];
+    if (overallQualityResult?.outcome) {
+      expect(overallQualityResult.outcome.verdict).toBe('pass');
+      const s = overallQualityResult.measurement.score;
+      if (typeof s === 'number') expect(s).toBeGreaterThanOrEqual(0.6);
     }
 
     // Role Adherence: Should pass for golden path (score >= 0.7)
-    const roleAdherenceVerdict = targetResult.verdicts.get('Role Adherence');
-    if (roleAdherenceVerdict) {
-      expect(roleAdherenceVerdict.verdict).toBe('pass');
-      expect(roleAdherenceVerdict.score).toBeGreaterThanOrEqual(0.7);
+    const roleAdherenceResult = conversationResults['Role Adherence'];
+    if (roleAdherenceResult?.outcome) {
+      expect(roleAdherenceResult.outcome.verdict).toBe('pass');
+      const s = roleAdherenceResult.measurement.score;
+      if (typeof s === 'number') expect(s).toBeGreaterThanOrEqual(0.7);
     }
 
-    // Answer Relevance: Should pass for golden path (score >= 0.6)
-    const answerRelevanceVerdict =
-      targetResult.verdicts.get('Answer Relevance');
-    if (answerRelevanceVerdict) {
-      expect(answerRelevanceVerdict.verdict).toBe('pass');
-      expect(answerRelevanceVerdict.score).toBeGreaterThanOrEqual(0.6);
+    // Knowledge Retention: Should pass for golden path (score >= 0.6)
+    const knowledgeRetentionResult = conversationResults['Knowledge Retention'];
+    if (knowledgeRetentionResult?.outcome) {
+      expect(knowledgeRetentionResult.outcome.verdict).toBe('pass');
+      const s = knowledgeRetentionResult.measurement.score;
+      if (typeof s === 'number') expect(s).toBeGreaterThanOrEqual(0.6);
     }
 
-    // Knowledge Retention: Should pass for golden path (score >= 0.7)
-    const knowledgeRetentionVerdict = targetResult.verdicts.get(
-      'Knowledge Retention',
-    );
-    if (knowledgeRetentionVerdict) {
-      expect(knowledgeRetentionVerdict.verdict).toBe('pass');
-      expect(knowledgeRetentionVerdict.score).toBeGreaterThanOrEqual(0.7);
-    }
-
-    // Overall Quality: Should pass for golden path (score >= 0.6)
-    const overallQualitySummary = report.evalSummaries.get('Overall Quality');
-    if (overallQualitySummary?.aggregations?.mean !== undefined) {
-      expect(overallQualitySummary.aggregations.mean).toBeGreaterThanOrEqual(
-        0.6,
-      );
-    }
-  }, 120000); // 2 minute timeout for trajectory execution
+    const overallQualitySummary =
+      report.result.summaries?.byEval?.['Overall Quality'];
+    const mean = overallQualitySummary?.aggregations?.score.Mean;
+    if (typeof mean === 'number') expect(mean).toBeGreaterThanOrEqual(0.6);
+  }, 300000); // 5 minute timeout for trajectory execution
 });

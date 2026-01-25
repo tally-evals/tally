@@ -5,7 +5,7 @@
  * - Datasets and Conversations (input data)
  * - Evaluators (with Evals - new API)
  * - Metrics (Boolean, Number, Ordinal/Enum)
- * - EvaluationReport (final output with built-in aggregations)
+ * - TallyRunArtifact (stored run artifact output with defs + step-indexed results)
  */
 
 // ============================================================================
@@ -13,54 +13,103 @@
 // ============================================================================
 
 export type {
-	// Data types
-	DatasetItem,
-	Conversation,
-	ConversationStep,
-	SingleTurnContainer,
-	MultiTurnContainer,
-	MetricContainer,
-
-	// Metric system
-	MetricScalar,
-	Score,
-	ValueTypeFor,
-	MetricScope,
-	SingleTargetFor,
-	BaseMetricDef,
-	LLMMetricFields,
-	CodeMetricFields,
-	SingleTurnMetricDef,
-	MultiTurnMetricDef,
-	MetricDef,
-	MetricDefFor,
-	Metric,
-
-	// Normalization types
-	NormalizeToScore,
-	ScoringContext,
-	NormalizerSpec,
-	MetricNormalization,
-
-	// Scorer types
-	ScorerInput,
-	InputScores,
-	Scorer,
-
-	// Evaluator types (REFACTORED - now accepts evals)
-	SingleTurnRunPolicy,
-	EvaluationContext,
-	Evaluator,
-
-	// Report types (ENHANCED)
-	TargetVerdict,
-	PerTargetResult,
-	BuiltInAggregations,
-	AggregateSummary,
-	EvaluationReport,
-
-	// Main container
-	Tally,
+  // Data types
+  DatasetItem,
+  Conversation,
+  ConversationStep,
+  SingleTurnContainer,
+  MultiTurnContainer,
+  MetricContainer,
+  // Metric system
+  MetricScalar,
+  Score,
+  ValueTypeFor,
+  MetricScope,
+  SingleTargetFor,
+  BaseMetricDef,
+  LLMMetricFields,
+  CodeMetricFields,
+  SingleTurnMetricDef,
+  MultiTurnMetricDef,
+  MetricDef,
+  MetricDefFor,
+  Metric,
+  // Normalization types
+  NormalizeToScore,
+  NumericNormalizationContext,
+  BooleanNormalizationContext,
+  OrdinalNormalizationContext,
+  NormalizationContextFor,
+  NormalizerSpec,
+  MetricNormalization,
+  NormalizationInfo,
+  NormalizerSpecSnap,
+  MetricNormalizationSnap,
+  // Scorer types
+  ScorerInput,
+  InputScores,
+  Scorer,
+  // Aggregator types
+  NumericAggregatorDef,
+  BooleanAggregatorDef,
+  CategoricalAggregatorDef,
+  AggregatorDef,
+  CompatibleAggregator,
+  Aggregator,
+  // Eval context types
+  SingleTurnRunPolicy,
+  EvaluationContext,
+  // Core result types (unified)
+  MetricName,
+  EvalName,
+  RunId,
+  ConversationId,
+  Verdict,
+  MetricScalarOrNull,
+  Measurement,
+  VerdictPolicyInfo,
+  EvalOutcome,
+  StepEvalResult,
+  ConversationEvalResult,
+  SingleTurnEvalSeries,
+  ConversationResult,
+  // Type extraction utilities
+  ExtractEvalName,
+  ExtractValueType,
+  ExtractEvalKind,
+  FilterByKind,
+  EvalNamesOfKind,
+  HasEvalsOfKind,
+  ExtractVerdictPolicy,
+  ExtractNormalizationContext,
+  // Mapped result types
+  SingleTurnResults,
+  MultiTurnResults,
+  ScorerResults,
+  // Aggregations
+  AggregationValue,
+  ExtractAggregatorNames,
+  ExtractEvalAggregatorNames,
+  DefaultNumericAggregatorNames,
+  DefaultBooleanAggregatorNames,
+  DefaultCategoricalAggregatorNames,
+  AggregationResultFor,
+  ScoreAggregations,
+  RawAggregations,
+  // Summaries
+  VerdictSummary,
+  EvalSummary,
+  Summaries,
+  // Definition snapshots
+  MetricDefSnap,
+  EvalDefSnap,
+  RunDefs,
+  // Artifact & Report
+  TallyRunArtifact,
+  TallyRunReport,
+  TallyRunOptions,
+  // Main container
+  Tally,
 } from './core/types';
 
 export { toScore } from './core/types';
@@ -70,27 +119,27 @@ export { toScore } from './core/types';
 // ============================================================================
 
 export {
-	defineSingleTurnEval,
-	defineMultiTurnEval,
-	defineScorerEval,
-	runAllTargets,
-	runSelectedSteps,
-	runSelectedItems,
-	booleanVerdict,
-	thresholdVerdict,
-	rangeVerdict,
-	ordinalVerdict,
-	customVerdict,
+  defineSingleTurnEval,
+  defineMultiTurnEval,
+  defineScorerEval,
+  runAllTargets,
+  runSelectedSteps,
+  runSelectedItems,
+  booleanVerdict,
+  thresholdVerdict,
+  rangeVerdict,
+  ordinalVerdict,
+  customVerdict,
 } from './evals';
 
 export type {
-	Eval,
-	SingleTurnEval,
-	MultiTurnEval,
-	ScorerEval,
-	VerdictPolicy,
-	VerdictPolicyFor,
-	AutoNormalizer,
+  Eval,
+  SingleTurnEval,
+  MultiTurnEval,
+  ScorerEval,
+  VerdictPolicy,
+  VerdictPolicyFor,
+  AutoNormalizer,
 } from './evals';
 
 // ============================================================================
@@ -101,28 +150,35 @@ export { TallyContainer, createTally } from './core/tally';
 export type { TallyContainer as TallyContainerType } from './core/tally';
 
 // ============================================================================
-// Builders
+// Views
 // ============================================================================
 
-export { MetricDefBuilder } from './core/builders/MetricDefBuilder';
-export { ScorerBuilder } from './core/builders/ScorerBuilder';
+export { createTargetRunView, TargetRunViewImpl } from './views/targetRunView';
+export type {
+  TargetRunView,
+  StepResults,
+  StepResultsWithIndex,
+  ConversationResults,
+  SummaryResults,
+} from '@tally-evals/core';
 
 // ============================================================================
-// Factory APIs (preferred over builders)
+// Primitives (Low-level building blocks)
 // ============================================================================
 
 export {
-	defineBaseMetric,
-	withNormalization,
-	withMetadata,
-	createSingleTurnCode,
-	createSingleTurnLLM,
-	createMultiTurnCode,
-	createMultiTurnLLM,
-	defineInput,
-	defineScorer,
-	createEvaluator,
-} from './core/factory';
+  // Metric primitives
+  defineBaseMetric,
+  withNormalization,
+  withMetadata,
+  defineSingleTurnCode,
+  defineSingleTurnLLM,
+  defineMultiTurnCode,
+  defineMultiTurnLLM,
+  // Scorer primitives
+  defineInput,
+  defineScorer,
+} from './core/primitives';
 
 
 // ============================================================================
@@ -130,18 +186,18 @@ export {
 // ============================================================================
 
 export {
-	runAllTargets as runAllTargetsLegacy,
-	runSpecificSteps,
-	runSpecificItems,
-	createEvaluationContext,
+  runAllTargets as runAllTargetsLegacy,
+  runSpecificSteps,
+  runSpecificItems,
+  createEvaluationContext,
 } from './core/evaluators/helpers';
 
 export {
-	selectConversationTargets,
-	selectDatasetTargets,
-	resolveRunPolicy,
-	validateStepIndices,
-	validateItemIndices,
+  selectConversationTargets,
+  selectDatasetTargets,
+  resolveRunPolicy,
+  validateStepIndices,
+  validateItemIndices,
 } from './core/evaluators/context';
 export type { TargetSelectionResult } from './core/evaluators/context';
 
@@ -149,17 +205,93 @@ export type { TargetSelectionResult } from './core/evaluators/context';
 // Execution (Advanced - typically used internally)
 // ============================================================================
 
-export { runSingleTurnMetric, runSingleTurnMetrics } from './core/execution/runSingleTurn';
+export {
+  runSingleTurnMetric,
+  runSingleTurnMetrics,
+} from './core/execution/runSingleTurn';
 export type { RunSingleTurnOptions } from './core/execution/runSingleTurn';
 
-export { runMultiTurnMetric, runMultiTurnMetrics } from './core/execution/runMultiTurn';
+export {
+  runMultiTurnMetric,
+  runMultiTurnMetrics,
+} from './core/execution/runMultiTurn';
 export type { RunMultiTurnOptions } from './core/execution/runMultiTurn';
 
 export { MemoryCache } from './core/execution/cache/memoryCache';
 export type {
-	CacheEntry,
-	CacheStats,
+  CacheEntry,
+  CacheStats,
 } from './core/execution/cache/memoryCache';
+
+// ============================================================================
+// Aggregators
+// ============================================================================
+
+export {
+  // Custom aggregator definitions (define*)
+  defineNumericAggregator,
+  defineBooleanAggregator,
+  defineCategoricalAggregator,
+  // Prebuilt numeric aggregators (create*)
+  createMeanAggregator,
+  createPercentileAggregator,
+  createThresholdAggregator,
+  // Prebuilt boolean aggregators (create*)
+  createTrueRateAggregator,
+  createFalseRateAggregator,
+  // Prebuilt categorical aggregators (create*)
+  createDistributionAggregator,
+  createModeAggregator,
+  // Default aggregators
+  DEFAULT_AGGREGATORS,
+  DEFAULT_NUMERIC_AGGREGATORS,
+  getDefaultAggregators,
+} from './aggregators';
+
+export type {
+  // Custom aggregator definition args
+  DefineNumericAggregatorArgs,
+  DefineBooleanAggregatorArgs,
+  DefineCategoricalAggregatorArgs,
+  // Prebuilt aggregator options
+  MeanAggregatorOptions,
+  PercentileAggregatorOptions,
+  ThresholdAggregatorOptions,
+  TrueRateAggregatorOptions,
+  DistributionAggregatorOptions,
+} from './aggregators';
+
+// ============================================================================
+// Normalizers
+// ============================================================================
+
+export {
+  createMinMaxNormalizer,
+  createZScoreNormalizer,
+  createThresholdNormalizer,
+  createLinearNormalizer,
+  createOrdinalMapNormalizer,
+  createIdentityNormalizer,
+  createCustomNormalizer,
+  applyNormalization,
+  resolveCalibration,
+  computeDistributionStats,
+  computeRange,
+  createCalibrationCache,
+} from './normalizers';
+
+// ============================================================================
+// Verdicts
+// ============================================================================
+
+// Re-exported from evals for convenience, but also available directly
+export {
+  booleanVerdict as createBooleanVerdict,
+  thresholdVerdict as createThresholdVerdict,
+  rangeVerdict as createRangeVerdict,
+  ordinalVerdict as createOrdinalVerdict,
+  customVerdict as createCustomVerdict,
+} from './verdicts';
 
 // ============================================================================
 // Utilities

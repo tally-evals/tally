@@ -5,7 +5,7 @@
   "description": "Agent Kit LLM evaluation examples using the Tally framework",
   "scripts": {
     "dev": "tsx src/index.ts",
-    "build": "tsc",
+    "build": "echo 'No build needed for example package'",
     "test": "vitest",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
@@ -19,6 +19,6 @@
     "@tally-evals/biome-config": "workspace:*",
     "typescript": "^5.3.3",
     "tsx": "^4.7.0",
-    "vitest": "^1.1.0"
+    "vitest": "^4.0.16"
   }
 }

@@ -6,11 +6,10 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "baseUrl": ".",
     "types": ["node"],
     "paths": {
-      "@tally/core/*": ["src/core/*"],
-      "@tally/utils/*": ["src/utils/*"]
+      "@tally/core/*": ["./src/core/*"],
+      "@tally/utils/*": ["./src/utils/*"]
     }
   },
   "include": ["src/**/*", "debug/**/*"],

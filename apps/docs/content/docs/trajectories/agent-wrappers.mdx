@@ -1,0 +1,53 @@
+---
+title: Agent Wrappers
+description: Integrating with different LLM frameworks.
+---
+
+Trajectories is designed to be framework-agnostic. It interacts with your agent through a unified interface provided by **wrappers**.
+
+## AI SDK Wrapper
+
+The `withAISdkAgent` wrapper supports both `Agent` instances and raw `generateText` configurations.
+
+```ts
+import { withAISdkAgent } from '@tally-evals/trajectories';
+import { myAgent } from './agent';
+
+// Wrap an existing AI SDK Agent
+const agent = withAISdkAgent(myAgent);
+
+// Or wrap a configuration
+const agent = withAISdkAgent({
+  model: openai('gpt-4o'),
+  tools: { ... },
+  system: 'You are a helpful assistant.',
+});
+```
+
+## Mastra Wrapper
+
+If you are using [Mastra](https://mastra.ai), use the `withMastraAgent` wrapper.
+
+```ts
+import { withMastraAgent } from '@tally-evals/trajectories';
+import { myMastraAgent } from './mastra-agent';
+
+const agent = withMastraAgent(myMastraAgent);
+```
+
+## Custom Wrappers
+
+You can implement your own wrapper for any custom agent loop or framework. A wrapper is just a function that takes a list of messages and returns the agent's response.
+
+```ts
+import { AgentInvoker } from '@tally-evals/trajectories';
+
+const myCustomAgent: AgentInvoker = async (messages) => {
+  const response = await callMyApi(messages);
+  return {
+    content: response.text,
+    role: 'assistant',
+    toolCalls: response.tools, // optional
+  };
+};
+```

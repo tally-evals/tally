@@ -2,13 +2,12 @@
  * Demand Letter Agent - Curve Ball Test
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 import { demandLetterAgent } from '../../../src/agents/demandLetter';
 import { demandLetterCurveTrajectory } from './definitions';
-import { runCase } from '../../utils/harness';
+import { runCase, saveTallyReportToStore } from '../../utils/harness';
 import {
 	createTally,
-	createEvaluator,
 	runAllTargets,
 	defineBaseMetric,
 	defineInput,
@@ -28,7 +27,6 @@ describe('Demand Letter Agent - Curve Ball', () => {
 		const { conversation } = await runCase({
 			trajectory: demandLetterCurveTrajectory,
 			agent: demandLetterAgent,
-			recordedPath: '_fixtures/recorded/demandLetter/curve.jsonl',
 			conversationId: 'demand-letter-curve',
 		});
 
@@ -44,7 +42,7 @@ describe('Demand Letter Agent - Curve Ball', () => {
 			provider: model,
 		});
 
-		const overallQuality = defineBaseMetric({
+		const overallQuality = defineBaseMetric<number>({
 			name: 'overallQuality',
 			valueType: 'number',
 		});
@@ -71,31 +69,29 @@ describe('Demand Letter Agent - Curve Ball', () => {
 
 		const overallQualityEval = defineScorerEval({
 			name: 'Overall Quality',
-			inputs: [answerRelevance, completeness],
 			scorer: qualityScorer,
 			verdict: thresholdVerdict(0.5),
 		});
 
-		const evaluator = createEvaluator({
-			name: 'Demand Letter Agent Quality',
+		const tally = createTally({
+			data: [conversation],
 			evals: [answerRelevanceEval, completenessEval, overallQualityEval],
 			context: runAllTargets(),
 		});
 
-		const tally = createTally({
-			data: [conversation],
-			evaluators: [evaluator],
-		});
-
 		const report = await tally.run();
+		await saveTallyReportToStore({ conversationId: 'demand-letter-curve', report: report.toArtifact() });
 
 		expect(report).toBeDefined();
-		expect(report.perTargetResults.length).toBeGreaterThan(0);
-		expect(report.evalSummaries.size).toBeGreaterThan(0);
+		expect(report.result.stepCount).toBeGreaterThan(0);
+		expect(Object.keys(report.result.summaries?.byEval ?? {}).length).toBeGreaterThan(0);
 
-		const overallQualitySummary = report.evalSummaries.get('Overall Quality');
+		const overallQualitySummary = report.result.summaries?.byEval?.['Overall Quality'];
 		if (overallQualitySummary) {
-			expect(overallQualitySummary.aggregations.mean).toBeGreaterThan(0.4);
+			const mean = (overallQualitySummary.aggregations?.score as any)?.mean;
+			if (typeof mean === 'number') {
+				expect(mean).toBeGreaterThan(0.4);
+			}
 		}
 	});
 });

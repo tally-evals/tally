@@ -4,179 +4,112 @@
  * Functions to format evaluation reports as pretty console tables
  */
 
-import type {
-  EvaluationReport,
-  PerTargetResult,
-  Conversation,
-  Metric,
-  MetricScalar,
-} from '@tally/core/types';
+import type { Conversation, TallyRunArtifact } from '@tally/core/types';
+import { createTargetRunView } from '../views/targetRunView';
 
 /**
  * Format evaluation report as console tables
  * Shows turn-by-turn conversation with single-turn metrics, then multi-turn metrics
  */
 export function formatReportAsTables(
-  report: EvaluationReport,
-  conversations: readonly Conversation[],
+  artifact: TallyRunArtifact,
+  conversation: Conversation
 ): void {
   console.log('\n' + '='.repeat(80));
-  console.log('EVALUATION REPORT');
+  console.log('TALLY RUN ARTIFACT');
   console.log('='.repeat(80));
-  console.log(`Run ID: ${report.runId}`);
-  console.log(`Timestamp: ${report.timestamp.toISOString()}`);
-  console.log(`Total Conversations: ${report.perTargetResults.length}`);
+  console.log(`Run ID: ${artifact.runId}`);
+  console.log(`Created At: ${artifact.createdAt}`);
+  console.log(`Conversation: ${conversation.id}`);
   console.log('');
 
-  // Process each conversation
-  for (let i = 0; i < report.perTargetResults.length; i++) {
-    const result = report.perTargetResults[i];
-    if (!result) continue;
-
-    const conversation = conversations[i];
-    if (!conversation) continue;
-
-    formatConversationTable(result, conversation, report, i + 1);
-  }
+  formatConversationTable(artifact, conversation);
 
   // Format summary table
-  formatSummaryTable(report);
+  formatSummaryTable(artifact);
 }
 
 /**
  * Format a single conversation as a table
  */
 function formatConversationTable(
-  result: PerTargetResult,
-  conversation: Conversation,
-  report: EvaluationReport,
-  conversationNumber: number,
+  artifact: TallyRunArtifact,
+  conversation: Conversation
 ): void {
   console.log('\n' + '-'.repeat(80));
-  console.log(`CONVERSATION ${conversationNumber}: ${conversation.id}`);
+  console.log(`CONVERSATION: ${conversation.id}`);
   console.log('-'.repeat(80));
 
-  // Separate single-turn and multi-turn metrics
-  const singleTurnMetrics = result.rawMetrics.filter(
-    (m) =>
-      (m.metricDef as unknown as { scope: 'single' | 'multi' }).scope ===
-      'single',
-  );
-  const multiTurnMetrics = result.rawMetrics.filter(
-    (m) =>
-      (m.metricDef as unknown as { scope: 'single' | 'multi' }).scope ===
-      'multi',
-  );
+  // Use the type-safe view API for unified access
+  const view = createTargetRunView(artifact);
 
-  // Group single-turn metrics by metric name, then match to steps by order
-  // Metrics are executed in order: Metric1-Step1, Metric1-Step2, ..., Metric2-Step1, etc.
-  const metricsByName = new Map<string, Metric<MetricScalar>[]>();
-  for (const metric of singleTurnMetrics) {
-    const name = metric.metricDef.name;
-    if (!metricsByName.has(name)) {
-      metricsByName.set(name, []);
-    }
-    metricsByName.get(name)!.push(metric);
-  }
-
-  // Get eval names for single-turn metrics (sorted for consistency)
-  const singleTurnEvalNames = Array.from(metricsByName.keys()).sort();
-
-  // Create table rows for each step
+  // Create table rows for each step using the view.steps() generator
   const tableRows: Array<Record<string, string | number>> = [];
+  const stepEvalNames = new Set<string>();
 
-  // Add rows for each conversation step
-  for (let stepIdx = 0; stepIdx < conversation.steps.length; stepIdx++) {
-    const step = conversation.steps[stepIdx];
+  for (const stepWithIndex of view.steps()) {
+    const step = conversation.steps[stepWithIndex.index];
     if (!step) continue;
 
     const inputText = truncateText(extractTextFromMessage(step.input), 60);
     const outputText = truncateText(extractTextFromMessages(step.output), 60);
 
     const row: Record<string, string | number> = {
-      Turn: stepIdx + 1,
+      Turn: stepWithIndex.index + 1,
       Conversation: formatConversationText(inputText, outputText),
     };
 
-    // Add single-turn metric scores for this step
-    // Metrics are in order: all steps for metric1, then all steps for metric2, etc.
-    for (const evalName of singleTurnEvalNames) {
-      const metrics = metricsByName.get(evalName) ?? [];
-      // Match by order: if we have N steps and metrics are in order, metric[stepIdx] belongs to step[stepIdx]
-      if (stepIdx < metrics.length) {
-        const metric = metrics[stepIdx];
-        if (metric) {
-          const normalized = normalizeValue(metric.value);
-          // Find verdict for this step (verdicts are per eval, not per step, so we'll show aggregate)
-          const verdict = result.verdicts.get(evalName);
-          const verdictIcon = verdict
-            ? verdict.verdict === 'pass'
-              ? '✓'
-              : verdict.verdict === 'fail'
-              ? '✗'
-              : '?'
-            : '';
-          row[evalName] = `${normalized.toFixed(3)} ${verdictIcon}`;
-        } else {
-          row[evalName] = '-';
-        }
-      } else {
-        row[evalName] = '-';
-      }
+    // Iterate over all step results (single-turn + step-indexed scorers)
+    for (const [evalName, stepRes] of Object.entries(stepWithIndex)) {
+      if (evalName === 'index') continue;
+      stepEvalNames.add(evalName);
+
+      const score = stepRes.measurement?.score;
+      const verdict = stepRes.outcome?.verdict;
+      const verdictIcon =
+        verdict === 'pass'
+          ? '✓'
+          : verdict === 'fail'
+            ? '✗'
+            : verdict === 'unknown'
+              ? '?'
+              : '';
+      row[evalName] =
+        score !== undefined ? `${Number(score).toFixed(3)} ${verdictIcon}` : `- ${verdictIcon}`;
     }
 
     tableRows.push(row);
   }
 
-  // Add multi-turn metrics as separate rows (not columns)
-  // Deduplicate by metric name to avoid showing the same metric multiple times
-  const seenMultiTurnMetrics = new Set<string>();
-  for (const metric of multiTurnMetrics) {
-    const metricName = metric.metricDef.name;
-    if (seenMultiTurnMetrics.has(metricName)) continue;
-    seenMultiTurnMetrics.add(metricName);
+  // Add conversation-level results (multi-turn + scalar scorers) as separate rows
+  const conversationResults = view.conversation();
+  const sortedStepEvalNames = Array.from(stepEvalNames).sort();
 
-    const normalized = normalizeValue(metric.value);
-
-    // Look up the eval name using the metric-to-eval mapping
-    const evalName = report.metricToEvalMap?.get(metricName) ?? metricName;
-    const verdict = result.verdicts.get(evalName);
-    const verdictIcon = verdict
-      ? verdict.verdict === 'pass'
-        ? '✓'
-        : verdict.verdict === 'fail'
-        ? '✗'
-        : '?'
-      : '';
+  for (const [evalName, res] of Object.entries(conversationResults)) {
+    const score = res.measurement.score;
+    const verdict = res.outcome?.verdict;
+    const verdictIcon =
+      verdict === 'pass' ? '✓' : verdict === 'fail' ? '✗' : verdict === 'unknown' ? '?' : '';
 
     const multiTurnRow: Record<string, string | number> = {
       Turn: '',
-      Conversation: metricName,
+      Conversation: evalName,
     };
 
-    // Put the metric value in the first single-turn metric column (or create a Score column)
-    // For now, we'll put it in a way that spans visually
-    // We'll use the first single-turn eval column if available, otherwise just show in Conversation
-    if (singleTurnEvalNames.length > 0) {
-      // Put value in first metric column, fill others with dashes
-      multiTurnRow[singleTurnEvalNames[0]!] = `${normalized.toFixed(
-        3,
-      )} ${verdictIcon}`;
-      for (let i = 1; i < singleTurnEvalNames.length; i++) {
-        multiTurnRow[singleTurnEvalNames[i]!] = '-';
+    if (sortedStepEvalNames.length > 0) {
+      multiTurnRow[sortedStepEvalNames[0]!] = `${score !== undefined ? Number(score).toFixed(3) : '-'} ${verdictIcon}`;
+      for (let i = 1; i < sortedStepEvalNames.length; i++) {
+        multiTurnRow[sortedStepEvalNames[i]!] = '-';
       }
     } else {
-      // No single-turn metrics, just show in conversation column
-      multiTurnRow.Conversation = `${evalName}: ${normalized.toFixed(
-        3,
-      )} ${verdictIcon}`;
+      multiTurnRow.Conversation = `${evalName}: ${score !== undefined ? Number(score).toFixed(3) : '-'} ${verdictIcon}`;
     }
 
     tableRows.push(multiTurnRow);
   }
 
-  // Column order: only Turn, Conversation, and single-turn metrics
-  const allColumns = ['Turn', 'Conversation', ...singleTurnEvalNames];
+  // Column order: only Turn, Conversation, and step-level metrics
+  const allColumns = ['Turn', 'Conversation', ...sortedStepEvalNames];
 
   // Print table with custom formatter to handle newlines
   printTableWithNewlines(tableRows, allColumns);
@@ -187,7 +120,7 @@ function formatConversationTable(
  */
 function printTableWithNewlines(
   rows: Array<Record<string, string | number>>,
-  columnOrder: string[],
+  columnOrder: string[]
 ): void {
   if (rows.length === 0) return;
 
@@ -214,16 +147,10 @@ function printTableWithNewlines(
   }
 
   // Print header
-  const headerRow = columnOrder
-    .map((col) => col.padEnd(columnWidths.get(col) ?? 0))
-    .join('│');
+  const headerRow = columnOrder.map((col) => col.padEnd(columnWidths.get(col) ?? 0)).join('│');
   console.log('│' + headerRow + '│');
   console.log(
-    '├' +
-      columnOrder
-        .map((col) => '─'.repeat(columnWidths.get(col) ?? 0))
-        .join('┼') +
-      '┤',
+    '├' + columnOrder.map((col) => '─'.repeat(columnWidths.get(col) ?? 0)).join('┼') + '┤'
   );
 
   // Print rows
@@ -254,58 +181,114 @@ function printTableWithNewlines(
 /**
  * Format summary table with eval summaries
  */
-function formatSummaryTable(report: EvaluationReport): void {
+function formatSummaryTable(artifact: TallyRunArtifact): void {
   console.log('\n' + '-'.repeat(80));
-  console.log('EVAL SUMMARIES');
+  console.log('EVAL SUMMARIES (SCORES)');
   console.log('-'.repeat(80));
 
-  const summaryRows: Array<Record<string, string | number>> = [];
+  // Use the type-safe view API for summary access
+  const view = createTargetRunView(artifact);
+  const summaries = view.summary() ?? {};
 
-  for (const [evalName, summary] of report.evalSummaries) {
+  const summaryRows: Array<Record<string, string | number>> = [];
+  const allColumns = new Set<string>(['Eval', 'Kind']);
+
+  // First pass: collect all unique columns
+  for (const [, summary] of Object.entries(summaries)) {
+    if (summary.verdictSummary) {
+      allColumns.add('Pass Rate');
+      allColumns.add('Pass/Fail');
+    }
+    if (summary.aggregations?.score) {
+      const aggs = summary.aggregations.score;
+      for (const aggName of Object.keys(aggs)) {
+        const displayName = aggName.charAt(0).toUpperCase() + aggName.slice(1);
+        allColumns.add(displayName);
+      }
+    }
+  }
+
+  // Second pass: build rows with all columns
+  for (const [evalName, summary] of Object.entries(summaries)) {
     const row: Record<string, string | number> = {
       Eval: evalName,
-      Kind: summary.evalKind,
-      Mean: summary.aggregations.mean.toFixed(3),
-      P50: summary.aggregations.percentiles.p50.toFixed(3),
-      P75: summary.aggregations.percentiles.p75.toFixed(3),
-      P90: summary.aggregations.percentiles.p90.toFixed(3),
+      Kind: summary.kind,
     };
 
+    // Add verdict summary if available
     if (summary.verdictSummary) {
       row['Pass Rate'] = `${summary.verdictSummary.passRate.toFixed(3)}`;
-      row[
-        'Pass/Fail'
-      ] = `${summary.verdictSummary.passCount}/${summary.verdictSummary.failCount}`;
+      row['Pass/Fail'] = `${summary.verdictSummary.passCount}/${summary.verdictSummary.failCount}`;
+    }
+
+    if (summary.aggregations?.score) {
+      const aggs = summary.aggregations.score;
+      for (const [aggName, aggValue] of Object.entries(aggs)) {
+        if (typeof aggValue === 'number') {
+          const displayName = aggName.charAt(0).toUpperCase() + aggName.slice(1);
+          row[displayName] = aggValue.toFixed(3);
+        }
+      }
+    }
+
+    // Fill in missing columns with hyphens
+    for (const col of allColumns) {
+      if (!(col in row)) {
+        row[col] = '-';
+      }
     }
 
     summaryRows.push(row);
   }
 
   console.table(summaryRows);
-}
 
-/**
- * Normalize a metric value to [0, 1] range
- */
-function normalizeValue(value: MetricScalar): number {
-  if (typeof value === 'number') {
-    // Assume values are already in reasonable range, or normalize 0-5 to 0-1
-    // Most LLM metrics return 0-5, so normalize that
-    if (value >= 0 && value <= 5) {
-      return value / 5;
+  console.log('\n' + '-'.repeat(80));
+  console.log('EVAL SUMMARIES (RAW VALUES)');
+  console.log('-'.repeat(80));
+
+  const summaryRowsRaw: Array<Record<string, string | number>> = [];
+  const allColumnsRaw = new Set<string>(['Eval', 'Kind']);
+
+  // First pass: collect all unique columns
+  for (const [, summary] of Object.entries(summaries)) {
+    if (summary.aggregations?.raw) {
+      const aggs = summary.aggregations.raw;
+      for (const aggName of Object.keys(aggs)) {
+        const displayName = aggName.charAt(0).toUpperCase() + aggName.slice(1);
+        allColumnsRaw.add(displayName);
+      }
     }
-    // If already 0-1, return as-is
-    if (value >= 0 && value <= 1) {
-      return value;
+  }
+
+  // Second pass: build rows with all columns
+  for (const [evalName, summary] of Object.entries(summaries)) {
+    const row: Record<string, string | number> = {
+      Eval: evalName,
+      Kind: summary.kind,
+    };
+
+    if (summary.aggregations?.raw) {
+      const aggs = summary.aggregations.raw;
+      for (const [aggName, aggValue] of Object.entries(aggs)) {
+        if (typeof aggValue === 'number') {
+          const displayName = aggName.charAt(0).toUpperCase() + aggName.slice(1);
+          row[displayName] = aggValue.toFixed(3);
+        }
+      }
     }
-    // Otherwise, clamp to [0, 1]
-    return Math.max(0, Math.min(1, value));
+
+    // Fill in missing columns with hyphens
+    for (const col of allColumnsRaw) {
+      if (!(col in row)) {
+        row[col] = '-';
+      }
+    }
+
+    summaryRowsRaw.push(row);
   }
-  if (typeof value === 'boolean') {
-    return value ? 1 : 0;
-  }
-  // String values - return 0 for now (could be enhanced)
-  return 0;
+
+  console.table(summaryRowsRaw);
 }
 
 /**

@@ -6,14 +6,13 @@ A TypeScript framework for evaluating LLM agents with datasets, metrics, scorers
 - Compose evaluations from real objects (metrics, scorers, evals) — not string IDs
 - Evaluate single-turn and multi-turn behavior over datasets or conversations
 - Define pass/fail criteria with verdict policies
-- Summarize results with built-in aggregations (mean, percentile, pass-rate, etc.)
-- Produce a structured `EvaluationReport` for analysis and CI
+- Type-safe aggregators (numeric, boolean, categorical) for summary statistics
+- Produce a structured `TallyRunReport` for tests/CI (and persist a `TallyRunArtifact` for read-only tooling)
 
 ## Install
 
 ```bash
-pnpm add tally
-# or npm/yarn
+bun add @tally-evals/tally
 ```
 
 ## Getting started
@@ -23,8 +22,6 @@ Minimal end-to-end example using evals (recommended approach):
 ```ts
 import {
   createTally,
-  createEvaluator,
-  runAllTargets,
   defineBaseMetric,
   defineInput,
   defineSingleTurnEval,
@@ -98,26 +95,29 @@ const roleAdherenceEval = defineMultiTurnEval({
 
 const overallQualityEval = defineScorerEval({
   name: 'Overall Quality',
-  inputs: [relevance, completeness, roleAdherence],
   scorer: qualityScorer,
   verdict: thresholdVerdict(0.7), // Pass if score >= 0.7
 })
 
-// Create evaluator with evals
-const evaluator = createEvaluator({
-  name: 'Agent Quality',
+// Run with evals passed directly to createTally
+const tally = createTally({
+  data: conversations,
   evals: [relevanceEval, completenessEval, roleAdherenceEval, overallQualityEval],
-  context: runAllTargets(), // evaluate all conversation steps
 })
-
-// Run
-const tally = createTally({ data: conversations, evaluators: [evaluator] })
 const report = await tally.run()
 
-// Access results
-console.log('Eval summaries:', report.evalSummaries)
-console.log('Per-target results:', report.perTargetResults)
-console.log('Verdicts:', report.perTargetResults[0]?.verdicts)
+// Access eval summaries (single-turn + multi-turn + scorers)
+const summary = report.result.summaries?.byEval?.['Answer Relevance']
+console.log('summary', summary)
+
+// Type-safe view for test assertions
+const view = report.view()
+const stepResults = view.step(0) // Get all eval results for step 0
+const conversationResults = view.conversation() // Get multi-turn/scorer results
+const summaryResults = view.summary() // Get aggregate summaries
+
+// Persist for CLI/viewer
+const artifact = report.toArtifact()
 ```
 
 ## Evals API
@@ -157,7 +157,6 @@ Combine multiple metrics using a scorer:
 ```ts
 const overallQualityEval = defineScorerEval({
   name: 'Overall Quality',
-  inputs: [relevanceMetric, completenessMetric, roleAdherenceMetric],
   scorer: weightedAverageScorer,
   verdict: thresholdVerdict(0.7), // Pass if score >= 0.7
 })
@@ -172,6 +171,46 @@ Define pass/fail criteria using verdict helpers:
 - `rangeVerdict(min, max)` - Pass if value is in range
 - `ordinalVerdict(categories)` - Pass if value matches categories
 - `customVerdict(fn)` - Custom pass/fail logic
+
+### Aggregators
+
+Aggregators compute summary statistics. They are type-discriminated by `kind`:
+
+```ts
+import {
+  createMeanAggregator,
+  createPercentileAggregator,
+  createTrueRateAggregator,
+  createDistributionAggregator,
+  getDefaultAggregators,
+} from '@tally-evals/tally'
+
+// Default aggregators based on metric value type
+const aggregators = getDefaultAggregators('number') // mean, p50, p75, p90
+const boolAggregators = getDefaultAggregators('boolean') // + trueRate
+const catAggregators = getDefaultAggregators('string') // + distribution
+```
+
+### Report Structure
+
+The `TallyRunReport` provides type-safe access to results:
+
+```ts
+// Direct result access
+report.result.singleTurn['Answer Relevance']     // Step-indexed results
+report.result.multiTurn['Role Adherence']        // Conversation-level results  
+report.result.scorers['Overall Quality']         // Scorer outputs
+report.result.summaries?.byEval?.['Answer Relevance']  // Aggregated summaries
+
+// Type-safe view for test assertions
+const view = report.view()
+view.step(0)        // { 'Answer Relevance': StepEvalResult, ... }
+view.conversation() // { 'Role Adherence': ConversationEvalResult, ... }
+view.summary()      // { 'Answer Relevance': EvalSummary, ... }
+
+// Artifact for persistence (CLI/viewer)
+const artifact = report.toArtifact()
+```
 
 ## Generate data with trajectories (optional)
 Use `@tally-evals/trajectories` to create multi-turn conversations automatically, then convert to Tally format:
@@ -199,22 +238,56 @@ const conversation = toConversation(result, 'weather-trajectory')
 Now pass `conversation` into Tally as shown above.
 
 ## API at a glance
-- **Metrics**: `createAnswerRelevanceMetric`, `createCompletenessMetric`, `createToxicityMetric`, `createRoleAdherenceMetric`, `defineBaseMetric`
-- **Scorers**: `createWeightedAverageScorer`, `defineInput`
-- **Evals**: `defineSingleTurnEval`, `defineMultiTurnEval`, `defineScorerEval`
-- **Verdicts**: `thresholdVerdict`, `booleanVerdict`, `rangeVerdict`, `ordinalVerdict`, `customVerdict`
-- **Evaluator**: `createEvaluator`, `runAllTargets`
-- **Core**: `createTally`
-- **Report Formatting**: `formatReportAsTables`
+
+### Core
+- `createTally` - Main entry point, accepts `data` and `evals`
+
+### Evals
+- `defineSingleTurnEval`, `defineMultiTurnEval`, `defineScorerEval`
+
+### Verdicts
+- `thresholdVerdict`, `booleanVerdict`, `rangeVerdict`, `ordinalVerdict`, `customVerdict`
+
+### Metrics (Prebuilt)
+- **Single-Turn**: `createAnswerRelevanceMetric`, `createCompletenessMetric`, `createToxicityMetric`, `createAnswerSimilarityMetric`, `createToolCallAccuracyMetric`
+- **Multi-Turn**: `createRoleAdherenceMetric`, `createGoalCompletionMetric`, `createTopicAdherenceMetric`
+
+### Metrics (Custom)
+- `defineBaseMetric` - Define metric shape (name, valueType)
+- `defineSingleTurnCode`, `defineSingleTurnLLM` - Single-turn metric implementations
+- `defineMultiTurnCode`, `defineMultiTurnLLM` - Multi-turn metric implementations
+- `withNormalization`, `withMetadata` - Metric modifiers
+
+### Scorers
+- `createWeightedAverageScorer` - Combine metrics with weights
+- `defineInput` - Define scorer input with weight
+- `defineScorer` - Custom scorer implementation
+
+### Aggregators
+- **Define Custom**: `defineNumericAggregator`, `defineBooleanAggregator`, `defineCategoricalAggregator`
+- **Numeric**: `createMeanAggregator`, `createPercentileAggregator`, `createThresholdAggregator`
+- **Boolean**: `createTrueRateAggregator`, `createFalseRateAggregator`
+- **Categorical**: `createDistributionAggregator`, `createModeAggregator`
+- **Defaults**: `getDefaultAggregators(valueType)`, `DEFAULT_NUMERIC_AGGREGATORS`
+
+### Normalizers
+- `createMinMaxNormalizer`, `createZScoreNormalizer`, `createThresholdNormalizer`
+- `createLinearNormalizer`, `createOrdinalMapNormalizer`, `createIdentityNormalizer`
+
+### Views
+- `createTargetRunView` - Type-safe view over run artifact
+
+### Utilities
+- `formatReportAsTables` - Format report for console output
 
 ## Development
 
 This package is part of the Tally monorepo.
 
 ```bash
-pnpm install
-pnpm build
-pnpm test
+bun install
+bun run build
+bun run test
 ```
 
 ## License

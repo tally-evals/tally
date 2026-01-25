@@ -1,0 +1,58 @@
+---
+title: Overview
+description: The main evaluation framework for LLM agents.
+---
+
+Tally is an evaluation engine designed to close the gap between prompt engineering and production-grade agent reliability. It provides the infrastructure to **simulate**, **measure**, and **visualize** agent behavior at scale.
+
+Tally is **framework-agnostic**: bring your own agent runtime (AI SDK, LangGraph, custom code, etc.) and evaluate the resulting conversations.
+
+## The Evaluation Gap
+
+Most tools evaluate a single input-output pair. But modern agents are **multi-turn state machines**. They fail when:
+- They lose the persona on step 4 of a conversation.
+- They get stuck in a tool-calling loop.
+- They satisfy a single turn but fail the overall user goal.
+
+Tally is built to evaluate the **Trajectory**, not just the turn.
+
+## From “It Works” to “It’s Reliable”
+
+Tally isn't just a collection of scorers; it's a platform for building a rigorous evaluation lifecycle.
+
+- **The Custom Metric Engine**: Stop wrestling with rigid built-ins. Use [custom metrics](/docs/tally/metrics/custom) to link evaluation directly to your business logic or perform nuanced semantic checks.
+- **Signal Orchestration**: High-confidence evaluation requires more than one signal. Use [Scorers](/docs/tally/scorers) to combine multiple metrics (e.g., Relevance + Tool Accuracy) into a single composite score that reflects true agent quality.
+- **Measure vs. Policy**: Decouple *what* you measure from *how* you judge it. A metric (e.g., Answer Relevance) remains constant across different scenarios—only the **Verdict Policy** changes to reflect the rigor needed for each evaluation context (release gates, regression tests, dev loops, edge-case suites, etc.).
+- **Multi-Turn E2E Testing**: Complete the E2E story for chatbots. Tally evaluates the entire [Trajectory](/docs/trajectories), catching failures that only emerge over multiple turns, like persona drift or tool-calling loops.
+- **The Developer Feedback Loop**: Don't settle for opaque CI scores. Use the [TUI and Dev Server](/docs/tally/reports) to step through conversations and see exactly why an agent was flagged.
+
+## Quick Start
+
+```ts
+import { createTally, createEvaluator, runAllTargets, defineSingleTurnEval, thresholdVerdict } from '@tally-evals/tally';
+import { createAnswerRelevanceMetric } from '@tally-evals/tally/metrics';
+import { google } from '@ai-sdk/google';
+
+// 1. Define your evaluation signal
+const model = google('models/gemini-2.0-flash');
+const relevance = createAnswerRelevanceMetric({ provider: model });
+
+// 2. Define a success policy (The Verdict)
+const evaluator = createEvaluator({
+  name: 'Basic Quality',
+  evals: [
+    defineSingleTurnEval({
+      name: 'Relevance',
+      metric: relevance,
+      verdict: thresholdVerdict(0.7), // Decouple "What" from "How Good"
+    })
+  ],
+  context: runAllTargets(),
+});
+
+// 3. Run on your data
+const tally = createTally({ data: conversations, evaluators: [evaluator] });
+const report = await tally.run();
+```
+
+Learn more about [Why Tally](/docs/tally/why-tally) exists or jump straight into [Getting Started](/docs/tally/getting-started).

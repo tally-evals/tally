@@ -2,9 +2,15 @@
  * Formatter utilities for metrics and text
  */
 
-import { score, verdict } from './colors.js';
+import { VerdictPolicyInfo } from '@tally-evals/core';
+import { score, verdict } from './colors';
 
 export type MetricScalar = number | boolean | string;
+
+function clamp01(value: number): number {
+  if (Number.isNaN(value)) return 0;
+  return Math.max(0, Math.min(1, value));
+}
 
 /**
  * Normalize a metric value to [0, 1] range
@@ -26,21 +32,42 @@ export function normalizeMetricValue(value: MetricScalar): number {
 }
 
 /**
- * Format a score with color based on value
+ * Apply a [0,1] heatmap color to any text.
+ */
+export function colorByRate01(value: number, text: string): string {
+  const normalized = clamp01(value);
+
+  if (normalized >= 0.8) {
+    return score.excellent(text);
+  }
+  if (normalized >= 0.6) {
+    return score.good(text);
+  }
+  if (normalized >= 0.4) {
+    return score.fair(text);
+  }
+  return score.poor(text);
+}
+
+/**
+ * Format a [0,1] rate (passRate, failRate, unknownRate, etc.) with heatmap.
+ */
+export function formatRate01(value: number): string {
+  const normalized = clamp01(value);
+  const formatted = normalized.toFixed(3);
+  return colorByRate01(normalized, formatted);
+}
+
+/**
+ * Format a score with color based on value.
+ *
+ * NOTE: This accepts values that may be 0-1 or 0-5 (LLM rubric) and normalizes.
+ * Prefer `formatRate01` when you already know it's a [0,1] rate.
  */
 export function formatScore(value: number): string {
   const normalized = normalizeMetricValue(value);
   const formatted = normalized.toFixed(3);
-
-  if (normalized >= 0.8) {
-    return score.excellent(formatted);
-  } else if (normalized >= 0.6) {
-    return score.good(formatted);
-  } else if (normalized >= 0.4) {
-    return score.fair(formatted);
-  } else {
-    return score.poor(formatted);
-  }
+  return colorByRate01(normalized, formatted);
 }
 
 /**
@@ -51,11 +78,48 @@ export function formatVerdict(
 ): string {
   if (verdictValue === 'pass') {
     return verdict.pass();
-  } else if (verdictValue === 'fail') {
-    return verdict.fail();
-  } else {
-    return verdict.unknown();
   }
+  if (verdictValue === 'fail') {
+    return verdict.fail();
+  }
+  return verdict.unknown();
+}
+
+/**
+ * Format a serializable verdict policy into a short "pass at" rule string.
+ * This is intended for UI display (TUI).
+ */
+export function formatPassAt(policy: VerdictPolicyInfo): string {
+  if (!policy || typeof policy !== 'object') return '-';
+  const p = policy;
+  const kind = p.kind;
+  if (kind === 'none') return '-';
+  if (kind === 'custom') return 'custom';
+  if (kind === 'boolean') {
+    return typeof p.passWhen === 'boolean' ? String(p.passWhen) : '-';
+  }
+  if (kind === 'ordinal') {
+    return Array.isArray(p.passWhenIn) ? `in [${p.passWhenIn.map(String).join(', ')}]` : '-';
+  }
+  if (kind === 'number') {
+    const type = p.type;
+    if (type === 'threshold') {
+      return typeof p.passAt === 'number'
+        ? `≥ ${p.passAt}`
+        : '-';
+    }
+    if (type === 'range') {
+      const min = typeof p.min === 'number' ? p.min : undefined;
+      const max = typeof p.max === 'number' ? p.max : undefined;
+      if (min !== undefined && max !== undefined) {
+        return `between ${min}-${max}`;
+      }
+      if (min !== undefined) return `≥ ${min}`;
+      if (max !== undefined) return `≤ ${max}`;
+      return '-';
+    }
+  }
+  return '-';
 }
 
 /**
@@ -74,7 +138,7 @@ export function sanitizeText(text: string): string {
  */
 export function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength - 3) + '...';
+  return `${text.substring(0, maxLength - 3)}...`;
 }
 
 /**
@@ -120,25 +184,46 @@ export function formatConversationText(input: string, output: string): string {
  */
 export function extractToolCallsFromMessage(
   message: unknown,
-): { toolName: string; toolCallId: string }[] {
-  const toolCalls: { toolName: string; toolCallId: string }[] = [];
+): { toolName: string; toolCallId: string; output?: unknown }[] {
+  const toolCalls: {
+    toolName: string;
+    toolCallId: string;
+    output?: unknown;
+  }[] = [];
 
   if (message && typeof message === 'object') {
     const msg = message as { content?: unknown };
     if (Array.isArray(msg.content)) {
       for (const part of msg.content) {
-        if (
-          part &&
-          typeof part === 'object' &&
-          'type' in part &&
-          part.type === 'tool-call'
-        ) {
-          const toolPart = part as { toolName?: string; toolCallId?: string };
-          if (toolPart.toolName) {
-            toolCalls.push({
-              toolName: toolPart.toolName,
-              toolCallId: toolPart.toolCallId ?? '',
-            });
+        if (part && typeof part === 'object' && 'type' in part) {
+          if (part.type === 'tool-call') {
+            const toolCallPart = part as {
+              toolName?: string;
+              toolCallId?: string;
+            };
+
+            if (toolCallPart.toolName && toolCallPart.toolCallId) {
+              toolCalls.push({
+                toolName: toolCallPart.toolName,
+                toolCallId: toolCallPart.toolCallId,
+                output: undefined,
+              });
+            }
+          }
+          else if (part.type === 'tool-result') {
+            const toolResultPart = part as {
+              toolName?: string;
+              toolCallId?: string;
+              output?: unknown;
+            };
+
+            if (toolResultPart.toolCallId) {
+              toolCalls.push({
+                toolName: toolResultPart.toolName ?? '',
+                toolCallId: toolResultPart.toolCallId,
+                output: toolResultPart.output,
+              });
+            }
           }
         }
       }
@@ -153,13 +238,25 @@ export function extractToolCallsFromMessage(
  */
 export function extractToolCallsFromMessages(
   messages: readonly unknown[],
-): { toolName: string; toolCallId: string }[] {
-  const allToolCalls = new Set<{ toolName: string; toolCallId: string }>();
+): { toolName: string; toolCallId: string; output?: unknown }[] {
+  const allToolCalls = new Map<string, {
+    toolName: string;
+    toolCallId: string;
+    output?: unknown;
+  }>();
+  
   for (const message of messages) {
     const toolCalls = extractToolCallsFromMessage(message);
-    toolCalls.forEach((tc) =>
-      allToolCalls.add({ toolName: tc.toolName, toolCallId: tc.toolCallId }),
-    );
+    for (const tc of toolCalls) {
+      const existing = allToolCalls.get(tc.toolCallId);
+      
+      allToolCalls.set(tc.toolCallId, {
+        toolName: existing?.toolName || tc.toolName,
+        toolCallId: tc.toolCallId,
+        output: tc.output ?? existing?.output,
+      });
+    }
   }
-  return Array.from(allToolCalls);
+
+  return Array.from(allToolCalls.values());
 }

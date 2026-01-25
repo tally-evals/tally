@@ -1,0 +1,215 @@
+---
+title: Run Report
+description: Understanding the output of a Tally evaluation run.
+---
+
+After calling `await tally.run()`, you receive a `TallyRunReport`—a **type-safe** record of everything that happened during evaluation. The report captures measurements, normalized scores, verdicts, and aggregated summaries, all accessible through a strongly-typed API.
+
+## Type-Safe Access with the View API
+
+The primary way to access report data is through the **View API**. Call `report.view()` to get a `TargetRunView` that provides:
+
+- **Eval name autocomplete** — Keys are literal types derived from your evals
+- **Typed measurements** — `rawValue` is typed to your metric's value type
+- **Typed policies** — Verdict policies match the metric's value type
+
+```ts
+const report = await tally.run();
+const view = report.view();
+```
+
+The view provides the following methods:
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `step(index)` | [`StepResults`](/docs/tally/reference/reports#stepresults) | All single-turn eval results for a specific step |
+| `steps()` | [`Generator<StepResultsWithIndex>`](/docs/tally/reference/reports#stepresultswithindex) | Iterate over all steps with their results |
+| `conversation()` | [`ConversationResults`](/docs/tally/reference/reports#conversationresults) | Multi-turn evals and scalar scorer results |
+| `summary()` | [`SummaryResults`](/docs/tally/reference/reports#summaryresults) | Aggregated summaries by eval name |
+| `stepCount` | `number` | Total number of steps in the conversation |
+
+---
+
+## Accessing Step Results
+
+Use `step(index)` to get a [`StepResults`](/docs/tally/reference/reports#stepresults) object containing all single-turn eval results for that step:
+
+```ts
+const view = report.view();
+
+// Get results for step 0
+const step0 = view.step(0);
+
+// Access specific eval results with type-safe keys
+const relevance = step0['Answer Relevance'];
+if (relevance) {
+  // StepEvalResult contains measurement and optional outcome
+  console.log(`Score: ${relevance.measurement.score}`);      // number (0-1)
+  console.log(`Raw: ${relevance.measurement.rawValue}`);     // typed to metric valueType
+  console.log(`Verdict: ${relevance.outcome?.verdict}`);     // 'pass' | 'fail' | 'unknown'
+}
+```
+
+### Iterating Over All Steps
+
+Use the `steps()` generator to iterate over all steps with their results:
+
+```ts
+for (const step of view.steps()) {
+  console.log(`Step ${step.index}:`);
+  
+  for (const [evalName, result] of Object.entries(step)) {
+    if (evalName === 'index') continue;
+    console.log(`  ${evalName}: ${result.measurement.score}`);
+  }
+}
+```
+
+---
+
+## Accessing Conversation-Level Results
+
+Use `conversation()` to get [`ConversationResults`](/docs/tally/reference/reports#conversationresults)—multi-turn evals and scalar scorers:
+
+```ts
+const conversationResults = view.conversation();
+
+// Multi-turn evals (ConversationEvalResult)
+const roleAdherence = conversationResults['Role Adherence'];
+if (roleAdherence) {
+  console.log(`Role Adherence: ${roleAdherence.measurement.score}`);
+  console.log(`Reasoning: ${roleAdherence.measurement.reasoning}`);
+}
+
+// Scalar scorer results (also ConversationEvalResult)
+const overallQuality = conversationResults['Overall Quality'];
+if (overallQuality) {
+  console.log(`Overall Quality: ${overallQuality.measurement.score}`);
+  console.log(`Verdict: ${overallQuality.outcome?.verdict}`);
+}
+```
+
+---
+
+## Accessing Summaries
+
+Use `summary()` to get [`SummaryResults`](/docs/tally/reference/reports#summaryresults)—aggregated statistics across all targets:
+
+```ts
+const summaries = view.summary();
+
+if (summaries) {
+  for (const [evalName, summary] of Object.entries(summaries)) {
+    // EvalSummary contains count, aggregations, and verdictSummary
+    console.log(`${evalName}:`);
+    console.log(`  Kind: ${summary.kind}`);       // 'singleTurn' | 'multiTurn' | 'scorer'
+    console.log(`  Count: ${summary.count}`);     // number of data points
+    
+    // Score aggregations (always numeric: mean, percentiles)
+    if (summary.aggregations?.score) {
+      const agg = summary.aggregations.score;
+      console.log(`  Mean: ${agg.Mean}`);
+      console.log(`  P90: ${agg.P90}`);
+    }
+    
+    // VerdictSummary with pass/fail rates and counts
+    if (summary.verdictSummary) {
+      const vs = summary.verdictSummary;
+      console.log(`  Pass rate: ${(vs.passRate * 100).toFixed(1)}%`);
+      console.log(`  Pass/Fail/Unknown: ${vs.passCount}/${vs.failCount}/${vs.unknownCount}`);
+    }
+  }
+}
+```
+
+---
+
+## Test Assertions
+
+The view API is designed for test assertions. Use it to verify evaluation results in your test suite:
+
+```ts
+import { expect, test } from 'vitest';
+
+test('agent meets quality thresholds', async () => {
+  const report = await tally.run();
+  const view = report.view();
+  
+  // Assert step-level results
+  const step0 = view.step(0);
+  expect(step0['Answer Relevance']?.outcome?.verdict).toBe('pass');
+  
+  // Assert conversation-level results
+  const conv = view.conversation();
+  expect(conv['Role Adherence']?.measurement.score).toBeGreaterThan(0.8);
+  
+  // Assert summary pass rates
+  const summaries = view.summary();
+  expect(summaries?.['Answer Relevance']?.verdictSummary?.passRate).toBeGreaterThan(0.95);
+});
+```
+
+---
+
+## CI Integration
+
+Block deployments when quality drops below a threshold:
+
+```ts
+const report = await tally.run();
+const summaries = report.view().summary();
+
+const relevanceSummary = summaries?.['Answer Relevance'];
+if (relevanceSummary?.verdictSummary) {
+  const passRate = relevanceSummary.verdictSummary.passRate;
+  if (passRate < 0.95) {
+    process.exitCode = 1;
+    console.error(`Pass rate ${(passRate * 100).toFixed(1)}% is below 95% threshold`);
+  }
+}
+```
+
+---
+
+## Persisting Reports
+
+For storage, CI pipelines, or the Tally viewer, convert to an artifact:
+
+```ts
+const artifact = report.toArtifact();
+
+// Save to disk
+import { writeFileSync } from 'fs';
+writeFileSync('run.json', JSON.stringify(artifact, null, 2));
+```
+
+The artifact is a schema-stable JSON structure with ISO timestamps and a `schemaVersion` field for forward compatibility. You can later create a view from a loaded artifact:
+
+```ts
+import { createTargetRunView } from '@tally-evals/tally';
+
+const artifact = JSON.parse(readFileSync('run.json', 'utf-8'));
+const view = createTargetRunView(artifact);
+```
+
+---
+
+## Definition Lookups
+
+The view also provides methods to look up definitions used in the run:
+
+```ts
+const view = report.view();
+
+// Look up definitions by name
+const metricDef = view.metric('answerRelevance');
+const evalDef = view.eval('Answer Relevance');
+const scorerDef = view.scorer('Overall Quality');
+
+// Get the metric definition for an eval
+const metricForEval = view.metricForEval('Answer Relevance');
+```
+
+## API Reference
+
+For the complete type definitions, see the [Reports API Reference](/docs/tally/reference/reports).

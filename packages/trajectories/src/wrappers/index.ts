@@ -5,10 +5,11 @@
  * to a consistent AgentHandle interface.
  */
 
-import { generateText } from 'ai';
+import { generateText, convertToModelMessages } from 'ai';
 import type { Prompt, ModelMessage } from 'ai';
 import type { AgentHandle } from '../core/types.js';
-import { buildPromptFromHistory, historyToMessages } from '../utils/prompt.js';
+import { buildPromptFromMessages, messagesToMessages } from '../utils/prompt.js';
+import { Agent } from '@mastra/core/agent';
 
 type GenerateTextInput = Parameters<typeof generateText>[0];
 
@@ -50,11 +51,38 @@ export function withAISdkAgent(
 	) {
 		const agent = agentOrConfig as { generate: (input: Prompt) => Promise<{ response: { messages: ModelMessage[] } }> };
 		return {
-			async respond(history: readonly ModelMessage[]) {
+			async respond(agentMemoryMessages: readonly ModelMessage[]) {
+				let modelMessages: readonly ModelMessage[] = agentMemoryMessages;
+				try {
+					modelMessages = convertToModelMessages(agentMemoryMessages as unknown as never) as unknown as ModelMessage[];
+				} catch {
+					// If conversion fails, fall back to the provided messages.
+				}
+
 				// Use Prompt.messages for multi-turn support
-				const promptInput = buildPromptFromHistory({ history, useMessages: true });
+				const promptInput = buildPromptFromMessages({
+					messages: modelMessages,
+					useMessages: true,
+				});
 				const result = await agent.generate(promptInput);
-				return { messages: result.response.messages };
+				// Some agent implementations may return UIMessage-like messages; normalize to ModelMessage[] for trajectories memory.
+				// IMPORTANT: Do NOT run convertToModelMessages on already-valid ModelMessage[]; it can drop messages.
+				const rawOut = result.response.messages as unknown as Array<{ role?: unknown; content?: unknown }>;
+				const hasPartsContent = rawOut.some((m) => Array.isArray(m?.content));
+
+				let outMessages: ModelMessage[] = result.response.messages;
+				if (hasPartsContent) {
+					try {
+						const converted = convertToModelMessages(result.response.messages as unknown as never) as unknown as ModelMessage[];
+						if (Array.isArray(converted) && converted.length > 0) {
+							outMessages = converted;
+						}
+					} catch {
+						// keep original
+					}
+				}
+
+				return { messages: outMessages };
 			},
 		};
 	}
@@ -62,10 +90,10 @@ export function withAISdkAgent(
 	// generateText config pattern
 	const config = agentOrConfig as Omit<GenerateTextInput, 'messages' | 'prompt'>;
 	return {
-		async respond(history: readonly ModelMessage[]) {
+		async respond(agentMemoryMessages: readonly ModelMessage[]) {
 			const result = await generateText({
 				...config,
-				messages: historyToMessages(history),
+				messages: messagesToMessages(agentMemoryMessages),
 			});
 			
 			// Convert result to messages format
@@ -122,25 +150,31 @@ export function withAISdkAgent(
  */
 export function withMastraAgent(
 	agent: {
-		generate: (input: {
-			messages: ModelMessage[];
-		}) => Promise<{
-			messages: ModelMessage[];
-		}>;
+		generate: Agent["generate"]
 	}
 ): AgentHandle {
 	return {
-		async respond(history: readonly ModelMessage[]) {
-			// Mastra agents use messages array
-			const result = await agent.generate({
-				messages: [...history],
-			});
+		respond: async (history: readonly ModelMessage[]) => {
+			const result = await agent.generate(history);
+			
+			let outMessages: ModelMessage[] = [];
+			
+			if (result.steps && result.steps.length > 0) {
+				const lastStep = result.steps[result.steps.length - 1];
+				if (lastStep && lastStep.response?.messages) {
+					outMessages = lastStep.response.messages;
+				}
+			}
+			
+			if (outMessages.length === 0 && result.text) {
+				outMessages = [{
+					role: 'assistant',
+					content: result.text,
+				}];
+			}
 
-			// Mastra returns messages directly, not nested in response
-			return {
-				messages: result.messages,
-			};
-		},
+			return { messages: outMessages };
+		}
 	};
 }
 

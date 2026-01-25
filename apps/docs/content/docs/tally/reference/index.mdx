@@ -1,0 +1,59 @@
+---
+title: Overview
+description: Bottom-up API reference for the tally package.
+---
+
+# Overview
+
+This section documents the **tally API from the bottom up**. Use it to understand how metrics are built and wired into evals before running `createTally`.
+
+## How the pieces fit
+
+1. **Metric types** define the shape of raw values, scores, and containers (`DatasetItem`, `Conversation`, etc.).
+2. **Metric factories** produce value objects that can be composed and reused.
+3. **Normalization** turns raw metric values into normalized scores.
+4. **Scorers** combine multiple normalized metrics into a derived score.
+5. **Aggregators** summarize scores across targets.
+6. **Evals** connect metrics + scorers with verdict policies and run contexts.
+7. **createTally** executes the evaluation pipeline and returns a report.
+8. **Data & utils** help with loading datasets and runtime validation.
+
+## Two Approaches
+
+Tally supports two complementary approaches:
+
+### Prebuilt Library (`create*` prefix)
+
+Use ready-made metrics, normalizers, and aggregators for common use cases:
+
+```ts
+import { createAnswerRelevanceMetric } from '@tally-evals/tally/metrics';
+import { createMinMaxNormalizer } from '@tally-evals/tally/normalization';
+import { createPercentileAggregator } from '@tally-evals/tally';
+
+const relevance = createAnswerRelevanceMetric({ provider: model });
+```
+
+### Engine Primitives (`define*` prefix)
+
+Build custom metrics and scorers from low-level primitives:
+
+```ts
+import {
+  defineBaseMetric,
+  defineSingleTurnLLM,
+  defineNumericAggregator,
+} from '@tally-evals/tally';
+
+const base = defineBaseMetric({ name: 'custom', valueType: 'number' });
+const metric = defineSingleTurnLLM({ base, provider, prompt, rubric });
+```
+
+## Typical Workflow
+
+1. **Choose metrics** — Use prebuilt (`createAnswerRelevanceMetric`) or define custom (`defineBaseMetric` + `defineSingleTurnLLM`).
+2. **Add normalization** — Attach normalizers via `withNormalization` or inline in metric definition.
+3. **Combine if needed** — Use `defineInput` + `createWeightedAverageScorer` for composite scores.
+4. **Wrap into evals** — Use `defineSingleTurnEval` / `defineMultiTurnEval` / `defineScorerEval` with verdict policies.
+5. **Run** — Pass evals to `createTally({ data, evals })` and get a type-safe report.
+

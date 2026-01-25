@@ -39,10 +39,7 @@ export const weatherGoldenTrajectory: Trajectory = {
 		terminals: ['step-3'],
 	},
 	maxTurns: 10,
-	storage: {
-		strategy: 'local',
-		conversationId: 'weather-golden',
-	},
+	conversationId: 'weather-golden',
 	userModel: google('models/gemini-2.5-flash-lite'),
 };
 
@@ -84,10 +81,7 @@ export const weatherCurveTrajectory: Trajectory = {
 		terminals: ['step-4'],
 	},
 	maxTurns: 10,
-	storage: {
-		strategy: 'local',
-		conversationId: 'weather-curve',
-	},
+	conversationId: 'weather-curve',
 	userModel: google('models/gemini-2.5-flash-lite'),
 };
 

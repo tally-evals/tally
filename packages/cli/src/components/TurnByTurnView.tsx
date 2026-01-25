@@ -2,16 +2,22 @@
  * Turn-by-turn scrollable view for detailed metrics
  */
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Box, Text, useInput } from 'ink';
-import { ConversationTurn } from './shared/ConversationTurn.js';
-import { MetricsTable } from './shared/MetricsTable.js';
+import type { Conversation, TallyRunArtifact } from '@tally-evals/core';
+import { createTargetRunView } from '@tally-evals/tally';
+import { Box, Text, useInput, useStdout } from 'ink';
+import type React from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { colors } from 'src/utils/colors.js';
-import { Conversation, EvaluationReport } from '@tally-evals/tally';
+import { formatPassAt } from 'src/utils/formatters';
+import { ConversationTurn } from './shared/ConversationTurn';
+import { MetricsTable } from './shared/MetricsTable';
+import { Scrollable } from './shared/Scrollable';
+
+type CliMetricRow = React.ComponentProps<typeof ConversationTurn>['metrics'][number];
 
 interface TurnByTurnViewProps {
   conversation: Conversation;
-  report: EvaluationReport;
+  report: TallyRunArtifact;
   onToggleView?: () => void;
   onBack?: (() => void) | undefined;
 }
@@ -27,6 +33,13 @@ export function TurnByTurnView({
 
   const expandedRef = useRef(expanded);
   const scrollPositionRef = useRef(scrollPosition);
+
+  const { stdout } = useStdout();
+
+  const terminalHeight = stdout.rows;
+  const terminalWidth = stdout.columns;
+
+  const messageAreaHeight = terminalHeight - 12;
 
   useEffect(() => {
     expandedRef.current = expanded;
@@ -49,51 +62,87 @@ export function TurnByTurnView({
     if (input === 'e' || input === 'E') {
       setExpanded(!expandedRef.current);
     }
-    if (key.upArrow || key.leftArrow) {
+
+    // Navigation:
+    // - Arrow keys (Ink)
+    // - Vim keys (j/k)
+    // - Raw ANSI sequences as a fallback for terminals where Ink doesn't detect `upArrow`
+    const isLeft =
+      key.leftArrow ||
+      input === 'k' ||
+      input === 'K' ||
+      input === '\u001b[A' ||
+      input === '\u001b[D';
+    const isRight =
+      key.rightArrow ||
+      input === 'j' ||
+      input === 'J' ||
+      input === '\u001b[B' ||
+      input === '\u001b[C';
+
+    if (isLeft) {
       setScrollPosition((prev) => Math.max(0, prev - 1));
     }
-    if (key.downArrow || key.rightArrow) {
+    if (isRight) {
       setScrollPosition((prev) =>
         Math.min(conversation.steps.length - 1, prev + 1),
       );
     }
   });
 
-  const perTargetResult = report.perTargetResults[0];
-  if (!perTargetResult) {
-    return <Text>{colors.error('No target results found in report')}</Text>;
-  }
+  // Use the type-safe view API for unified access to step and conversation results
+  const view = useMemo(() => createTargetRunView(report), [report]);
 
-  const singleTurnMetrics = perTargetResult.rawMetrics.filter(
-    (m: any) =>
-      (m.metricDef as unknown as { scope?: string }).scope === 'single',
-  );
-
-  const multiTurnMetrics = perTargetResult.rawMetrics.filter(
-    (m: any) =>
-      (m.metricDef as unknown as { scope?: string }).scope === 'multi',
-  );
-
-  const metricsByName = new Map<string, any[]>();
-  for (const metric of singleTurnMetrics) {
-    const name = metric.metricDef.name;
-    if (!metricsByName.has(name)) {
-      metricsByName.set(name, []);
-    }
-    metricsByName.get(name)!.push(metric);
-  }
-
-  const currentTurnMetrics: any[] = [];
-  for (const [_, metrics] of metricsByName) {
-    if (scrollPosition < metrics.length) {
-      currentTurnMetrics.push(metrics[scrollPosition]);
-    }
-  }
+  // Get step results (single-turn + step-indexed scorers) via unified view API
+  const stepResults = view.step(scrollPosition);
+  const currentTurnMetrics: CliMetricRow[] = Object.entries(stepResults)
+    .map(([evalName, stepRes]) => {
+      const evalDef = view.eval(evalName);
+      return {
+        name: evalName,
+        ...(evalDef?.verdict ? { passAt: formatPassAt(evalDef.verdict) } : {}),
+        ...(stepRes.measurement.score !== undefined
+          ? { score: Number(stepRes.measurement.score) }
+          : {}),
+        ...(stepRes.measurement.rawValue !== undefined
+          ? { rawValue: stepRes.measurement.rawValue as any }
+          : {}),
+        ...(stepRes.outcome?.verdict !== undefined
+          ? { verdict: stepRes.outcome.verdict }
+          : {}),
+        ...(stepRes.measurement.reasoning !== undefined
+          ? { reasoning: stepRes.measurement.reasoning }
+          : {}),
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   const currentStep = conversation.steps[scrollPosition];
   if (!currentStep) {
     return <Text>{colors.error('No step found at current position')}</Text>;
   }
+
+  // Get conversation-level results (multi-turn + scalar scorers) via unified view API
+  const conversationResults = view.conversation();
+  const multiTurnRows: CliMetricRow[] = Object.entries(conversationResults).map(
+    ([evalName, res]) => {
+      const evalDef = view.eval(evalName);
+      return {
+        name: evalName,
+        ...(evalDef?.verdict ? { passAt: formatPassAt(evalDef.verdict) } : {}),
+        ...(res.measurement.score !== undefined
+          ? { score: Number(res.measurement.score) }
+          : {}),
+        ...(res.measurement.rawValue !== undefined
+          ? { rawValue: res.measurement.rawValue as any }
+          : {}),
+        ...(res.outcome?.verdict !== undefined ? { verdict: res.outcome.verdict } : {}),
+        ...(res.measurement.reasoning !== undefined
+          ? { reasoning: res.measurement.reasoning }
+          : {}),
+      };
+    },
+  );
 
   return (
     <Box flexDirection="column" key={`turn-${expanded}`}>
@@ -106,31 +155,28 @@ export function TurnByTurnView({
         </Text>
       </Box>
 
-      <Box flexDirection="column" marginBottom={1} marginTop={1}>
+      <Scrollable height={messageAreaHeight} width={terminalWidth}>
         <ConversationTurn
           stepIndex={scrollPosition}
           step={currentStep}
           metrics={currentTurnMetrics}
-          verdicts={perTargetResult.verdicts}
           expanded={expanded}
         />
 
-        {multiTurnMetrics.length > 0 && (
+        {multiTurnRows.length > 0 && (
           <Box flexDirection="column" marginTop={1}>
             <Box paddingX={1}>
               <Text>{colors.bold('Multi-turn Metrics')}</Text>
             </Box>
             <Box>
               <MetricsTable
-                metrics={multiTurnMetrics}
-                verdicts={perTargetResult.verdicts}
-                metricToEvalMap={report.metricToEvalMap}
+                metrics={multiTurnRows}
                 maxReasoningLength={expanded ? 100 : 40}
               />
             </Box>
           </Box>
         )}
-      </Box>
+      </Scrollable>
     </Box>
   );
 }

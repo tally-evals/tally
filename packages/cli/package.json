@@ -2,18 +2,11 @@
   "name": "@tally-evals/cli",
   "version": "0.0.0",
   "description": "A CLI for the Tally evaluation framework",
+  "type": "module",
   "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "bin": {
     "tally": "./dist/bin.js"
-  },
-  "typesVersions": {
-    "*": {
-      "*": [
-        "./dist/index.d.ts"
-      ]
-    }
   },
   "repository": {
     "type": "git",
@@ -23,18 +16,19 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "import": "./dist/index.js"
     }
   },
   "files": [
     "dist"
   ],
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "build": "bun run build:lib && bun run build:bin",
+    "build:lib": "bun build ./src/index.ts --outdir ./dist --target bun --sourcemap=external --external react-devtools-core && bun x tsc --emitDeclarationOnly --declaration --outDir dist",
+    "build:bin": "bun build ./src/bin.ts --outfile ./dist/bin.js --target bun --external react-devtools-core && awk 'NR==1{print;next} !/^#!\\/usr\\/bin\\/env bun$/{print}' ./dist/bin.js > ./dist/bin.tmp && mv ./dist/bin.tmp ./dist/bin.js && chmod +x ./dist/bin.js",
+    "dev": "bun --watch src/bin.ts",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "clean": "rm -rf dist"
@@ -49,36 +43,27 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@byteland/ink-scroll-bar": "^0.1.1",
+    "@tally-evals/core": "workspace:*",
+    "@tally-evals/tally": "workspace:*",
+    "@tally-evals/viewer": "workspace:*",
     "chalk": "^5.3.0",
     "cli-table3": "^0.6.4",
     "commander": "^12.1.0",
-    "ink": "^5.0.1",
-    "ink-select-input": "^5.0.0",
+    "ink": "^6.6.0",
+    "ink-scroll-list": "^0.4.1",
+    "ink-scroll-view": "^0.3.5",
+    "ink-select-input": "^6.2.0",
     "ink-spinner": "^5.0.0",
-    "ink-text-input": "^5.0.0",
-    "react": "^18.3.1",
-    "@tally-evals/tally": "workspace:*",
-    "@tally-evals/store": "workspace:*"
-  },
-  "peerDependencies": {
-    "@tally-evals/tally": "workspace:*"
+    "ink-text-input": "^6.0.0",
+    "react": "19.2.0",
+    "react-devtools-core": "^6.1.5"
   },
   "devDependencies": {
     "@tally-evals/biome-config": "workspace:*",
     "@tally-evals/typescript-config": "workspace:*",
-    "@types/node": "24.6.2",
-    "@types/react": "^18.3.3",
-    "chalk": "^5.3.0",
-    "cli-table3": "^0.6.4",
-    "commander": "^12.1.0",
-    "dotenv": "^17.2.3",
-    "ink": "^5.0.1",
-    "ink-select-input": "^5.0.0",
-    "ink-spinner": "^5.0.0",
-    "ink-text-input": "^5.0.0",
-    "react": "^18.3.1",
-    "tsup": "^8.0.1",
-    "typescript": "^5.3.3",
-    "vitest": "^1.1.0"
+    "@types/bun": "^1.2.8",
+    "@types/react": "19.2.0",
+    "typescript": "^5.3.3"
   }
 }

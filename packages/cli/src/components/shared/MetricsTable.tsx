@@ -2,43 +2,59 @@
  * Reusable metrics table component
  */
 
-import React, { useMemo } from 'react';
-import { Box, Text } from 'ink';
 import Table from 'cli-table3';
-import { colors } from '../../utils/colors.js';
-import {
-  formatScore,
-  formatVerdict,
-  truncateText,
-} from '../../utils/formatters.js';
-import { Metric } from '@tally-evals/tally';
+import { Box, Text, useStdout } from 'ink';
+import React, { useMemo } from 'react';
+import { colors } from '../../utils/colors';
+import { formatScore, formatVerdict, truncateText } from '../../utils/formatters';
+import type { CliMetricRow } from './ConversationTurn';
 
 interface MetricsTableProps {
-  metrics: Metric[];
-  verdicts?: Map<string, { verdict: 'pass' | 'fail' | 'unknown' }> | undefined;
-  metricToEvalMap?: Map<string, string> | undefined;
+  metrics: CliMetricRow[];
   maxReasoningLength?: number;
 }
 
 function MetricsTableComponent({
   metrics,
-  verdicts,
-  metricToEvalMap,
   maxReasoningLength = 40,
 }: MetricsTableProps): React.ReactElement {
+  const { stdout } = useStdout();
+  const viewportWidth = stdout.columns;
+
   const tableOutput = useMemo(() => {
     if (metrics.length === 0) {
       return colors.muted('No metrics');
     }
 
     const isExpanded = maxReasoningLength > 40;
-    const reasoningColWidth = isExpanded ? 100 : 38;
+
+    const metricColWidth = 20;
+    const scoreColWidth = 12;
+    const rawColWidth = 12;
+    const passAtColWidth = 14;
+    const verdictColWidth = 10;
+
+    const numColumns = 6;
+    const borderOverhead = numColumns * 3 + 1;
+
+    const reasoningColWidth = Math.max(
+      30,
+      viewportWidth -
+        metricColWidth -
+        scoreColWidth -
+        rawColWidth -
+        passAtColWidth -
+        verdictColWidth -
+        borderOverhead,
+    );
 
     const table = new Table({
       head: [
-        colors.bold('Metric'),
+        colors.bold('Eval'),
         colors.bold('Score'),
-        ...(metricToEvalMap ? [colors.bold('Verdict')] : []),
+        colors.bold('Raw'),
+        colors.bold('Pass at'),
+        colors.bold('Verdict'),
         colors.bold('Reasoning'),
       ].map((h) => colors.info(h)),
       style: {
@@ -47,20 +63,30 @@ function MetricsTableComponent({
         compact: false,
       },
       wordWrap: isExpanded,
-      colWidths: [20, 12, ...(metricToEvalMap ? [10] : []), reasoningColWidth],
+      colWidths: [
+        metricColWidth,
+        scoreColWidth,
+        rawColWidth,
+        passAtColWidth,
+        verdictColWidth,
+        reasoningColWidth,
+      ],
     });
 
     for (const metric of metrics) {
-      const name = truncateText(metric.metricDef.name, 20);
-      const score =
-        typeof metric.value === 'number'
-          ? formatScore(metric.value)
-          : String(metric.value);
-      // Look up eval name using the metric-to-eval map, then get the verdict
-      const evalName =
-        metricToEvalMap?.get(metric.metricDef.name) ?? metric.metricDef.name;
-      const verdict = verdicts?.get(evalName);
-      const verdictIcon = formatVerdict(verdict?.verdict);
+      const name = truncateText(metric.name, 20);
+      const score = metric.score !== undefined ? formatScore(metric.score) : colors.muted('-');
+      // Raw values should not be color-coded; keep plain text (white).
+      const raw =
+        metric.rawValue !== undefined
+          ? typeof metric.rawValue === 'number'
+            ? metric.rawValue.toFixed(3)
+            : typeof metric.rawValue === 'string'
+              ? metric.rawValue
+              : String(metric.rawValue)
+          : '-';
+      const passAt = metric.passAt !== undefined ? metric.passAt : colors.muted('-');
+      const verdictIcon = formatVerdict(metric.verdict);
       const fullReasoning = metric.reasoning || '';
       const reasoning =
         maxReasoningLength > 40
@@ -73,13 +99,15 @@ function MetricsTableComponent({
       table.push([
         name,
         score,
-        ...(metricToEvalMap ? [verdictIcon] : []),
+        raw,
+        passAt,
+        verdictIcon,
         reasoning as string,
       ]);
     }
 
     return table.toString();
-  }, [metrics, verdicts, metricToEvalMap, maxReasoningLength]);
+  }, [metrics, maxReasoningLength, viewportWidth]);
 
   return (
     <Box>

@@ -1,0 +1,87 @@
+@import "../styles/globals.css";
+
+@layer base {
+  :root {
+    @apply font-sans;
+  }
+
+  body {
+    @apply min-h-screen relative m-0 bg-background text-foreground;
+  }
+}
+
+/* Custom scrollbar for dark mode */
+/* Note: many browsers hide scrollbars by default (overlay scrollbars).
+   We style them anyway for environments where they are shown. */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* Conversation area: make scrollbar higher contrast on dark backgrounds */
+[data-conversation-container] {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: rgba(255, 255, 255, 0.35) rgba(255, 255, 255, 0.08); /* thumb track */
+}
+
+[data-conversation-container]::-webkit-scrollbar {
+  width: 10px;
+}
+
+[data-conversation-container]::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+[data-conversation-container]::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[data-conversation-container]::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+}
+
+[data-conversation-container]::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+/* Code blocks */
+.code-block {
+  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* Conversation turn styling */
+.turn-user {
+  border-left: 3px solid hsl(var(--primary));
+}
+
+.turn-assistant {
+  border-left: 3px solid hsl(var(--chart-2));
+}
+
+.turn-system {
+  border-left: 3px solid hsl(var(--chart-4));
+}
+
+.turn-tool {
+  border-left: 3px solid hsl(var(--muted-foreground));
+}

@@ -2,8 +2,8 @@
  * Error display component
  */
 
-import React from 'react';
 import { Box, Text } from 'ink';
+import type React from 'react';
 import { colors } from '../../utils/colors.js';
 
 interface ErrorDisplayProps {
@@ -12,11 +12,7 @@ interface ErrorDisplayProps {
   details?: string;
 }
 
-export function ErrorDisplay({
-  title,
-  message,
-  details,
-}: ErrorDisplayProps): React.ReactElement {
+export function ErrorDisplay({ title, message, details }: ErrorDisplayProps): React.ReactElement {
   return (
     <Box flexDirection="column" marginTop={1}>
       <Box borderStyle="round" borderColor="red" paddingX={1} paddingY={1}>
