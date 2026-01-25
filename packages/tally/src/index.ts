@@ -163,14 +163,7 @@ export type {
 } from '@tally-evals/core';
 
 // ============================================================================
-// Builders
-// ============================================================================
-
-export { MetricDefBuilder } from './core/builders/MetricDefBuilder';
-export { ScorerBuilder } from './core/builders/ScorerBuilder';
-
-// ============================================================================
-// Factory APIs (preferred over builders)
+// Factory APIs
 // ============================================================================
 
 export {

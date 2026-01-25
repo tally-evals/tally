@@ -6,8 +6,10 @@
  */
 
 import { describe, expect, it } from 'bun:test';
+import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { google } from '@ai-sdk/google';
+import { decodeConversation } from '@tally-evals/core';
 import {
   defineMultiTurnEval,
   defineScorerEval,
@@ -19,7 +21,6 @@ import {
   defineBaseMetric,
   defineInput,
   formatReportAsTables,
-  loadConversationStepsFromJSONL,
 } from '../_exports';
 import {
   createAnswerRelevanceMetric,
@@ -34,17 +35,14 @@ const GOLDEN_FIXTURE_PATH = resolve(
   __dirname,
   '../_fixtures/conversations/travelPlanner/golden.jsonl'
 );
-const CONVERSATION_ID = 'travel-planner-golden';
 
 describe.skipIf(!process.env.GOOGLE_GENERATIVE_AI_API_KEY)(
   'E2E | Metrics | Golden Travel Planner',
   () => {
     it('runs all metrics on golden travel planner conversation', async () => {
-      // Load conversation from golden fixture
-      const conversation = await loadConversationStepsFromJSONL(
-        GOLDEN_FIXTURE_PATH,
-        CONVERSATION_ID
-      );
+      // Load conversation from golden fixture using core's decodeConversation
+      const content = await readFile(GOLDEN_FIXTURE_PATH, 'utf8');
+      const conversation = decodeConversation(content);
 
       expect(conversation.steps.length).toBeGreaterThan(0);
 
