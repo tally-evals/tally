@@ -3,7 +3,7 @@ title: Evals
 description: Turning measurements into actionable business decisions.
 ---
 
-In Tally, **Evals** represent the **Decision Layer**. While Metrics capture data and Scorers normalize it, Evals are what turn those numbers into an actionable signal: **Pass or Fail**.
+In Tally, **Evals** represent the **Decision Layer**. While Metrics capture individual signals and Scorers combine multiple metrics into composite scores, Evals turn those measurements into an actionable signal: **Pass or Fail**.
 
 An Eval is the "Voice of the Business." It defines the threshold of quality that your agent must meet before it is trusted to interact with users or be deployed to production.
 
@@ -86,11 +86,12 @@ Passes if the score is greater than or equal to the threshold. The most common w
 const verdict = thresholdVerdict(0.8);
 ```
 
-### `booleanVerdict()`
-Designed for binary checks. Passes if the value is `1` (or `true`), fails if it is `0` (or `false`).
+### `booleanVerdict(passWhen)`
+Designed for binary checks. Pass `true` to pass when the value is truthy, or `false` to pass when the value is falsy.
 
 ```ts
-const verdict = booleanVerdict();
+const verdict = booleanVerdict(true);  // Pass when value is true
+const verdict = booleanVerdict(false); // Pass when value is false
 ```
 
 ### `rangeVerdict(min, max)`

@@ -1,9 +1,9 @@
 ---
-title: Metrics
+title: Overview
 description: Measuring agent behavior with LLM and code-based metrics.
 ---
 
-Metrics are the **signals** you measure about your agent. They can be fully deterministic (code checks) or model-judged (LLM-based), and they’re designed to be **reused** across different evaluation scenarios (Golden gating vs smoke tests vs regression runs).
+Metrics are the **signals** you measure about your agent. They can be fully deterministic (code checks) or model-judged (LLM-based), and they're designed to be **reused** across different evaluation scenarios—release gates, regression tests, edge-case suites, dev loops, and more.
 
 ---
 
@@ -20,13 +20,13 @@ It is important to understand the distinction between a definition and its outpu
 
 ## Anatomy of a Metric
 
-Every metric in Tally fits into a few practical categories. These categories aren’t just taxonomy — they determine **how you run**, **how you score**, and **how you debug** evaluations.
+Every metric in Tally fits into a few practical categories. These categories aren't just taxonomy — they determine **how you run**, **how you score**, and **how you debug** evaluations.
 
 ### 1. Value Type
 Metrics can produce any domain-relevant value:
 
 - **Numeric**: continuous values like token usage, latency, similarity scores, or judge scores.
-- **Boolean**: binary checks like “is the output valid JSON?”
+- **Boolean**: binary checks like "is the output valid JSON?"
 - **Ordinal**: categorical results mapped from a rubric (e.g., `{ Poor, Fair, Good, Excellent }`).
 
 In Tally, metric values are represented as a scalar type:
@@ -156,8 +156,9 @@ const helpfulness = defineSingleTurnLLM({
 
 1.  **Define**: Create a `MetricDef` using the [factory APIs](/docs/tally/metrics/custom).
 2.  **Execute**: Tally runs the definition against your conversation data.
-3.  **Normalize (Optional)**: If you plan to **combine** a metric inside a [Scorer](/docs/tally/scorers), you’ll typically attach a **Normalizer** so the metric maps to a comparable 0–1 score. It’s optional because some metrics already produce 0–1, and some workflows don’t use scorers.
-4.  **Compose**: Use [Scorers](/docs/tally/scorers) to combine multiple signals, then use [Evals](/docs/tally/evals) to apply a verdict policy.
+3.  **Normalize (Optional)**: If you plan to **combine** a metric inside a [Scorer](/docs/tally/scorers), you'll typically attach a **Normalizer** so the metric maps to a comparable 0–1 score. It's optional because some metrics already produce 0–1, and some workflows don't use scorers.
+4.  **Aggregate (Optional)**: For single-turn metrics, attach [Aggregators](/docs/tally/reference/aggregators) to compute summary statistics (mean, percentiles, etc.) across all targets. Tally provides sensible defaults based on metric value type.
+5.  **Compose**: Use [Scorers](/docs/tally/scorers) to combine multiple signals, then use [Evals](/docs/tally/evals) to apply a verdict policy.
 
 ---
 
@@ -165,30 +166,42 @@ const helpfulness = defineSingleTurnLLM({
 
 Normalization converts a raw metric value (number/boolean/ordinal) into a comparable **0–1 score**. In the current API, normalization lives on the metric definition.
 
-If you’re using scorers, you typically want *every input metric* to have a sensible normalization strategy (or provide `normalizerOverride` per scorer input).
+If you're using scorers, you typically want *every input metric* to have a sensible normalization strategy (or provide `normalizerOverride` per scorer input).
 
-See the full reference: [/docs/tally/reference/normalizers](/docs/tally/reference/normalizers).
+See the full reference: [Normalizers](/docs/tally/reference/normalizers).
 
 ---
 
-## Aggregations (single-turn metrics)
+## Aggregations (optional)
 
-Aggregations are no longer a standalone `tally/aggregators` API. Instead, **single-turn metrics can carry aggregator definitions** that the pipeline uses to summarize results across targets.
+Aggregations compute summary statistics across all evaluation targets. **Single-turn metrics can carry aggregator definitions** that the pipeline uses to summarize results.
 
 - **Where it applies**: `SingleTurnMetricDef` (step/item-level metrics)
 - **Where to read the output**: `report.evalSummaries.get(evalName)?.aggregations`
 
-If you need bespoke summaries (e.g., per-customer-tier rollups), post-process the report (group/filter per-target results) rather than trying to “register aggregators” globally.
+### Default Aggregators by Value Type
+
+Tally provides sensible default aggregators based on the metric's `valueType`:
+
+| Value Type | Default Aggregators |
+| :--- | :--- |
+| **`number`** | `mean`, `p50`, `p75`, `p90` |
+| **`boolean`** | `mean`, `p50`, `p75`, `p90`, `trueRate` |
+| **`ordinal`** | `mean`, `p50`, `p75`, `p90`, `distribution` |
+
+Use `getDefaultAggregators(valueType)` to retrieve the defaults, or define custom aggregators for bespoke summaries (e.g., per-customer-tier rollups).
 
 ---
 
-## Golden vs Smoke: same measures, different policies
+## Same Measures, Different Policies
 
-In practice, you want to reuse the **same metrics** across scenarios:
-- **Golden dataset**: strict verdict policy (release gating).
-- **Smoke tests / dev loops**: looser verdict policy (fast feedback).
+In practice, you want to reuse the **same metrics** across different evaluation scenarios:
+- **Release gates**: strict verdict policies for production readiness.
+- **Regression tests**: moderate policies to catch quality regressions.
+- **Edge-case suites**: scenario-specific thresholds for known failure modes.
+- **Dev loops**: looser policies for fast iteration and feedback.
 
-The **measure stays constant**; the **verdict policy changes**. This is how you avoid rewriting evaluation logic for every test suite.
+The **measure stays constant**; the **verdict policy adapts** to the context. This is how you avoid rewriting evaluation logic for every test suite.
 
 ## API Reference
 

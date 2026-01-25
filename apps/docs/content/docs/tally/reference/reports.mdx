@@ -1,22 +1,229 @@
 ---
 title: Reports
-description: SDK report objects and the schema-stable run artifact.
+description: SDK report objects, View API, and the schema-stable run artifact.
 ---
 
 import { PropertyTable } from '@/components/PropertyTable';
 
 # Reports
 
-Tally exposes two report representations:
+Tally exposes two report representations and a type-safe View API:
 
 - **`TallyRunReport`**: SDK-facing in-memory object returned from `await tally.run()`.
-- **`TallyRunArtifact`**: schema-stable, serializable artifact produced by `report.toArtifact()`.
+- **`TargetRunView`**: Type-safe accessor for report data, created via `report.view()`.
+- **`TallyRunArtifact`**: Schema-stable, serializable artifact produced by `report.toArtifact()`.
 
 ## Import
 
 ```ts
-import type { TallyRunReport, TallyRunArtifact } from 'tally';
+import type {
+  TallyRunReport,
+  TallyRunArtifact,
+  TargetRunView,
+  StepResults,
+  StepResultsWithIndex,
+  ConversationResults,
+  SummaryResults,
+  StepEvalResult,
+  ConversationEvalResult,
+  Measurement,
+  EvalOutcome,
+  EvalSummary,
+  VerdictSummary,
+} from '@tally-evals/tally';
 ```
+
+---
+
+## View API
+
+The **View API** provides ergonomic, type-safe access to report data. Call `report.view()` to get a `TargetRunView`.
+
+### `TargetRunView`
+
+Type-safe view over run results with eval name autocomplete.
+
+<PropertyTable
+  content={[
+    { name: 'stepCount', type: 'number', description: 'Total number of steps in the conversation.' },
+    { name: 'defs', type: 'RunDefs', description: 'All definitions (metrics, evals, scorers) used in the run.' },
+    { name: 'step(index)', type: '(index: number) => StepResults', description: 'Get all single-turn eval results for a specific step.' },
+    { name: 'steps()', type: '() => Generator<StepResultsWithIndex>', description: 'Iterate over all steps with their results.' },
+    { name: 'conversation()', type: '() => ConversationResults', description: 'Get multi-turn evals and scalar scorer results.' },
+    { name: 'summary()', type: '() => SummaryResults | undefined', description: 'Get aggregated summaries by eval name.' },
+    { name: 'metric(name)', type: '(name: string) => MetricDefSnap | undefined', description: 'Look up a metric definition by name.' },
+    { name: 'eval(name)', type: '(name: string) => EvalDefSnap | undefined', description: 'Look up an eval definition by name.' },
+    { name: 'scorer(name)', type: '(name: string) => ScorerDefSnap | undefined', description: 'Look up a scorer definition by name.' },
+    { name: 'metricForEval(name)', type: '(name: string) => MetricDefSnap | undefined', description: 'Get the metric definition for an eval.' },
+  ]}
+/>
+
+---
+
+### `StepResults`
+
+Object returned by `view.step(index)`. Keys are eval names with type-safe autocomplete.
+
+<PropertyTable
+  content={[
+    {
+      name: '[evalName]',
+      type: 'StepEvalResult',
+      description: 'Result for a single-turn eval at this step. Keys are literal eval names.',
+    },
+  ]}
+/>
+
+---
+
+### `StepResultsWithIndex`
+
+Yielded by `view.steps()` generator. Same as `StepResults` plus an `index` property.
+
+<PropertyTable
+  content={[
+    { name: 'index', type: 'number', description: 'Step index (0-based).' },
+    {
+      name: '[evalName]',
+      type: 'StepEvalResult',
+      description: 'Result for a single-turn eval at this step.',
+    },
+  ]}
+/>
+
+---
+
+### `ConversationResults`
+
+Object returned by `view.conversation()`. Contains multi-turn evals and scalar scorers.
+
+<PropertyTable
+  content={[
+    {
+      name: '[evalName]',
+      type: 'ConversationEvalResult',
+      description: 'Result for a multi-turn eval or scalar scorer. Keys are literal eval names.',
+    },
+  ]}
+/>
+
+---
+
+### `SummaryResults`
+
+Object returned by `view.summary()`. Contains aggregated statistics by eval name.
+
+<PropertyTable
+  content={[
+    {
+      name: '[evalName]',
+      type: 'EvalSummary',
+      description: 'Summary for an eval including aggregations and verdict rates.',
+    },
+  ]}
+/>
+
+---
+
+### `StepEvalResult`
+
+Result for a single step evaluation.
+
+<PropertyTable
+  content={[
+    { name: 'evalRef', type: 'string', description: 'Name of the eval.' },
+    { name: 'measurement', type: 'Measurement', description: 'The measurement (score, rawValue, metadata).' },
+    { name: 'outcome', type: 'EvalOutcome', description: 'Verdict outcome (if verdict policy was defined).', isOptional: true },
+  ]}
+/>
+
+---
+
+### `ConversationEvalResult`
+
+Result for a conversation-level evaluation.
+
+<PropertyTable
+  content={[
+    { name: 'evalRef', type: 'string', description: 'Name of the eval.' },
+    { name: 'measurement', type: 'Measurement', description: 'The measurement (score, rawValue, metadata).' },
+    { name: 'outcome', type: 'EvalOutcome', description: 'Verdict outcome (if verdict policy was defined).', isOptional: true },
+  ]}
+/>
+
+---
+
+### `Measurement`
+
+The measured value from a metric execution.
+
+<PropertyTable
+  content={[
+    { name: 'metricRef', type: 'string', description: 'Reference to the metric in defs.metrics.' },
+    { name: 'score', type: 'number', description: 'Normalized score (0-1) after normalization.', isOptional: true },
+    { name: 'rawValue', type: 'number | boolean | string | null', description: 'Original metric value before normalization.', isOptional: true },
+    { name: 'confidence', type: 'number', description: 'LLM confidence (0-1) if applicable.', isOptional: true },
+    { name: 'reasoning', type: 'string', description: 'LLM reasoning if applicable.', isOptional: true },
+    { name: 'executionTimeMs', type: 'number', description: 'Execution time in milliseconds.', isOptional: true },
+    { name: 'timestamp', type: 'string', description: 'ISO timestamp of measurement.', isOptional: true },
+    { name: 'metadata', type: 'Record<string, unknown>', description: 'Additional metadata.', isOptional: true },
+  ]}
+/>
+
+---
+
+### `EvalOutcome`
+
+Verdict outcome from applying a verdict policy.
+
+<PropertyTable
+  content={[
+    { name: 'verdict', type: "'pass' | 'fail' | 'unknown'", description: 'The final verdict.' },
+    { name: 'policy', type: 'VerdictPolicyInfo', description: 'The policy used to compute the verdict.' },
+    { name: 'observed', type: '{ rawValue?: MetricScalar; score?: number }', description: 'The observed values used for the verdict.', isOptional: true },
+  ]}
+/>
+
+---
+
+### `EvalSummary`
+
+Aggregated summary for an eval across all targets.
+
+<PropertyTable
+  content={[
+    { name: 'eval', type: 'string', description: 'Eval name.' },
+    { name: 'kind', type: "'singleTurn' | 'multiTurn' | 'scorer'", description: 'Eval kind.' },
+    { name: 'count', type: 'number', description: 'Number of data points.' },
+    {
+      name: 'aggregations',
+      type: '{ score: Record<string, number>; raw?: Record<string, number | Record<string, number>> }',
+      description: 'Aggregated statistics (mean, percentiles, etc.).',
+      isOptional: true,
+    },
+    { name: 'verdictSummary', type: 'VerdictSummary', description: 'Pass/fail/unknown rates and counts.', isOptional: true },
+  ]}
+/>
+
+---
+
+### `VerdictSummary`
+
+Pass/fail statistics across all targets.
+
+<PropertyTable
+  content={[
+    { name: 'passRate', type: 'number', description: 'Proportion of passing verdicts (0-1).' },
+    { name: 'failRate', type: 'number', description: 'Proportion of failing verdicts (0-1).' },
+    { name: 'unknownRate', type: 'number', description: 'Proportion of unknown verdicts (0-1).' },
+    { name: 'passCount', type: 'number', description: 'Number of passing verdicts.' },
+    { name: 'failCount', type: 'number', description: 'Number of failing verdicts.' },
+    { name: 'unknownCount', type: 'number', description: 'Number of unknown verdicts.' },
+    { name: 'totalCount', type: 'number', description: 'Total number of verdicts.' },
+  ]}
+/>
+
+---
 
 ## `TallyRunReport`
 

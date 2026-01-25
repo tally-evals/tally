@@ -133,13 +133,51 @@ export const knowledgeRetentionMetric = defineMultiTurnLLM({
 });
 ```
 
+## Custom Aggregators for Single-Turn Metrics
+
+Single-turn metrics can include custom aggregators to compute summary statistics across all targets. While Tally provides [default aggregators](/docs/tally/metrics) based on value type, you can define custom ones—including custom percentiles.
+
+```ts
+import { defineBaseMetric, defineSingleTurnCode } from '@tally-evals/tally';
+import { createPercentileAggregator } from '@tally-evals/tally/aggregators';
+
+const base = defineBaseMetric({
+  name: 'responseLength',
+  valueType: 'number',
+  description: 'Character count of assistant response'
+});
+
+export const responseLengthMetric = defineSingleTurnCode({
+  base,
+  compute: async ({ selected }) => {
+    return selected.output[0]?.content?.length ?? 0;
+  },
+  // Custom aggregators for this metric
+  aggregators: [
+    createPercentileAggregator(50),  // p50 (median)
+    createPercentileAggregator(95),  // p95
+    createPercentileAggregator(99),  // p99
+  ]
+});
+```
+
+Available aggregator factories:
+
+- **Numeric**: `createMeanAggregator()`, `createPercentileAggregator(p)`, `createThresholdAggregator(threshold)`
+- **Boolean**: `createTrueRateAggregator()`, `createFalseRateAggregator()`
+- **Ordinal**: `createDistributionAggregator()`, `createModeAggregator()`
+
+See the full reference: [Aggregators](/docs/tally/reference/aggregators).
+
+---
+
 ## Reusability & Composability
 
 When you define a metric using these factories, you are creating a `MetricDef`. This object is **typesafe and composable**:
 
 - It can be passed into a **Scorer** to be weighted with other metrics.
 - It can be passed into an **Eval** to have a **Verdict Policy** applied.
-- It can be reused across different **Evaluators** without re-defining the logic.
+- It can be reused across different evaluation runs without re-defining the logic.
 
 ---
 

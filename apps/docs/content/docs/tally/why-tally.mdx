@@ -26,7 +26,7 @@ Tally doesn't just evaluate responses; it evaluates **Trajectories**. By integra
 
 ### 3. Decoupling Measure from Policy
 A **Metric** measures a signal (e.g., Relevance). A **Verdict Policy** defines what "good" looks like for a specific scenario.
-By separating these, you can test both "Golden" and "Edge Case" scenarios using the same measures. The measure remains constant while the policy (verdict) changes to match the required rigor—allowing you to reuse your evaluation logic across a low-rigor "Smoke Test" and a high-rigor "Release Gate."
+By separating these, you can run the same metrics across different evaluation contexts—release gates, regression tests, edge-case suites, dev loops—and simply swap the verdict policy to match the required rigor. The measure stays constant; the policy adapts to the scenario.
 
 ### 4. Closing the Loop
 Evaluation is only useful if it leads to a fix.

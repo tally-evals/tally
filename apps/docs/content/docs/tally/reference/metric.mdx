@@ -7,7 +7,7 @@ import { PropertyTable } from '@/components/PropertyTable';
 
 # Metric
 
-Factory APIs are the preferred way to create metrics (over builder objects).
+Factory APIs are the preferred way to create metrics. These functions provide type-safe construction of metric definitions.
 
 ## Import
 
@@ -20,49 +20,53 @@ import {
   defineSingleTurnLLM,
   defineMultiTurnCode,
   defineMultiTurnLLM,
-} from 'tally';
+} from '@tally-evals/tally';
 ```
+
+---
 
 ### `defineBaseMetric()`
 
+Creates the foundational metric definition with name, value type, and optional metadata. This is the starting point for all metrics.
+
 <PropertyTable
   content={[
-    { name: 'name', type: 'string', description: 'Metric name (unique identifier).' },
+    { name: 'name', type: 'string', description: 'Unique metric name (used as identifier in reports).' },
     {
       name: 'valueType',
-      type: 'BaseMetricDef<T>["valueType"]',
-      description: 'Metric value type (number | boolean | string | ordinal).',
+      type: "'number' | 'boolean' | 'string'",
+      description: 'The type of value this metric produces.',
     },
     {
       name: 'description',
       type: 'string',
-      description: 'Optional description for UI/reporting.',
+      description: 'Human-readable description for UI/reporting.',
       isOptional: true,
     },
     {
       name: 'metadata',
       type: 'Record<string, unknown>',
-      description: 'Optional metadata bag.',
+      description: 'Custom metadata attached to the metric.',
       isOptional: true,
     },
     {
       name: 'normalization',
-      type: 'MetricNormalization<T, NormalizationContextFor<T>>',
-      description: 'Optional normalization config attached to the metric.',
+      type: 'MetricNormalization<T>',
+      description: 'Normalization configuration for converting raw values to 0–1 scores.',
       isOptional: true,
       properties: [
         {
-          type: 'MetricNormalization<T, NormalizationContextFor<T>>',
+          type: 'MetricNormalization<T>',
           parameters: [
             {
               name: 'normalizer',
-              type: 'NormalizerSpec<T, NormalizationContextFor<T>> | NormalizeToScore<T, NormalizationContextFor<T>>',
-              description: 'Normalization strategy or function.',
+              type: 'NormalizerSpec<T> | NormalizeToScore<T>',
+              description: 'Normalizer specification object or custom function.',
             },
             {
               name: 'calibrate',
-              type: 'NormalizationContextFor<T> | ((args: { dataset: readonly unknown[]; rawValues: readonly T[] }) => Promise<NormalizationContextFor<T>> | NormalizationContextFor<T>)',
-              description: 'Optional calibration context or resolver.',
+              type: 'TNormContext | ((args: { dataset: readonly unknown[]; rawValues: readonly T[] }) => TNormContext | Promise<TNormContext>)',
+              description: 'Static context or async function to derive calibration data from the dataset.',
               isOptional: true,
             },
           ],
@@ -71,71 +75,83 @@ import {
     },
   ]}
 />
+
+---
 
 ### `withNormalization()`
 
+Attaches a normalization strategy to an existing metric definition. Use this to convert raw values to a 0–1 score for consistent comparison and scoring.
+
 <PropertyTable
   content={[
     {
       name: 'metric',
       type: 'BaseMetricDef<T> | MetricDef<T, MetricContainer>',
-      description: 'Metric or base metric to attach normalization to.',
+      description: 'The metric or base metric to attach normalization to.',
     },
     {
       name: 'normalizer',
-      type: 'NormalizerSpec<T, NormalizationContextFor<T>> | NormalizeToScore<T, NormalizationContextFor<T>>',
-      description: 'Normalizer specification or function.',
+      type: 'NormalizerSpec<T> | NormalizeToScore<T>',
+      description: 'Normalizer specification or custom function. See Normalizers reference for available specs.',
     },
     {
       name: 'calibrate',
-      type: 'NormalizationContextFor<T> | ((args: { dataset: readonly unknown[]; rawValues: readonly T[] }) => Promise<NormalizationContextFor<T>> | NormalizationContextFor<T>)',
-      description: 'Optional calibration context or resolver.',
+      type: 'TNormContext | ((args: { dataset: readonly unknown[]; rawValues: readonly T[] }) => TNormContext | Promise<TNormContext>)',
+      description: 'Static calibration context or async function to derive context from raw values.',
       isOptional: true,
     },
   ]}
 />
 
+---
+
 ### `withMetadata()`
+
+Adds or merges metadata into an existing metric definition. Useful for tagging metrics with custom properties for reporting or debugging.
 
 <PropertyTable
   content={[
     {
       name: 'metric',
       type: 'BaseMetricDef<T> | MetricDef<T, MetricContainer>',
-      description: 'Metric or base metric to annotate.',
+      description: 'The metric or base metric to annotate.',
     },
     {
       name: 'metadata',
       type: 'Record<string, unknown>',
-      description: 'Metadata to merge.',
+      description: 'Metadata to merge into the metric definition.',
     },
   ]}
 />
+
+---
 
 ### `defineSingleTurnCode()`
 
+Creates a single-turn metric that uses TypeScript code to compute values. Best for deterministic checks like JSON validation, keyword presence, or response length.
+
 <PropertyTable
   content={[
     {
       name: 'base',
       type: 'BaseMetricDef<T>',
-      description: 'Base metric definition describing the name/value type.',
-    },
-    {
-      name: 'preProcessor',
-      type: '(selected: SingleTargetFor<TContainer>) => Promise<unknown> | unknown',
-      description: 'Optional pre-processor to derive inputs before scoring.',
-      isOptional: true,
+      description: 'Base metric definition (from defineBaseMetric).',
     },
     {
       name: 'compute',
       type: '(args: { data: unknown; metadata?: Record<string, unknown> }) => T',
-      description: 'Synchronous or async compute function for the score.',
+      description: 'Function that computes the metric value from preprocessed data.',
+    },
+    {
+      name: 'preProcessor',
+      type: '(selected: ConversationStep | DatasetItem) => Promise<unknown> | unknown',
+      description: 'Optional function to prepare the target before compute. Default exposes { input, output }.',
+      isOptional: true,
     },
     {
       name: 'dependencies',
       type: 'BaseMetricDef[]',
-      description: 'Optional dependency metric definitions.',
+      description: 'Other metrics this metric depends on (for execution ordering).',
       isOptional: true,
     },
     {
@@ -146,50 +162,47 @@ import {
     },
     {
       name: 'normalization',
-      type: 'MetricNormalization<T, NormalizationContextFor<T>>',
-      description: 'Optional normalization config attached to the metric.',
+      type: 'MetricNormalization<T>',
+      description: 'Normalization configuration (overrides base if provided).',
       isOptional: true,
     },
     {
       name: 'metadata',
       type: 'Record<string, unknown>',
-      description: 'Optional metadata for reporting.',
+      description: 'Additional metadata (merged with base metadata).',
       isOptional: true,
     },
     {
       name: 'aggregators',
       type: 'CompatibleAggregator<T>[]',
-      description:
-        'Optional metric-level aggregators. These are attached to the metric definition and computed in reporting.',
+      description: 'Custom aggregators for summarizing results. Default aggregators are added based on valueType.',
       isOptional: true,
     },
   ]}
 />
+
+---
 
 ### `defineSingleTurnLLM()`
 
+Creates a single-turn metric that uses an LLM to evaluate quality. Best for semantic judgments like relevance, tone, helpfulness, or toxicity detection.
+
 <PropertyTable
   content={[
     {
       name: 'base',
       type: 'BaseMetricDef<T>',
-      description: 'Base metric definition describing the name/value type.',
-    },
-    {
-      name: 'preProcessor',
-      type: '(selected: SingleTargetFor<TContainer>) => Promise<unknown> | unknown',
-      description: 'Optional pre-processor to derive inputs before scoring.',
-      isOptional: true,
+      description: 'Base metric definition (from defineBaseMetric).',
     },
     {
       name: 'provider',
-      type: 'ModelProvider',
-      description: 'LLM provider (LanguageModel instance or `() => LanguageModel`).',
+      type: 'LanguageModel | (() => LanguageModel)',
+      description: 'AI SDK language model instance or factory function.',
     },
     {
       name: 'prompt',
       type: 'PromptTemplate<TVars>',
-      description: 'Prompt template with optional variables and few-shot examples.',
+      description: 'Prompt template for LLM evaluation.',
       properties: [
         {
           type: 'PromptTemplate<TVars>',
@@ -197,66 +210,46 @@ import {
             {
               name: 'instruction',
               type: 'string',
-              description: 'Template string. Supports `{{variable}}` substitutions.',
+              description: 'Template string with {{variable}} placeholders.',
             },
             {
               name: 'variables',
-              type: 'TVars',
-              description: 'Optional list of variable names used in the template.',
+              type: 'readonly string[]',
+              description: 'List of variable names used in the template.',
               isOptional: true,
             },
             {
               name: 'examples',
-              type: 'Array<{ input: Record<TVars[number], unknown>; expectedOutput: string }>',
-              description: 'Optional few-shot examples.',
+              type: 'Array<{ input: Record<string, unknown>; expectedOutput: string }>',
+              description: 'Few-shot examples for the LLM.',
               isOptional: true,
-              properties: [
-                {
-                  type: 'Example',
-                  parameters: [
-                    {
-                      name: 'input',
-                      type: 'Record<TVars[number], unknown>',
-                      description: 'Input variable values for the example.',
-                    },
-                    {
-                      name: 'expectedOutput',
-                      type: 'string',
-                      description: 'Expected model output for the example.',
-                    },
-                  ],
-                },
-              ],
             },
           ],
         },
       ],
     },
     {
+      name: 'preProcessor',
+      type: '(selected: ConversationStep | DatasetItem) => Promise<unknown> | unknown',
+      description: 'Optional function to prepare the target before LLM evaluation.',
+      isOptional: true,
+    },
+    {
       name: 'rubric',
-      type: '{ criteria: string; scale?: string; examples?: Array<{ score: number; reasoning: string }> }',
-      description: 'Optional rubric to guide scoring.',
+      type: 'object',
+      description: 'Optional rubric to guide LLM scoring consistency.',
       isOptional: true,
       properties: [
         {
-          type: 'rubric',
+          type: 'Rubric',
           parameters: [
-            { name: 'criteria', type: 'string', description: 'Rubric criteria.' },
-            { name: 'scale', type: 'string', description: 'Optional scale description.', isOptional: true },
+            { name: 'criteria', type: 'string', description: 'Scoring criteria description.' },
+            { name: 'scale', type: 'string', description: 'Scale description (e.g., "1-5").', isOptional: true },
             {
               name: 'examples',
               type: 'Array<{ score: number; reasoning: string }>',
-              description: 'Optional rubric examples.',
+              description: 'Example scores with reasoning.',
               isOptional: true,
-              properties: [
-                {
-                  type: 'RubricExample',
-                  parameters: [
-                    { name: 'score', type: 'number', description: 'Example score.' },
-                    { name: 'reasoning', type: 'string', description: 'Why that score applies.' },
-                  ],
-                },
-              ],
             },
           ],
         },
@@ -264,18 +257,18 @@ import {
     },
     {
       name: 'postProcessing',
-      type: '{ normalize?: boolean; transform?: (rawOutput: string) => T }',
+      type: 'object',
       description: 'Optional post-processing of the LLM output.',
       isOptional: true,
       properties: [
         {
-          type: 'postProcessing',
+          type: 'PostProcessing',
           parameters: [
             { name: 'normalize', type: 'boolean', description: 'Whether to normalize the output.', isOptional: true },
             {
               name: 'transform',
               type: '(rawOutput: string) => T',
-              description: 'Optional transform from raw string output to the metric raw value.',
+              description: 'Transform raw LLM string to metric value.',
               isOptional: true,
             },
           ],
@@ -284,101 +277,102 @@ import {
     },
     {
       name: 'normalization',
-      type: 'MetricNormalization<T, NormalizationContextFor<T>>',
-      description: 'Optional normalization config attached to the metric.',
+      type: 'MetricNormalization<T>',
+      description: 'Normalization configuration (overrides base if provided).',
+      isOptional: true,
+    },
+    {
+      name: 'metadata',
+      type: 'Record<string, unknown>',
+      description: 'Additional metadata (merged with base metadata).',
       isOptional: true,
     },
     {
       name: 'aggregators',
       type: 'CompatibleAggregator<T>[]',
-      description:
-        'Optional metric-level aggregators. These are attached to the metric definition and computed in reporting.',
-      isOptional: true,
-    },
-    {
-      name: 'metadata',
-      type: 'Record<string, unknown>',
-      description: 'Optional metadata for reporting.',
+      description: 'Custom aggregators for summarizing results. Default aggregators are added based on valueType.',
       isOptional: true,
     },
   ]}
 />
 
+---
+
 ### `defineMultiTurnCode()`
+
+Creates a multi-turn metric that uses TypeScript code to analyze entire conversations. Best for deterministic checks across conversation history.
 
 <PropertyTable
   content={[
     {
       name: 'base',
       type: 'BaseMetricDef<T>',
-      description: 'Base metric definition describing the name/value type.',
+      description: 'Base metric definition (from defineBaseMetric).',
     },
     {
       name: 'runOnContainer',
-      type: '(container: MultiTurnContainer) => Promise<unknown> | unknown',
-      description: 'Prepare a conversation for downstream execution (LLM or code).',
-      notes:
-        'Deprecated on MultiTurnMetricDef. This factory still accepts it and will map it to the resulting MetricDef.',
-      deprecated: true,
+      type: '(container: Conversation) => Promise<unknown> | unknown',
+      description: 'Prepares the conversation for downstream compute. Returns a serializable payload.',
     },
     {
       name: 'compute',
       type: '(args: { data: unknown; metadata?: Record<string, unknown> }) => T',
-      description: 'Synchronous or async compute function for the score.',
+      description: 'Function that computes the metric value from the prepared data.',
     },
     {
       name: 'dependencies',
       type: 'BaseMetricDef[]',
-      description: 'Optional dependency metric definitions.',
+      description: 'Other metrics this metric depends on.',
       isOptional: true,
     },
     {
       name: 'cacheable',
       type: 'boolean',
-      description: 'Whether results can be cached for identical inputs.',
+      description: 'Whether results can be cached.',
       isOptional: true,
     },
     {
       name: 'normalization',
-      type: 'MetricNormalization<T, NormalizationContextFor<T>>',
-      description: 'Optional normalization config attached to the metric.',
+      type: 'MetricNormalization<T>',
+      description: 'Normalization configuration.',
       isOptional: true,
     },
     {
       name: 'metadata',
       type: 'Record<string, unknown>',
-      description: 'Optional metadata for reporting.',
+      description: 'Additional metadata.',
       isOptional: true,
     },
   ]}
 />
 
+---
+
 ### `defineMultiTurnLLM()`
+
+Creates a multi-turn metric that uses an LLM to evaluate entire conversations. Best for assessing goal completion, role adherence, topic drift, and other multi-step behaviors.
 
 <PropertyTable
   content={[
     {
       name: 'base',
       type: 'BaseMetricDef<T>',
-      description: 'Base metric definition describing the name/value type.',
+      description: 'Base metric definition (from defineBaseMetric).',
     },
     {
       name: 'runOnContainer',
-      type: '(container: TContainer) => Promise<unknown> | unknown',
-      description: 'Prepare a conversation for downstream execution (LLM or code).',
-      notes:
-        'Deprecated on MultiTurnMetricDef. This factory still accepts it and will map it to the resulting MetricDef.',
-      deprecated: true,
+      type: '(container: Conversation) => Promise<unknown> | unknown',
+      description: 'Prepares the conversation for LLM evaluation. Returns data to include in the prompt.',
     },
     {
       name: 'provider',
-      type: 'ModelProvider',
-      description: 'LLM provider (LanguageModel instance or `() => LanguageModel`).',
+      type: 'LanguageModel | (() => LanguageModel)',
+      description: 'AI SDK language model instance or factory function.',
     },
     {
       name: 'prompt',
       type: 'PromptTemplate<TVars>',
-      description: 'Prompt template with optional variables and few-shot examples.',
+      description: 'Prompt template for LLM evaluation.',
       properties: [
         {
           type: 'PromptTemplate<TVars>',
@@ -386,36 +380,19 @@ import {
             {
               name: 'instruction',
               type: 'string',
-              description: 'Template string. Supports `{{variable}}` substitutions.',
+              description: 'Template string with {{variable}} placeholders.',
             },
             {
               name: 'variables',
-              type: 'TVars',
-              description: 'Optional list of variable names used in the template.',
+              type: 'readonly string[]',
+              description: 'List of variable names used in the template.',
               isOptional: true,
             },
             {
               name: 'examples',
-              type: 'Array<{ input: Record<TVars[number], unknown>; expectedOutput: string }>',
-              description: 'Optional few-shot examples.',
+              type: 'Array<{ input: Record<string, unknown>; expectedOutput: string }>',
+              description: 'Few-shot examples for the LLM.',
               isOptional: true,
-              properties: [
-                {
-                  type: 'Example',
-                  parameters: [
-                    {
-                      name: 'input',
-                      type: 'Record<TVars[number], unknown>',
-                      description: 'Input variable values for the example.',
-                    },
-                    {
-                      name: 'expectedOutput',
-                      type: 'string',
-                      description: 'Expected model output for the example.',
-                    },
-                  ],
-                },
-              ],
             },
           ],
         },
@@ -423,29 +400,20 @@ import {
     },
     {
       name: 'rubric',
-      type: '{ criteria: string; scale?: string; examples?: Array<{ score: number; reasoning: string }> }',
-      description: 'Optional rubric to guide scoring.',
+      type: 'object',
+      description: 'Optional rubric to guide LLM scoring.',
       isOptional: true,
       properties: [
         {
-          type: 'rubric',
+          type: 'Rubric',
           parameters: [
-            { name: 'criteria', type: 'string', description: 'Rubric criteria.' },
-            { name: 'scale', type: 'string', description: 'Optional scale description.', isOptional: true },
+            { name: 'criteria', type: 'string', description: 'Scoring criteria description.' },
+            { name: 'scale', type: 'string', description: 'Scale description.', isOptional: true },
             {
               name: 'examples',
               type: 'Array<{ score: number; reasoning: string }>',
-              description: 'Optional rubric examples.',
+              description: 'Example scores with reasoning.',
               isOptional: true,
-              properties: [
-                {
-                  type: 'RubricExample',
-                  parameters: [
-                    { name: 'score', type: 'number', description: 'Example score.' },
-                    { name: 'reasoning', type: 'string', description: 'Why that score applies.' },
-                  ],
-                },
-              ],
             },
           ],
         },
@@ -453,18 +421,18 @@ import {
     },
     {
       name: 'postProcessing',
-      type: '{ normalize?: boolean; transform?: (rawOutput: string) => T }',
+      type: 'object',
       description: 'Optional post-processing of the LLM output.',
       isOptional: true,
       properties: [
         {
-          type: 'postProcessing',
+          type: 'PostProcessing',
           parameters: [
             { name: 'normalize', type: 'boolean', description: 'Whether to normalize the output.', isOptional: true },
             {
               name: 'transform',
               type: '(rawOutput: string) => T',
-              description: 'Optional transform from raw string output to the metric raw value.',
+              description: 'Transform raw LLM string to metric value.',
               isOptional: true,
             },
           ],
@@ -473,38 +441,56 @@ import {
     },
     {
       name: 'normalization',
-      type: 'MetricNormalization<T, NormalizationContextFor<T>>',
-      description: 'Optional normalization config attached to the metric.',
+      type: 'MetricNormalization<T>',
+      description: 'Normalization configuration.',
       isOptional: true,
     },
     {
       name: 'metadata',
       type: 'Record<string, unknown>',
-      description: 'Optional metadata for reporting.',
+      description: 'Additional metadata.',
       isOptional: true,
     },
   ]}
 />
+
+---
 
 ## Example
 
 ```ts
-import { defineBaseMetric, defineSingleTurnLLM, withNormalization } from 'tally';
-import { createMinMaxNormalizer } from 'tally/normalization';
+import { defineBaseMetric, defineSingleTurnLLM, withNormalization } from '@tally-evals/tally';
+import { createMinMaxNormalizer } from '@tally-evals/tally/normalization';
 import { google } from '@ai-sdk/google';
 
-const base = defineBaseMetric<number>({
+// Create base metric
+const base = defineBaseMetric({
   name: 'answerRelevance',
   valueType: 'number',
+  description: 'Measures how relevant the answer is to the query',
 });
 
+// Create LLM-based single-turn metric with normalization
 const answerRelevance = defineSingleTurnLLM({
   base: withNormalization({
     metric: base,
     normalizer: createMinMaxNormalizer({ min: 0, max: 5, clip: true }),
   }),
   provider: google('models/gemini-2.5-flash-lite'),
-  prompt: { instruction: 'Score relevance 0-5.', variables: [] as const },
+  prompt: {
+    instruction: `Score the relevance of the response to the query on a scale of 0-5.
+    
+Query: {{input}}
+Response: {{output}}`,
+    variables: ['input', 'output'] as const,
+  },
+  rubric: {
+    criteria: '0 = completely irrelevant, 5 = perfectly relevant',
+    scale: '0-5',
+    examples: [
+      { score: 5, reasoning: 'Directly answers the question with accurate information.' },
+      { score: 0, reasoning: 'Response has nothing to do with the query.' },
+    ],
+  },
 });
 ```
-

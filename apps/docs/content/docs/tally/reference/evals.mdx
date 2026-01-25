@@ -29,6 +29,8 @@ import {
 
 ### `defineSingleTurnEval()`
 
+Creates an eval that applies a verdict policy to a single-turn metric. Use this to evaluate individual conversation steps or dataset items with pass/fail criteria.
+
 <PropertyTable
   content={[
     { name: 'name', type: 'string', description: 'Eval name.' },
@@ -120,6 +122,8 @@ import {
 />
 
 ### `defineMultiTurnEval()`
+
+Creates an eval that applies a verdict policy to a multi-turn metric. Use this to evaluate entire conversations with pass/fail criteria for goals like completion or role adherence.
 
 <PropertyTable
   content={[
@@ -213,6 +217,8 @@ import {
 
 ### `defineScorerEval()`
 
+Creates an eval that applies a verdict policy to a scorer's combined output. Use this when quality depends on multiple weighted factors combined into a single score.
+
 <PropertyTable
   content={[
     { name: 'name', type: 'string', description: 'Eval name.' },
@@ -271,9 +277,13 @@ import {
 
 ### `runAllTargets()`
 
+Runs the eval on all available targets (all steps in a conversation, or all items in a dataset). This is the default behavior.
+
 No options.
 
 ### `runSelectedSteps()`
+
+Runs the eval only on specific conversation steps by index. Use this to focus evaluation on particular turns (e.g., only the first and last step).
 
 <PropertyTable
   content={[
@@ -282,6 +292,8 @@ No options.
 />
 
 ### `runSelectedItems()`
+
+Runs the eval only on specific dataset items by index. Use this to focus evaluation on particular items in a dataset.
 
 <PropertyTable
   content={[
@@ -293,6 +305,8 @@ No options.
 
 ### `booleanVerdict()`
 
+Creates a verdict policy for boolean metrics. Passes when the raw value matches the specified boolean.
+
 <PropertyTable
   content={[
     { name: 'passWhen', type: 'boolean', description: 'Pass when raw value matches this boolean.' },
@@ -301,6 +315,8 @@ No options.
 
 ### `thresholdVerdict()`
 
+Creates a verdict policy that passes when the normalized score meets or exceeds a threshold. The most common way to set a quality bar.
+
 <PropertyTable
   content={[
     { name: 'passAt', type: 'number', description: 'Pass when score >= passAt.' },
@@ -308,6 +324,8 @@ No options.
 />
 
 ### `rangeVerdict()`
+
+Creates a verdict policy that passes when the score falls within a specified range. Useful for balanced checks (e.g., "neither too brief nor too verbose").
 
 <PropertyTable
   content={[
@@ -318,6 +336,8 @@ No options.
 
 ### `ordinalVerdict()`
 
+Creates a verdict policy for ordinal (string) metrics. Passes when the raw value is one of the allowed categories.
+
 <PropertyTable
   content={[
     { name: 'passWhenIn', type: 'readonly string[]', description: 'Allowed ordinal values for pass.' },
@@ -325,6 +345,8 @@ No options.
 />
 
 ### `customVerdict()`
+
+Creates a verdict policy with custom logic. Use this when your pass/fail rules are complex and can't be expressed with built-in policies.
 
 <PropertyTable
   content={[

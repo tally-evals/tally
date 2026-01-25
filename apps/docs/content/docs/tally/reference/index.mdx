@@ -18,12 +18,42 @@ This section documents the **tally API from the bottom up**. Use it to understan
 7. **createTally** executes the evaluation pipeline and returns a report.
 8. **Data & utils** help with loading datasets and runtime validation.
 
-## Typical workflow
+## Two Approaches
 
-1. Define base metrics with `defineBaseMetric`.
-2. Create metrics with `defineSingleTurnLLM` / `defineMultiTurnLLM` or code-based variants.
-3. Combine metrics with `defineInput` + `createWeightedAverageScorer`.
-4. Wrap into evals via `defineSingleTurnEval` / `defineScorerEval`.
-5. Build an evaluator with `createEvaluator`.
-6. Run with `createTally({ data, evaluators })`.
+Tally supports two complementary approaches:
+
+### Prebuilt Library (`create*` prefix)
+
+Use ready-made metrics, normalizers, and aggregators for common use cases:
+
+```ts
+import { createAnswerRelevanceMetric } from '@tally-evals/tally/metrics';
+import { createMinMaxNormalizer } from '@tally-evals/tally/normalization';
+import { createPercentileAggregator } from '@tally-evals/tally';
+
+const relevance = createAnswerRelevanceMetric({ provider: model });
+```
+
+### Engine Primitives (`define*` prefix)
+
+Build custom metrics and scorers from low-level primitives:
+
+```ts
+import {
+  defineBaseMetric,
+  defineSingleTurnLLM,
+  defineNumericAggregator,
+} from '@tally-evals/tally';
+
+const base = defineBaseMetric({ name: 'custom', valueType: 'number' });
+const metric = defineSingleTurnLLM({ base, provider, prompt, rubric });
+```
+
+## Typical Workflow
+
+1. **Choose metrics** — Use prebuilt (`createAnswerRelevanceMetric`) or define custom (`defineBaseMetric` + `defineSingleTurnLLM`).
+2. **Add normalization** — Attach normalizers via `withNormalization` or inline in metric definition.
+3. **Combine if needed** — Use `defineInput` + `createWeightedAverageScorer` for composite scores.
+4. **Wrap into evals** — Use `defineSingleTurnEval` / `defineMultiTurnEval` / `defineScorerEval` with verdict policies.
+5. **Run** — Pass evals to `createTally({ data, evals })` and get a type-safe report.
 

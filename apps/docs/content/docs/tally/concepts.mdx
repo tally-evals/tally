@@ -25,9 +25,8 @@ export const metricDefExample = String.raw`import { defineSingleTurnCode, define
 const length = defineBaseMetric({ name: 'answerLength', valueType: 'number' })
 
 const answerLength = defineSingleTurnCode({
-  name: 'Answer Length',
-  output: length,
-  run: ({ output }) => ({ value: output[0]?.content.length ?? 0 }),
+  base: length,
+  compute: ({ selected }) => selected.output[0]?.content.length ?? 0,
 })`;
 
 export const metricTsDef = String.raw`export interface Metric<TRawValue extends MetricScalar = MetricScalar> {
@@ -96,7 +95,6 @@ export interface MultiTurnEval<
 export interface ScorerEval {
   kind: 'scorer';
   name: string;
-  inputs: readonly (SingleTurnMetricDef<any, any> | MultiTurnMetricDef<any, any>)[];
   scorer: Scorer;
   verdict?: VerdictPolicyFor<number>;
 }
@@ -110,61 +108,52 @@ const evalDef = defineSingleTurnEval({
   verdict: thresholdVerdict(0.7),
 })`;
 
-export const evaluatorTsDef = String.raw`export interface Evaluator<TContainer extends MetricContainer> {
-  name: string;
-  description?: string;
-  evals: readonly Eval<TContainer>[];
-  context: EvaluationContext;
-  metadata?: Record<string, unknown>;
+export const tallyTsDef = String.raw`export interface Tally<
+  TContainer extends DatasetItem | Conversation,
+  TEvals extends readonly Eval[] = readonly Eval[],
+> {
+  readonly data: readonly TContainer[];
+  readonly evals: TEvals;
+  readonly context?: EvaluationContext;
+  run(options?: RunOptions): Promise<TallyRunReport<TEvals>>;
 }
 `;
 
-export const evaluatorExample = String.raw`import { createEvaluator, runAllTargets } from '@tally-evals/tally'
+export const tallyExample = String.raw`import { createTally } from '@tally-evals/tally'
 
-const evaluator = createEvaluator({
-  name: 'Agent Quality',
-  evals: [relevanceEval],
-  context: runAllTargets(),
-})`;
+const tally = createTally({
+  data: [conversation],
+  evals: [relevanceEval, completenessEval],
+})
 
-export const reportTsDef = String.raw`export interface EvaluationReport {
-  runId: string;
-  timestamp: Date;
-  perTargetResults: PerTargetResult[];
-  aggregateSummaries: AggregateSummary[];
-  evalSummaries: Map<
-    string,
-    {
-      evalName: string;
-      evalKind: 'singleTurn' | 'multiTurn' | 'scorer';
-      aggregations: BuiltInAggregations;
-      verdictSummary?: {
-        passRate: Score;
-        failRate: Score;
-        passCount: number;
-        failCount: number;
-        totalCount: number;
-      };
-    }
-  >;
-  metadata: Record<string, unknown>;
+const report = await tally.run()`;
+
+export const reportTsDef = String.raw`export interface TallyRunReport<TEvals extends readonly Eval[]> {
+  readonly result: ConversationResult;
+  readonly defs: RunDefs;
+  readonly metadata: Record<string, unknown>;
+  view(): TargetRunView<TEvals>;
+  toArtifact(): TallyRunArtifact;
 }
 `;
 
 export const reportExample = String.raw`const report = await tally.run()
 
-console.log(report.evalSummaries)
-console.log(report.perTargetResults[0]?.verdicts)`;
+// Type-safe view API
+const view = report.view()
+view.step(0)        // Single-turn results for step 0
+view.conversation() // Multi-turn and scorer results
+view.summary()      // Aggregated summaries`;
 
 ## Mental Model
 
 Tally is primarily an **Evaluation Engine**. Instead of providing a rigid set of fixed tests, it provides the infrastructure to define and run your own domain-based evaluation measures. 
 
-To promote maximum reusability and composability, Tally enforces a strict differentiation between measurement, combination, and decision-making.
+To promote maximum reusability and composability, Tally enforces a strict separation between measurement, combination, and decision-making.
 
 ## Building Blocks
 
-Tally is composed of several fundamental building blocks that you combine together to form an evaluation pipeline.
+Tally is composed of fundamental building blocks that you combine together to form an evaluation pipeline.
 
 | Block | Analogy | Purpose | Code |
 | :--- | :--- | :--- | :---: |
@@ -172,12 +161,12 @@ Tally is composed of several fundamental building blocks that you combine togeth
 | [**Metric**](/docs/tally/metrics) | **Measurement** | The actual result produced by a MetricDef (can be numeric, boolean, ordinal, etc.). | <CodePopover title="Metric (runtime result)" tsDef={metricTsDef} example={metricExample} /> |
 | [**Scorer**](/docs/tally/scorers) | **Normalizer/Combiner** | Combines multiple metric results into a unified score (usually 0–1) based on weights. | <CodePopover title="Scorer (core)" tsDef={scorerTsDef} example={scorerExample} /> |
 | [**Eval**](/docs/tally/evals) | **Decision Rule** | Combines a Metric or Scorer with a **Verdict Policy** to determine if the result "passes" or "fails." | <CodePopover title="Eval (single-turn / multi-turn / scorer)" tsDef={evalTsDef} example={evalExample} /> |
-| [**Evaluator**](/docs/tally/evals) | **Orchestrator** | Groups related Evals together and defines the execution policy for targets. | <CodePopover title="Evaluator (core)" tsDef={evaluatorTsDef} example={evaluatorExample} /> |
-| [**Report**](/docs/tally/reports) | **Scorecard** | The final structured output for analysis, visualization, and CI/CD. | <CodePopover title="EvaluationReport (core)" tsDef={reportTsDef} example={reportExample} /> |
+| [**Tally**](/docs/tally/getting-started) | **Orchestrator** | The main entry point that takes data and evals, then runs the evaluation pipeline. | <CodePopover title="Tally (core)" tsDef={tallyTsDef} example={tallyExample} /> |
+| [**Report**](/docs/tally/reports) | **Scorecard** | The type-safe output with per-target results, summaries, and the View API for assertions. | <CodePopover title="TallyRunReport (core)" tsDef={reportTsDef} example={reportExample} /> |
 
 ## The Composability Trio
 
-The power of Tally comes from how the first three blocks (Metric, Scorer, Eval) separate their responsibilities.
+The power of Tally comes from how Metrics, Scorers, and Evals separate their responsibilities.
 
 ### 1. Metrics (Measurement)
 Focuses exclusively on capturing raw domain data. A metric only cares about measuring one specific quality (e.g., response time, keyword presence, or LLM-graded relevance).
@@ -186,7 +175,7 @@ Focuses exclusively on capturing raw domain data. A metric only cares about meas
 Focuses exclusively on how to weigh and normalize multiple measurements. Because scorers are distinct from metrics, you can reuse the same metric in different scoring contexts.
 
 ### 3. Evals (Decision)
-Focuses exclusively on the business rules. An eval takes the output of your measures and applies a **Verdict Policy**. You can use the same scoring measures but apply a strict verdict for production and a loose one for experiments.
+Focuses exclusively on the business rules. An eval takes the output of your measures and applies a **Verdict Policy**. You can use the same scoring measures but apply different verdict thresholds depending on the evaluation scenario.
 
 ## Core Architecture
 
@@ -194,18 +183,41 @@ Tally acts as the orchestrator that combines these building blocks together agai
 
 ```mermaid
 graph TD
-    Data[Conversation Data] --> Engine[Tally Engine]
-    Engine --> Evaluator[Evaluator]
+    Data[Conversation Data] --> Tally[createTally]
+    Evals[Evals Array] --> Tally
     
     subgraph "Composition Layer"
-        Evaluator --> Evals[Evals]
-        Evals --> Verdicts[Verdict Policies]
-        Evals --> Logic[Metric or Scorer]
+        Tally --> Pipeline[Evaluation Pipeline]
+        Pipeline --> EvalExec[Eval Execution]
+        EvalExec --> Verdicts[Verdict Policies]
+        EvalExec --> Logic[Metric or Scorer]
         Logic --> RawMetrics[MetricDefs]
     end
 
     Verdicts --> Results[Per-Target Results]
-    Results --> Report[Evaluation Report]
+    Results --> Report[TallyRunReport]
+    Report --> View[View API]
+```
+
+## Type-Safe by Design
+
+Tally is built with TypeScript-first type safety:
+
+- **Eval names are literal types**: When you pass evals to `createTally`, the report knows exactly which evals exist.
+- **View API provides autocomplete**: Access results with `view.step(0)['Answer Relevance']` and get type errors for typos.
+- **No string-based lookups**: Everything is typed from definition to report access.
+
+```ts
+const tally = createTally({
+  data: [conversation],
+  evals: [relevanceEval, completenessEval], // Names are inferred
+});
+
+const report = await tally.run();
+const view = report.view();
+
+view.step(0)['Answer Relevance'];  // ✅ Autocomplete works
+view.step(0)['Typo'];              // ❌ Type error
 ```
 
 ## API Reference
@@ -215,4 +227,4 @@ For detailed type definitions and factory functions, see:
 - [Metrics API](/docs/tally/reference/metric) — `defineBaseMetric`, `defineSingleTurnCode`, `defineSingleTurnLLM`, etc.
 - [Scorers API](/docs/tally/reference/scorers) — `defineScorer`, `createWeightedAverageScorer`, `defineInput`
 - [Evals API](/docs/tally/reference/evals) — `defineSingleTurnEval`, `defineMultiTurnEval`, `defineScorerEval`
-- [Reports API](/docs/tally/reference/reports) — `TallyRunReport`, `TallyRunArtifact`
+- [Reports API](/docs/tally/reference/reports) — `TallyRunReport`, `TallyRunArtifact`, View API

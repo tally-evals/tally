@@ -7,28 +7,36 @@ import { PropertyTable } from '@/components/PropertyTable';
 
 # `createTally()`
 
-Create a Tally container for running evaluations.
+The main entry point for running evaluations. Creates a Tally container that orchestrates the evaluation pipeline.
 
 ## Import
 
 ```ts
-import { createTally, createEvaluator, TallyContainer } from 'tally';
+import { createTally } from 'tally';
+import type { Tally, TallyRunReport } from 'tally';
 ```
 
-### `createEvaluator()`
+### `createTally()`
+
+Creates a type-safe Tally container for running evaluations. Pass your data and evals directly - no need for intermediate evaluator objects.
 
 <PropertyTable
   content={[
-    { name: 'name', type: 'string', description: 'Evaluator name.' },
+    {
+      name: 'data',
+      type: 'readonly TContainer[]',
+      description: 'Array of data containers to evaluate (Conversation[] or DatasetItem[]).',
+    },
     {
       name: 'evals',
       type: 'readonly Eval[]',
-      description: 'List of eval definitions.',
+      description: 'Array of eval definitions (single-turn, multi-turn, or scorer evals).',
     },
     {
       name: 'context',
       type: 'EvaluationContext',
-      description: 'Execution context (required).',
+      description: 'Optional shared evaluation context for all evals.',
+      isOptional: true,
       properties: [
         {
           type: 'EvaluationContext',
@@ -36,7 +44,7 @@ import { createTally, createEvaluator, TallyContainer } from 'tally';
             {
               name: 'singleTurn',
               type: 'SingleTurnRunPolicy',
-              description: 'Single-turn run policy.',
+              description: 'Single-turn run policy (which steps to evaluate).',
               isOptional: true,
             },
             {
@@ -49,52 +57,25 @@ import { createTally, createEvaluator, TallyContainer } from 'tally';
         },
       ],
     },
-    {
-      name: 'description',
-      type: 'string',
-      description: 'Optional description for the evaluator.',
-      isOptional: true,
-    },
-    {
-      name: 'metadata',
-      type: 'Record<string, unknown>',
-      description: 'Optional metadata for the evaluator.',
-      isOptional: true,
-    },
   ]}
 />
 
-### `createTally()`
+### `tally.run()`
 
-<PropertyTable
-  content={[
-    {
-      name: 'data',
-      type: 'readonly TContainer[]',
-      description: 'Data containers to evaluate.',
-    },
-    {
-      name: 'evaluators',
-      type: 'readonly Evaluator[]',
-      description: 'Evaluator definitions.',
-    },
-  ]}
-/>
-
-### `TallyContainer.run()`
+Executes the evaluation pipeline and returns a type-safe report.
 
 <PropertyTable
   content={[
     {
       name: 'cache',
       type: 'MemoryCache<MetricScalar>',
-      description: 'Optional cache implementation.',
+      description: 'Optional cache for metric results (avoids recomputing identical inputs).',
       isOptional: true,
     },
     {
       name: 'llmOptions',
       type: 'GenerateObjectOptions',
-      description: 'Optional LLM execution options.',
+      description: 'Optional LLM execution options (temperature, retries, etc.).',
       isOptional: true,
     },
     {
@@ -109,33 +90,60 @@ import { createTally, createEvaluator, TallyContainer } from 'tally';
 ## Example
 
 ```ts
-import { createTally, createEvaluator, runAllTargets, defineSingleTurnEval } from 'tally';
+import {
+  createTally,
+  defineSingleTurnEval,
+  defineMultiTurnEval,
+  thresholdVerdict,
+} from 'tally';
 import type { Conversation } from 'tally';
-import { createAnswerRelevanceMetric } from 'tally/metrics';
+import { createAnswerRelevanceMetric, createRoleAdherenceMetric } from 'tally/metrics';
 import { google } from '@ai-sdk/google';
 
-const answerRelevance = createAnswerRelevanceMetric({
-  provider: google('models/gemini-2.5-flash-lite'),
+const model = google('models/gemini-2.5-flash-lite');
+
+// Create metrics
+const answerRelevance = createAnswerRelevanceMetric({ provider: model });
+const roleAdherence = createRoleAdherenceMetric({
+  expectedRole: 'helpful assistant',
+  provider: model,
 });
 
-const answerRelevanceEval = defineSingleTurnEval({
+// Create evals with verdict policies
+const relevanceEval = defineSingleTurnEval({
   name: 'Answer Relevance',
   metric: answerRelevance,
+  verdict: thresholdVerdict(0.7),
 });
 
-const evaluator = createEvaluator({
-  name: 'QA Eval',
-  evals: [answerRelevanceEval],
-  context: runAllTargets(),
+const roleEval = defineMultiTurnEval({
+  name: 'Role Adherence',
+  metric: roleAdherence,
+  verdict: thresholdVerdict(0.8),
 });
 
-const conversation = { id: 'conv-1', steps: [] } as Conversation;
+// Create Tally and run
+const conversation: Conversation = {
+  id: 'conv-1',
+  steps: [
+    {
+      stepIndex: 0,
+      input: { role: 'user', content: 'Hello!' },
+      output: [{ role: 'assistant', content: 'Hi there! How can I help?' }],
+      timestamp: new Date(),
+    },
+  ],
+};
 
 const tally = createTally({
   data: [conversation],
-  evaluators: [evaluator],
+  evals: [relevanceEval, roleEval],
 });
 
 const report = await tally.run();
-```
 
+// Type-safe access via view API
+const view = report.view();
+const step0 = view.step(0);
+console.log(step0['Answer Relevance']?.outcome?.verdict);
+```
