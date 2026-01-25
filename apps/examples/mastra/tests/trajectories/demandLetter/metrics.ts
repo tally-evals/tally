@@ -1,4 +1,4 @@
-import { Conversation, createMultiTurnLLM, defineBaseMetric, MultiTurnMetricDef } from "@tally-evals/tally";
+import { Conversation, defineMultiTurnLLM, defineBaseMetric, MultiTurnMetricDef } from "@tally-evals/tally";
 import { extractTextFromMessage } from "@tally-evals/tally/metrics";
 import { createMinMaxNormalizer } from "@tally-evals/tally/normalization";
 import { LanguageModel } from "ai";
@@ -28,7 +28,7 @@ export const createKnowledgeRetentionMetric = (
       'Measures how well the assistant retains and uses information from earlier parts of the conversation',
   });
 
-  const metric = createMultiTurnLLM<number>({
+  const metric = defineMultiTurnLLM<number>({
     base,
     provider,
     runOnContainer: async (conversation) => {

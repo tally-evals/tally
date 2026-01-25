@@ -1,5 +1,5 @@
 import type { Eval, TallyRunArtifact, TallyRunReport, ConversationResult } from '@tally-evals/core';
-import { createTargetRunView } from '../view/targetRunView';
+import { createTargetRunView } from '../views/targetRunView';
 
 /**
  * Create a type-safe TallyRunReport from a run artifact.

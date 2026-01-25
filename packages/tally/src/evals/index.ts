@@ -19,7 +19,7 @@ export {
   defineSingleTurnEval,
   defineMultiTurnEval,
   defineScorerEval,
-} from './factories';
+} from '../core/primitives/eval';
 
 export {
   runAllTargets,
@@ -33,4 +33,4 @@ export {
   rangeVerdict,
   ordinalVerdict,
   customVerdict,
-} from './verdict-helpers';
+} from '../verdicts/helpers';

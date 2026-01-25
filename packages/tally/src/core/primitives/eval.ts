@@ -1,8 +1,8 @@
 /**
- * Eval Factory Functions
+ * Eval Definition Primitives
  *
- * Factory functions with "define" semantics and type inference.
- * These factories create eval configurations with type-safe verdict policies.
+ * Low-level building blocks for defining evals.
+ * Use these to create custom eval configurations with type-safe verdict policies.
  */
 
 import type {
@@ -13,15 +13,15 @@ import type {
   MultiTurnMetricDef,
   SingleTurnContainer,
   SingleTurnMetricDef,
-} from '@tally/core/types';
-import type { Scorer } from '@tally/core/types';
+  Scorer,
+} from '../types';
 import type {
   AutoNormalizer,
   MultiTurnEval,
   ScorerEval,
   SingleTurnEval,
   VerdictPolicyFor,
-} from '../core/evals/types';
+} from '../evals/types';
 
 /**
  * Creates a single-turn eval with type inference.

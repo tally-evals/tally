@@ -150,10 +150,10 @@ export { TallyContainer, createTally } from './core/tally';
 export type { TallyContainer as TallyContainerType } from './core/tally';
 
 // ============================================================================
-// SDK/Test Views
+// Views
 // ============================================================================
 
-export { createTargetRunView, TargetRunViewImpl } from './view/targetRunView';
+export { createTargetRunView, TargetRunViewImpl } from './views/targetRunView';
 export type {
   TargetRunView,
   StepResults,
@@ -163,20 +163,23 @@ export type {
 } from '@tally-evals/core';
 
 // ============================================================================
-// Factory APIs
+// Primitives (Low-level building blocks)
 // ============================================================================
 
 export {
+  // Metric primitives
   defineBaseMetric,
   withNormalization,
   withMetadata,
-  createSingleTurnCode,
-  createSingleTurnLLM,
-  createMultiTurnCode,
-  createMultiTurnLLM,
+  defineSingleTurnCode,
+  defineSingleTurnLLM,
+  defineMultiTurnCode,
+  defineMultiTurnLLM,
+  // Scorer primitives
   defineInput,
   defineScorer,
-} from './core/factory';
+} from './core/primitives';
+
 
 // ============================================================================
 // Evaluation Context Helpers
@@ -257,6 +260,38 @@ export type {
   TrueRateAggregatorOptions,
   DistributionAggregatorOptions,
 } from './aggregators';
+
+// ============================================================================
+// Normalizers
+// ============================================================================
+
+export {
+  createMinMaxNormalizer,
+  createZScoreNormalizer,
+  createThresholdNormalizer,
+  createLinearNormalizer,
+  createOrdinalMapNormalizer,
+  createIdentityNormalizer,
+  createCustomNormalizer,
+  applyNormalization,
+  resolveCalibration,
+  computeDistributionStats,
+  computeRange,
+  createCalibrationCache,
+} from './normalizers';
+
+// ============================================================================
+// Verdicts
+// ============================================================================
+
+// Re-exported from evals for convenience, but also available directly
+export {
+  booleanVerdict as createBooleanVerdict,
+  thresholdVerdict as createThresholdVerdict,
+  rangeVerdict as createRangeVerdict,
+  ordinalVerdict as createOrdinalVerdict,
+  customVerdict as createCustomVerdict,
+} from './verdicts';
 
 // ============================================================================
 // Utilities

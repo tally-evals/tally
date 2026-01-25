@@ -13,7 +13,7 @@ import {
   createMinMaxNormalizer,
   createIdentityNormalizer,
   defineBaseMetric,
-  createSingleTurnCode,
+  defineSingleTurnCode,
   createWeightedAverageScorer,
   defineInput,
   createTally,
@@ -62,7 +62,7 @@ describe('Integration | Pipeline | Aggregation', () => {
         valueType: 'number',
       });
 
-      const metric = createSingleTurnCode({
+      const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => ({
           value: parseFloat(getStepCompletion(step as ConversationStep)),
@@ -123,7 +123,7 @@ describe('Integration | Pipeline | Aggregation', () => {
         valueType: 'number',
       });
 
-      const metric = createSingleTurnCode({
+      const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => ({
           value: parseFloat(getStepCompletion(step as ConversationStep)),
@@ -187,7 +187,7 @@ describe('Integration | Pipeline | Aggregation', () => {
         valueType: 'number',
       });
 
-      const metric = createSingleTurnCode({
+      const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => ({
           value: parseFloat(getStepCompletion(step as ConversationStep)),
@@ -252,7 +252,7 @@ describe('Integration | Pipeline | Aggregation', () => {
         valueType: 'boolean',
       });
 
-      const metric = createSingleTurnCode({
+      const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => ({
           value: getStepCompletion(step as ConversationStep) === 'pass',
@@ -322,7 +322,7 @@ describe('Integration | Pipeline | Aggregation', () => {
         valueType: 'number',
       });
 
-      const metric = createSingleTurnCode({
+      const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => ({
           value: parseFloat(getStepCompletion(step as ConversationStep)),
@@ -388,7 +388,7 @@ describe('Integration | Pipeline | Aggregation', () => {
         valueType: 'boolean',
       });
 
-      const metric = createSingleTurnCode({
+      const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => ({
           value: getStepCompletion(step as ConversationStep) === 'yes',
@@ -454,7 +454,7 @@ describe('Integration | Pipeline | Aggregation', () => {
         valueType: 'number',
       });
 
-      const scoreMetric = createSingleTurnCode({
+      const scoreMetric = defineSingleTurnCode({
         base: scoreBase,
         preProcessor: (step) => ({
           value: parseFloat(getStepCompletion(step as ConversationStep).split(',')[0]),
@@ -470,7 +470,7 @@ describe('Integration | Pipeline | Aggregation', () => {
         valueType: 'boolean',
       });
 
-      const validMetric = createSingleTurnCode({
+      const validMetric = defineSingleTurnCode({
         base: validBase,
         preProcessor: (step) => ({
           value: getStepCompletion(step as ConversationStep).split(',')[1] === 'true',

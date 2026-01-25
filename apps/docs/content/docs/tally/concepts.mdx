@@ -20,11 +20,11 @@ export const metricDefTsDef = String.raw`export type MetricDef<
       : never);
 `;
 
-export const metricDefExample = String.raw`import { createSingleTurnCode, defineBaseMetric } from '@tally-evals/tally'
+export const metricDefExample = String.raw`import { defineSingleTurnCode, defineBaseMetric } from '@tally-evals/tally'
 
 const length = defineBaseMetric({ name: 'answerLength', valueType: 'number' })
 
-const answerLength = createSingleTurnCode({
+const answerLength = defineSingleTurnCode({
   name: 'Answer Length',
   output: length,
   run: ({ output }) => ({ value: output[0]?.content.length ?? 0 }),
@@ -212,7 +212,7 @@ graph TD
 
 For detailed type definitions and factory functions, see:
 
-- [Metrics API](/docs/tally/reference/metric) — `defineBaseMetric`, `createSingleTurnCode`, `createSingleTurnLLM`, etc.
+- [Metrics API](/docs/tally/reference/metric) — `defineBaseMetric`, `defineSingleTurnCode`, `defineSingleTurnLLM`, etc.
 - [Scorers API](/docs/tally/reference/scorers) — `defineScorer`, `createWeightedAverageScorer`, `defineInput`
 - [Evals API](/docs/tally/reference/evals) — `defineSingleTurnEval`, `defineMultiTurnEval`, `defineScorerEval`
 - [Reports API](/docs/tally/reference/reports) — `TallyRunReport`, `TallyRunArtifact`

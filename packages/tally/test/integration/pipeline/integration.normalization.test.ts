@@ -12,7 +12,7 @@ import {
   createOrdinalMapNormalizer,
   createIdentityNormalizer,
   defineBaseMetric,
-  createSingleTurnCode,
+  defineSingleTurnCode,
   createWeightedAverageScorer,
   defineInput,
   createTally,
@@ -62,7 +62,7 @@ describe('Integration | Pipeline | Normalization', () => {
         valueType: 'number',
       });
 
-      const metric = createSingleTurnCode({
+      const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => ({
           value: parseFloat(getStepCompletion(step as ConversationStep)),
@@ -129,7 +129,7 @@ describe('Integration | Pipeline | Normalization', () => {
         valueType: 'number',
       });
 
-      const metric = createSingleTurnCode({
+      const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => ({
           value: parseFloat(getStepCompletion(step as ConversationStep)),
@@ -188,7 +188,7 @@ describe('Integration | Pipeline | Normalization', () => {
         valueType: 'number',
       });
 
-      const metric = createSingleTurnCode({
+      const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => ({
           value: parseFloat(getStepCompletion(step as ConversationStep)),
@@ -247,7 +247,7 @@ describe('Integration | Pipeline | Normalization', () => {
         valueType: 'number',
       });
 
-      const metric = createSingleTurnCode({
+      const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => ({
           value: parseFloat(getStepCompletion(step as ConversationStep)),
@@ -304,7 +304,7 @@ describe('Integration | Pipeline | Normalization', () => {
         valueType: 'number',
       });
 
-      const metric = createSingleTurnCode({
+      const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => ({
           value: parseFloat(getStepCompletion(step as ConversationStep)),
@@ -363,7 +363,7 @@ describe('Integration | Pipeline | Normalization', () => {
         valueType: 'string',
       });
 
-      const metric = createSingleTurnCode({
+      const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => ({
           value: getStepCompletion(step as ConversationStep),
@@ -428,7 +428,7 @@ describe('Integration | Pipeline | Normalization', () => {
         valueType: 'number',
       });
 
-      const metric = createSingleTurnCode({
+      const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => ({
           value: parseFloat(getStepCompletion(step as ConversationStep)),
@@ -485,7 +485,7 @@ describe('Integration | Pipeline | Normalization', () => {
         valueType: 'boolean',
       });
 
-      const metric = createSingleTurnCode({
+      const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => ({
           value: getStepCompletion(step as ConversationStep) === 'true',

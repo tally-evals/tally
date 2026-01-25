@@ -21,7 +21,7 @@ This section documents the **tally API from the bottom up**. Use it to understan
 ## Typical workflow
 
 1. Define base metrics with `defineBaseMetric`.
-2. Create metrics with `createSingleTurnLLM` / `createMultiTurnLLM` or code-based variants.
+2. Create metrics with `defineSingleTurnLLM` / `defineMultiTurnLLM` or code-based variants.
 3. Combine metrics with `defineInput` + `createWeightedAverageScorer`.
 4. Wrap into evals via `defineSingleTurnEval` / `defineScorerEval`.
 5. Build an evaluator with `createEvaluator`.

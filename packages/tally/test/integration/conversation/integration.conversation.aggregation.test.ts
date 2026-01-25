@@ -7,8 +7,8 @@
 
 import { describe, expect, it } from 'bun:test';
 import {
-  createMultiTurnCode,
-  createSingleTurnCode,
+  defineMultiTurnCode,
+  defineSingleTurnCode,
   createTally,
   defineBaseMetric,
   type ConversationStep,
@@ -40,7 +40,7 @@ describe('Integration | Conversation | Aggregation', () => {
     it('calculates mean score across conversation steps', async () => {
       const base = defineBaseMetric({ name: 'responsiveness', valueType: 'number' });
 
-      const metric = createSingleTurnCode({
+      const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => step,
         compute: ({ data }) => {
@@ -86,7 +86,7 @@ describe('Integration | Conversation | Aggregation', () => {
     it('calculates P50 and P90 percentiles across steps', async () => {
       const base = defineBaseMetric({ name: 'quality', valueType: 'number' });
 
-      const metric = createSingleTurnCode({
+      const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => step,
         compute: ({ data }) => {
@@ -137,7 +137,7 @@ describe('Integration | Conversation | Aggregation', () => {
     it('calculates threshold pass rate across steps', async () => {
       const base = defineBaseMetric({ name: 'threshold', valueType: 'number' });
 
-      const metric = createSingleTurnCode({
+      const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => step,
         compute: ({ data }) => {
@@ -184,7 +184,7 @@ describe('Integration | Conversation | Aggregation', () => {
     it('calculates pass/fail verdicts with threshold policy', async () => {
       const base = defineBaseMetric({ name: 'passTest', valueType: 'number' });
 
-      const metric = createSingleTurnCode({
+      const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => step,
         compute: ({ data }) => {
@@ -230,7 +230,7 @@ describe('Integration | Conversation | Aggregation', () => {
     it('calculates verdicts on multi-turn metrics', async () => {
       const base = defineBaseMetric({ name: 'conversationQuality', valueType: 'number' });
 
-      const metric = createMultiTurnCode({
+      const metric = defineMultiTurnCode({
         base,
         runOnContainer: async (conversation) => conversation,
         compute: async ({ data }) => {
@@ -274,7 +274,7 @@ describe('Integration | Conversation | Aggregation', () => {
     it('applies multiple aggregators to the same metric', async () => {
       const base = defineBaseMetric({ name: 'multiAgg', valueType: 'number' });
 
-      const metric = createSingleTurnCode({
+      const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => step,
         compute: ({ data }) => {
@@ -331,7 +331,7 @@ describe('Integration | Conversation | Aggregation', () => {
     it('aggregates results across all steps in a conversation', async () => {
       const base = defineBaseMetric({ name: 'stepQuality', valueType: 'number' });
 
-      const metric = createSingleTurnCode({
+      const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => step,
         compute: ({ data }) => {

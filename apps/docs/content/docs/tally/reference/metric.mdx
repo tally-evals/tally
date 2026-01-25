@@ -16,10 +16,10 @@ import {
   defineBaseMetric,
   withNormalization,
   withMetadata,
-  createSingleTurnCode,
-  createSingleTurnLLM,
-  createMultiTurnCode,
-  createMultiTurnLLM,
+  defineSingleTurnCode,
+  defineSingleTurnLLM,
+  defineMultiTurnCode,
+  defineMultiTurnLLM,
 } from 'tally';
 ```
 
@@ -112,7 +112,7 @@ import {
   ]}
 />
 
-### `createSingleTurnCode()`
+### `defineSingleTurnCode()`
 
 <PropertyTable
   content={[
@@ -166,7 +166,7 @@ import {
   ]}
 />
 
-### `createSingleTurnLLM()`
+### `defineSingleTurnLLM()`
 
 <PropertyTable
   content={[
@@ -304,7 +304,7 @@ import {
   ]}
 />
 
-### `createMultiTurnCode()`
+### `defineMultiTurnCode()`
 
 <PropertyTable
   content={[
@@ -353,7 +353,7 @@ import {
   ]}
 />
 
-### `createMultiTurnLLM()`
+### `defineMultiTurnLLM()`
 
 <PropertyTable
   content={[
@@ -489,7 +489,7 @@ import {
 ## Example
 
 ```ts
-import { defineBaseMetric, createSingleTurnLLM, withNormalization } from 'tally';
+import { defineBaseMetric, defineSingleTurnLLM, withNormalization } from 'tally';
 import { createMinMaxNormalizer } from 'tally/normalization';
 import { google } from '@ai-sdk/google';
 
@@ -498,7 +498,7 @@ const base = defineBaseMetric<number>({
   valueType: 'number',
 });
 
-const answerRelevance = createSingleTurnLLM({
+const answerRelevance = defineSingleTurnLLM({
   base: withNormalization({
     metric: base,
     normalizer: createMinMaxNormalizer({ min: 0, max: 5, clip: true }),

@@ -40,9 +40,9 @@ import type {
 Aggregator defs are attached to a **single-turn metric** at construction time.
 
 ```ts
-import { createSingleTurnCode, defineBaseMetric, createPercentileAggregator } from 'tally';
+import { defineSingleTurnCode, defineBaseMetric, createPercentileAggregator } from 'tally';
 
-const latency = createSingleTurnCode({
+const latency = defineSingleTurnCode({
   base: defineBaseMetric({ name: 'latencyMs', valueType: 'number' }),
   compute: ({ data }) => (data as { latencyMs: number }).latencyMs,
   aggregators: [

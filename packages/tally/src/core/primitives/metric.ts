@@ -1,9 +1,8 @@
 /**
- * Functional factory APIs for defining metrics and scorers.
+ * Metric Definition Primitives
  *
- * These factories provide a composition-first alternative to the builder pattern.
- * They return plain objects that conform to the existing types and can be easily
- * composed, cloned, and serialized.
+ * Low-level building blocks for defining metrics.
+ * Use these to create custom metric implementations.
  */
 
 import type {
@@ -11,7 +10,6 @@ import type {
   BaseMetricDef,
   CodeMetricFields,
   CompatibleAggregator,
-  InputScores,
   LLMMetricFields,
   MetricContainer,
   MetricDef,
@@ -22,14 +20,11 @@ import type {
   NormalizationContextFor,
   NormalizeToScore,
   NormalizerSpec,
-  Score,
-  Scorer,
-  ScorerInput,
   SingleTurnContainer,
   SingleTurnMetricDef,
   VarsTuple,
-} from '@tally/core/types';
-import { getDefaultAggregators } from '../aggregators/default';
+} from '../types';
+import { getDefaultAggregators } from '../../aggregators/default';
 
 // -----------------------------------------------------------------------------
 // Base Metric Definition
@@ -133,16 +128,16 @@ export function withMetric<TMetricValue extends MetricScalar, TContainer extends
 }
 
 // -----------------------------------------------------------------------------
-// Single-Turn Metric Factories
+// Single-Turn Metric Definitions
 // -----------------------------------------------------------------------------
 
 /**
- * Creates a code-based single-turn metric.
+ * Defines a code-based single-turn metric.
  *
  * @typeParam TMetricValue - The metric value type
  * @typeParam TContainer - The container type
  */
-export function createSingleTurnCode<
+export function defineSingleTurnCode<
   TMetricValue extends MetricScalar,
   TContainer extends SingleTurnContainer = SingleTurnContainer,
 >(args: {
@@ -187,13 +182,13 @@ export function createSingleTurnCode<
 }
 
 /**
- * Creates an LLM-based single-turn metric.
+ * Defines an LLM-based single-turn metric.
  *
  * @typeParam TMetricValue - The metric value type
  * @typeParam TContainer - The container type
  * @typeParam TPromptVars - Prompt template variable names
  */
-export function createSingleTurnLLM<
+export function defineSingleTurnLLM<
   TMetricValue extends MetricScalar,
   TContainer extends SingleTurnContainer = SingleTurnContainer,
   TPromptVars extends VarsTuple = readonly [],
@@ -245,15 +240,15 @@ export function createSingleTurnLLM<
 }
 
 // -----------------------------------------------------------------------------
-// Multi-Turn Metric Factories
+// Multi-Turn Metric Definitions
 // -----------------------------------------------------------------------------
 
 /**
- * Creates a code-based multi-turn metric.
+ * Defines a code-based multi-turn metric.
  *
  * @typeParam TMetricValue - The metric value type
  */
-export function createMultiTurnCode<TMetricValue extends MetricScalar>(args: {
+export function defineMultiTurnCode<TMetricValue extends MetricScalar>(args: {
   base: BaseMetricDef<TMetricValue>;
   runOnContainer: MultiTurnMetricDef<TMetricValue, MultiTurnContainer>['runOnContainer'];
   compute: CodeMetricFields<TMetricValue>['compute'];
@@ -282,13 +277,13 @@ export function createMultiTurnCode<TMetricValue extends MetricScalar>(args: {
 }
 
 /**
- * Creates an LLM-based multi-turn metric.
+ * Defines an LLM-based multi-turn metric.
  *
  * @typeParam TMetricValue - The metric value type
  * @typeParam TContainer - The container type
  * @typeParam TPromptVars - Prompt template variable names
  */
-export function createMultiTurnLLM<
+export function defineMultiTurnLLM<
   TMetricValue extends MetricScalar,
   TContainer extends MultiTurnContainer = MultiTurnContainer,
   TPromptVars extends VarsTuple = readonly [],
@@ -333,98 +328,3 @@ export function createMultiTurnLLM<
     runOnContainer,
   } as MetricDef<TMetricValue, TContainer>;
 }
-
-// -----------------------------------------------------------------------------
-// Scorer Factories
-// -----------------------------------------------------------------------------
-
-/**
- * Creates a scorer input configuration.
- *
- * @typeParam TMetric - The metric definition type
- * @typeParam TMetricValue - The metric value type (inferred from metric)
- *
- * @example
- * ```typescript
- * const input = defineInput({
- *   metric: relevanceMetric,
- *   weight: 0.4,
- * });
- * ```
- */
-export function defineInput<
-  // biome-ignore lint/suspicious/noExplicitAny: Accept any TMetricValue and TContainer to avoid variance issues
-  TMetric extends SingleTurnMetricDef<any, any> | MultiTurnMetricDef<any, any>,
-  // biome-ignore lint/suspicious/noExplicitAny: Infer TMetricValue from the metric type
-  TMetricValue extends MetricScalar = TMetric extends SingleTurnMetricDef<infer V, any>
-    ? V
-    : // biome-ignore lint/suspicious/noExplicitAny: Infer TMetricValue from MultiTurnMetricDef
-      TMetric extends MultiTurnMetricDef<infer V, any>
-      ? V
-      : MetricScalar,
->(args: {
-  metric: TMetric;
-  weight: number;
-  normalizerOverride?:
-    | NormalizerSpec<TMetricValue, NormalizationContextFor<TMetricValue>>
-    | NormalizeToScore<TMetricValue, NormalizationContextFor<TMetricValue>>;
-  required?: boolean;
-}): ScorerInput<MetricDef<MetricScalar, MetricContainer>, NormalizationContextFor<MetricScalar>> {
-  return {
-    metric: args.metric as unknown as MetricDef<MetricScalar, MetricContainer>,
-    weight: args.weight,
-    required: args.required ?? true,
-    ...(args.normalizerOverride !== undefined && {
-      normalizerOverride: args.normalizerOverride,
-    }),
-  } as ScorerInput<MetricDef<MetricScalar, MetricContainer>, NormalizationContextFor<MetricScalar>>;
-}
-
-/**
- * Creates a scorer definition.
- *
- * @typeParam TInputs - The scorer inputs tuple
- *
- * @example
- * ```typescript
- * const scorer = defineScorer({
- *   name: 'QualityScore',
- *   output: qualityMetric,
- *   inputs: [relevanceInput, accuracyInput],
- * });
- * ```
- */
-export function defineScorer<
-  TInputs extends readonly ScorerInput[] = readonly ScorerInput[],
->(args: {
-  name: string;
-  output: BaseMetricDef<number>;
-  inputs: TInputs;
-  normalizeWeights?: boolean;
-  combineScores?: (scores: InputScores<TInputs>) => Score;
-  fallbackScore?: Score;
-  metadata?: Record<string, unknown>;
-  description?: string;
-}): Scorer<TInputs> {
-  const {
-    name,
-    output,
-    inputs,
-    normalizeWeights = true,
-    combineScores,
-    fallbackScore,
-    metadata,
-    description,
-  } = args;
-  return {
-    name,
-    output,
-    inputs,
-    ...(description !== undefined && { description }),
-    ...(normalizeWeights !== undefined && { normalizeWeights }),
-    ...(combineScores !== undefined && { combineScores }),
-    ...(fallbackScore !== undefined && { fallbackScore }),
-    ...(metadata !== undefined && { metadata }),
-  };
-}
-

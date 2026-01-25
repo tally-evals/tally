@@ -168,7 +168,7 @@ Aggregators are attached to metrics via factory functions:
 
 ```typescript
 import { 
-  createSingleTurnCode, 
+  defineSingleTurnCode, 
   defineBaseMetric,
   createMeanAggregator,
   createPercentileAggregator,
@@ -182,7 +182,7 @@ const minAggregator = defineNumericAggregator({
 });
 
 // Metric with custom + prebuilt aggregators
-const latencyMetric = createSingleTurnCode({
+const latencyMetric = defineSingleTurnCode({
   base: defineBaseMetric({ name: 'latency', valueType: 'number' }),
   compute: async ({ output }) => parseFloat(output),
   aggregators: [
@@ -199,14 +199,14 @@ The type system prevents incompatible aggregators:
 
 ```typescript
 // ✅ Valid: number metric with numeric aggregators
-createSingleTurnCode({
+defineSingleTurnCode({
   base: defineBaseMetric({ name: 'score', valueType: 'number' }),
   compute: () => 0.85,
   aggregators: [createMeanAggregator()], // NumericAggregatorDef ✓
 });
 
 // ✅ Valid: boolean metric with numeric + boolean aggregators
-createSingleTurnCode({
+defineSingleTurnCode({
   base: defineBaseMetric({ name: 'passed', valueType: 'boolean' }),
   compute: () => true,
   aggregators: [
@@ -216,7 +216,7 @@ createSingleTurnCode({
 });
 
 // ❌ Compile Error: categorical aggregator on boolean metric
-createSingleTurnCode({
+defineSingleTurnCode({
   base: defineBaseMetric({ name: 'passed', valueType: 'boolean' }),
   compute: () => true,
   aggregators: [createDistributionAggregator()], // CategoricalAggregatorDef ✗
@@ -289,7 +289,7 @@ src/aggregators/
 ## Summary
 
 1. **Three aggregator kinds**: `numeric`, `boolean`, `categorical` (discriminated union)
-2. **Type-safe factories**: `createSingleTurnCode` only accepts `CompatibleAggregator<T>`
+2. **Type-safe factories**: `defineSingleTurnCode` only accepts `CompatibleAggregator<T>`
 3. **Two API patterns**: `define*` for custom, `create*` for prebuilt
 4. **Automatic defaults**: `getDefaultAggregators(valueType)` provides sensible defaults
 5. **Separate concepts**: Aggregators (statistical) vs Verdict Summaries (pass/fail)

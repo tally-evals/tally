@@ -1,9 +1,7 @@
 /**
- * Normalizer factory functions
+ * Prebuilt Normalizer Factories
  *
- * Provides convenient factory functions for creating NormalizerSpec objects
- * These functions return properly typed NormalizerSpec values that can be
- * used directly in metric definitions
+ * Ready-to-use normalizer implementations.
  */
 
 import type {
@@ -16,7 +14,7 @@ import type {
   NormalizeToScore,
   NormalizerSpec,
   Score,
-} from '@tally/core/types';
+} from '../core/types';
 
 /**
  * Create a min-max normalizer specification

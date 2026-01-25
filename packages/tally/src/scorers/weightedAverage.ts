@@ -5,7 +5,7 @@
  * Weights are automatically normalized to sum to 1.0.
  */
 
-import { defineScorer } from '../core/factory';
+import { defineScorer } from '../core/primitives';
 import type { BaseMetricDef, InputScores, Score, Scorer, ScorerInput } from '../core/types';
 import { toScore } from '../core/types';
 

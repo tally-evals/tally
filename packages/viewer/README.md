@@ -1,21 +1,46 @@
-# bun-react-tailwind-shadcn-template
+# @tally-evals/viewer
 
-To install dependencies:
+Web-based viewer for exploring Tally evaluation results. Provides a rich UI for visualizing conversations, metrics, and evaluation reports.
+
+## Overview
+
+This is an internal package used by `@tally-evals/cli` to power the `tally dev server` command. It's not intended to be used directly.
+
+## Features
+
+- **Conversation List**: Browse all conversations in your `.tally` directory
+- **Conversation View**: Detailed view of individual conversations with message timeline
+- **Run View**: Explore evaluation runs with step-by-step metric breakdowns
+- **Trajectory View**: Visualize trajectory execution and step traces
+
+## Usage
+
+The viewer is started via the CLI:
 
 ```bash
-bun install
+tally dev server
 ```
 
-To start a development server:
+Or directly during development:
 
 ```bash
 bun dev
 ```
 
-To run for production:
+## Tech Stack
+
+- **Bun** - Runtime and build tool
+- **React 19** - UI framework
+- **Tailwind CSS 4** - Styling
+- **Radix UI** - Accessible UI primitives
+
+## Development
 
 ```bash
-bun start
+bun install
+bun dev  # Start dev server with hot reload
 ```
 
-This project was created using `bun init` in bun v1.2.22. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+## License
+
+MIT

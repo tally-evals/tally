@@ -31,7 +31,7 @@ import {
 ### Example
 
 ```ts
-import { defineBaseMetric, createSingleTurnLLM } from 'tally';
+import { defineBaseMetric, defineSingleTurnLLM } from 'tally';
 import { createMinMaxNormalizer } from 'tally/normalization';
 import { google } from '@ai-sdk/google';
 
@@ -40,7 +40,7 @@ const base = defineBaseMetric<number>({
   valueType: 'number',
 });
 
-const answerRelevance = createSingleTurnLLM({
+const answerRelevance = defineSingleTurnLLM({
   base,
   provider: google('models/gemini-2.5-flash-lite'),
   prompt: { instruction: 'Score relevance 0-5.', variables: [] as const },

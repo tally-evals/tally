@@ -5,7 +5,7 @@
  */
 
 import type { Conversation, TallyRunArtifact } from '@tally/core/types';
-import { createTargetRunView } from '../view/targetRunView';
+import { createTargetRunView } from '../views/targetRunView';
 
 /**
  * Format evaluation report as console tables

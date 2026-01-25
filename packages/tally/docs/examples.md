@@ -17,8 +17,8 @@ import {
   createEvaluator,
   defineBaseMetric,
   withNormalization,
-  createSingleTurnLLM,
-  createMultiTurnLLM,
+  defineSingleTurnLLM,
+  defineMultiTurnLLM,
   defineInput,
   defineSingleTurnEval,
   defineMultiTurnEval,
@@ -38,7 +38,7 @@ const roleAdherenceBase = defineBaseMetric<number>({
   name: 'roleAdherence',
   valueType: 'number',
 });
-const ROLE_ADHERENCE: MultiTurnMetricDef<number, Conversation> = createMultiTurnLLM({
+const ROLE_ADHERENCE: MultiTurnMetricDef<number, Conversation> = defineMultiTurnLLM({
   base: withNormalization({ metric: roleAdherenceBase, normalizer: { type: 'identity' } }),
   provider: openai('gpt-4.1'),
   prompt: {
@@ -53,7 +53,7 @@ const answerRelevanceBase = defineBaseMetric<number>({
   name: 'answerRelevance',
   valueType: 'number',
 });
-const ANSWER_RELEVANCE: SingleTurnMetricDef<number, Conversation> = createSingleTurnLLM({
+const ANSWER_RELEVANCE: SingleTurnMetricDef<number, Conversation> = defineSingleTurnLLM({
   base: withNormalization({ metric: answerRelevanceBase, normalizer: { type: 'identity' } }),
   provider: openai('gpt-4.1'),
   prompt: {
@@ -134,7 +134,7 @@ import {
   createEvaluator,
   defineBaseMetric,
   withNormalization,
-  createSingleTurnCode,
+  defineSingleTurnCode,
   defineInput,
   defineSingleTurnEval,
   defineScorerEval,
@@ -156,7 +156,7 @@ const answerRelevanceBase = defineBaseMetric<number>({
   name: 'answerRelevanceDataset',
   valueType: 'number',
 });
-const ANSWER_RELEVANCE_DATASET: SingleTurnMetricDef<number, DatasetItem> = createSingleTurnCode<
+const ANSWER_RELEVANCE_DATASET: SingleTurnMetricDef<number, DatasetItem> = defineSingleTurnCode<
   number,
   DatasetItem
 >({
@@ -171,7 +171,7 @@ const latencyBase = defineBaseMetric<number>({
   name: 'latencyScore',
   valueType: 'number',
 });
-const LATENCY_SCORE: SingleTurnMetricDef<number, DatasetItem> = createSingleTurnCode<number, DatasetItem>(
+const LATENCY_SCORE: SingleTurnMetricDef<number, DatasetItem> = defineSingleTurnCode<number, DatasetItem>(
   {
     base: withNormalization({ metric: latencyBase, normalizer: {
       type: 'min-max',

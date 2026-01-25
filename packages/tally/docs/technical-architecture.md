@@ -72,7 +72,7 @@ This section provides a concise, implementation-accurate outline aligned with th
 
 ### Extensibility Patterns
 - Preferred: functional factories from `core/factory.ts`
-  - `defineBaseMetric`, `withNormalization`, `createSingleTurnCode/LLM`, `createMultiTurnCode/LLM`.
+  - `defineBaseMetric`, `withNormalization`, `defineSingleTurnCode/LLM`, `defineMultiTurnCode/LLM`.
   - `defineScorer`, `defineInput` (or OOB `createWeightedAverageScorer`).
   - Custom normalizers via `createCustomNormalizer`.
 - Out-of-the-box components:
@@ -412,7 +412,7 @@ Preferred (factory-first; builders are deprecated but shown below for compatibil
 import {
   defineBaseMetric,
   withNormalization,
-  createSingleTurnCode,
+  defineSingleTurnCode,
   defineScorer,
   defineInput,
   createIdentityNormalizer,
@@ -429,7 +429,7 @@ const quality = withNormalization(
 );
 
 // Single-turn code metric
-const qualityMetric = createSingleTurnCode<number, DatasetItem>({
+const qualityMetric = defineSingleTurnCode<number, DatasetItem>({
   base: quality,
   runOnSelected: (item) => /* compute a number 0..1 */ 0.8,
   compute: ({ data }) => /* optional reusable compute path */ 0.8,

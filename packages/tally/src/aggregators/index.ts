@@ -23,13 +23,10 @@ export {
   defineNumericAggregator,
   defineBooleanAggregator,
   defineCategoricalAggregator,
-} from './define';
-
-export type {
-  DefineNumericAggregatorArgs,
-  DefineBooleanAggregatorArgs,
-  DefineCategoricalAggregatorArgs,
-} from './define';
+  type DefineNumericAggregatorArgs,
+  type DefineBooleanAggregatorArgs,
+  type DefineCategoricalAggregatorArgs,
+} from '../core/primitives/aggregator';
 
 // ============================================================================
 // Prebuilt Aggregators (create*)

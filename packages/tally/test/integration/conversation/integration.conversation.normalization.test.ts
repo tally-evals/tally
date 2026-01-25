@@ -7,8 +7,8 @@
 
 import { describe, expect, it } from 'bun:test';
 import {
-  createMultiTurnCode,
-  createSingleTurnCode,
+  defineMultiTurnCode,
+  defineSingleTurnCode,
   createTally,
   defineBaseMetric,
   type ConversationStep,
@@ -35,7 +35,7 @@ describe('Integration | Conversation | Normalization', () => {
     it('applies MinMax normalization to response length scores', async () => {
       const base = defineBaseMetric({ name: 'responseLength', valueType: 'number' });
 
-      const metric = createSingleTurnCode({
+      const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => step,
         compute: ({ data }) => {
@@ -79,7 +79,7 @@ describe('Integration | Conversation | Normalization', () => {
     it('applies Threshold normalization for content presence', async () => {
       const base = defineBaseMetric({ name: 'hasContent', valueType: 'number' });
 
-      const metric = createSingleTurnCode({
+      const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => step,
         compute: ({ data }) => {
@@ -119,7 +119,7 @@ describe('Integration | Conversation | Normalization', () => {
     it('applies Linear normalization to word count scores', async () => {
       const base = defineBaseMetric({ name: 'wordCount', valueType: 'number' });
 
-      const metric = createSingleTurnCode({
+      const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => step,
         compute: ({ data }) => {
@@ -166,7 +166,7 @@ describe('Integration | Conversation | Normalization', () => {
     it('applies MinMax normalization to conversation length score', async () => {
       const base = defineBaseMetric({ name: 'conversationLength', valueType: 'number' });
 
-      const metric = createMultiTurnCode({
+      const metric = defineMultiTurnCode({
         base,
         runOnContainer: async (conversation) => conversation,
         compute: async ({ data }) => {
@@ -203,7 +203,7 @@ describe('Integration | Conversation | Normalization', () => {
     it('applies Identity normalization (passthrough) to raw scores', async () => {
       const base = defineBaseMetric({ name: 'rawStepCount', valueType: 'number' });
 
-      const metric = createMultiTurnCode({
+      const metric = defineMultiTurnCode({
         base,
         runOnContainer: async (conversation) => conversation,
         compute: async ({ data }) => {
@@ -244,7 +244,7 @@ describe('Integration | Conversation | Normalization', () => {
     it('normalizes multiple metrics and computes aggregated summaries', async () => {
       // Metric 1: Response length with MinMax
       const lengthBase = defineBaseMetric({ name: 'responseLength', valueType: 'number' });
-      const lengthMetric = createSingleTurnCode({
+      const lengthMetric = defineSingleTurnCode({
         base: lengthBase,
         preProcessor: (step) => step,
         compute: ({ data }) => {
@@ -258,7 +258,7 @@ describe('Integration | Conversation | Normalization', () => {
 
       // Metric 2: Conversation progress with Linear
       const progressBase = defineBaseMetric({ name: 'progress', valueType: 'number' });
-      const progressMetric = createMultiTurnCode({
+      const progressMetric = defineMultiTurnCode({
         base: progressBase,
         runOnContainer: async (conversation) => conversation,
         compute: async ({ data }) => {

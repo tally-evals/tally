@@ -4,7 +4,7 @@
  * Convenience functions for creating verdict policies
  */
 
-import type { MetricScalar, Score } from '@tally/core/types';
+import type { MetricScalar, Score } from '../core/types';
 import type { VerdictPolicyFor } from '../core/evals/types';
 
 /**

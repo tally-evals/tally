@@ -1,8 +1,8 @@
 /**
- * Custom Aggregator Definition Factories
+ * Aggregator Definition Primitives
  *
- * Use these functions to define custom aggregators for your metrics.
- * Each function ensures the correct `kind` is set for type safety.
+ * Low-level building blocks for defining aggregators.
+ * Use these to create custom aggregator implementations.
  *
  * Uses `const` type parameters to preserve literal aggregator names
  * for type-safe report access.
@@ -27,7 +27,7 @@ import type {
   BooleanAggregatorDef,
   CategoricalAggregatorDef,
   NumericAggregatorDef,
-} from '@tally/core/types';
+} from '../types';
 
 // ============================================================================
 // Numeric Aggregator Definition

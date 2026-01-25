@@ -58,10 +58,10 @@ Determines *what* the metric is measuring:
 Example (single-turn vs multi-turn):
 
 ```ts
-import { createSingleTurnCode, createMultiTurnLLM, defineBaseMetric } from '@tally-evals/tally';
+import { defineSingleTurnCode, defineMultiTurnLLM, defineBaseMetric } from '@tally-evals/tally';
 
 // Single-turn: "Does this step include a tool call?"
-const hasToolCall = createSingleTurnCode({
+const hasToolCall = defineSingleTurnCode({
   base: defineBaseMetric({
     name: 'hasToolCall',
     valueType: 'boolean',
@@ -73,7 +73,7 @@ const hasToolCall = createSingleTurnCode({
 });
 
 // Multi-turn: "Did the agent stay on topic across the whole conversation?"
-const stayedOnTopic = createMultiTurnLLM({
+const stayedOnTopic = defineMultiTurnLLM({
   base: defineBaseMetric({
     name: 'stayedOnTopic',
     valueType: 'number',
@@ -105,11 +105,11 @@ The engine that powers the measurement:
 Example (code-based vs LLM-based options):
 
 ```ts
-import { createSingleTurnCode, createSingleTurnLLM, defineBaseMetric } from '@tally-evals/tally';
+import { defineSingleTurnCode, defineSingleTurnLLM, defineBaseMetric } from '@tally-evals/tally';
 import { createMinMaxNormalizer } from '@tally-evals/tally/normalization';
 
 // Code-based: optional preProcessor, cacheable, metadata
-const keywordPresent = createSingleTurnCode({
+const keywordPresent = defineSingleTurnCode({
   base: defineBaseMetric({
     name: 'keywordPresent',
     valueType: 'boolean',
@@ -125,7 +125,7 @@ const keywordPresent = createSingleTurnCode({
 });
 
 // LLM-based: provider, prompt, rubric, normalization
-const helpfulness = createSingleTurnLLM({
+const helpfulness = defineSingleTurnLLM({
   base: defineBaseMetric({
     name: 'helpfulness',
     valueType: 'number',
@@ -192,7 +192,7 @@ The **measure stays constant**; the **verdict policy changes**. This is how you 
 
 ## API Reference
 
-- [Metric Factories](/docs/tally/reference/metric) — `defineBaseMetric`, `createSingleTurnCode`, `createSingleTurnLLM`, `withNormalization`
+- [Metric Factories](/docs/tally/reference/metric) — `defineBaseMetric`, `defineSingleTurnCode`, `defineSingleTurnLLM`, `withNormalization`
 - [Built-in Metrics](/docs/tally/reference/builtin-metrics) — Pre-built metrics for common use cases
 - [Normalizers](/docs/tally/reference/normalizers) — `createMinMaxNormalizer`, `createBooleanNormalizer`, `createOrdinalNormalizer`
 - [Aggregators](/docs/tally/reference/aggregators) — `createMeanAggregator`, `createTrueRateAggregator`, etc.

@@ -35,7 +35,6 @@
   - **Single-Turn Eval**: Evaluates individual steps with a threshold or custom policy — *per-turn quality gates*
   - **Multi-Turn Eval**: Evaluates entire conversations with a threshold or custom policy — *conversation-level quality gates*
   - **Scorer Eval**: Combines multiple metrics via a scorer, then applies a verdict — *composite quality gates*
-- **Evaluator**: A set of evals + a run policy (which steps/items to evaluate) — *groups related evaluations together*
 - **Report**: The output, including per-target details and eval summaries with aggregations — *actionable results for CI/CD*
 
 ## Getting Started
@@ -53,6 +52,9 @@ This monorepo contains:
 
 - **[`@tally-evals/tally`](./packages/tally)** - Core evaluation framework
 - **[`@tally-evals/trajectories`](./packages/trajectories)** - Generate simulated conversations
+- **[`@tally-evals/core`](./packages/core)** - Shared types, configuration, and storage
+- **[`@tally-evals/cli`](./packages/cli)** - Interactive CLI for viewing results
+- **[`@tally-evals/viewer`](./packages/viewer)** - Web-based results viewer
 - **[Examples](./apps/examples)** - Example agents (AI SDK, Mastra, Agent Kit)
 
 ## Quick Start
@@ -120,10 +122,8 @@ Evaluate your agents using datasets and conversations with evals (recommended ap
 ```typescript
 import {
   createTally,
-  createEvaluator,
   defineInput,
   defineBaseMetric,
-  runAllTargets,
   defineSingleTurnEval,
   defineMultiTurnEval,
   defineScorerEval,
@@ -166,7 +166,7 @@ const model = google('models/gemini-2.5-flash-lite')
 const relevanceMetric = createAnswerRelevanceMetric({ provider: model })
 const completenessMetric = createCompletenessMetric({ provider: model })
 
-// Create multi-turn metric
+// Create multi-turn metrics
 const roleAdherenceMetric = createRoleAdherenceMetric({
   expectedRole: 'weather information assistant',
   provider: model,
@@ -221,9 +221,9 @@ const overallQualityEval = defineScorerEval({
   verdict: thresholdVerdict(0.7), // Pass if score >= 0.7
 })
 
-// Create evaluator with evals
-const evaluator = createEvaluator({
-  name: 'Agent Quality Evaluation',
+// Create Tally instance with evals and run evaluation
+const tally = createTally({
+  data: conversations,
   evals: [
     relevanceEval,
     completenessEval,
@@ -231,40 +231,34 @@ const evaluator = createEvaluator({
     goalCompletionEval,
     overallQualityEval,
   ],
-  context: runAllTargets(), // Evaluate all conversation steps
-})
-
-// Create Tally instance and run evaluation
-const tally = createTally({
-  data: conversations,
-  evaluators: [evaluator],
 })
 
 const report = await tally.run()
 
 // Format and display results as tables
-formatReportAsTables(report, conversations)
+formatReportAsTables(report.toArtifact(), conversations[0])
 
 // Access results programmatically
-console.log('Eval summaries:', report.evalSummaries)
-console.log('Per-target results:', report.perTargetResults)
+const summaries = report.result.summaries?.byEval
 
 // Check eval summaries
-report.evalSummaries.forEach((summary, evalName) => {
-  console.log(`${evalName}:`)
-  console.log(`  Mean score: ${summary.aggregations.score.mean}`)
-  if (summary.verdictSummary) {
-    console.log(`  Pass rate: ${summary.verdictSummary.passRate}`)
+if (summaries) {
+  for (const [evalName, summary] of Object.entries(summaries)) {
+    console.log(`${evalName}:`)
+    const mean = (summary.aggregations?.score as { mean?: number })?.mean
+    if (mean !== undefined) {
+      console.log(`  Mean score: ${mean}`)
+    }
+    if (summary.verdictSummary) {
+      console.log(`  Pass rate: ${summary.verdictSummary.passRate}`)
+    }
   }
-})
+}
 
-// Check verdicts for each target
-report.perTargetResults.forEach((result) => {
-  console.log(`Target ${result.targetId}:`)
-  result.verdicts.forEach((verdict, evalName) => {
-    console.log(`  ${evalName}: ${verdict.verdict} (score: ${verdict.score})`)
-  })
-})
+// Use the type-safe view for test assertions
+const view = report.view()
+const step0 = view.step(0) // Get all eval results for step 0
+const convResults = view.conversation() // Get multi-turn/scorer results
 ```
 
 ## Evals API
@@ -314,12 +308,21 @@ import {
 
 ### Report Structure
 
-`tally.run()` returns a **`TallyRunReport`** (SDK-facing). It contains:
+`tally.run()` returns a **`TallyRunReport`** with type-safe access to results:
 
-- `result.summaries.byEval[evalName]` — per-eval summary rollups
-- `result.singleTurn[evalName].byStepIndex[stepIndex]` — single-turn results (step-indexed, with `null` holes)
-- `result.multiTurn[evalName]` — conversation-level (multi-turn) results
-- `result.scorers[evalName]` — scorer outputs (explicitly scalar vs series)
+```typescript
+// Direct access to results
+report.result.singleTurn['Answer Relevance']     // Step-indexed series
+report.result.multiTurn['Role Adherence']        // Conversation-level result
+report.result.scorers['Overall Quality']         // Scorer output
+report.result.summaries?.byEval                  // Aggregated summaries
+
+// Type-safe view for test assertions
+const view = report.view()
+view.step(0)        // All eval results for step 0
+view.conversation() // Multi-turn and scalar scorer results
+view.summary()      // Aggregated summaries by eval
+```
 
 For read-only tooling (CLI/viewer/dev server), persist a **`TallyRunArtifact`** via `report.toArtifact()`.
 
@@ -376,6 +379,9 @@ tally/
 ├── packages/
 │   ├── tally/             # Core evaluation framework
 │   ├── trajectories/      # Trajectory generation package
+│   ├── core/              # Shared types, config, storage
+│   ├── cli/               # Interactive CLI
+│   ├── viewer/            # Web-based viewer
 │   ├── biome-config/      # Shared Biome configuration
 │   └── typescript-config/ # Shared TypeScript configurations
 ├── package.json           # Root workspace configuration
