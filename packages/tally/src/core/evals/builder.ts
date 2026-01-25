@@ -24,7 +24,7 @@ import type {
   SingleTurnEval,
   VerdictPolicy,
 } from '@tally/core/types';
-import { defineBaseMetric, defineInput, defineScorer } from '../factory';
+import { defineBaseMetric, defineInput, defineScorer } from '../primitives';
 import {
   applyAutoNormalization,
   detectMetricValueType,
@@ -64,13 +64,13 @@ export interface EvalMetadataEntry {
   sourceMetrics: string[] | undefined;
 }
 
-export function buildFromEvals<TContainer extends MetricContainer>(
-  evals: readonly Eval<TContainer>[]
+export function buildFromEvals(
+  evals: readonly Eval[]
 ): {
-  internalEvaluators: InternalEvaluator<TContainer>[];
+  internalEvaluators: InternalEvaluator<MetricContainer>[];
   evalMetadata: Map<string, EvalMetadataEntry>;
 } {
-  const internalEvaluators: InternalEvaluator<TContainer>[] = [];
+  const internalEvaluators: InternalEvaluator<MetricContainer>[] = [];
   const evalMetadata = new Map<string, EvalMetadataEntry>();
 
   // Check for duplicate eval names
@@ -84,9 +84,9 @@ export function buildFromEvals<TContainer extends MetricContainer>(
 
   for (const evalDef of evals) {
     if (evalDef.kind === 'singleTurn') {
-      const singleTurnDef = evalDef as SingleTurnEval<SingleTurnContainer, MetricScalar>;
+      const singleTurnDef = evalDef as SingleTurnEval<string, SingleTurnContainer, MetricScalar>;
       const internalEvaluator = buildSingleTurnEval(singleTurnDef);
-      internalEvaluators.push(internalEvaluator as InternalEvaluator<TContainer>);
+      internalEvaluators.push(internalEvaluator as InternalEvaluator<MetricContainer>);
       const entry: EvalMetadataEntry = {
         evalKind: 'singleTurn',
         verdictPolicy: singleTurnDef.verdict as VerdictPolicy | undefined,
@@ -94,9 +94,9 @@ export function buildFromEvals<TContainer extends MetricContainer>(
       };
       evalMetadata.set(evalDef.name, entry);
     } else if (evalDef.kind === 'multiTurn') {
-      const multiTurnDef = evalDef as MultiTurnEval<MultiTurnContainer, MetricScalar>;
+      const multiTurnDef = evalDef as MultiTurnEval<string, MultiTurnContainer, MetricScalar>;
       const internalEvaluator = buildMultiTurnEval(multiTurnDef);
-      internalEvaluators.push(internalEvaluator as InternalEvaluator<TContainer>);
+      internalEvaluators.push(internalEvaluator as InternalEvaluator<MetricContainer>);
       const entry: EvalMetadataEntry = {
         evalKind: 'multiTurn',
         verdictPolicy: multiTurnDef.verdict as VerdictPolicy | undefined,
@@ -104,9 +104,9 @@ export function buildFromEvals<TContainer extends MetricContainer>(
       };
       evalMetadata.set(evalDef.name, entry);
     } else if (evalDef.kind === 'scorer') {
-      const scorerDef = evalDef as ScorerEval;
-      const internalEvaluator = buildScorerEval<TContainer>(scorerDef);
-      internalEvaluators.push(internalEvaluator);
+      const scorerDef = evalDef as ScorerEval<string>;
+      const internalEvaluator = buildScorerEval(scorerDef);
+      internalEvaluators.push(internalEvaluator as InternalEvaluator<MetricContainer>);
       const entry: EvalMetadataEntry = {
         evalKind: 'scorer',
         verdictPolicy: scorerDef.verdict as VerdictPolicy | undefined,
@@ -124,7 +124,7 @@ export function buildFromEvals<TContainer extends MetricContainer>(
  * Creates an identity scorer (single metric -> single output)
  */
 function buildSingleTurnEval(
-  definition: SingleTurnEval<SingleTurnContainer, MetricScalar>
+  definition: SingleTurnEval<string, SingleTurnContainer, MetricScalar>
 ): InternalEvaluator<SingleTurnContainer> {
   // Apply auto-normalization if needed
   // Cast to MetricDef for internal processing - the eval union guarantees valid metric
@@ -186,7 +186,7 @@ function buildSingleTurnEval(
  * Creates an identity scorer (single metric -> single output)
  */
 function buildMultiTurnEval(
-  definition: MultiTurnEval<MultiTurnContainer, MetricScalar>
+  definition: MultiTurnEval<string, MultiTurnContainer, MetricScalar>
 ): InternalEvaluator<MultiTurnContainer> {
   // Apply auto-normalization if needed
   let metric = definition.metric as MetricDef<MetricScalar, MetricContainer>;
@@ -246,18 +246,18 @@ function buildMultiTurnEval(
  * Build internal evaluator from scorer eval
  * Uses the scorer as-is
  */
-function buildScorerEval<TContainer extends MetricContainer>(
-  definition: ScorerEval
-): InternalEvaluator<TContainer> {
+function buildScorerEval(
+  definition: ScorerEval<string>
+): InternalEvaluator<MetricContainer> {
   const inputMetrics = (definition.scorer.inputs as readonly { metric: unknown }[]).map(
     (input) => input.metric,
   );
 
-  const result: InternalEvaluator<TContainer> = {
+  const result: InternalEvaluator<MetricContainer> = {
     name: `${definition.name}_evaluator`,
     description: definition.description,
     // Derive dependency metrics directly from scorer inputs
-    metrics: inputMetrics as unknown as MetricDefFor<TContainer>[],
+    metrics: inputMetrics as unknown as MetricDefFor<MetricContainer>[],
     scorer: definition.scorer,
     context: definition.context,
     metadata: definition.metadata,

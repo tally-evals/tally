@@ -19,6 +19,8 @@ import type { CreateWeightedAverageScorerOptions } from 'tally/scorers';
 
 ### `defineInput()`
 
+Creates a weighted input for a scorer. Each input references a metric and specifies its weight in the combined score.
+
 <PropertyTable
   content={[
     {
@@ -47,6 +49,8 @@ import type { CreateWeightedAverageScorerOptions } from 'tally/scorers';
 />
 
 ### `defineScorer()`
+
+Creates a custom scorer with full control over how input metrics are combined. Use this when you need custom combination logic beyond weighted averages.
 
 <PropertyTable
   content={[
@@ -96,6 +100,8 @@ import type { CreateWeightedAverageScorerOptions } from 'tally/scorers';
 />
 
 ### `createWeightedAverageScorer()`
+
+Creates a scorer that computes a weighted average of input metrics. This is the most common way to combine multiple quality signals into a single score.
 
 <PropertyTable
   content={[

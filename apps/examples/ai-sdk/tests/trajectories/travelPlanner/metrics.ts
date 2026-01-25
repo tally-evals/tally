@@ -1,6 +1,6 @@
 import {
   Conversation,
-  createMultiTurnLLM,
+  defineMultiTurnLLM,
   defineBaseMetric,
   MultiTurnMetricDef,
 } from '@tally-evals/tally';
@@ -33,7 +33,7 @@ export const createKnowledgeRetentionMetric = (
       'Measures how well the assistant retains and uses information from earlier parts of the conversation',
   });
 
-  const metric = createMultiTurnLLM<number>({
+  const metric = defineMultiTurnLLM<number>({
     base,
     provider,
     runOnContainer: async (conversation) => {

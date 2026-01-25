@@ -8,8 +8,8 @@
  * Supports both DatasetItem and ConversationStep containers.
  */
 
-import { createSingleTurnCode, defineBaseMetric } from '@tally/core/factory';
-import { createIdentityNormalizer } from '@tally/core/normalization/factory';
+import { defineSingleTurnCode, defineBaseMetric } from '../../core/primitives';
+import { createIdentityNormalizer } from '../../normalizers/factories';
 import type {
   ConversationStep,
   DatasetItem,
@@ -81,7 +81,7 @@ export function createToolCallAccuracyMetric<
       'Measures accuracy of tool calls in assistant responses by comparing actual calls against expected calls',
   });
 
-  const metric = createSingleTurnCode<number, TContainer>({
+  const metric = defineSingleTurnCode<number, TContainer>({
     ...(aggregators !== undefined && { aggregators }),
     base,
     preProcessor: async (selected) => {
@@ -226,6 +226,6 @@ export function createToolCallAccuracyMetric<
     },
   });
 
-  // Type assertion: createSingleTurnCode always returns a single-turn metric
+  // Type assertion: defineSingleTurnCode always returns a single-turn metric
   return metric as SingleTurnMetricDef<number, TContainer>;
 }

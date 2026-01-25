@@ -22,7 +22,7 @@ Tally isn't just a collection of scorers; it's a platform for building a rigorou
 
 - **The Custom Metric Engine**: Stop wrestling with rigid built-ins. Use [custom metrics](/docs/tally/metrics/custom) to link evaluation directly to your business logic or perform nuanced semantic checks.
 - **Signal Orchestration**: High-confidence evaluation requires more than one signal. Use [Scorers](/docs/tally/scorers) to combine multiple metrics (e.g., Relevance + Tool Accuracy) into a single composite score that reflects true agent quality.
-- **Measure vs. Policy**: Decouple *what* you measure from *how* you judge it. A metric (e.g., Answer Relevance) remains constant across different scenarios—only the **Verdict Policy** changes to reflect the rigor needed for a "Golden Dataset" vs. a "Smoke Test."
+- **Measure vs. Policy**: Decouple *what* you measure from *how* you judge it. A metric (e.g., Answer Relevance) remains constant across different scenarios—only the **Verdict Policy** changes to reflect the rigor needed for each evaluation context (release gates, regression tests, dev loops, edge-case suites, etc.).
 - **Multi-Turn E2E Testing**: Complete the E2E story for chatbots. Tally evaluates the entire [Trajectory](/docs/trajectories), catching failures that only emerge over multiple turns, like persona drift or tool-calling loops.
 - **The Developer Feedback Loop**: Don't settle for opaque CI scores. Use the [TUI and Dev Server](/docs/tally/reports) to step through conversations and see exactly why an agent was flagged.
 

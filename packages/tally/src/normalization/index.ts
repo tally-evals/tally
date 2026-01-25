@@ -12,7 +12,7 @@ export {
   createOrdinalMapNormalizer,
   createIdentityNormalizer,
   createCustomNormalizer,
-} from '../core/normalization/factory';
+} from '../normalizers/factories';
 
 export { applyNormalization } from '../core/normalization/apply';
 

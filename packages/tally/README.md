@@ -22,8 +22,6 @@ Minimal end-to-end example using evals (recommended approach):
 ```ts
 import {
   createTally,
-  createEvaluator,
-  runAllTargets,
   defineBaseMetric,
   defineInput,
   defineSingleTurnEval,
@@ -101,25 +99,22 @@ const overallQualityEval = defineScorerEval({
   verdict: thresholdVerdict(0.7), // Pass if score >= 0.7
 })
 
-// Create evaluator with evals
-const evaluator = createEvaluator({
-  name: 'Agent Quality',
+// Run with evals passed directly to createTally
+const tally = createTally({
+  data: conversations,
   evals: [relevanceEval, completenessEval, roleAdherenceEval, overallQualityEval],
-  context: runAllTargets(), // evaluate all conversation steps
 })
-
-// Run
-const tally = createTally({ data: conversations, evaluators: [evaluator] })
 const report = await tally.run()
 
 // Access eval summaries (single-turn + multi-turn + scorers)
 const summary = report.result.summaries?.byEval?.['Answer Relevance']
 console.log('summary', summary)
 
-// Test-friendly access
+// Type-safe view for test assertions
 const view = report.view()
-console.log('step 0 verdict', view.stepVerdict(0, 'Answer Relevance'))
-console.log('conversation verdict', view.conversationVerdict('Overall Quality'))
+const stepResults = view.step(0) // Get all eval results for step 0
+const conversationResults = view.conversation() // Get multi-turn/scorer results
+const summaryResults = view.summary() // Get aggregate summaries
 
 // Persist for CLI/viewer
 const artifact = report.toArtifact()
@@ -198,22 +193,23 @@ const catAggregators = getDefaultAggregators('string') // + distribution
 
 ### Report Structure
 
-The `EvaluationReport` provides:
+The `TallyRunReport` provides type-safe access to results:
 
 ```ts
-// Per-eval summary
-const summary = report.evalSummaries.get('Answer Relevance')
-summary.aggregations.score.mean  // Mean of normalized scores
-summary.aggregations.score.p90   // 90th percentile
-summary.aggregations.raw?.mean   // Mean of raw values (if applicable)
-summary.verdictSummary?.passRate // Pass rate (separate from aggregations)
+// Direct result access
+report.result.singleTurn['Answer Relevance']     // Step-indexed results
+report.result.multiTurn['Role Adherence']        // Conversation-level results  
+report.result.scorers['Overall Quality']         // Scorer outputs
+report.result.summaries?.byEval?.['Answer Relevance']  // Aggregated summaries
 
-// Per-target results
-report.perTargetResults.forEach((result) => {
-  result.rawMetrics     // Metric values for this target
-  result.derivedMetrics // Scorer outputs
-  result.verdicts       // Map<evalName, {verdict, score}>
-})
+// Type-safe view for test assertions
+const view = report.view()
+view.step(0)        // { 'Answer Relevance': StepEvalResult, ... }
+view.conversation() // { 'Role Adherence': ConversationEvalResult, ... }
+view.summary()      // { 'Answer Relevance': EvalSummary, ... }
+
+// Artifact for persistence (CLI/viewer)
+const artifact = report.toArtifact()
 ```
 
 ## Generate data with trajectories (optional)
@@ -243,19 +239,29 @@ Now pass `conversation` into Tally as shown above.
 
 ## API at a glance
 
-### Metrics
-- **Single-Turn**: `createAnswerRelevanceMetric`, `createCompletenessMetric`, `createToxicityMetric`, `createAnswerSimilarityMetric`, `createToolCallAccuracyMetric`
-- **Multi-Turn**: `createRoleAdherenceMetric`, `createGoalCompletionMetric`, `createTopicAdherenceMetric`
-- **Custom**: `defineBaseMetric`, `defineSingleTurnMetric`, `defineMultiTurnMetric`
-
-### Scorers
-- `createWeightedAverageScorer`, `defineInput`
+### Core
+- `createTally` - Main entry point, accepts `data` and `evals`
 
 ### Evals
 - `defineSingleTurnEval`, `defineMultiTurnEval`, `defineScorerEval`
 
 ### Verdicts
 - `thresholdVerdict`, `booleanVerdict`, `rangeVerdict`, `ordinalVerdict`, `customVerdict`
+
+### Metrics (Prebuilt)
+- **Single-Turn**: `createAnswerRelevanceMetric`, `createCompletenessMetric`, `createToxicityMetric`, `createAnswerSimilarityMetric`, `createToolCallAccuracyMetric`
+- **Multi-Turn**: `createRoleAdherenceMetric`, `createGoalCompletionMetric`, `createTopicAdherenceMetric`
+
+### Metrics (Custom)
+- `defineBaseMetric` - Define metric shape (name, valueType)
+- `defineSingleTurnCode`, `defineSingleTurnLLM` - Single-turn metric implementations
+- `defineMultiTurnCode`, `defineMultiTurnLLM` - Multi-turn metric implementations
+- `withNormalization`, `withMetadata` - Metric modifiers
+
+### Scorers
+- `createWeightedAverageScorer` - Combine metrics with weights
+- `defineInput` - Define scorer input with weight
+- `defineScorer` - Custom scorer implementation
 
 ### Aggregators
 - **Define Custom**: `defineNumericAggregator`, `defineBooleanAggregator`, `defineCategoricalAggregator`
@@ -264,14 +270,15 @@ Now pass `conversation` into Tally as shown above.
 - **Categorical**: `createDistributionAggregator`, `createModeAggregator`
 - **Defaults**: `getDefaultAggregators(valueType)`, `DEFAULT_NUMERIC_AGGREGATORS`
 
-### Evaluator
-- `createEvaluator`, `runAllTargets`
+### Normalizers
+- `createMinMaxNormalizer`, `createZScoreNormalizer`, `createThresholdNormalizer`
+- `createLinearNormalizer`, `createOrdinalMapNormalizer`, `createIdentityNormalizer`
 
-### Core
-- `createTally`
+### Views
+- `createTargetRunView` - Type-safe view over run artifact
 
-### Report Formatting
-- `formatReportAsTables`
+### Utilities
+- `formatReportAsTables` - Format report for console output
 
 ## Development
 

@@ -8,7 +8,6 @@ import { demandLetterCurveTrajectory } from './definitions';
 import { runCase, saveTallyReportToStore } from '../../utils/harness';
 import {
 	createTally,
-	createEvaluator,
 	runAllTargets,
 	defineBaseMetric,
 	defineInput,
@@ -74,15 +73,10 @@ describe('Demand Letter Agent - Curve Ball', () => {
 			verdict: thresholdVerdict(0.5),
 		});
 
-		const evaluator = createEvaluator({
-			name: 'Demand Letter Agent Quality',
-			evals: [answerRelevanceEval, completenessEval, overallQualityEval],
-			context: runAllTargets(),
-		});
-
 		const tally = createTally({
 			data: [conversation],
-			evaluators: [evaluator],
+			evals: [answerRelevanceEval, completenessEval, overallQualityEval],
+			context: runAllTargets(),
 		});
 
 		const report = await tally.run();

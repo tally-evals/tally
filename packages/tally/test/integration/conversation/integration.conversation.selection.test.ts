@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import {
   type ConversationStep,
-  createSingleTurnCode,
+  defineSingleTurnCode,
   createWeightedAverageScorer,
   defineBaseMetric,
   defineInput,
@@ -13,7 +13,7 @@ import { conversationExampleB } from '../../_fixtures/conversation.examples';
 describe('Integration | Conversation | Selection', () => {
   it('validates selection helpers for single-turn metrics on conversations (placeholder)', async () => {
     const base = defineBaseMetric({ name: 'lengthScore', valueType: 'number' });
-    const single = createSingleTurnCode({
+    const single = defineSingleTurnCode({
       base,
       preProcessor: async (step) => {
         // Return normalized payload for compute
@@ -21,10 +21,10 @@ describe('Integration | Conversation | Selection', () => {
       },
       compute: async ({ data }) => {
         const step = data as ConversationStep;
-        const content =
-          step.output?.role === 'assistant' && typeof step.output.content === 'string'
-            ? step.output.content
-            : '';
+        const assistant = step.output?.find(
+          (o) => o.role === 'assistant' && typeof o.content === 'string',
+        );
+        const content = (assistant?.content as string) ?? '';
         const len = content.length;
         return Math.min(1, len / 50);
       },

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import {
-  createMultiTurnCode,
+  defineMultiTurnCode,
   createWeightedAverageScorer,
   defineBaseMetric,
   defineInput,
@@ -10,7 +10,7 @@ import { conversationExampleA } from '../../_fixtures/conversation.examples';
 describe('Integration | Conversation | Basic', () => {
   it('creates a simple multi-turn code metric and scorer (placeholder)', async () => {
     const base = defineBaseMetric({ name: 'friendliness', valueType: 'number' });
-    const multi = createMultiTurnCode({
+    const multi = defineMultiTurnCode({
       base,
       runOnContainer: async (conversation) => {
         // Preprocess: return conversation for compute

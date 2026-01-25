@@ -11,8 +11,6 @@ import type { BooleanAggregatorDef } from '@tally/core/types';
  * Options for true rate aggregator
  */
 export interface TrueRateAggregatorOptions {
-  /** Custom name for the aggregator. Default: "TrueRate" */
-  name?: string;
   /** Description of the aggregator */
   description?: string;
   /** Additional metadata */
@@ -25,22 +23,25 @@ export interface TrueRateAggregatorOptions {
  * Calculates the proportion of true values in a boolean array.
  * This aggregator is only compatible with boolean metrics.
  *
+ * Returns a BooleanAggregatorDef with literal name type 'TrueRate'.
+ *
  * @param options - Optional configuration
- * @returns BooleanAggregatorDef that calculates the proportion of true values
+ * @returns BooleanAggregatorDef<'TrueRate'> that calculates the proportion of true values
  *
  * @example
  * ```ts
  * const trueRateAgg = createTrueRateAggregator({
  *   description: 'Rate of successful validations'
  * });
+ * // typeof trueRateAgg.name is 'TrueRate'
  * ```
  */
 export function createTrueRateAggregator(
   options?: TrueRateAggregatorOptions
-): BooleanAggregatorDef {
+): BooleanAggregatorDef<'TrueRate'> {
   return {
     kind: 'boolean',
-    name: options?.name ?? 'TrueRate',
+    name: 'TrueRate',
     description: options?.description ?? 'Proportion of true values',
     aggregate: (values: readonly boolean[]) => {
       if (values.length === 0) {
@@ -59,22 +60,25 @@ export function createTrueRateAggregator(
  * Calculates the proportion of false values in a boolean array.
  * This aggregator is only compatible with boolean metrics.
  *
+ * Returns a BooleanAggregatorDef with literal name type 'FalseRate'.
+ *
  * @param options - Optional configuration
- * @returns BooleanAggregatorDef that calculates the proportion of false values
+ * @returns BooleanAggregatorDef<'FalseRate'> that calculates the proportion of false values
  *
  * @example
  * ```ts
  * const falseRateAgg = createFalseRateAggregator({
  *   description: 'Rate of failed validations'
  * });
+ * // typeof falseRateAgg.name is 'FalseRate'
  * ```
  */
 export function createFalseRateAggregator(
   options?: TrueRateAggregatorOptions
-): BooleanAggregatorDef {
+): BooleanAggregatorDef<'FalseRate'> {
   return {
     kind: 'boolean',
-    name: options?.name ?? 'FalseRate',
+    name: 'FalseRate',
     description: options?.description ?? 'Proportion of false values',
     aggregate: (values: readonly boolean[]) => {
       if (values.length === 0) {

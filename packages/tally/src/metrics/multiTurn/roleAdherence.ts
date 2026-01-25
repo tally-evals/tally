@@ -8,8 +8,8 @@
  * Works with Conversation containers only.
  */
 
-import { createMultiTurnLLM, defineBaseMetric } from '@tally/core/factory';
-import { createMinMaxNormalizer } from '@tally/core/normalization/factory';
+import { defineMultiTurnLLM, defineBaseMetric } from '../../core/primitives';
+import { createMinMaxNormalizer } from '../../normalizers/factories';
 import type { Conversation, MultiTurnContainer, MultiTurnMetricDef } from '@tally/core/types';
 import type { LanguageModel } from 'ai';
 import { extractTextFromMessage, extractTextFromMessages } from '../common/utils';
@@ -71,7 +71,7 @@ export function createRoleAdherenceMetric(
     },
   });
 
-  const metric = createMultiTurnLLM<number>({
+  const metric = defineMultiTurnLLM<number>({
     base,
     provider,
     runOnContainer: async (conversation) => {
@@ -154,6 +154,6 @@ Based on your analysis and the rubric, provide your score as a number between 0 
     },
   });
 
-  // Type assertion: createMultiTurnLLM always returns a multi-turn metric
+  // Type assertion: defineMultiTurnLLM always returns a multi-turn metric
   return metric as MultiTurnMetricDef<number, Conversation>;
 }

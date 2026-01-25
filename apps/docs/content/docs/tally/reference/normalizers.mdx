@@ -1,13 +1,13 @@
 ---
 title: Normalizers
-description: Convert raw metric values into normalized scores.
+description: Convert raw metric values into normalized 0–1 scores.
 ---
 
 import { PropertyTable } from '@/components/PropertyTable';
 
 # Normalizers
 
-Normalizers convert raw metric values into normalized scores.
+Normalizers convert raw metric values into normalized scores in the 0–1 range. This enables consistent comparison and combination of metrics with different scales.
 
 ## Import
 
@@ -20,59 +20,48 @@ import {
   createOrdinalMapNormalizer,
   createIdentityNormalizer,
   createCustomNormalizer,
-  applyNormalization,
-  resolveCalibration,
-  computeDistributionStats,
-  computeRange,
-  createCalibrationCache,
-} from 'tally/normalization';
+} from '@tally-evals/tally/normalization';
 ```
 
-### Example
+---
 
-```ts
-import { defineBaseMetric, createSingleTurnLLM } from 'tally';
-import { createMinMaxNormalizer } from 'tally/normalization';
-import { google } from '@ai-sdk/google';
-
-const base = defineBaseMetric<number>({
-  name: 'answerRelevance',
-  valueType: 'number',
-});
-
-const answerRelevance = createSingleTurnLLM({
-  base,
-  provider: google('models/gemini-2.5-flash-lite'),
-  prompt: { instruction: 'Score relevance 0-5.', variables: [] as const },
-  normalization: {
-    normalizer: createMinMaxNormalizer({ min: 0, max: 5, clip: true }),
-  },
-});
-```
+## Normalizer Factories
 
 ### `createMinMaxNormalizer()`
 
+Normalizes values using min-max scaling. Maps a value within a known range to a 0–1 score. Most commonly used for LLM scores (e.g., 1-5 → 0-1).
+
 <PropertyTable
   content={[
-    { name: 'min', type: 'number', description: 'Minimum value in the range.' },
-    { name: 'max', type: 'number', description: 'Maximum value in the range.' },
-    { name: 'clip', type: 'boolean', description: 'Whether to clip output to [0,1].', isOptional: true },
+    { name: 'min', type: 'number', description: 'Minimum value in the expected range.' },
+    { name: 'max', type: 'number', description: 'Maximum value in the expected range.' },
+    { name: 'clip', type: 'boolean', description: 'If true, clamps output to [0, 1].', isOptional: true },
     {
       name: 'direction',
       type: "'higher' | 'lower'",
-      description: 'Preferred direction for scoring.',
+      description: "'higher' = higher values are better (default). 'lower' = lower values are better.",
       isOptional: true,
     },
   ]}
 />
 
+**Example:**
+```ts
+// LLM scores 0-5 → normalized 0-1
+const normalizer = createMinMaxNormalizer({ min: 0, max: 5, clip: true });
+```
+
+---
+
 ### `createZScoreNormalizer()`
+
+Normalizes values using z-score standardization. Centers values around the mean and scales by standard deviation. Best for distributions where you want to measure deviation from "typical" values.
 
 <PropertyTable
   content={[
     { name: 'mean', type: 'number', description: 'Mean value for z-score calculation.' },
     { name: 'stdDev', type: 'number', description: 'Standard deviation for z-score calculation.' },
-    { name: 'clip', type: 'boolean', description: 'Whether to clip output to [0,1].', isOptional: true },
+    { name: 'clip', type: 'boolean', description: 'If true, clamps output to [0, 1].', isOptional: true },
     {
       name: 'direction',
       type: "'higher' | 'lower'",
@@ -82,17 +71,31 @@ const answerRelevance = createSingleTurnLLM({
     {
       name: 'to',
       type: "'0-1' | '0-100'",
-      description: 'Target scale for z-score normalization.',
+      description: 'Target scale for output.',
       isOptional: true,
     },
   ]}
 />
 
+**Example:**
+```ts
+// Normalize latency relative to typical values
+const normalizer = createZScoreNormalizer({
+  mean: 150,
+  stdDev: 50,
+  direction: 'lower', // Lower latency is better
+});
+```
+
+---
+
 ### `createThresholdNormalizer()`
+
+Converts numeric values to binary scores based on a threshold. Returns one score for values at or above the threshold, another for values below.
 
 <PropertyTable
   content={[
-    { name: 'threshold', type: 'number', description: 'Threshold value.' },
+    { name: 'threshold', type: 'number', description: 'Threshold value for comparison.' },
     {
       name: 'above',
       type: 'number',
@@ -110,7 +113,17 @@ const answerRelevance = createSingleTurnLLM({
   ]}
 />
 
+**Example:**
+```ts
+// Binary pass/fail at 0.7 threshold
+const normalizer = createThresholdNormalizer({ threshold: 0.7 });
+```
+
+---
+
 ### `createLinearNormalizer()`
+
+Applies a linear transformation (slope + intercept) to values. Useful for custom scaling when min-max isn't appropriate.
 
 <PropertyTable
   content={[
@@ -119,7 +132,7 @@ const answerRelevance = createSingleTurnLLM({
     {
       name: 'clip',
       type: '[number, number]',
-      description: 'Optional clamp range.',
+      description: 'Optional clamp range [min, max].',
       isOptional: true,
     },
     {
@@ -131,111 +144,136 @@ const answerRelevance = createSingleTurnLLM({
   ]}
 />
 
+**Example:**
+```ts
+// Custom linear scaling
+const normalizer = createLinearNormalizer({
+  slope: 0.2,
+  intercept: 0,
+  clip: [0, 1],
+});
+```
+
+---
+
 ### `createOrdinalMapNormalizer()`
+
+Maps ordinal (categorical) values to numeric scores. Use this for string/enum metrics like "Poor", "Fair", "Good", "Excellent".
 
 <PropertyTable
   content={[
     {
       name: 'map',
-      type: 'Record<string | number, number>',
-      description: 'Mapping of ordinal values to normalized scores.',
+      type: 'Record<string, number>',
+      description: 'Mapping from ordinal values to scores in [0, 1].',
     },
   ]}
 />
 
+**Example:**
+```ts
+// Map quality grades to scores
+const normalizer = createOrdinalMapNormalizer({
+  map: {
+    'Poor': 0,
+    'Fair': 0.33,
+    'Good': 0.67,
+    'Excellent': 1,
+  },
+});
+```
+
+---
+
 ### `createIdentityNormalizer()`
 
-No options.
+Returns the raw value unchanged. Use this when your metric already produces values in the 0–1 range. For booleans, converts `true` → 1 and `false` → 0.
+
+No options required.
+
+**Example:**
+```ts
+const normalizer = createIdentityNormalizer();
+```
+
+---
 
 ### `createCustomNormalizer()`
+
+Creates a normalizer with custom logic. Use this when built-in normalizers don't fit your use case.
 
 <PropertyTable
   content={[
     {
       name: 'normalize',
-      type: '(value: T, args: { context: NormalizationContextFor<T>; metric: MetricInfo }) => Score',
-      description: 'Custom normalization function (must return a Score in [0,1]).',
+      type: '(value: T, args: { context: C; metric: MetricDef }) => Score',
+      description: 'Custom function that returns a Score in [0, 1].',
     },
   ]}
 />
 
-## Low-level utilities
-
-These are intended for **manual normalization or custom pipelines**. Most users won’t need them.
-
-### `applyNormalization()`
-
-<PropertyTable
-  content={[
-    { name: 'value', type: 'T', description: 'Raw metric value to normalize.' },
-    {
-      name: 'normalizerSpec',
-      type: 'NormalizerSpec<T, NormalizationContextFor<T>> | NormalizeToScore<T, NormalizationContextFor<T>>',
-      description: 'Normalizer specification or function.',
-    },
-    { name: 'context', type: 'NormalizationContextFor<T>', description: 'Normalization context (resolved from calibration).' },
-    { name: 'metric', type: 'MetricDef<T, MetricContainer>', description: 'Metric definition (used by custom normalizers).' },
-  ]}
-/>
-
-### `resolveCalibration()`
-
-<PropertyTable
-  content={[
-    { name: 'normalization', type: 'MetricNormalization<T, NormalizationContextFor<T>> | undefined', description: 'Metric normalization config.' },
-    { name: 'dataset', type: 'readonly unknown[]', description: 'Full dataset for context resolution.' },
-    { name: 'rawValues', type: 'readonly T[]', description: 'Raw values for the metric.' },
-    { name: 'metricName', type: 'string', description: 'Metric name used for per-run caching.' },
-    { name: 'cache', type: 'CalibrationCache', description: 'Per-run cache (create once per run).' },
-  ]}
-/>
-
-### `computeDistributionStats()`
-
-<PropertyTable
-  content={[
-    { name: 'rawValues', type: 'readonly number[]', description: 'Raw values to compute mean/stdDev from.' },
-  ]}
-/>
-
-### `computeRange()`
-
-<PropertyTable
-  content={[
-    { name: 'rawValues', type: 'readonly number[]', description: 'Raw values to compute min/max from.' },
-  ]}
-/>
-
-### `createCalibrationCache()`
-
-No options.
-
-### Example: precompute context once, reuse across runs
-
+**Example:**
 ```ts
-import {
-  resolveCalibration,
-  applyNormalization,
-  createZScoreNormalizer,
-  createCalibrationCache,
-} from 'tally/normalization';
-
-const rawValues = [1, 2, 3, 4, 5];
-const normalizer = createZScoreNormalizer({ mean: 3, stdDev: 1, to: '0-1' });
-
-const cache = createCalibrationCache();
-const context = await resolveCalibration(
-  { normalizer },
-  [],
-  rawValues,
-  'latencyScore',
-  cache
-);
-
-const score = applyNormalization(2, normalizer, context, {
-  // minimal fields used by custom normalizers
-  name: 'latencyScore',
-  valueType: 'number',
+// Logarithmic normalization for response length
+const normalizer = createCustomNormalizer({
+  normalize: (value) => {
+    const maxLength = 1000;
+    return Math.min(1, Math.log(value + 1) / Math.log(maxLength + 1));
+  },
 });
 ```
 
+---
+
+## Using Normalizers
+
+Attach normalizers to metrics via the `normalization` field or using `withNormalization`:
+
+```ts
+import { defineBaseMetric, defineSingleTurnLLM, withNormalization } from '@tally-evals/tally';
+import { createMinMaxNormalizer } from '@tally-evals/tally/normalization';
+import { google } from '@ai-sdk/google';
+
+// Option 1: In the base metric
+const base = defineBaseMetric({
+  name: 'quality',
+  valueType: 'number',
+  normalization: {
+    normalizer: createMinMaxNormalizer({ min: 0, max: 5, clip: true }),
+  },
+});
+
+// Option 2: Using withNormalization
+const baseMetric = defineBaseMetric({
+  name: 'quality',
+  valueType: 'number',
+});
+
+const normalizedBase = withNormalization({
+  metric: baseMetric,
+  normalizer: createMinMaxNormalizer({ min: 0, max: 5, clip: true }),
+});
+```
+
+---
+
+## Calibration
+
+Some normalizers need dataset-level statistics (e.g., actual min/max or mean/stdDev). Use the `calibrate` option:
+
+```ts
+const metric = defineSingleTurnCode({
+  base: defineBaseMetric({ name: 'latency', valueType: 'number' }),
+  compute: ({ data }) => data.latencyMs,
+  normalization: {
+    normalizer: createMinMaxNormalizer({ min: 0, max: 1000 }),
+    // Calibrate from actual data
+    calibrate: async ({ rawValues }) => ({
+      range: {
+        min: Math.min(...rawValues),
+        max: Math.max(...rawValues),
+      },
+    }),
+  },
+});
+```

@@ -3,9 +3,10 @@
  */
 
 import type { Conversation, TallyRunArtifact } from '@tally-evals/core';
+import { createTargetRunView } from '@tally-evals/tally';
 import { Box, Text, useInput, useStdout } from 'ink';
 import type React from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { colors } from 'src/utils/colors.js';
 import { formatPassAt } from 'src/utils/formatters';
 import { ConversationTurn } from './shared/ConversationTurn';
@@ -89,83 +90,59 @@ export function TurnByTurnView({
     }
   });
 
-  const singleTurnEvalNames = Object.keys(report.result.singleTurn ?? {}).sort();
-  const currentTurnMetrics: CliMetricRow[] = [];
-  for (const evalName of singleTurnEvalNames) {
-    const stepRes =
-      report.result.singleTurn?.[evalName]?.byStepIndex?.[scrollPosition] ?? null;
-    if (!stepRes) continue;
-    currentTurnMetrics.push({
-      name: evalName,
-      ...(report.defs?.evals?.[evalName]?.verdict
-        ? { passAt: formatPassAt(report.defs.evals[evalName]!.verdict) }
-        : {}),
-      ...(stepRes.measurement.score !== undefined
-        ? { score: Number(stepRes.measurement.score) }
-        : {}),
-      ...(stepRes.measurement.rawValue !== undefined
-        ? { rawValue: stepRes.measurement.rawValue as any }
-        : {}),
-      ...(stepRes.outcome?.verdict !== undefined
-        ? { verdict: stepRes.outcome.verdict }
-        : {}),
-      ...(stepRes.measurement.reasoning !== undefined
-        ? { reasoning: stepRes.measurement.reasoning }
-        : {}),
-    });
-  }
+  // Use the type-safe view API for unified access to step and conversation results
+  const view = useMemo(() => createTargetRunView(report), [report]);
 
-  // Include per-step scorer series (shape: seriesByStepIndex) alongside single-turn metrics
-  for (const [evalName, scorerRes] of Object.entries(report.result.scorers ?? {})) {
-    if (!scorerRes || typeof scorerRes !== 'object') continue;
-    if (!('shape' in scorerRes) || (scorerRes as any).shape !== 'seriesByStepIndex') continue;
-    const stepRes =
-      (scorerRes as any).series?.byStepIndex?.[scrollPosition] ?? null;
-    if (!stepRes) continue;
-
-    currentTurnMetrics.push({
-      name: evalName,
-      ...(report.defs?.evals?.[evalName]?.verdict
-        ? { passAt: formatPassAt(report.defs.evals[evalName]!.verdict) }
-        : {}),
-      ...(stepRes.measurement?.score !== undefined
-        ? { score: Number(stepRes.measurement.score) }
-        : {}),
-      ...(stepRes.measurement?.rawValue !== undefined
-        ? { rawValue: stepRes.measurement.rawValue as any }
-        : {}),
-      ...(stepRes.outcome?.verdict !== undefined
-        ? { verdict: stepRes.outcome.verdict }
-        : {}),
-      ...(stepRes.measurement?.reasoning !== undefined
-        ? { reasoning: stepRes.measurement.reasoning }
-        : {}),
-    });
-  }
-
-  // Keep stable ordering in the per-turn table
-  currentTurnMetrics.sort((a, b) => a.name.localeCompare(b.name));
+  // Get step results (single-turn + step-indexed scorers) via unified view API
+  const stepResults = view.step(scrollPosition);
+  const currentTurnMetrics: CliMetricRow[] = Object.entries(stepResults)
+    .map(([evalName, stepRes]) => {
+      const evalDef = view.eval(evalName);
+      return {
+        name: evalName,
+        ...(evalDef?.verdict ? { passAt: formatPassAt(evalDef.verdict) } : {}),
+        ...(stepRes.measurement.score !== undefined
+          ? { score: Number(stepRes.measurement.score) }
+          : {}),
+        ...(stepRes.measurement.rawValue !== undefined
+          ? { rawValue: stepRes.measurement.rawValue as any }
+          : {}),
+        ...(stepRes.outcome?.verdict !== undefined
+          ? { verdict: stepRes.outcome.verdict }
+          : {}),
+        ...(stepRes.measurement.reasoning !== undefined
+          ? { reasoning: stepRes.measurement.reasoning }
+          : {}),
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   const currentStep = conversation.steps[scrollPosition];
   if (!currentStep) {
     return <Text>{colors.error('No step found at current position')}</Text>;
   }
 
-  const multiTurnRows: CliMetricRow[] = [];
-  for (const [evalName, res] of Object.entries(report.result.multiTurn ?? {})) {
-    multiTurnRows.push({
-      name: evalName,
-      ...(report.defs?.evals?.[evalName]?.verdict
-        ? { passAt: formatPassAt(report.defs.evals[evalName]!.verdict) }
-        : {}),
-      ...(res.measurement.score !== undefined ? { score: Number(res.measurement.score) } : {}),
-      ...(res.measurement.rawValue !== undefined
-        ? { rawValue: res.measurement.rawValue as any }
-        : {}),
-      ...(res.outcome?.verdict !== undefined ? { verdict: res.outcome.verdict } : {}),
-      ...(res.measurement.reasoning !== undefined ? { reasoning: res.measurement.reasoning } : {}),
-    });
-  }
+  // Get conversation-level results (multi-turn + scalar scorers) via unified view API
+  const conversationResults = view.conversation();
+  const multiTurnRows: CliMetricRow[] = Object.entries(conversationResults).map(
+    ([evalName, res]) => {
+      const evalDef = view.eval(evalName);
+      return {
+        name: evalName,
+        ...(evalDef?.verdict ? { passAt: formatPassAt(evalDef.verdict) } : {}),
+        ...(res.measurement.score !== undefined
+          ? { score: Number(res.measurement.score) }
+          : {}),
+        ...(res.measurement.rawValue !== undefined
+          ? { rawValue: res.measurement.rawValue as any }
+          : {}),
+        ...(res.outcome?.verdict !== undefined ? { verdict: res.outcome.verdict } : {}),
+        ...(res.measurement.reasoning !== undefined
+          ? { reasoning: res.measurement.reasoning }
+          : {}),
+      };
+    },
+  );
 
   return (
     <Box flexDirection="column" key={`turn-${expanded}`}>

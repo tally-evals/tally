@@ -53,9 +53,11 @@ import type {
   CategoricalAggregatorDef,
   Aggregator,
   
-  // Evaluator types
+  // Eval types
   Eval,
-  Evaluator,
+  SingleTurnEval,
+  MultiTurnEval,
+  ScorerEval,
   VerdictPolicy,
   
   // Run outputs

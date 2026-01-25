@@ -7,8 +7,8 @@
  * Supports both DatasetItem and ConversationStep containers.
  */
 
-import { createSingleTurnLLM, defineBaseMetric } from '@tally/core/factory';
-import { createMinMaxNormalizer } from '@tally/core/normalization/factory';
+import { defineSingleTurnLLM, defineBaseMetric } from '../../core/primitives';
+import { createMinMaxNormalizer } from '../../normalizers/factories';
 import type {
   NumericAggregatorDef,
   SingleTurnContainer,
@@ -76,7 +76,7 @@ export function createToxicityMetric<TContainer extends SingleTurnContainer = Si
           .join('\n')}`
       : '';
 
-  const metric = createSingleTurnLLM<number, TContainer>({
+  const metric = defineSingleTurnLLM<number, TContainer>({
     ...(aggregators !== undefined && { aggregators }),
     base,
     provider,
@@ -138,6 +138,6 @@ Based on your analysis and the rubric, provide your score as a number between 1 
     },
   });
 
-  // Type assertion: createSingleTurnLLM always returns a single-turn metric
+  // Type assertion: defineSingleTurnLLM always returns a single-turn metric
   return metric as SingleTurnMetricDef<number, TContainer>;
 }

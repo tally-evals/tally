@@ -1,123 +1,154 @@
 ---
 title: Builtin Metrics
-description: Prebuilt metric definitions.
+description: Prebuilt metric definitions for common evaluation needs.
 ---
 
-import { TypeTable } from 'fumadocs-ui/components/type-table';
 import { PropertyTable } from '@/components/PropertyTable';
 
 # Builtin Metrics
 
-Prebuilt metrics are exported from the `tally/metrics` entrypoint.
+Prebuilt metrics are exported from the `@tally-evals/tally/metrics` entrypoint. They provide ready-to-use evaluation capabilities for common use cases.
 
 ## Import
 
 ```ts
 import {
+  // Single-turn metrics
   createAnswerRelevanceMetric,
   createAnswerSimilarityMetric,
   createCompletenessMetric,
   createToxicityMetric,
   createToolCallAccuracyMetric,
+  // Multi-turn metrics
   createRoleAdherenceMetric,
   createGoalCompletionMetric,
   createTopicAdherenceMetric,
-} from 'tally/metrics';
+} from '@tally-evals/tally/metrics';
 ```
 
+---
+
+## Single-Turn Metrics
+
 ### `createAnswerRelevanceMetric()`
+
+Measures how relevant the assistant's response is to the user's query. Uses LLM-as-judge to score relevance on a 0–5 scale, normalized to 0–1.
 
 <PropertyTable
   content={[
     {
       name: 'provider',
       type: 'LanguageModel',
-      description: 'LLM provider for relevance analysis.',
+      description: 'AI SDK language model for relevance analysis.',
     },
     {
       name: 'partialWeight',
       type: 'number',
-      description:
-        'Partial weight for “unsure” statements. Used in the rubric to guide the LLM.',
+      description: 'Weight for "unsure" statements in the rubric.',
       isOptional: true,
       defaultValue: '0.3',
+    },
+    {
+      name: 'aggregators',
+      type: 'NumericAggregatorDef[]',
+      description: 'Custom numeric aggregators. Defaults include percentiles.',
+      isOptional: true,
     },
   ]}
 />
 
+---
+
 ### `createAnswerSimilarityMetric()`
+
+Measures semantic similarity between the response and a target/expected answer. Can use embeddings or keyword matching.
 
 <PropertyTable
   content={[
     {
       name: 'embeddingModel',
       type: 'EmbeddingModel',
-      description: 'Optional embedding model for semantic similarity calculation.',
+      description: 'Optional embedding model for semantic similarity.',
       isOptional: true,
     },
     {
       name: 'targetResponse',
       type: 'string',
-      description:
-        'Optional target response to compare against. If omitted, the metric may use `metadata.targetResponse`.',
+      description: 'Target response to compare against. Can also be provided via metadata.targetResponse.',
       isOptional: true,
     },
     {
       name: 'minKeywords',
       type: 'number',
-      description:
-        'Minimum number of matching keywords required (keyword-based mode).',
+      description: 'Minimum matching keywords required (keyword mode).',
       isOptional: true,
       defaultValue: '1',
     },
   ]}
 />
 
+---
+
 ### `createCompletenessMetric()`
+
+Measures whether the response fully addresses all aspects of the query. Uses LLM-as-judge to score on a 0–5 scale, normalized to 0–1.
 
 <PropertyTable
   content={[
     {
       name: 'provider',
       type: 'LanguageModel',
-      description: 'LLM provider for completeness analysis.',
+      description: 'AI SDK language model for completeness analysis.',
     },
     {
       name: 'expectedPoints',
       type: 'string[]',
-      description:
-        'Optional list of expected key points/topics. Included in the prompt to guide evaluation.',
+      description: 'Expected key points/topics to check for coverage.',
+      isOptional: true,
+    },
+    {
+      name: 'aggregators',
+      type: 'NumericAggregatorDef[]',
+      description: 'Custom numeric aggregators.',
       isOptional: true,
     },
   ]}
 />
 
+---
+
 ### `createToxicityMetric()`
+
+Detects harmful, offensive, or inappropriate content in responses. Returns a toxicity score where lower is better.
 
 <PropertyTable
   content={[
     {
       name: 'provider',
       type: 'LanguageModel',
-      description: 'LLM provider for toxicity detection.',
+      description: 'AI SDK language model for toxicity detection.',
     },
     {
       name: 'categories',
       type: "Array<'hate' | 'harassment' | 'violence' | 'self-harm' | 'sexual' | 'profanity'>",
-      description: 'Optional toxicity categories to emphasize during evaluation.',
+      description: 'Toxicity categories to emphasize during evaluation.',
       isOptional: true,
     },
   ]}
 />
 
+---
+
 ### `createToolCallAccuracyMetric()`
+
+Validates that the agent made correct tool calls with proper arguments. Checks tool names, argument schemas, and optionally call order.
 
 <PropertyTable
   content={[
     {
       name: 'expectedToolCalls',
       type: 'Array<{ toolName: string; argsSchema?: z.ZodSchema }>',
-      description: 'Expected tool calls (required).',
+      description: 'Expected tool calls to validate against.',
       properties: [
         {
           type: 'ExpectedToolCall',
@@ -125,12 +156,12 @@ import {
             {
               name: 'toolName',
               type: 'string',
-              description: 'Tool name to expect.',
+              description: 'Name of the expected tool.',
             },
             {
               name: 'argsSchema',
               type: 'z.ZodSchema',
-              description: 'Optional schema for validating tool call args.',
+              description: 'Zod schema for validating tool arguments.',
               isOptional: true,
             },
           ],
@@ -140,33 +171,38 @@ import {
     {
       name: 'toolCallOrder',
       type: 'string[]',
-      description: 'Optional expected order of tool calls (array of tool names).',
+      description: 'Expected order of tool calls (array of tool names).',
       isOptional: true,
     },
     {
       name: 'strictMode',
       type: 'boolean',
-      description:
-        'If true, tool call sequence must be exact and cannot include extra calls.',
+      description: 'If true, sequence must be exact with no extra calls.',
       isOptional: true,
       defaultValue: 'false',
     },
   ]}
 />
 
+---
+
+## Multi-Turn Metrics
+
 ### `createRoleAdherenceMetric()`
+
+Measures how well the assistant maintains its assigned role/persona across the entire conversation. Multi-turn metric.
 
 <PropertyTable
   content={[
     {
       name: 'expectedRole',
       type: 'string',
-      description: 'Expected role/persona description to adhere to.',
+      description: 'Description of the role the assistant should adhere to.',
     },
     {
       name: 'provider',
       type: 'LanguageModel',
-      description: 'LLM provider for role adherence analysis.',
+      description: 'AI SDK language model for role adherence analysis.',
     },
     {
       name: 'checkConsistency',
@@ -178,19 +214,23 @@ import {
   ]}
 />
 
+---
+
 ### `createGoalCompletionMetric()`
+
+Measures whether the conversation achieved its intended goal. Evaluates progress and final outcome across all turns. Multi-turn metric.
 
 <PropertyTable
   content={[
     {
       name: 'goal',
       type: 'string',
-      description: 'Goal description to evaluate against.',
+      description: 'Description of the goal to evaluate against.',
     },
     {
       name: 'provider',
       type: 'LanguageModel',
-      description: 'LLM provider for goal completion analysis.',
+      description: 'AI SDK language model for goal completion analysis.',
     },
     {
       name: 'checkPartialCompletion',
@@ -209,19 +249,23 @@ import {
   ]}
 />
 
+---
+
 ### `createTopicAdherenceMetric()`
+
+Measures whether the assistant stays on topic throughout the conversation. Detects off-topic tangents and topic drift. Multi-turn metric.
 
 <PropertyTable
   content={[
     {
       name: 'topics',
       type: 'string[]',
-      description: 'Topics the assistant should adhere to throughout the conversation.',
+      description: 'Topics the assistant should adhere to.',
     },
     {
       name: 'provider',
       type: 'LanguageModel',
-      description: 'LLM provider for topic adherence analysis.',
+      description: 'AI SDK language model for topic adherence analysis.',
     },
     {
       name: 'allowTopicTransitions',
@@ -233,11 +277,43 @@ import {
     {
       name: 'strictMode',
       type: 'boolean',
-      description:
-        'If true, penalizes deviations from the specified topics more strictly.',
+      description: 'If true, penalizes deviations more strictly.',
       isOptional: true,
       defaultValue: 'false',
     },
   ]}
 />
 
+---
+
+## Example
+
+```ts
+import { google } from '@ai-sdk/google';
+import {
+  createAnswerRelevanceMetric,
+  createRoleAdherenceMetric,
+} from '@tally-evals/tally/metrics';
+import { defineSingleTurnEval, defineMultiTurnEval, thresholdVerdict } from '@tally-evals/tally';
+
+const model = google('models/gemini-2.5-flash-lite');
+
+// Single-turn metric
+const relevance = createAnswerRelevanceMetric({ provider: model });
+const relevanceEval = defineSingleTurnEval({
+  name: 'Answer Relevance',
+  metric: relevance,
+  verdict: thresholdVerdict(0.7),
+});
+
+// Multi-turn metric
+const roleAdherence = createRoleAdherenceMetric({
+  expectedRole: 'helpful customer support agent',
+  provider: model,
+});
+const roleEval = defineMultiTurnEval({
+  name: 'Role Adherence',
+  metric: roleAdherence,
+  verdict: thresholdVerdict(0.8),
+});
+```

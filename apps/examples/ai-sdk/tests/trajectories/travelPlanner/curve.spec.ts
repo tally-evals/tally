@@ -8,7 +8,6 @@ import { travelPlannerCurveTrajectory } from './definitions';
 import { runCase, saveTallyReportToStore } from '../../utils/harness';
 import {
   createTally,
-  createEvaluator,
   runAllTargets,
   defineBaseMetric,
   defineInput,
@@ -105,8 +104,8 @@ describe('Travel Planner Agent - Curve Ball', () => {
       verdict: thresholdVerdict(0.5), // Curve ball: overall quality should be reasonable
     });
 
-    const evaluator = createEvaluator({
-      name: 'Travel Planner Agent Quality',
+    const tally = createTally({
+      data: [conversation],
       evals: [
         answerRelevanceEval,
         completenessEval,
@@ -115,11 +114,6 @@ describe('Travel Planner Agent - Curve Ball', () => {
         overallQualityEval,
       ],
       context: runAllTargets(),
-    });
-
-    const tally = createTally({
-      data: [conversation],
-      evaluators: [evaluator],
     });
 
     const report = await tally.run();

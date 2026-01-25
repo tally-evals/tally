@@ -5,7 +5,7 @@
  * Weights are automatically normalized to sum to 1.0.
  */
 
-import { ScorerBuilder } from '../core/builders/ScorerBuilder';
+import { defineScorer } from '../core/primitives';
 import type { BaseMetricDef, InputScores, Score, Scorer, ScorerInput } from '../core/types';
 import { toScore } from '../core/types';
 
@@ -94,7 +94,7 @@ export interface CreateWeightedAverageScorerOptions<TInputs extends readonly Sco
 /**
  * Create a weighted average scorer
  *
- * Uses ScorerBuilder to construct a scorer that combines normalized metrics
+ * Uses defineScorer to construct a scorer that combines normalized metrics
  * using weighted average. Weights are normalized to sum to 1.0 by default.
  *
  * @param options - Configuration object with name, output, inputs, and optional settings
@@ -119,49 +119,22 @@ export function createWeightedAverageScorer<TInputs extends readonly ScorerInput
 
   const normalizeWeights = normalizeWeightsOption ?? true;
 
-  // Build scorer using ScorerBuilder
-  // Note: TypeScript can't track exact type transformations in loops,
-  // but the final type is correctly inferred from TInputs parameter
-  const builder = ScorerBuilder.create(name, output);
-
-  // Add all inputs using builder pattern
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let currentBuilder: any = builder;
-  for (const input of inputs) {
-    currentBuilder = currentBuilder.addMetric(
-      input.metric,
-      input.weight,
-      input.normalizerOverride,
-      input.required ?? true
-    );
-  }
-
-  // Build scorer with weighted average combination function
-  const scorer = currentBuilder
-    .withNormalizeWeights(normalizeWeights)
-    .withCombineScores((scores: InputScores<TInputs>) =>
-      computeWeightedAverage(scores, inputs, normalizeWeights)
-    )
-    .withDescription(description ?? `Weighted average scorer combining ${inputs.length} metrics`)
-    .build() as Scorer<TInputs>;
-
-  // Apply optional overrides
-  return {
-    ...scorer,
-    ...(fallbackScore !== undefined && {
-      fallbackScore,
-    }),
-    ...(metadata && { metadata }),
+  // Create scorer using functional factory
+  return defineScorer({
+    name,
+    output,
+    inputs,
+    normalizeWeights,
+    combineScores: (scores: InputScores<TInputs>) =>
+      computeWeightedAverage(scores, inputs, normalizeWeights),
+    description: description ?? `Weighted average scorer combining ${inputs.length} metrics`,
+    fallbackScore,
     metadata: {
-      ...(scorer.metadata ?? {}),
       ...(metadata ?? {}),
-      // Tag for run-artifact serialization: allows UI to explain “how calculated”
+      // Tag for run-artifact serialization: allows UI to explain "how calculated"
       __tally: {
-        ...(typeof (scorer.metadata as any)?.__tally === 'object'
-          ? (scorer.metadata as any).__tally
-          : {}),
         combineKind: 'weightedAverage',
       },
     },
-  };
+  });
 }

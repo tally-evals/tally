@@ -2,6 +2,7 @@
  * Evaluator and Eval Type Definitions
  *
  * Types for the Eval API that defines evaluation configurations.
+ * Evals wrap metrics with verdict policies and context.
  */
 
 import type {
@@ -19,8 +20,11 @@ import type { Scorer } from './scorers';
 // ============================================================================
 
 /**
- * Single-turn run policy
- * Controls which targets single-turn metrics evaluate
+ * Controls which targets single-turn metrics evaluate.
+ *
+ * - `'all'` - Evaluate all targets
+ * - `'selectedSteps'` - Evaluate specific conversation steps by index
+ * - `'selectedItems'` - Evaluate specific dataset items by index
  */
 export type SingleTurnRunPolicy =
   | { run: 'all' }
@@ -28,11 +32,14 @@ export type SingleTurnRunPolicy =
   | { run: 'selectedItems'; itemIndices: readonly number[] };
 
 /**
- * Evaluation context
- * Provides execution context for evaluators
+ * Execution context for evaluators.
+ *
+ * Provides run policies and optional metadata.
  */
 export interface EvaluationContext {
+  /** Policy for single-turn metric target selection */
   singleTurn?: SingleTurnRunPolicy;
+  /** Custom metadata */
   metadata?: Record<string, unknown>;
 }
 
@@ -41,15 +48,27 @@ export interface EvaluationContext {
 // ============================================================================
 
 /**
- * Type-safe verdict policy inferred from metric value type
- * TypeScript enforces that verdict policy matches the metric's value type
+ * Type-safe verdict policy inferred from metric value type.
+ *
+ * TypeScript enforces that verdict policy matches the metric's value type.
+ *
+ * @typeParam TMetricValue - The metric value type
+ *
+ * @example
+ * ```typescript
+ * // For boolean metrics
+ * const policy: VerdictPolicyFor<boolean> = { kind: 'boolean', passWhen: true };
+ *
+ * // For number metrics
+ * const policy: VerdictPolicyFor<number> = { kind: 'number', type: 'threshold', passAt: 0.8 };
+ * ```
  */
-export type VerdictPolicyFor<T extends MetricScalar> = T extends boolean
+export type VerdictPolicyFor<TMetricValue extends MetricScalar> = TMetricValue extends boolean
   ? { kind: 'boolean'; passWhen: true | false }
-  : T extends number
+  : TMetricValue extends number
     ?
-        | { kind: 'number'; type: 'threshold'; passAt: number } // Score >= passAt
-        | { kind: 'number'; type: 'range'; min?: number; max?: number } // min <= Score <= max
+        | { kind: 'number'; type: 'threshold'; passAt: number }
+        | { kind: 'number'; type: 'range'; min?: number; max?: number }
         | {
             kind: 'custom';
             verdict: (
@@ -57,7 +76,7 @@ export type VerdictPolicyFor<T extends MetricScalar> = T extends boolean
               rawValue: number,
             ) => 'pass' | 'fail' | 'unknown';
           }
-    : T extends string
+    : TMetricValue extends string
       ?
           | { kind: 'ordinal'; passWhenIn: readonly string[] }
           | {
@@ -72,13 +91,15 @@ export type VerdictPolicyFor<T extends MetricScalar> = T extends boolean
               kind: 'custom';
               verdict: (
                 score: Score,
-                rawValue: T,
+                rawValue: TMetricValue,
               ) => 'pass' | 'fail' | 'unknown';
             }
           | { kind: 'none' };
 
 /**
- * Union type for runtime use (when type inference isn't available)
+ * Runtime verdict policy union.
+ *
+ * Used when type inference isn't available.
  */
 export type VerdictPolicy =
   | { kind: 'boolean'; passWhen: true | false }
@@ -95,103 +116,156 @@ export type VerdictPolicy =
   | { kind: 'none' };
 
 /**
- * Auto-normalization for boolean/ordinal metrics
- * Applied automatically if metric doesn't specify normalization
+ * Auto-normalization configuration.
+ *
+ * Applied automatically if metric doesn't specify normalization.
  */
 export type AutoNormalizer =
-  | { kind: 'boolean'; trueScore?: number; falseScore?: number } // default: 1.0/0.0
-  | { kind: 'ordinal'; weights: Record<string | number, number> } // required map
-  | { kind: 'number' }; // identity or use metric's normalization
+  | { kind: 'boolean'; trueScore?: number; falseScore?: number }
+  | { kind: 'ordinal'; weights: Record<string | number, number> }
+  | { kind: 'number' };
 
 // ============================================================================
 // Eval Types
 // ============================================================================
 
 /**
- * Base eval properties shared across all eval kinds
+ * Base eval properties shared across all eval kinds.
+ *
+ * @typeParam TName - Literal string type for eval name (enables type-safe report access)
  */
-interface EvalBase {
-  name: string;
+interface EvalBase<TName extends string = string> {
+  /** Unique eval name (preserved as literal type for type-safe reports) */
+  readonly name: TName;
+  /** Human-readable description */
   description?: string;
-  context?: EvaluationContext; // For single-turn run policies
+  /** Execution context with run policies */
+  context?: EvaluationContext;
+  /** Custom metadata */
   metadata?: Record<string, unknown>;
 }
 
 /**
- * Single-turn eval: single metric evaluated per target
- * Results are aggregated across all targets (mean, percentiles, pass/fail rates)
- * Type-safe: verdict policy type is inferred from metric value type
+ * Single-turn eval definition.
+ *
+ * Evaluates individual targets (DatasetItem or ConversationStep).
+ * Results are aggregated across all targets.
+ *
+ * @typeParam TName - Literal string type for eval name
+ * @typeParam TContainer - Container type (ConversationStep or DatasetItem)
+ * @typeParam TMetricValue - Metric value type (number, boolean, or string)
+ *
+ * @example
+ * ```typescript
+ * const eval = defineSingleTurnEval({
+ *   name: 'relevance',
+ *   metric: relevanceMetric,
+ *   verdict: thresholdVerdict(0.8),
+ * });
+ * ```
+ *
+ * @see {@link defineSingleTurnEval}
  */
 export interface SingleTurnEval<
-  TContainer extends SingleTurnContainer,
+  TName extends string = string,
+  TContainer extends SingleTurnContainer = SingleTurnContainer,
   TMetricValue extends MetricScalar = MetricScalar,
-> extends EvalBase {
-  kind: 'singleTurn';
-  metric: MetricDef<TMetricValue, TContainer>; // Single metric - type inferred
-  verdict?: VerdictPolicyFor<TMetricValue>; // Type-safe verdict (inferred from metric)
-  autoNormalize?: AutoNormalizer; // Override auto-normalization for boolean/ordinal
+> extends EvalBase<TName> {
+  /** Eval kind discriminator */
+  readonly kind: 'singleTurn';
+  /** The metric to evaluate */
+  metric: MetricDef<TMetricValue, TContainer>;
+  /** Verdict policy (type-safe, inferred from metric) */
+  verdict?: VerdictPolicyFor<TMetricValue>;
+  /** Override auto-normalization for boolean/ordinal metrics */
+  autoNormalize?: AutoNormalizer;
 }
 
 /**
- * Multi-turn eval: single metric evaluated per conversation
- * Results are aggregated across conversations (mean, percentiles, pass/fail rates)
- * Type-safe: verdict policy type is inferred from metric value type
+ * Multi-turn eval definition.
+ *
+ * Evaluates entire conversations.
+ * Results are aggregated across conversations.
+ *
+ * @typeParam TName - Literal string type for eval name
+ * @typeParam TContainer - Container type (Conversation)
+ * @typeParam TMetricValue - Metric value type (number, boolean, or string)
+ *
+ * @example
+ * ```typescript
+ * const eval = defineMultiTurnEval({
+ *   name: 'goalCompletion',
+ *   metric: goalCompletionMetric,
+ *   verdict: thresholdVerdict(0.7),
+ * });
+ * ```
+ *
+ * @see {@link defineMultiTurnEval}
  */
 export interface MultiTurnEval<
-  TContainer extends MultiTurnContainer,
+  TName extends string = string,
+  TContainer extends MultiTurnContainer = MultiTurnContainer,
   TMetricValue extends MetricScalar = MetricScalar,
-> extends EvalBase {
-  kind: 'multiTurn';
-  metric: MetricDef<TMetricValue, TContainer>; // Single metric - type inferred
-  verdict?: VerdictPolicyFor<TMetricValue>; // Type-safe verdict (inferred from metric)
-  autoNormalize?: AutoNormalizer; // Override auto-normalization
+> extends EvalBase<TName> {
+  /** Eval kind discriminator */
+  readonly kind: 'multiTurn';
+  /** The metric to evaluate */
+  metric: MetricDef<TMetricValue, TContainer>;
+  /** Verdict policy (type-safe, inferred from metric) */
+  verdict?: VerdictPolicyFor<TMetricValue>;
+  /** Override auto-normalization */
+  autoNormalize?: AutoNormalizer;
 }
 
 /**
- * Scorer eval: combines multiple metrics using a scorer
- * Produces normalized Score output (number)
- * Verdict policy is always number-based since Score is number
+ * Scorer eval definition.
+ *
+ * Combines multiple metrics using a scorer.
+ * Always produces numeric Score output.
+ *
+ * @typeParam TName - Literal string type for eval name
+ *
+ * @example
+ * ```typescript
+ * const eval = defineScorerEval({
+ *   name: 'qualityScore',
+ *   scorer: qualityScorer,
+ *   verdict: thresholdVerdict(0.75),
+ * });
+ * ```
+ *
+ * @see {@link defineScorerEval}
  */
-export interface ScorerEval extends EvalBase {
-  kind: 'scorer';
-  scorer: Scorer; // Scorer definition (outputs normalized Score)
-  verdict?: VerdictPolicyFor<number>; // Always number-based (Score is number)
+export interface ScorerEval<TName extends string = string> extends EvalBase<TName> {
+  /** Eval kind discriminator */
+  readonly kind: 'scorer';
+  /** Scorer definition */
+  scorer: Scorer;
+  /** Verdict policy (always number-based) */
+  verdict?: VerdictPolicyFor<number>;
 }
 
 /**
- * Union of all eval types for collection/storage
- * 
- * Uses `any` for TMetricValue due to TypeScript's invariance with nested generics:
- * - Aggregator<TValue> has TValue in function parameter position (invariant)
- * - This makes SingleTurnEval<C, number> incompatible with SingleTurnEval<C, MetricScalar>
- * - Individual evals retain full type safety; only the collection type uses `any`
- * 
- * Type safety is preserved because:
- * 1. Factory functions (defineSingleTurnEval, etc.) infer and enforce correct types
- * 2. VerdictPolicy is type-checked at eval creation time
- * 3. The pipeline handles type coercion safely at runtime
+ * Union of all eval types.
+ *
+ * Used for collections and storage. Uses `any` for TMetricValue due to
+ * TypeScript's invariance with nested generics. Type safety is preserved
+ * through factory functions that enforce correct types at creation time.
+ *
+ * @typeParam TName - Literal string type for eval name
+ *
+ * @see {@link SingleTurnEval}
+ * @see {@link MultiTurnEval}
+ * @see {@link ScorerEval}
  */
-// biome-ignore lint/suspicious/noExplicitAny: Required for variance - see comment above
-export type Eval<_TContainer extends MetricContainer = MetricContainer> =
-  // biome-ignore lint/suspicious/noExplicitAny: Required for variance - see comment above
-  | SingleTurnEval<SingleTurnContainer, any>
-  // biome-ignore lint/suspicious/noExplicitAny: Required for variance - see comment above
-  | MultiTurnEval<MultiTurnContainer, any>
-  | ScorerEval;
+export type Eval<
+  TName extends string = string,
+  // biome-ignore lint/suspicious/noExplicitAny: Required for variance - see TSDoc above
+  _TContainer extends MetricContainer = MetricContainer,
+> =
+  // biome-ignore lint/suspicious/noExplicitAny: Required for variance
+  | SingleTurnEval<TName, SingleTurnContainer, any>
+  // biome-ignore lint/suspicious/noExplicitAny: Required for variance
+  | MultiTurnEval<TName, MultiTurnContainer, any>
+  | ScorerEval<TName>;
 
-// ============================================================================
-// Evaluator Type
-// ============================================================================
-
-/**
- * Evaluator definition
- * Accepts evals instead of metrics/scorers directly
- * Defines context that applies to all evals within it
- */
-export interface Evaluator<TContainer extends MetricContainer> {
-  name: string;
-  description?: string;
-  evals: readonly Eval<TContainer>[]; // Changed from metrics + scorer
-  context: EvaluationContext; // REQUIRED: Context applies to all evals in this evaluator
-  metadata?: Record<string, unknown>;
-}

@@ -6,8 +6,10 @@
  */
 
 import { describe, expect, it } from 'bun:test';
+import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { google } from '@ai-sdk/google';
+import { decodeConversation } from '@tally-evals/core';
 import {
   defineMultiTurnEval,
   defineScorerEval,
@@ -15,13 +17,10 @@ import {
   thresholdVerdict,
 } from '../../src/evals';
 import {
-  createEvaluator,
   createTally,
   defineBaseMetric,
   defineInput,
   formatReportAsTables,
-  loadConversationStepsFromJSONL,
-  runAllTargets,
 } from '../_exports';
 import {
   createAnswerRelevanceMetric,
@@ -36,17 +35,14 @@ const GOLDEN_FIXTURE_PATH = resolve(
   __dirname,
   '../_fixtures/conversations/travelPlanner/golden.jsonl'
 );
-const CONVERSATION_ID = 'travel-planner-golden';
 
 describe.skipIf(!process.env.GOOGLE_GENERATIVE_AI_API_KEY)(
   'E2E | Metrics | Golden Travel Planner',
   () => {
     it('runs all metrics on golden travel planner conversation', async () => {
-      // Load conversation from golden fixture
-      const conversation = await loadConversationStepsFromJSONL(
-        GOLDEN_FIXTURE_PATH,
-        CONVERSATION_ID
-      );
+      // Load conversation from golden fixture using core's decodeConversation
+      const content = await readFile(GOLDEN_FIXTURE_PATH, 'utf8');
+      const conversation = decodeConversation(content);
 
       expect(conversation.steps.length).toBeGreaterThan(0);
 
@@ -139,8 +135,8 @@ describe.skipIf(!process.env.GOOGLE_GENERATIVE_AI_API_KEY)(
         verdict: thresholdVerdict(0.6), // Adjusted from 0.7, actual scores ~0.64-0.84
       });
 
-      const evaluator = createEvaluator({
-        name: 'Travel Planner Agent Quality',
+      const tally = createTally({
+        data: [conversation],
         evals: [
           answerRelevanceEval,
           completenessEval,
@@ -149,12 +145,6 @@ describe.skipIf(!process.env.GOOGLE_GENERATIVE_AI_API_KEY)(
           topicAdherenceEval,
           overallQualityEval,
         ],
-        context: runAllTargets(),
-      });
-
-      const tally = createTally({
-        data: [conversation],
-        evaluators: [evaluator],
       });
 
       // Run with deterministic LLM options for reproducibility

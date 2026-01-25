@@ -15,8 +15,8 @@ Every metric in Tally is built from two primary parts:
 
 The preferred way to create metrics is using the functional factory APIs from `@tally-evals/tally`:
 
-- `createSingleTurnCode` / `createSingleTurnLLM`: Measures individual conversation steps.
-- `createMultiTurnCode` / `createMultiTurnLLM`: Measures the entire conversation history.
+- `defineSingleTurnCode` / `defineSingleTurnLLM`: Measures individual conversation steps.
+- `defineMultiTurnCode` / `defineMultiTurnLLM`: Measures the entire conversation history.
 
 ---
 
@@ -25,7 +25,7 @@ The preferred way to create metrics is using the functional factory APIs from `@
 Use this when you want to measure something that can be determined by a script (e.g., keyword presence, JSON validation, response time).
 
 ```ts
-import { defineBaseMetric, createSingleTurnCode } from '@tally-evals/tally';
+import { defineBaseMetric, defineSingleTurnCode } from '@tally-evals/tally';
 
 const base = defineBaseMetric({
   name: 'jsonResponse',
@@ -33,7 +33,7 @@ const base = defineBaseMetric({
   description: 'Checks if the assistant output is valid JSON'
 });
 
-export const jsonResponseMetric = createSingleTurnCode({
+export const jsonResponseMetric = defineSingleTurnCode({
   base,
   compute: async ({ selected }) => {
     try {
@@ -54,7 +54,7 @@ export const jsonResponseMetric = createSingleTurnCode({
 Use this for measurements that require "judgment," such as relevance, tone, or toxicity.
 
 ```ts
-import { defineBaseMetric, createSingleTurnLLM } from '@tally-evals/tally';
+import { defineBaseMetric, defineSingleTurnLLM } from '@tally-evals/tally';
 import { createMinMaxNormalizer } from '@tally-evals/tally/normalization';
 
 const base = defineBaseMetric({
@@ -62,7 +62,7 @@ const base = defineBaseMetric({
   valueType: 'number'
 });
 
-export const concisenessMetric = createSingleTurnLLM({
+export const concisenessMetric = defineSingleTurnLLM({
   base,
   provider: myModel,
   prompt: {
@@ -96,7 +96,7 @@ Use this to evaluate behaviors that manifest across multiple turns, such as **Kn
 Multi-turn metrics use `runOnContainer` to prepare the entire conversation history for evaluation.
 
 ```ts
-import { defineBaseMetric, createMultiTurnLLM } from '@tally-evals/tally';
+import { defineBaseMetric, defineMultiTurnLLM } from '@tally-evals/tally';
 
 const base = defineBaseMetric({
   name: 'knowledgeRetention',
@@ -104,7 +104,7 @@ const base = defineBaseMetric({
   description: 'Measures if the agent remembers user details provided in earlier turns'
 });
 
-export const knowledgeRetentionMetric = createMultiTurnLLM({
+export const knowledgeRetentionMetric = defineMultiTurnLLM({
   base,
   provider: myModel,
   // Prepare the conversation history for the LLM prompt
@@ -133,13 +133,51 @@ export const knowledgeRetentionMetric = createMultiTurnLLM({
 });
 ```
 
+## Custom Aggregators for Single-Turn Metrics
+
+Single-turn metrics can include custom aggregators to compute summary statistics across all targets. While Tally provides [default aggregators](/docs/tally/metrics) based on value type, you can define custom ones—including custom percentiles.
+
+```ts
+import { defineBaseMetric, defineSingleTurnCode } from '@tally-evals/tally';
+import { createPercentileAggregator } from '@tally-evals/tally/aggregators';
+
+const base = defineBaseMetric({
+  name: 'responseLength',
+  valueType: 'number',
+  description: 'Character count of assistant response'
+});
+
+export const responseLengthMetric = defineSingleTurnCode({
+  base,
+  compute: async ({ selected }) => {
+    return selected.output[0]?.content?.length ?? 0;
+  },
+  // Custom aggregators for this metric
+  aggregators: [
+    createPercentileAggregator(50),  // p50 (median)
+    createPercentileAggregator(95),  // p95
+    createPercentileAggregator(99),  // p99
+  ]
+});
+```
+
+Available aggregator factories:
+
+- **Numeric**: `createMeanAggregator()`, `createPercentileAggregator(p)`, `createThresholdAggregator(threshold)`
+- **Boolean**: `createTrueRateAggregator()`, `createFalseRateAggregator()`
+- **Ordinal**: `createDistributionAggregator()`, `createModeAggregator()`
+
+See the full reference: [Aggregators](/docs/tally/reference/aggregators).
+
+---
+
 ## Reusability & Composability
 
 When you define a metric using these factories, you are creating a `MetricDef`. This object is **typesafe and composable**:
 
 - It can be passed into a **Scorer** to be weighted with other metrics.
 - It can be passed into an **Eval** to have a **Verdict Policy** applied.
-- It can be reused across different **Evaluators** without re-defining the logic.
+- It can be reused across different evaluation runs without re-defining the logic.
 
 ---
 
