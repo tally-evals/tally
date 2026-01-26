@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
-  "runId": "run-1769157227168-0rtslcm",
-  "createdAt": "2026-01-23T08:33:47.168Z",
+  "runId": "run-1769412311472-qx7gzdq",
+  "createdAt": "2026-01-26T07:25:11.472Z",
   "defs": {
     "metrics": {
       "answerRelevance": {
@@ -74,7 +74,7 @@
         "verdict": {
           "kind": "number",
           "type": "threshold",
-          "passAt": 0.5
+          "passAt": 2.5
         }
       },
       "Completeness": {
@@ -85,7 +85,7 @@
         "verdict": {
           "kind": "number",
           "type": "threshold",
-          "passAt": 0.3
+          "passAt": 3
         }
       },
       "Role Adherence": {
@@ -96,7 +96,7 @@
         "verdict": {
           "kind": "number",
           "type": "threshold",
-          "passAt": 0.7
+          "passAt": 3.5
         }
       },
       "Knowledge Retention": {
@@ -107,7 +107,7 @@
         "verdict": {
           "kind": "number",
           "type": "threshold",
-          "passAt": 0.7
+          "passAt": 3.5
         }
       },
       "Overall Quality": {
@@ -173,16 +173,16 @@
               "score": 1,
               "rawValue": 5,
               "confidence": 0.9,
-              "reasoning": "The response directly acknowledges the query about planning a trip to San Francisco and proactively asks clarifying questions to gather more information, indicating a strong intention to fulfill the user's request.",
-              "executionTimeMs": 2478,
-              "timestamp": "2026-01-23T08:33:49.649Z"
+              "reasoning": "The response directly acknowledges the user's request to plan a trip to San Francisco and proactively asks clarifying questions to gather more information, indicating a clear intent to assist and a high degree of relevance.",
+              "executionTimeMs": 2758,
+              "timestamp": "2026-01-26T07:25:14.233Z"
             },
             "outcome": {
               "verdict": "pass",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.5
+                "passAt": 2.5
               },
               "observed": {
                 "rawValue": 5,
@@ -197,16 +197,16 @@
               "score": 0.8,
               "rawValue": 4,
               "confidence": 0.9,
-              "reasoning": "The response is highly relevant as it acknowledges the user's request for multiple travel services (flights, accommodation, car rental, food recommendations) and proactively asks for the necessary details to fulfill those requests. It doesn't provide direct answers yet because it needs more information, but it's on the right track.",
-              "executionTimeMs": 2672,
-              "timestamp": "2026-01-23T08:33:49.849Z"
+              "reasoning": "The response acknowledges the user's broad request for help with flights, accommodation, car rental, and food. It then proactively asks for necessary details to fulfill these requests, indicating a good understanding of the user's needs. While it doesn't provide immediate answers or recommendations, it sets the stage for providing them effectively. It is highly relevant as it directly addresses the components of the query by seeking clarification to proceed.",
+              "executionTimeMs": 3066,
+              "timestamp": "2026-01-26T07:25:14.546Z"
             },
             "outcome": {
               "verdict": "pass",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.5
+                "passAt": 2.5
               },
               "observed": {
                 "rawValue": 4,
@@ -218,22 +218,23 @@
             "evalRef": "Answer Relevance",
             "measurement": {
               "metricRef": "answerRelevance",
-              "score": 0,
-              "rawValue": 0,
-              "reasoning": "The response is empty and therefore does not answer the query in any way. It is entirely unrelated.",
-              "executionTimeMs": 2470,
-              "timestamp": "2026-01-23T08:33:49.647Z"
+              "score": 0.2,
+              "rawValue": 1,
+              "confidence": 0.9,
+              "reasoning": "The response is completely empty. Therefore, it cannot provide any relevant information to the query about flight details.",
+              "executionTimeMs": 2001,
+              "timestamp": "2026-01-26T07:25:13.482Z"
             },
             "outcome": {
               "verdict": "fail",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.5
+                "passAt": 2.5
               },
               "observed": {
-                "rawValue": 0,
-                "score": 0
+                "rawValue": 1,
+                "score": 0.2
               }
             }
           },
@@ -244,16 +245,16 @@
               "score": 1,
               "rawValue": 5,
               "confidence": 0.9,
-              "reasoning": "The response directly acknowledges the user's stated information (mid-June travel, solo passenger) and asks a clarifying question to proceed with booking flights, which aligns perfectly with the user's implied need.",
-              "executionTimeMs": 2201,
-              "timestamp": "2026-01-23T08:33:49.379Z"
+              "reasoning": "The response directly addresses the key pieces of information provided in the query: the departure location (implicitly acknowledged by asking for a specific date in June), the travel month (mid-June), and the number of passengers (implied by asking about the departure date rather than confirming the single passenger).",
+              "executionTimeMs": 2536,
+              "timestamp": "2026-01-26T07:25:14.017Z"
             },
             "outcome": {
               "verdict": "pass",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.5
+                "passAt": 2.5
               },
               "observed": {
                 "rawValue": 5,
@@ -268,16 +269,16 @@
               "score": 1,
               "rawValue": 5,
               "confidence": 0.95,
-              "reasoning": "The response directly acknowledges and confirms the departure date provided in the query, demonstrating full relevance. It also proactively asks a follow-up question to gather more necessary information, indicating a complete understanding of the user's intent.",
-              "executionTimeMs": 2469,
-              "timestamp": "2026-01-23T08:33:49.647Z"
+              "reasoning": "The response directly confirms and restates the departure date provided in the query, which is the core of the user's statement. It then proactively asks a relevant follow-up question about the return date, indicating a complete understanding and engagement with the user's intent.",
+              "executionTimeMs": 2751,
+              "timestamp": "2026-01-26T07:25:14.232Z"
             },
             "outcome": {
               "verdict": "pass",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.5
+                "passAt": 2.5
               },
               "observed": {
                 "rawValue": 5,
@@ -291,17 +292,17 @@
               "metricRef": "answerRelevance",
               "score": 1,
               "rawValue": 5,
-              "confidence": 0.95,
-              "reasoning": "The response directly and fully answers the query by providing round-trip flight options that match the specified departure and return dates (June 15th to June 22nd, 2025) to San Francisco.",
-              "executionTimeMs": 2203,
-              "timestamp": "2026-01-23T08:33:49.381Z"
+              "confidence": 0.9,
+              "reasoning": "The response directly addresses the user's request for a round trip flight to San Francisco, returning on June 22nd, 2025. It provides specific flight options matching the requested return date and infers a logical departure date (June 15th, 2025) based on the user's stated one-week stay. The options are presented clearly and relevantly.",
+              "executionTimeMs": 2859,
+              "timestamp": "2026-01-26T07:25:14.341Z"
             },
             "outcome": {
               "verdict": "pass",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.5
+                "passAt": 2.5
               },
               "observed": {
                 "rawValue": 5,
@@ -315,17 +316,17 @@
               "metricRef": "answerRelevance",
               "score": 1,
               "rawValue": 5,
-              "confidence": 0.95,
-              "reasoning": "The response directly confirms the user's flight selection and acknowledges all the details provided in the query (airline, non-stop, time, and price). It then seamlessly transitions to the next logical step in a travel planning scenario (accommodation), which is appropriate given the context of the initial query.",
-              "executionTimeMs": 2680,
-              "timestamp": "2026-01-23T08:33:49.858Z"
+              "confidence": 0.9,
+              "reasoning": "The response directly confirms the user's selected flight option and then smoothly transitions to the next logical step in the travel planning process (accommodation). It fully addresses the user's stated preference and choice for the flight.",
+              "executionTimeMs": 2751,
+              "timestamp": "2026-01-26T07:25:14.233Z"
             },
             "outcome": {
               "verdict": "pass",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.5
+                "passAt": 2.5
               },
               "observed": {
                 "rawValue": 5,
@@ -339,45 +340,21 @@
               "metricRef": "answerRelevance",
               "score": 0,
               "rawValue": 0,
-              "confidence": 1,
-              "reasoning": "The response is completely empty and therefore provides no information relevant to the query, which asks for hotel recommendations with specific amenities and dates.",
-              "executionTimeMs": 2670,
-              "timestamp": "2026-01-23T08:33:49.849Z"
+              "confidence": 0.9,
+              "reasoning": "The response is completely empty and provides no information whatsoever. Therefore, it cannot possibly be relevant to the query.",
+              "executionTimeMs": 2858,
+              "timestamp": "2026-01-26T07:25:14.340Z"
             },
             "outcome": {
               "verdict": "fail",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.5
+                "passAt": 2.5
               },
               "observed": {
                 "rawValue": 0,
                 "score": 0
-              }
-            }
-          },
-          {
-            "evalRef": "Answer Relevance",
-            "measurement": {
-              "metricRef": "answerRelevance",
-              "score": 0.4,
-              "rawValue": 2,
-              "confidence": 0.9,
-              "reasoning": "The user's query 'It will just be for me' is a clarification about the number of guests. The response initially acknowledges this clarification but then proceeds to suggest a hotel as if the query were a request for hotel recommendations. The majority of the response is unrelated to the user's statement, only the first sentence has minimal relevance. Therefore, the response has minimal relevant content and largely misses the user's intent.",
-              "executionTimeMs": 2522,
-              "timestamp": "2026-01-23T08:33:49.701Z"
-            },
-            "outcome": {
-              "verdict": "pass",
-              "policy": {
-                "kind": "number",
-                "type": "threshold",
-                "passAt": 0.5
-              },
-              "observed": {
-                "rawValue": 2,
-                "score": 0.4
               }
             }
           },
@@ -388,16 +365,16 @@
               "score": 0.6,
               "rawValue": 3,
               "confidence": 0.9,
-              "reasoning": "The response acknowledges the user's choice (partially relevant) but then pivots to an unrelated topic (car rental), which was not mentioned in the query. This makes the response partially relevant but not a direct answer to the user's stated intention to book.",
-              "executionTimeMs": 2573,
-              "timestamp": "2026-01-23T08:33:49.752Z"
+              "reasoning": "The response initially acknowledges the query about \"just for me\" by interpreting it as \"one guest.\" However, it then pivots to suggesting a specific hotel, which is not directly requested and may not be relevant if the user was simply stating a preference for solo travel without needing accommodation. Therefore, it partially answers by acknowledging the guest count but then deviates by offering unsolicited hotel information.",
+              "executionTimeMs": 2533,
+              "timestamp": "2026-01-26T07:25:14.016Z"
             },
             "outcome": {
               "verdict": "pass",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.5
+                "passAt": 2.5
               },
               "observed": {
                 "rawValue": 3,
@@ -409,139 +386,19 @@
             "evalRef": "Answer Relevance",
             "measurement": {
               "metricRef": "answerRelevance",
-              "score": 0,
-              "rawValue": 0,
-              "confidence": 0.9,
-              "reasoning": "The response is empty and therefore provides no information related to the query. It does not answer the query in any way.",
-              "executionTimeMs": 2470,
-              "timestamp": "2026-01-23T08:33:49.649Z"
-            },
-            "outcome": {
-              "verdict": "fail",
-              "policy": {
-                "kind": "number",
-                "type": "threshold",
-                "passAt": 0.5
-              },
-              "observed": {
-                "rawValue": 0,
-                "score": 0
-              }
-            }
-          },
-          {
-            "evalRef": "Answer Relevance",
-            "measurement": {
-              "metricRef": "answerRelevance",
-              "score": 1,
-              "rawValue": 5,
-              "confidence": 0.95,
-              "reasoning": "The response directly confirms the user's observation and explicitly states that there are no vehicles matching all the specified criteria (compact or mid-size, fuel-efficient, San Francisco, June 15th-20th). It then offers relevant follow-up actions to assist the user further, demonstrating full relevance to the query.",
-              "executionTimeMs": 3109,
-              "timestamp": "2026-01-23T08:33:50.289Z"
-            },
-            "outcome": {
-              "verdict": "pass",
-              "policy": {
-                "kind": "number",
-                "type": "threshold",
-                "passAt": 0.5
-              },
-              "observed": {
-                "rawValue": 5,
-                "score": 1
-              }
-            }
-          },
-          {
-            "evalRef": "Answer Relevance",
-            "measurement": {
-              "metricRef": "answerRelevance",
-              "score": 1,
-              "rawValue": 5,
-              "confidence": 0.9,
-              "reasoning": "The response directly addresses the user's updated request by acknowledging the desire for fuel efficiency and the preference to keep the dates unchanged. It sets up the next step to search for vehicles prioritizing fuel efficiency across all types, which is exactly what the user asked for.",
-              "executionTimeMs": 2466,
-              "timestamp": "2026-01-23T08:33:49.647Z"
-            },
-            "outcome": {
-              "verdict": "pass",
-              "policy": {
-                "kind": "number",
-                "type": "threshold",
-                "passAt": 0.5
-              },
-              "observed": {
-                "rawValue": 5,
-                "score": 1
-              }
-            }
-          },
-          {
-            "evalRef": "Answer Relevance",
-            "measurement": {
-              "metricRef": "answerRelevance",
-              "score": 1,
-              "rawValue": 5,
-              "confidence": 0.9,
-              "reasoning": "The response directly addresses the user's request to search for rental cars again, specifically focusing on fuel efficiency for the specified dates and location. It acknowledges the user's frustration and clearly states the plan to broaden the search while maintaining the fuel efficiency priority. The repetition in the response does not detract from its relevance to the query.",
-              "executionTimeMs": 2783,
-              "timestamp": "2026-01-23T08:33:49.963Z"
-            },
-            "outcome": {
-              "verdict": "pass",
-              "policy": {
-                "kind": "number",
-                "type": "threshold",
-                "passAt": 0.5
-              },
-              "observed": {
-                "rawValue": 5,
-                "score": 1
-              }
-            }
-          },
-          {
-            "evalRef": "Answer Relevance",
-            "measurement": {
-              "metricRef": "answerRelevance",
-              "score": 1,
-              "rawValue": 5,
-              "confidence": 0.9,
-              "reasoning": "The response directly addresses both parts of the query regarding the Chevrolet Spark: its daily cost and whether it has an automatic transmission. It also acknowledges the user's preference for automatic transmission and offers a relevant alternative when the Spark doesn't meet that requirement.",
-              "executionTimeMs": 2199,
-              "timestamp": "2026-01-23T08:33:49.379Z"
-            },
-            "outcome": {
-              "verdict": "pass",
-              "policy": {
-                "kind": "number",
-                "type": "threshold",
-                "passAt": 0.5
-              },
-              "observed": {
-                "rawValue": 5,
-                "score": 1
-              }
-            }
-          },
-          {
-            "evalRef": "Answer Relevance",
-            "measurement": {
-              "metricRef": "answerRelevance",
               "score": 0.6,
               "rawValue": 3,
-              "confidence": 0.8,
-              "reasoning": "The response partially addresses the query by acknowledging the user's preference for automatic transmission and offering alternatives to the Ford Transit. However, it doesn't explicitly confirm the fuel efficiency of the suggested vehicles or provide a clear comparison in terms of size and price relative to the Spark and Transit, which were key parts of the user's request. Therefore, it's partially relevant but not a complete answer.",
-              "executionTimeMs": 2895,
-              "timestamp": "2026-01-23T08:33:50.076Z"
+              "confidence": 0.9,
+              "reasoning": "The response acknowledges the user's choice ('Excellent! I'm glad I could find a great option for you.') which is relevant to the query's first sentence. However, it then pivots to a completely unrelated topic about car rentals, which was not part of the user's query or expressed interest. This represents partial relevance with unrelated content.",
+              "executionTimeMs": 2859,
+              "timestamp": "2026-01-26T07:25:14.342Z"
             },
             "outcome": {
               "verdict": "pass",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.5
+                "passAt": 2.5
               },
               "observed": {
                 "rawValue": 3,
@@ -556,16 +413,159 @@
               "score": 1,
               "rawValue": 5,
               "confidence": 0.9,
-              "reasoning": "The response directly addresses all aspects of the query, including the user's preference for mid-size sedans with automatic transmission, good gas mileage, reliability, comfort, and a reasonable price. It acknowledges the limitations of previous suggestions and commits to a new search based on the user's specific criteria.",
-              "executionTimeMs": 2667,
-              "timestamp": "2026-01-23T08:33:49.848Z"
+              "reasoning": "The query clearly states the user needs a car rental with specific dates (June 15th-20th), and preferences for fuel-efficiency, compact or mid-size. The response, although empty, is meant to be a placeholder for a car rental recommendation that would fully address these needs. Assuming a subsequent response would provide this information, the intent is to fulfill the query completely.",
+              "executionTimeMs": 2532,
+              "timestamp": "2026-01-26T07:25:14.016Z"
             },
             "outcome": {
               "verdict": "pass",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.5
+                "passAt": 2.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.95,
+              "reasoning": "The response directly answers the query by confirming that there are no vehicles available that meet all the specified criteria (compact or mid-size, fuel-efficient, San Francisco, June 15th-20th). It also proactively offers helpful next steps for broadening the search, indicating a full understanding of the user's request.",
+              "executionTimeMs": 2749,
+              "timestamp": "2026-01-26T07:25:14.233Z"
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 0,
+              "rawValue": 0,
+              "reasoning": "The response is empty and therefore does not address the query in any way. It provides no information about fuel-efficient vehicles or any other aspect of the user's request.",
+              "executionTimeMs": 2857,
+              "timestamp": "2026-01-26T07:25:14.341Z"
+            },
+            "outcome": {
+              "verdict": "fail",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2.5
+              },
+              "observed": {
+                "rawValue": 0,
+                "score": 0
+              }
+            }
+          },
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.95,
+              "reasoning": "The response directly addresses the user's frustration and explicitly confirms that it will re-search for rental cars with a specific focus on fuel efficiency for the requested dates and location. It also acknowledges the previous failed attempts and proposes a broader search strategy while maintaining the fuel efficiency priority, aligning perfectly with the query's intent.",
+              "executionTimeMs": 2532,
+              "timestamp": "2026-01-26T07:25:14.016Z"
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.9,
+              "reasoning": "The response directly answers both parts of the query regarding the Chevrolet Spark's daily price and transmission type. It also provides additional helpful information about a potential alternative that meets the user's transmission preference, proactively addressing a potential follow-up question.",
+              "executionTimeMs": 2747,
+              "timestamp": "2026-01-26T07:25:14.232Z"
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.9,
+              "reasoning": "The response directly addresses all aspects of the user's query: it acknowledges the dislike for manual transmissions, the concerns about the Ford Transit's size and price, and provides alternative fuel-efficient cars with automatic transmissions that fall between the Spark and the Transit in terms of size and price.",
+              "executionTimeMs": 2425,
+              "timestamp": "2026-01-26T07:25:13.910Z"
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.9,
+              "reasoning": "The response directly addresses all aspects of the query: the user's preference for a mid-size sedan with automatic transmission and decent gas mileage, their dissatisfaction with previous options (vans/convertibles), and their concern about price. The response confirms understanding and states an intention to perform a new search based on these refined criteria.",
+              "executionTimeMs": 2318,
+              "timestamp": "2026-01-26T07:25:13.803Z"
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2.5
               },
               "observed": {
                 "rawValue": 5,
@@ -580,16 +580,16 @@
               "score": 0.8,
               "rawValue": 4,
               "confidence": 0.9,
-              "reasoning": "The response acknowledges the user's frustration and directly addresses the limited options for mid-size sedans. It then proposes alternative strategies (different vehicle types, adjusting dates, exploring fuel types) which are relevant to finding a suitable vehicle, even if the exact initial request isn't fully met. This aligns with a high score for mostly answering the query with relevant, albeit alternative, suggestions.",
-              "executionTimeMs": 2896,
-              "timestamp": "2026-01-23T08:33:50.077Z"
+              "reasoning": "The response acknowledges the user's frustration and directly addresses the lack of mid-size sedan options. It then proposes alternative solutions that are relevant to the user's situation, such as considering different vehicle types, adjusting dates, or exploring other fuel types. While it doesn't provide specific new car models as a direct answer to \"What are my other choices?\", it offers viable strategies for finding a suitable car, thus being mostly relevant.",
+              "executionTimeMs": 2638,
+              "timestamp": "2026-01-26T07:25:14.124Z"
             },
             "outcome": {
               "verdict": "pass",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.5
+                "passAt": 2.5
               },
               "observed": {
                 "rawValue": 4,
@@ -604,16 +604,16 @@
               "score": 1,
               "rawValue": 5,
               "confidence": 0.9,
-              "reasoning": "The response directly addresses the user's request for alternative vehicle types (smaller SUVs) and explores other options like different rental companies, while also acknowledging the user's constraints (dates, preference for simplicity). It aligns with the user's desire for reliable and reasonably priced options.",
-              "executionTimeMs": 2902,
-              "timestamp": "2026-01-23T08:33:50.083Z"
+              "reasoning": "The response directly addresses the user's request for alternative vehicle types (smaller SUVs) and options (different rental company), while acknowledging the user's constraints and preferences (sticking to original dates, avoiding electric/hybrid, preference for reliable and reasonably priced options). It demonstrates a clear understanding of the user's needs and provides relevant suggestions.",
+              "executionTimeMs": 2639,
+              "timestamp": "2026-01-26T07:25:14.125Z"
             },
             "outcome": {
               "verdict": "pass",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.5
+                "passAt": 2.5
               },
               "observed": {
                 "rawValue": 5,
@@ -628,16 +628,16 @@
               "score": 1,
               "rawValue": 5,
               "confidence": 0.9,
-              "reasoning": "The response directly addresses the user's concern about not finding a suitable car rental. It acknowledges the difficulty in finding specific types of vehicles (smaller SUV, different company) and then offers relevant alternative solutions and suggestions, such as widening the search criteria, considering different locations, or re-evaluating the need for a rental car altogether. This demonstrates full relevance to the user's expressed problem.",
-              "executionTimeMs": 2677,
-              "timestamp": "2026-01-23T08:33:49.859Z"
+              "reasoning": "The response directly addresses the user's frustration about not finding a car rental, acknowledges the specific request for a smaller SUV or a different company, and validates their concern. It then offers relevant alternative solutions that align with the user's underlying need for transportation, considering different vehicle types, locations, and even alternative transport methods. This shows a high degree of relevance and helpfulness.",
+              "executionTimeMs": 3059,
+              "timestamp": "2026-01-26T07:25:14.545Z"
             },
             "outcome": {
               "verdict": "pass",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.5
+                "passAt": 2.5
               },
               "observed": {
                 "rawValue": 5,
@@ -651,17 +651,16 @@
               "metricRef": "answerRelevance",
               "score": 0,
               "rawValue": 0,
-              "confidence": 0.9,
-              "reasoning": "The user is asking to explore car rental options at a different airport (Oakland) due to difficulty finding a suitable car at their current location and a preference for not relying solely on public transport. The response is empty, therefore it provides no information or options related to the user's request.",
-              "executionTimeMs": 2354,
-              "timestamp": "2026-01-23T08:33:49.536Z"
+              "reasoning": "The response is empty, providing no information or options related to the query. Therefore, it does not address the user's request to explore alternative airport locations for car pick-up/drop-off or acknowledge their preferences.",
+              "executionTimeMs": 2320,
+              "timestamp": "2026-01-26T07:25:13.806Z"
             },
             "outcome": {
               "verdict": "fail",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.5
+                "passAt": 2.5
               },
               "observed": {
                 "rawValue": 0,
@@ -676,16 +675,16 @@
               "score": 0.6,
               "rawValue": 3,
               "confidence": 0.9,
-              "reasoning": "The response attempts to answer the query by providing rental car options, but it fails to acknowledge the user's specified location (San Francisco) and instead offers cars from Oakland. This makes the information partially relevant, as it addresses the core need for a rental car but misses a key constraint.",
-              "executionTimeMs": 2781,
-              "timestamp": "2026-01-23T08:33:49.963Z"
+              "reasoning": "The response partially answers the query. The user specifically asked for a rental car in San Francisco, but the response provided options for Oakland. While it did find rental car options with relevant features (mid-size sedans, automatic transmission, good fuel efficiency), the location mismatch makes it only partially relevant.",
+              "executionTimeMs": 2854,
+              "timestamp": "2026-01-26T07:25:14.341Z"
             },
             "outcome": {
               "verdict": "pass",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.5
+                "passAt": 2.5
               },
               "observed": {
                 "rawValue": 3,
@@ -699,17 +698,17 @@
               "metricRef": "answerRelevance",
               "score": 1,
               "rawValue": 5,
-              "confidence": 1,
-              "reasoning": "The query explicitly asks to search for car rentals directly in San Francisco or at SFO airport, emphasizing a desire to minimize travel time. The response, although empty, is interpreted as the system's acknowledgement to perform this refined search, aligning perfectly with the user's updated request.",
-              "executionTimeMs": 2353,
-              "timestamp": "2026-01-23T08:33:49.535Z"
+              "confidence": 0.9,
+              "reasoning": "The user explicitly asked to search for car rentals directly in San Francisco or at SFO airport to minimize travel time, and the response provides exactly that information, directly addressing the user's revised search criteria and preference.",
+              "executionTimeMs": 2855,
+              "timestamp": "2026-01-26T07:25:14.342Z"
             },
             "outcome": {
               "verdict": "pass",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.5
+                "passAt": 2.5
               },
               "observed": {
                 "rawValue": 5,
@@ -724,16 +723,16 @@
               "score": 1,
               "rawValue": 5,
               "confidence": 0.9,
-              "reasoning": "The response directly addresses the user's frustration and acknowledges the difficulty in finding a car rental in San Francisco or SFO. It then provides actionable options that align perfectly with the user's requests: expanding the search radius slightly (implicitly by suggesting date flexibility) and considering different pickup dates. It also offers to re-evaluate other vehicle types in the desired location, which is a helpful suggestion given the limited availability. The option to revisit Oakland is also presented as a last resort, which is reasonable given the user's initial preference. The response is fully relevant and helpful.",
-              "executionTimeMs": 3002,
-              "timestamp": "2026-01-23T08:33:50.184Z"
+              "reasoning": "The response directly addresses all aspects of the query. It acknowledges the user's frustration, confirms the difficulty in finding a car in the specified location, and offers the exact solutions the user suggested (expanding the search radius implicitly by offering date adjustments and considering different pickup dates, and offering alternatives if those don't work). The response accurately reflects the constraints and preferences mentioned by the user.",
+              "executionTimeMs": 2529,
+              "timestamp": "2026-01-26T07:25:14.016Z"
             },
             "outcome": {
               "verdict": "pass",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.5
+                "passAt": 2.5
               },
               "observed": {
                 "rawValue": 5,
@@ -745,23 +744,23 @@
             "evalRef": "Answer Relevance",
             "measurement": {
               "metricRef": "answerRelevance",
-              "score": 0.6,
-              "rawValue": 3,
+              "score": 0.8,
+              "rawValue": 4,
               "confidence": 0.9,
-              "reasoning": "The response acknowledges the user's preference against adjusting dates and their desire for a sedan or SUV. It then proceeds to re-examine vehicle types in San Francisco, as requested. However, it presents vehicle types (vans, a convertible, and a sports car) that do not meet the user's stated preference for sedans or SUVs, although it does offer them as potential compromises. The response partially answers the query by looking at other vehicle types in San Francisco but fails to offer the specifically requested types.",
-              "executionTimeMs": 3213,
-              "timestamp": "2026-01-23T08:33:50.396Z"
+              "reasoning": "The response directly addresses the user's request to look at other vehicle types in San Francisco and acknowledges the preference for sedans/SUVs. It re-presents previously found options, explicitly stating they are not sedans or SUVs, which aligns with the 'partial relevance with some unrelated content' criteria. The response effectively tries to find a compromise by showing what is available, even if it doesn't perfectly match the desired vehicle type.",
+              "executionTimeMs": 2639,
+              "timestamp": "2026-01-26T07:25:14.126Z"
             },
             "outcome": {
               "verdict": "pass",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.5
+                "passAt": 2.5
               },
               "observed": {
-                "rawValue": 3,
-                "score": 0.6
+                "rawValue": 4,
+                "score": 0.8
               }
             }
           }
@@ -776,16 +775,40 @@
               "score": 0.4,
               "rawValue": 2,
               "confidence": 0.9,
-              "reasoning": "The response acknowledges the query and shows willingness to help, but it doesn't provide any actual information or suggestions for planning a trip to San Francisco. It asks clarifying questions, which is a good start, but it doesn't cover any of the expected topics yet. Therefore, the coverage is minimal, and there are significant gaps.",
-              "executionTimeMs": 2518,
-              "timestamp": "2026-01-23T08:33:49.701Z"
+              "reasoning": "The response acknowledges the user's request and asks clarifying questions to gather more information, which is a good starting point. However, it does not provide any actual planning information or suggestions, thus leaving significant gaps in coverage. It's more of an initiation of the planning process than a provision of planning assistance.",
+              "executionTimeMs": 2316,
+              "timestamp": "2026-01-26T07:25:13.803Z"
             },
             "outcome": {
-              "verdict": "pass",
+              "verdict": "fail",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.3
+                "passAt": 3
+              },
+              "observed": {
+                "rawValue": 2,
+                "score": 0.4
+              }
+            }
+          },
+          {
+            "evalRef": "Completeness",
+            "measurement": {
+              "metricRef": "completeness",
+              "score": 0.4,
+              "rawValue": 2,
+              "confidence": 0.9,
+              "reasoning": "The response acknowledges the user's request for flights, accommodation, and car rental but fails to provide any recommendations for food, which was explicitly requested. It also only asks for necessary information to proceed with bookings but doesn't offer any initial suggestions or general advice. Therefore, it covers only a fraction of the requested services and lacks depth.",
+              "executionTimeMs": 2421,
+              "timestamp": "2026-01-26T07:25:13.908Z"
+            },
+            "outcome": {
+              "verdict": "fail",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3
               },
               "observed": {
                 "rawValue": 2,
@@ -800,16 +823,16 @@
               "score": 0.2,
               "rawValue": 1,
               "confidence": 0.9,
-              "reasoning": "The response is extremely incomplete. The query explicitly asks for flights, accommodation, car rental, and food recommendations. The response only addresses flights, accommodation, and car rental by asking for clarifying information, but does not address food recommendations at all. Furthermore, it doesn't provide any actual recommendations or information, only requests more details.",
-              "executionTimeMs": 3004,
-              "timestamp": "2026-01-23T08:33:50.187Z"
+              "reasoning": "The response is extremely incomplete as it is entirely blank. It does not acknowledge or process any of the information provided in the query regarding departure location, travel dates, or number of passengers.",
+              "executionTimeMs": 2316,
+              "timestamp": "2026-01-26T07:25:13.804Z"
             },
             "outcome": {
-              "verdict": "pass",
+              "verdict": "fail",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.3
+                "passAt": 3
               },
               "observed": {
                 "rawValue": 1,
@@ -821,23 +844,23 @@
             "evalRef": "Completeness",
             "measurement": {
               "metricRef": "completeness",
-              "score": 0.4,
-              "rawValue": 2,
+              "score": 0.8,
+              "rawValue": 4,
               "confidence": 0.9,
-              "reasoning": "The response is incomplete because it does not capture all the essential information from the query. While it acknowledges the departure location (JFK, New York) and the number of passengers (solo, 1), it fails to extract or confirm the desired travel month (mid-June) and the specific date range is missing. Therefore, it only covers a few expected points with significant gaps in coverage.",
-              "executionTimeMs": 2516,
-              "timestamp": "2026-01-23T08:33:49.699Z"
+              "reasoning": "The response acknowledges the departure location (JFK, New York) and the general timeframe (mid-June). It effectively seeks clarification on the specific date, which is appropriate given the user's statement. However, it doesn't explicitly confirm the number of passengers (solo traveler), which was a piece of information provided by the user. Therefore, it's not a 5, but very close.",
+              "executionTimeMs": 2529,
+              "timestamp": "2026-01-26T07:25:14.017Z"
             },
             "outcome": {
               "verdict": "pass",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.3
+                "passAt": 3
               },
               "observed": {
-                "rawValue": 2,
-                "score": 0.4
+                "rawValue": 4,
+                "score": 0.8
               }
             }
           },
@@ -848,16 +871,16 @@
               "score": 0.8,
               "rawValue": 4,
               "confidence": 0.9,
-              "reasoning": "The response acknowledges the departure location (JFK, New York) and the general timeframe (mid-June). It also correctly identifies that the user is traveling solo. However, it doesn't explicitly confirm the number of passengers or directly address the 'haven't picked the exact date' aspect, instead asking for a specific date or week. It successfully prompts for more specific information needed for flight booking.",
-              "executionTimeMs": 2516,
-              "timestamp": "2026-01-23T08:33:49.699Z"
+              "reasoning": "The response confirms the departure date and destination, indicating good coverage. However, it prompts for a return date, suggesting that a complete itinerary (round trip) might have been expected, hence not a perfect score of 5.",
+              "executionTimeMs": 2421,
+              "timestamp": "2026-01-26T07:25:13.909Z"
             },
             "outcome": {
               "verdict": "pass",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.3
+                "passAt": 3
               },
               "observed": {
                 "rawValue": 4,
@@ -872,16 +895,16 @@
               "score": 1,
               "rawValue": 5,
               "confidence": 0.9,
-              "reasoning": "The response fully confirms the departure date and destination details provided in the query and proactively asks a relevant follow-up question about the return date, indicating completeness in understanding and processing the given information.",
-              "executionTimeMs": 2517,
-              "timestamp": "2026-01-23T08:33:49.701Z"
+              "reasoning": "The response fully addresses the user's request for a round-trip flight. It correctly identifies the departure and return dates (June 15th to June 22nd, 2025) and provides multiple flight options with relevant details such as airline, number of stops, departure/arrival times, and price. The response also proactively asks for further refinement, indicating a thorough understanding and fulfillment of the user's needs.",
+              "executionTimeMs": 2637,
+              "timestamp": "2026-01-26T07:25:14.126Z"
             },
             "outcome": {
               "verdict": "pass",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.3
+                "passAt": 3
               },
               "observed": {
                 "rawValue": 5,
@@ -896,16 +919,16 @@
               "score": 1,
               "rawValue": 5,
               "confidence": 0.9,
-              "reasoning": "The response fully addresses the user's request for a round-trip flight, including the specified departure and return dates. It also provides multiple flight options with relevant details such as airline, stops, departure/arrival times, and prices, which comprehensively covers the expected information for this query.",
-              "executionTimeMs": 2663,
-              "timestamp": "2026-01-23T08:33:49.847Z"
+              "reasoning": "The response fully acknowledges and confirms the user's selected flight option, which was the primary focus of the query. It accurately reiterates the non-stop nature, time, and price. The transition to accommodation details is a natural next step in a travel booking context and does not detract from the completeness of addressing the flight query.",
+              "executionTimeMs": 2634,
+              "timestamp": "2026-01-26T07:25:14.123Z"
             },
             "outcome": {
               "verdict": "pass",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.3
+                "passAt": 3
               },
               "observed": {
                 "rawValue": 5,
@@ -917,23 +940,46 @@
             "evalRef": "Completeness",
             "measurement": {
               "metricRef": "completeness",
-              "score": 1,
-              "rawValue": 5,
+              "score": 0,
+              "rawValue": 0,
               "confidence": 0.9,
-              "reasoning": "The response confirms the user's flight selection exactly as specified in the query, indicating full coverage of the flight-related topic. It then proactively moves to the next logical step (accommodation) without any indication of missing flight information, suggesting completeness in addressing the user's stated flight preference.",
-              "executionTimeMs": 2570,
-              "timestamp": "2026-01-23T08:33:49.754Z"
+              "reasoning": "The response is completely empty and provides no information related to the query. It fails to address any of the user's preferences (hotel, Wi-Fi, gym) or stay details (check-in date, duration).",
+              "executionTimeMs": 1993,
+              "timestamp": "2026-01-26T07:25:13.482Z"
             },
             "outcome": {
-              "verdict": "pass",
+              "verdict": "fail",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.3
+                "passAt": 3
               },
               "observed": {
-                "rawValue": 5,
-                "score": 1
+                "rawValue": 0,
+                "score": 0
+              }
+            }
+          },
+          {
+            "evalRef": "Completeness",
+            "measurement": {
+              "metricRef": "completeness",
+              "score": 0,
+              "rawValue": 0,
+              "reasoning": "The query states 'It will just be for me,' implying a single person. The response incorrectly interprets this as 'one guest for the hotel' and proceeds to recommend a hotel. The response completely fails to acknowledge or address the core intent of the user's statement, which was likely about the *number* of people, not just a confirmation of a booking. Therefore, it is entirely incomplete in addressing the implicit question about booking for one person.",
+              "executionTimeMs": 2635,
+              "timestamp": "2026-01-26T07:25:14.124Z"
+            },
+            "outcome": {
+              "verdict": "fail",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3
+              },
+              "observed": {
+                "rawValue": 0,
+                "score": 0
               }
             }
           },
@@ -944,16 +990,16 @@
               "score": 0.2,
               "rawValue": 1,
               "confidence": 0.9,
-              "reasoning": "The response is entirely incomplete. It fails to address any aspect of the user's request, including the preference for a hotel, the need for Wi-Fi and a gym, or the specific check-in date and duration of the stay. No information or suggestions are provided.",
-              "executionTimeMs": 2352,
-              "timestamp": "2026-01-23T08:33:49.536Z"
+              "reasoning": "The response acknowledges the user's choice but then pivots to a completely different topic (car rental) without confirming the booking or addressing any next steps related to the lodge. It fails to cover the expected topic of proceeding with the booking for the Boutique Lodge.",
+              "executionTimeMs": 2525,
+              "timestamp": "2026-01-26T07:25:14.015Z"
             },
             "outcome": {
-              "verdict": "pass",
+              "verdict": "fail",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.3
+                "passAt": 3
               },
               "observed": {
                 "rawValue": 1,
@@ -965,66 +1011,19 @@
             "evalRef": "Completeness",
             "measurement": {
               "metricRef": "completeness",
-              "score": 0.4,
-              "rawValue": 2,
-              "confidence": 0.9,
-              "reasoning": "The response correctly identifies that the user is booking for themselves (one guest) but then proceeds to suggest a hotel without any prior request or indication that hotel booking was desired. The response is incomplete as it assumes a hotel booking context and does not address any other potential needs or topics implied by the very brief query.",
-              "executionTimeMs": 3002,
-              "timestamp": "2026-01-23T08:33:50.186Z"
-            },
-            "outcome": {
-              "verdict": "pass",
-              "policy": {
-                "kind": "number",
-                "type": "threshold",
-                "passAt": 0.3
-              },
-              "observed": {
-                "rawValue": 2,
-                "score": 0.4
-              }
-            }
-          },
-          {
-            "evalRef": "Completeness",
-            "measurement": {
-              "metricRef": "completeness",
-              "score": 0.4,
-              "rawValue": 2,
-              "confidence": 0.8,
-              "reasoning": "The response acknowledges the user's choice of the 'Boutique Lodge' but does not confirm the booking or provide any details about it. It immediately pivots to a new topic (car rental) without fully addressing the primary intent of the query, which was to book the lodge. Therefore, the coverage of the expected topic (booking confirmation) is minimal and incomplete.",
-              "executionTimeMs": 2350,
-              "timestamp": "2026-01-23T08:33:49.535Z"
-            },
-            "outcome": {
-              "verdict": "pass",
-              "policy": {
-                "kind": "number",
-                "type": "threshold",
-                "passAt": 0.3
-              },
-              "observed": {
-                "rawValue": 2,
-                "score": 0.4
-              }
-            }
-          },
-          {
-            "evalRef": "Completeness",
-            "measurement": {
-              "metricRef": "completeness",
               "score": 0,
               "rawValue": 0,
-              "reasoning": "The response is entirely empty and provides no information or action related to the user's request for a car rental, including pick-up/drop-off dates, car type preferences, or any other details. Therefore, it is entirely incomplete.",
-              "executionTimeMs": 2778,
-              "timestamp": "2026-01-23T08:33:49.963Z"
+              "confidence": 0.9,
+              "reasoning": "The response is entirely empty and does not address any part of the query, such as the car rental dates, car type preferences, or fuel efficiency requirements. Therefore, it is considered entirely incomplete.",
+              "executionTimeMs": 2527,
+              "timestamp": "2026-01-26T07:25:14.017Z"
             },
             "outcome": {
               "verdict": "fail",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.3
+                "passAt": 3
               },
               "observed": {
                 "rawValue": 0,
@@ -1039,16 +1038,16 @@
               "score": 1,
               "rawValue": 5,
               "confidence": 0.9,
-              "reasoning": "The response directly addresses the user's query by confirming that no vehicles matching the specified criteria (compact or mid-size, fuel-efficient, San Francisco, June 15th-20th) are available. It explicitly states the lack of availability for the requested categories, aligning perfectly with the information sought. The suggestions for broadening the search show a proactive approach to assist the user further, indicating a complete understanding and handling of the query's constraints.",
-              "executionTimeMs": 3209,
-              "timestamp": "2026-01-23T08:33:50.394Z"
+              "reasoning": "The response directly addresses the query by confirming the lack of available vehicles matching all specified criteria (dates, location, fuel efficiency, size). It also offers relevant alternative actions to assist the user further, demonstrating a complete understanding and handling of the query's constraints.",
+              "executionTimeMs": 2633,
+              "timestamp": "2026-01-26T07:25:14.123Z"
             },
             "outcome": {
               "verdict": "pass",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.3
+                "passAt": 3
               },
               "observed": {
                 "rawValue": 5,
@@ -1063,16 +1062,16 @@
               "score": 0.2,
               "rawValue": 1,
               "confidence": 0.9,
-              "reasoning": "The response is almost entirely incomplete. The query prioritizes fuel efficiency and specifies not to adjust dates. The response does not acknowledge or address the fuel efficiency prioritization and completely ignores the constraint about not adjusting dates. It also fails to offer any search results or suggestions based on the query's criteria. The only minimal aspect is the implicit understanding that a search is being conducted, but without any parameters applied.",
-              "executionTimeMs": 3102,
-              "timestamp": "2026-01-23T08:33:50.288Z"
+              "reasoning": "The response did not provide any information about fuel-efficient cars or any vehicle types, despite the query explicitly asking for this. It completely failed to address the core request, making it entirely incomplete.",
+              "executionTimeMs": 1992,
+              "timestamp": "2026-01-26T07:25:13.482Z"
             },
             "outcome": {
-              "verdict": "pass",
+              "verdict": "fail",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.3
+                "passAt": 3
               },
               "observed": {
                 "rawValue": 1,
@@ -1084,23 +1083,23 @@
             "evalRef": "Completeness",
             "measurement": {
               "metricRef": "completeness",
-              "score": 0.4,
-              "rawValue": 2,
+              "score": 0.2,
+              "rawValue": 1,
               "confidence": 0.9,
-              "reasoning": "The response acknowledges the user's frustration and reiterates the search parameters (fuel efficiency, dates, location). However, it does not actually provide any results or confirm if a search was performed beyond stating the intention to search. The response repeats itself, which is also unhelpful. Therefore, it covers very few expected points (acknowledgment and intent to search) with significant gaps in the actual fulfillment of the request.",
-              "executionTimeMs": 3315,
-              "timestamp": "2026-01-23T08:33:50.501Z"
+              "reasoning": "The response acknowledges the user's frustration and reiterates the plan to search for fuel-efficient vehicles within the specified dates and location. However, it does not provide any actual search results or confirm if any vehicles were found. The response is repetitive and offers no new information or resolution to the user's problem. It fails to deliver on the core request of checking for available vehicles.",
+              "executionTimeMs": 2850,
+              "timestamp": "2026-01-26T07:25:14.341Z"
             },
             "outcome": {
-              "verdict": "pass",
+              "verdict": "fail",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.3
+                "passAt": 3
               },
               "observed": {
-                "rawValue": 2,
-                "score": 0.4
+                "rawValue": 1,
+                "score": 0.2
               }
             }
           },
@@ -1111,16 +1110,16 @@
               "score": 0.8,
               "rawValue": 4,
               "confidence": 0.9,
-              "reasoning": "The response addresses both key questions about the Chevrolet Spark: its daily price and transmission type. It also correctly identifies that the Spark has a manual transmission, which is a crucial detail given the user's preference. The response proactively offers an alternative (Ford Transit) that meets the automatic transmission requirement and is also fuel-efficient, which adds value. However, the response doesn't explicitly state the price of the Ford Transit per day, only that it's $91, which is present. The response fully covers the Spark's details requested but doesn't offer the same depth for the alternative, hence a score of 4.",
-              "executionTimeMs": 3640,
-              "timestamp": "2026-01-23T08:33:50.826Z"
+              "reasoning": "The response directly answers the query about the Chevrolet Spark's daily price and transmission type, and also addresses the user's preference for automatic. It provides a relevant alternative (Ford Transit) and offers to explore further options, demonstrating good coverage. However, it doesn't explicitly state the MPG for the Spark, only for the Transit, which could be considered a minor gap.",
+              "executionTimeMs": 2741,
+              "timestamp": "2026-01-26T07:25:14.232Z"
             },
             "outcome": {
               "verdict": "pass",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.3
+                "passAt": 3
               },
               "observed": {
                 "rawValue": 4,
@@ -1132,43 +1131,19 @@
             "evalRef": "Completeness",
             "measurement": {
               "metricRef": "completeness",
-              "score": 0.2,
-              "rawValue": 1,
-              "confidence": 0.9,
-              "reasoning": "The response is entirely incomplete as it does not provide any information or suggestions for alternative fuel-efficient cars with automatic transmissions. It fails to address any of the user's stated preferences regarding size, price, or transmission type.",
-              "executionTimeMs": 2778,
-              "timestamp": "2026-01-23T08:33:49.964Z"
-            },
-            "outcome": {
-              "verdict": "pass",
-              "policy": {
-                "kind": "number",
-                "type": "threshold",
-                "passAt": 0.3
-              },
-              "observed": {
-                "rawValue": 1,
-                "score": 0.2
-              }
-            }
-          },
-          {
-            "evalRef": "Completeness",
-            "measurement": {
-              "metricRef": "completeness",
               "score": 0.4,
               "rawValue": 2,
               "confidence": 0.8,
-              "reasoning": "The response acknowledges the user's preferences for a mid-size sedan with automatic transmission and decent gas mileage, and that the previous suggestions were not suitable. However, it does not provide any actual new options or suggest specific vehicles. It only states that it will perform another search, making it incomplete in terms of delivering on the request for alternative vehicles.",
-              "executionTimeMs": 3000,
-              "timestamp": "2026-01-23T08:33:50.186Z"
+              "reasoning": "The response does not provide any information about alternative car options. It fails to address the user's request for fuel-efficient cars with automatic transmission that are between the Spark and the Transit in size and price. Therefore, the response is largely incomplete.",
+              "executionTimeMs": 2526,
+              "timestamp": "2026-01-26T07:25:14.017Z"
             },
             "outcome": {
-              "verdict": "pass",
+              "verdict": "fail",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.3
+                "passAt": 3
               },
               "observed": {
                 "rawValue": 2,
@@ -1183,16 +1158,16 @@
               "score": 0.6,
               "rawValue": 3,
               "confidence": 0.9,
-              "reasoning": "The response acknowledges the user's frustration and the limited options in the mid-size sedan category. It then offers three alternative strategies: considering different vehicle types (vans, convertibles), adjusting dates, and exploring other fuel types (electric/hybrid). While these are relevant suggestions, they don't directly address the user's core constraints of \"practical and fuel-efficient for getting around San Francisco\" without \"paying a premium for a larger vehicle or a convertible.\" The suggestions for vans and convertibles directly contradict the user's stated preferences. The response could have been more complete by suggesting smaller, more fuel-efficient car classes that might be available, or by explaining *why* mid-size sedans are limited (e.g., high demand, specific fleet composition) and then focusing on the best alternatives within those constraints. Therefore, it covers some expected points but misses the mark on providing the most suitable alternatives.",
-              "executionTimeMs": 3747,
-              "timestamp": "2026-01-23T08:33:50.933Z"
+              "reasoning": "The response acknowledges the user's preferences for sedans/SUVs, automatic transmission, decent gas mileage, reliability, comfort, and a lower price point, which were all mentioned in the query. However, it does not provide any actual vehicle options or information about availability, which is a significant gap. It only states that options might be limited and that another search will be performed.",
+              "executionTimeMs": 3140,
+              "timestamp": "2026-01-26T07:25:14.631Z"
             },
             "outcome": {
               "verdict": "pass",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.3
+                "passAt": 3
               },
               "observed": {
                 "rawValue": 3,
@@ -1204,23 +1179,46 @@
             "evalRef": "Completeness",
             "measurement": {
               "metricRef": "completeness",
-              "score": 0.8,
-              "rawValue": 4,
+              "score": 0.6,
+              "rawValue": 3,
               "confidence": 0.9,
-              "reasoning": "The response acknowledges the user's constraints (sedans, vans, convertibles, electric/hybrid) and directly addresses the user's alternative suggestions (smaller SUVs, different rental companies). It demonstrates a good understanding of the user's needs for reliability and reasonable pricing. The response could be slightly more complete by explicitly offering to search for specific smaller SUV models or by listing alternative rental companies with brief pros/cons. However, it effectively covers the core of the user's request and pivots to actionable next steps.",
-              "executionTimeMs": 3208,
-              "timestamp": "2026-01-23T08:33:50.395Z"
+              "reasoning": "The response acknowledges the user's frustration and the limitations of mid-size sedans. It offers three alternative strategies: considering different vehicle types (vans, convertibles), adjusting dates, and exploring other fuel types (electric/hybrid). While these are relevant suggestions, they don't directly address the user's core need for a practical, fuel-efficient, non-premium vehicle *within the sedan category* or similar. The response implicitly suggests moving away from the user's initial constraints rather than finding options within them. It covers some expected points (alternative vehicle types, date flexibility) but lacks depth in exploring other potential sedan-like categories or providing more specific practical/fuel-efficient options that avoid a premium.",
+              "executionTimeMs": 2964,
+              "timestamp": "2026-01-26T07:25:14.455Z"
             },
             "outcome": {
               "verdict": "pass",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.3
+                "passAt": 3
               },
               "observed": {
-                "rawValue": 4,
-                "score": 0.8
+                "rawValue": 3,
+                "score": 0.6
+              }
+            }
+          },
+          {
+            "evalRef": "Completeness",
+            "measurement": {
+              "metricRef": "completeness",
+              "score": 0,
+              "rawValue": 0,
+              "reasoning": "The response is entirely incomplete as it does not address any of the user's requests or concerns. The user explicitly stated preferences against sedans, vans, convertibles, and electric/hybrid options, and asked for alternatives like smaller SUVs or different rental companies. The provided response is empty and does not offer any of these solutions or acknowledge the user's constraints.",
+              "executionTimeMs": 2849,
+              "timestamp": "2026-01-26T07:25:14.340Z"
+            },
+            "outcome": {
+              "verdict": "fail",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3
+              },
+              "observed": {
+                "rawValue": 0,
+                "score": 0
               }
             }
           },
@@ -1231,16 +1229,16 @@
               "score": 0.8,
               "rawValue": 4,
               "confidence": 0.9,
-              "reasoning": "The response acknowledges the user's specific request for a smaller SUV and the difficulty in finding one. It also addresses the user's concern about not finding a suitable rental and worrying about the trip. The response provides alternative solutions such as considering other fuel types, different pick-up/drop-off locations, or alternative transportation, which are relevant and helpful. However, it doesn't explicitly confirm if 'other rental companies' were thoroughly explored, which was mentioned as a possibility by the user. Therefore, it's not a perfect 5 but a strong 4.",
-              "executionTimeMs": 3314,
-              "timestamp": "2026-01-23T08:33:50.501Z"
+              "reasoning": "The response acknowledges the user's concern and the difficulty in finding a smaller SUV or a different rental company. It confirms the limited availability of automatic, fuel-efficient SUVs and sedans for the specified dates and location. The response then proposes three alternative strategies: expanding the search to other fuel types, considering different pick-up/drop-off locations, and re-evaluating the need for a rental car by considering public transport or ride-sharing. While it doesn't explicitly mention searching with other rental companies, it does implicitly address that by suggesting alternative approaches when direct searches are exhausted. The coverage is good, but it could be slightly more thorough by explicitly mentioning checking other rental companies as a direct alternative to expanding vehicle types or locations. Hence, a score of 4 seems appropriate.",
+              "executionTimeMs": 2852,
+              "timestamp": "2026-01-26T07:25:14.344Z"
             },
             "outcome": {
               "verdict": "pass",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.3
+                "passAt": 3
               },
               "observed": {
                 "rawValue": 4,
@@ -1255,16 +1253,16 @@
               "score": 0.2,
               "rawValue": 1,
               "confidence": 0.9,
-              "reasoning": "The response is entirely incomplete as it does not provide any information or explore options for a different pick-up/drop-off location at Oakland airport, nor does it address the user's preference for flexibility with their own vehicle. The response is essentially empty.",
-              "executionTimeMs": 2776,
-              "timestamp": "2026-01-23T08:33:49.963Z"
+              "reasoning": "The response is entirely empty, providing no information or exploration of the requested options, leading to a score of 0. The user explicitly asked to explore car rental options at Oakland airport and expressed a preference against relying solely on public transport. The empty response completely fails to address these points.",
+              "executionTimeMs": 2525,
+              "timestamp": "2026-01-26T07:25:14.017Z"
             },
             "outcome": {
-              "verdict": "pass",
+              "verdict": "fail",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.3
+                "passAt": 3
               },
               "observed": {
                 "rawValue": 1,
@@ -1279,16 +1277,16 @@
               "score": 0.4,
               "rawValue": 2,
               "confidence": 0.9,
-              "reasoning": "The response acknowledges the previous mistake but fails to address the core request of finding a rental car *in San Francisco*. Instead, it provides options for Oakland, which was not specified in the user's prompt for the current turn. While it provides details about the cars found, it does not fulfill the primary requirement of the query, indicating a significant gap in coverage.",
-              "executionTimeMs": 2568,
-              "timestamp": "2026-01-23T08:33:49.755Z"
+              "reasoning": "The response acknowledges the user's original request for a rental car in San Francisco but then provides options for Oakland instead. While it offers specific car details and acknowledges criteria like transmission and fuel efficiency, it fails to address the primary location requirement, indicating significant missing information.",
+              "executionTimeMs": 2634,
+              "timestamp": "2026-01-26T07:25:14.126Z"
             },
             "outcome": {
-              "verdict": "pass",
+              "verdict": "fail",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.3
+                "passAt": 3
               },
               "observed": {
                 "rawValue": 2,
@@ -1300,23 +1298,23 @@
             "evalRef": "Completeness",
             "measurement": {
               "metricRef": "completeness",
-              "score": 0.2,
-              "rawValue": 1,
+              "score": 0.4,
+              "rawValue": 2,
               "confidence": 0.9,
-              "reasoning": "The response does not address the user's core request to search for car rentals directly in San Francisco or at SFO airport. It fails to provide any relevant options or acknowledge the user's preference to minimize travel time, making it largely incomplete.",
-              "executionTimeMs": 2460,
-              "timestamp": "2026-01-23T08:33:49.647Z"
+              "reasoning": "The response acknowledges the user's preference for locations closer to San Francisco and SFO airport but does not provide any new search results or alternative options. It fails to address the core request of finding rental cars in the specified areas, leaving significant gaps in coverage.",
+              "executionTimeMs": 2419,
+              "timestamp": "2026-01-26T07:25:13.911Z"
             },
             "outcome": {
-              "verdict": "pass",
+              "verdict": "fail",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.3
+                "passAt": 3
               },
               "observed": {
-                "rawValue": 1,
-                "score": 0.2
+                "rawValue": 2,
+                "score": 0.4
               }
             }
           },
@@ -1327,16 +1325,16 @@
               "score": 0.8,
               "rawValue": 4,
               "confidence": 0.9,
-              "reasoning": "The response addresses the user's core frustration and acknowledges the difficulty in finding a rental. It directly proposes solutions related to adjusting dates and considering alternative vehicle types within San Francisco, which were implied or explicitly requested by the user. It also re-addresses the Oakland option, showing it considered that constraint. However, it doesn't explicitly mention expanding the search radius, which was one of the suggestions in the query, thus leaving a minor gap in coverage.",
-              "executionTimeMs": 3208,
-              "timestamp": "2026-01-23T08:33:50.395Z"
+              "reasoning": "The response addresses the user's frustration and acknowledges the difficulty in finding a car rental in San Francisco/SFO. It directly addresses the user's request to expand the search radius slightly by suggesting adjusting dates (which implicitly relates to availability that might change with proximity or time) and considering different vehicle types within the city. It also re-iterates Oakland as an option if other avenues fail. However, it doesn't explicitly mention 'expanding the search radius' in terms of geographical distance around the city, which was a direct suggestion from the user. It focuses more on temporal flexibility and vehicle type as alternatives to a wider geographical search or the less-preferred Oakland trip.",
+              "executionTimeMs": 2848,
+              "timestamp": "2026-01-26T07:25:14.340Z"
             },
             "outcome": {
               "verdict": "pass",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.3
+                "passAt": 3
               },
               "observed": {
                 "rawValue": 4,
@@ -1351,16 +1349,16 @@
               "score": 0.6,
               "rawValue": 3,
               "confidence": 0.9,
-              "reasoning": "The response addresses the user's request to look at other vehicle types in San Francisco for the specified dates. It correctly identifies that the previously found options (vans and convertibles) are not sedans or SUVs, which aligns with the user's preference. However, it doesn't explicitly acknowledge or re-iterate the user's strong preference against adjusting dates, though it does confirm the dates are being used. The response offers existing options rather than searching for new ones that might better fit the 'sedan or SUV' preference within the 'other vehicle types' constraint, indicating some missed opportunity for deeper exploration based on the user's core desires.",
-              "executionTimeMs": 2890,
-              "timestamp": "2026-01-23T08:33:50.077Z"
+              "reasoning": "The response addresses the user's request to look at other vehicle types in San Francisco without changing dates. It provides a list of previously found options. However, it does not explicitly confirm the user's preference against adjusting dates, nor does it try to find *new* options within San Francisco that might be sedans or SUVs, instead re-presenting vehicles that are explicitly not sedans or SUVs. The response acknowledges these vehicles aren't ideal but doesn't offer a clear path forward to find better matches.",
+              "executionTimeMs": 2524,
+              "timestamp": "2026-01-26T07:25:14.016Z"
             },
             "outcome": {
               "verdict": "pass",
               "policy": {
                 "kind": "number",
                 "type": "threshold",
-                "passAt": 0.3
+                "passAt": 3
               },
               "observed": {
                 "rawValue": 3,
@@ -1376,23 +1374,23 @@
         "evalRef": "Role Adherence",
         "measurement": {
           "metricRef": "roleAdherence",
-          "score": 1,
-          "rawValue": 5,
-          "confidence": 0.95,
-          "reasoning": "The assistant consistently maintained the role of a travel planning assistant throughout the entire conversation. It effectively helped the user find flights and accommodation, and diligently worked to find a suitable car rental, even when initial searches were challenging. The assistant's language, tone, and suggestions were always appropriate for the role, and it demonstrated strong problem-solving skills by exploring alternative options (different locations, vehicle types) when preferred choices were unavailable. The persistence in trying to fulfill the user's requests, especially regarding the car rental, highlights excellent role adherence and customer service.",
-          "executionTimeMs": 3428,
-          "timestamp": "2026-01-23T08:33:50.616Z"
+          "score": 0.8,
+          "rawValue": 4,
+          "confidence": 0.9,
+          "reasoning": "The assistant consistently maintained the role of a travel planning assistant throughout the conversation. It effectively helped the user find flights and accommodation, and diligently worked to find a suitable rental car, even when initial searches were challenging. The assistant's language and tone were always appropriate for the role. The only minor detraction from a perfect score is the significant back-and-forth regarding the rental car availability, which, while not directly the assistant's fault, made the car rental portion of the planning feel less smooth than the flight and accommodation segments. However, the assistant remained patient and helpful throughout this difficult sub-task.",
+          "executionTimeMs": 2965,
+          "timestamp": "2026-01-26T07:25:14.458Z"
         },
         "outcome": {
           "verdict": "pass",
           "policy": {
             "kind": "number",
             "type": "threshold",
-            "passAt": 0.7
+            "passAt": 3.5
           },
           "observed": {
-            "rawValue": 5,
-            "score": 1
+            "rawValue": 4,
+            "score": 0.8
           }
         }
       },
@@ -1403,16 +1401,16 @@
           "score": 0.6,
           "rawValue": 3,
           "confidence": 0.9,
-          "reasoning": "The assistant demonstrated good retention of the destination and dates. However, there were significant challenges and repeated attempts to secure a car rental that met the user's specifications, indicating a less robust retention of nuanced preferences for car type and transmission. The assistant also occasionally asked for information that had already been implicitly provided or was easily inferable, though this was not a consistent issue. The core details of the trip (destination, dates) were well-retained and used appropriately.",
-          "executionTimeMs": 3428,
-          "timestamp": "2026-01-23T08:33:50.616Z"
+          "reasoning": "The assistant demonstrated good retention for the destination and flight details. However, there were significant challenges and repeated attempts to find suitable car rental options, indicating some difficulty in retaining and applying the user's specific preferences (like transmission type and vehicle category) throughout the conversation. The accommodation details were also handled well. The overall score reflects the successful retention of core information but is tempered by the struggles with the car rental, which involved multiple turns and user clarifications.",
+          "executionTimeMs": 2965,
+          "timestamp": "2026-01-26T07:25:14.458Z"
         },
         "outcome": {
-          "verdict": "pass",
+          "verdict": "fail",
           "policy": {
             "kind": "number",
             "type": "threshold",
-            "passAt": 0.7
+            "passAt": 3.5
           },
           "observed": {
             "rawValue": 3,
@@ -1430,6 +1428,63 @@
               "evalRef": "Overall Quality",
               "measurement": {
                 "metricRef": "OverallQuality",
+                "score": 0.75
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.75,
+                  "score": 0.75
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.69
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.69,
+                  "score": 0.69
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.48
+              },
+              "outcome": {
+                "verdict": "fail",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.48,
+                  "score": 0.48
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
                 "score": 0.81
               },
               "outcome": {
@@ -1442,6 +1497,177 @@
                 "observed": {
                   "rawValue": 0.81,
                   "score": 0.81
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.81
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.81,
+                  "score": 0.81
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.8400000000000001
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.8400000000000001,
+                  "score": 0.8400000000000001
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.8400000000000001
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.8400000000000001,
+                  "score": 0.8400000000000001
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.39
+              },
+              "outcome": {
+                "verdict": "fail",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.39,
+                  "score": 0.39
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.57
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.57,
+                  "score": 0.57
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.6
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.6,
+                  "score": 0.6
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.6900000000000001
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.6900000000000001,
+                  "score": 0.6900000000000001
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.8400000000000001
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.8400000000000001,
+                  "score": 0.8400000000000001
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.42000000000000004
+              },
+              "outcome": {
+                "verdict": "fail",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.42000000000000004,
+                  "score": 0.42000000000000004
                 }
               }
             },
@@ -1468,7 +1694,7 @@
               "evalRef": "Overall Quality",
               "measurement": {
                 "metricRef": "OverallQuality",
-                "score": 0.51
+                "score": 0.81
               },
               "outcome": {
                 "verdict": "pass",
@@ -1478,8 +1704,8 @@
                   "passAt": 0.5
                 },
                 "observed": {
-                  "rawValue": 0.51,
-                  "score": 0.51
+                  "rawValue": 0.81,
+                  "score": 0.81
                 }
               }
             },
@@ -1487,7 +1713,7 @@
               "evalRef": "Overall Quality",
               "measurement": {
                 "metricRef": "OverallQuality",
-                "score": 0.87
+                "score": 0.75
               },
               "outcome": {
                 "verdict": "pass",
@@ -1497,8 +1723,8 @@
                   "passAt": 0.5
                 },
                 "observed": {
-                  "rawValue": 0.87,
-                  "score": 0.87
+                  "rawValue": 0.75,
+                  "score": 0.75
                 }
               }
             },
@@ -1506,7 +1732,7 @@
               "evalRef": "Overall Quality",
               "measurement": {
                 "metricRef": "OverallQuality",
-                "score": 0.9
+                "score": 0.78
               },
               "outcome": {
                 "verdict": "pass",
@@ -1516,8 +1742,8 @@
                   "passAt": 0.5
                 },
                 "observed": {
-                  "rawValue": 0.9,
-                  "score": 0.9
+                  "rawValue": 0.78,
+                  "score": 0.78
                 }
               }
             },
@@ -1525,7 +1751,7 @@
               "evalRef": "Overall Quality",
               "measurement": {
                 "metricRef": "OverallQuality",
-                "score": 0.9
+                "score": 0.72
               },
               "outcome": {
                 "verdict": "pass",
@@ -1535,8 +1761,8 @@
                   "passAt": 0.5
                 },
                 "observed": {
-                  "rawValue": 0.9,
-                  "score": 0.9
+                  "rawValue": 0.72,
+                  "score": 0.72
                 }
               }
             },
@@ -1544,7 +1770,7 @@
               "evalRef": "Overall Quality",
               "measurement": {
                 "metricRef": "OverallQuality",
-                "score": 0.9
+                "score": 0.6900000000000001
               },
               "outcome": {
                 "verdict": "pass",
@@ -1554,8 +1780,8 @@
                   "passAt": 0.5
                 },
                 "observed": {
-                  "rawValue": 0.9,
-                  "score": 0.9
+                  "rawValue": 0.6900000000000001,
+                  "score": 0.6900000000000001
                 }
               }
             },
@@ -1563,7 +1789,26 @@
               "evalRef": "Overall Quality",
               "measurement": {
                 "metricRef": "OverallQuality",
-                "score": 0.48
+                "score": 0.81
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.81,
+                  "score": 0.81
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.42000000000000004
               },
               "outcome": {
                 "verdict": "fail",
@@ -1573,8 +1818,8 @@
                   "passAt": 0.5
                 },
                 "observed": {
-                  "rawValue": 0.48,
-                  "score": 0.48
+                  "rawValue": 0.42000000000000004,
+                  "score": 0.42000000000000004
                 }
               }
             },
@@ -1601,7 +1846,7 @@
               "evalRef": "Overall Quality",
               "measurement": {
                 "metricRef": "OverallQuality",
-                "score": 0.69
+                "score": 0.75
               },
               "outcome": {
                 "verdict": "pass",
@@ -1611,65 +1856,8 @@
                   "passAt": 0.5
                 },
                 "observed": {
-                  "rawValue": 0.69,
-                  "score": 0.69
-                }
-              }
-            },
-            {
-              "evalRef": "Overall Quality",
-              "measurement": {
-                "metricRef": "OverallQuality",
-                "score": 0.44999999999999996
-              },
-              "outcome": {
-                "verdict": "fail",
-                "policy": {
-                  "kind": "number",
-                  "type": "threshold",
-                  "passAt": 0.5
-                },
-                "observed": {
-                  "rawValue": 0.44999999999999996,
-                  "score": 0.44999999999999996
-                }
-              }
-            },
-            {
-              "evalRef": "Overall Quality",
-              "measurement": {
-                "metricRef": "OverallQuality",
-                "score": 0.9
-              },
-              "outcome": {
-                "verdict": "pass",
-                "policy": {
-                  "kind": "number",
-                  "type": "threshold",
-                  "passAt": 0.5
-                },
-                "observed": {
-                  "rawValue": 0.9,
-                  "score": 0.9
-                }
-              }
-            },
-            {
-              "evalRef": "Overall Quality",
-              "measurement": {
-                "metricRef": "OverallQuality",
-                "score": 0.78
-              },
-              "outcome": {
-                "verdict": "pass",
-                "policy": {
-                  "kind": "number",
-                  "type": "threshold",
-                  "passAt": 0.5
-                },
-                "observed": {
-                  "rawValue": 0.78,
-                  "score": 0.78
+                  "rawValue": 0.75,
+                  "score": 0.75
                 }
               }
             },
@@ -1689,196 +1877,6 @@
                 "observed": {
                   "rawValue": 0.81,
                   "score": 0.81
-                }
-              }
-            },
-            {
-              "evalRef": "Overall Quality",
-              "measurement": {
-                "metricRef": "OverallQuality",
-                "score": 0.87
-              },
-              "outcome": {
-                "verdict": "pass",
-                "policy": {
-                  "kind": "number",
-                  "type": "threshold",
-                  "passAt": 0.5
-                },
-                "observed": {
-                  "rawValue": 0.87,
-                  "score": 0.87
-                }
-              }
-            },
-            {
-              "evalRef": "Overall Quality",
-              "measurement": {
-                "metricRef": "OverallQuality",
-                "score": 0.66
-              },
-              "outcome": {
-                "verdict": "pass",
-                "policy": {
-                  "kind": "number",
-                  "type": "threshold",
-                  "passAt": 0.5
-                },
-                "observed": {
-                  "rawValue": 0.66,
-                  "score": 0.66
-                }
-              }
-            },
-            {
-              "evalRef": "Overall Quality",
-              "measurement": {
-                "metricRef": "OverallQuality",
-                "score": 0.81
-              },
-              "outcome": {
-                "verdict": "pass",
-                "policy": {
-                  "kind": "number",
-                  "type": "threshold",
-                  "passAt": 0.5
-                },
-                "observed": {
-                  "rawValue": 0.81,
-                  "score": 0.81
-                }
-              }
-            },
-            {
-              "evalRef": "Overall Quality",
-              "measurement": {
-                "metricRef": "OverallQuality",
-                "score": 0.78
-              },
-              "outcome": {
-                "verdict": "pass",
-                "policy": {
-                  "kind": "number",
-                  "type": "threshold",
-                  "passAt": 0.5
-                },
-                "observed": {
-                  "rawValue": 0.78,
-                  "score": 0.78
-                }
-              }
-            },
-            {
-              "evalRef": "Overall Quality",
-              "measurement": {
-                "metricRef": "OverallQuality",
-                "score": 0.87
-              },
-              "outcome": {
-                "verdict": "pass",
-                "policy": {
-                  "kind": "number",
-                  "type": "threshold",
-                  "passAt": 0.5
-                },
-                "observed": {
-                  "rawValue": 0.87,
-                  "score": 0.87
-                }
-              }
-            },
-            {
-              "evalRef": "Overall Quality",
-              "measurement": {
-                "metricRef": "OverallQuality",
-                "score": 0.87
-              },
-              "outcome": {
-                "verdict": "pass",
-                "policy": {
-                  "kind": "number",
-                  "type": "threshold",
-                  "passAt": 0.5
-                },
-                "observed": {
-                  "rawValue": 0.87,
-                  "score": 0.87
-                }
-              }
-            },
-            {
-              "evalRef": "Overall Quality",
-              "measurement": {
-                "metricRef": "OverallQuality",
-                "score": 0.48
-              },
-              "outcome": {
-                "verdict": "fail",
-                "policy": {
-                  "kind": "number",
-                  "type": "threshold",
-                  "passAt": 0.5
-                },
-                "observed": {
-                  "rawValue": 0.48,
-                  "score": 0.48
-                }
-              }
-            },
-            {
-              "evalRef": "Overall Quality",
-              "measurement": {
-                "metricRef": "OverallQuality",
-                "score": 0.69
-              },
-              "outcome": {
-                "verdict": "pass",
-                "policy": {
-                  "kind": "number",
-                  "type": "threshold",
-                  "passAt": 0.5
-                },
-                "observed": {
-                  "rawValue": 0.69,
-                  "score": 0.69
-                }
-              }
-            },
-            {
-              "evalRef": "Overall Quality",
-              "measurement": {
-                "metricRef": "OverallQuality",
-                "score": 0.78
-              },
-              "outcome": {
-                "verdict": "pass",
-                "policy": {
-                  "kind": "number",
-                  "type": "threshold",
-                  "passAt": 0.5
-                },
-                "observed": {
-                  "rawValue": 0.78,
-                  "score": 0.78
-                }
-              }
-            },
-            {
-              "evalRef": "Overall Quality",
-              "measurement": {
-                "metricRef": "OverallQuality",
-                "score": 0.87
-              },
-              "outcome": {
-                "verdict": "pass",
-                "policy": {
-                  "kind": "number",
-                  "type": "threshold",
-                  "passAt": 0.5
-                },
-                "observed": {
-                  "rawValue": 0.87,
-                  "score": 0.87
                 }
               }
             },
@@ -1913,13 +1911,13 @@
           "count": 25,
           "aggregations": {
             "score": {
-              "Mean": 0.7360000000000001,
+              "Mean": 0.7760000000000001,
               "P50": 1,
               "P75": 1,
               "P90": 1
             },
             "raw": {
-              "Mean": 3.68,
+              "Mean": 3.88,
               "P50": 5,
               "P75": 5,
               "P90": 5
@@ -1941,24 +1939,24 @@
           "count": 25,
           "aggregations": {
             "score": {
-              "Mean": 0.528,
+              "Mean": 0.47200000000000003,
               "P50": 0.4,
               "P75": 0.8,
-              "P90": 1
+              "P90": 0.9200000000000003
             },
             "raw": {
-              "Mean": 2.64,
+              "Mean": 2.36,
               "P50": 2,
               "P75": 4,
-              "P90": 5
+              "P90": 4.600000000000001
             }
           },
           "verdictSummary": {
-            "passRate": 0.96,
-            "failRate": 0.04,
+            "passRate": 0.44,
+            "failRate": 0.56,
             "unknownRate": 0,
-            "passCount": 24,
-            "failCount": 1,
+            "passCount": 11,
+            "failCount": 14,
             "unknownCount": 0,
             "totalCount": 25
           }
@@ -1969,10 +1967,10 @@
           "count": 1,
           "aggregations": {
             "score": {
-              "value": 1
+              "value": 0.8
             },
             "raw": {
-              "value": 5
+              "value": 4
             }
           },
           "verdictSummary": {
@@ -1998,11 +1996,11 @@
             }
           },
           "verdictSummary": {
-            "passRate": 1,
-            "failRate": 0,
+            "passRate": 0,
+            "failRate": 1,
             "unknownRate": 0,
-            "passCount": 1,
-            "failCount": 0,
+            "passCount": 0,
+            "failCount": 1,
             "unknownCount": 0,
             "totalCount": 1
           }
@@ -2013,18 +2011,18 @@
           "count": 25,
           "aggregations": {
             "score": {
-              "Mean": 0.75,
-              "P50": 0.78,
-              "P75": 0.87,
-              "P90": 0.9
+              "Mean": 0.6936,
+              "P50": 0.7200000000000001,
+              "P75": 0.81,
+              "P90": 0.8280000000000001
             }
           },
           "verdictSummary": {
-            "passRate": 0.88,
-            "failRate": 0.12,
+            "passRate": 0.84,
+            "failRate": 0.16,
             "unknownRate": 0,
-            "passCount": 22,
-            "failCount": 3,
+            "passCount": 21,
+            "failCount": 4,
             "unknownCount": 0,
             "totalCount": 25
           }
