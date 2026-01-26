@@ -202,7 +202,7 @@ describe('Travel Planner Agent - Golden Path', () => {
     
     // Access summary via view (type-safe with autocomplete)
     const answerRelevanceSummary = view.summary()?.['Answer Relevance'];
-    console.log(`Answer Relevance P95: ${answerRelevanceSummary?.aggregations?.score.P95}`);
+    console.log(`Answer Relevance P90: ${JSON.stringify(answerRelevanceSummary?.aggregations?.score.P90)}`);
 
     // Iterate steps using the generator
     for (const step of view.steps()) {
