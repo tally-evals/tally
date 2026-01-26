@@ -13,7 +13,7 @@ try {
   console.error(msg);
   console.error(
     `\nHint: set TALLY_CWD to the project directory that contains your .tally folder.\n` +
-      `      Example: TALLY_CWD=/path/to/project bun --hot src/index.tsx`,
+      `      Example: TALLY_CWD=/path/to/project bun --hot src/index.tsx`
   );
   process.exit(1);
 }
@@ -33,7 +33,7 @@ const server = Bun.serve({
           convs.map(async (c) => {
             const runs = await c.listRuns().catch(() => []);
             return { id: c.id, runCount: runs.length };
-          }),
+          })
         );
         return Response.json(data);
       },
@@ -45,10 +45,7 @@ const server = Bun.serve({
         const id = req.params.id;
         const conv = await store.getConversation(id);
         if (!conv) {
-          return Response.json(
-            { error: 'Conversation not found' },
-            { status: 404 },
-          );
+          return Response.json({ error: 'Conversation not found' }, { status: 404 });
         }
         const data = await conv.load();
         return Response.json(data);
@@ -61,10 +58,7 @@ const server = Bun.serve({
         const id = req.params.id;
         const conv = await store.getConversation(id);
         if (!conv) {
-          return Response.json(
-            { error: 'Conversation not found' },
-            { status: 404 },
-          );
+          return Response.json({ error: 'Conversation not found' }, { status: 404 });
         }
         const runs = await conv.listRuns();
         return Response.json(
@@ -72,7 +66,7 @@ const server = Bun.serve({
             id: r.id,
             type: r.type,
             timestamp: r.timestamp ?? null,
-          })),
+          }))
         );
       },
     },
@@ -83,10 +77,7 @@ const server = Bun.serve({
         const { convId, runId } = req.params;
         const conv = await store.getConversation(convId);
         if (!conv) {
-          return Response.json(
-            { error: 'Conversation not found' },
-            { status: 404 },
-          );
+          return Response.json({ error: 'Conversation not found' }, { status: 404 });
         }
         const runs = await conv.listRuns();
         const run = runs.find((r) => r.id === runId);
