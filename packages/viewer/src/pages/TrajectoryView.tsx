@@ -1,15 +1,15 @@
-import { useMemo, useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { ChevronLeft, Info } from "lucide-react";
-import { Input } from "../components/ui/input";
+import { UIMessageBlock } from '@/components/UIMessageBlock';
+import type { UIMessage, UIMessagePart } from '@/types';
+import { ChevronLeft, Info } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Conversation,
   ConversationContent,
   ConversationScrollButton,
-} from "../components/ai-elements/conversation";
-import { MessageResponse } from "../components/ai-elements/message";
-import type { UIMessagePart, UIMessage } from "@/types";
-import { UIMessageBlock } from "@/components/UIMessageBlock";
+} from '../components/ai-elements/conversation';
+import { MessageResponse } from '../components/ai-elements/message';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Input } from '../components/ui/input';
 
 type ExtractedToolCall = {
   toolCallId: string;
@@ -25,49 +25,51 @@ type ExtractedToolResult = {
 };
 
 function getProperty(obj: unknown, key: string): unknown {
-  if (obj && typeof obj === "object" && key in obj) return (obj as Record<string, unknown>)[key];
+  if (obj && typeof obj === 'object' && key in obj) return (obj as Record<string, unknown>)[key];
   return undefined;
 }
 
-function extractToolCallsFromMessages(messages: ReadonlyArray<Record<string, unknown>>): ExtractedToolCall[] {
+function extractToolCallsFromMessages(
+  messages: ReadonlyArray<Record<string, unknown>>
+): ExtractedToolCall[] {
   const toolCalls: ExtractedToolCall[] = [];
   const seenIds = new Set<string>();
 
   for (const message of messages) {
-    if (message.role !== "assistant") continue;
+    if (message.role !== 'assistant') continue;
 
     // Format 1: message.toolCalls (native AI SDK style)
-    const maybeToolCalls = getProperty(message, "toolCalls");
+    const maybeToolCalls = getProperty(message, 'toolCalls');
     if (Array.isArray(maybeToolCalls)) {
       for (const tc of maybeToolCalls) {
-        if (!tc || typeof tc !== "object") continue;
-        const id = getProperty(tc, "toolCallId");
-        const name = getProperty(tc, "toolName");
-        if (typeof id !== "string" || typeof name !== "string") continue;
+        if (!tc || typeof tc !== 'object') continue;
+        const id = getProperty(tc, 'toolCallId');
+        const name = getProperty(tc, 'toolName');
+        if (typeof id !== 'string' || typeof name !== 'string') continue;
         if (seenIds.has(id)) continue;
         seenIds.add(id);
         toolCalls.push({
           toolCallId: id,
           toolName: name,
-          args: getProperty(tc, "args") ?? {},
+          args: getProperty(tc, 'args') ?? {},
         });
       }
     }
 
     // Format 2: message.content[] parts with type: 'tool-call'
-    const content = getProperty(message, "content");
+    const content = getProperty(message, 'content');
     if (!Array.isArray(content)) continue;
     for (const part of content) {
-      if (!part || typeof part !== "object") continue;
-      const type = getProperty(part, "type");
-      if (type !== "tool-call") continue;
-      const toolCallId = getProperty(part, "toolCallId");
-      const toolName = getProperty(part, "toolName");
-      if (typeof toolCallId !== "string" || typeof toolName !== "string") continue;
+      if (!part || typeof part !== 'object') continue;
+      const type = getProperty(part, 'type');
+      if (type !== 'tool-call') continue;
+      const toolCallId = getProperty(part, 'toolCallId');
+      const toolName = getProperty(part, 'toolName');
+      if (typeof toolCallId !== 'string' || typeof toolName !== 'string') continue;
       if (seenIds.has(toolCallId)) continue;
       seenIds.add(toolCallId);
-      const inputVal = getProperty(part, "input");
-      const argsVal = getProperty(part, "args");
+      const inputVal = getProperty(part, 'input');
+      const argsVal = getProperty(part, 'args');
       toolCalls.push({
         toolCallId,
         toolName,
@@ -80,81 +82,84 @@ function extractToolCallsFromMessages(messages: ReadonlyArray<Record<string, unk
 }
 
 function extractToolResultContent(message: Record<string, unknown>): unknown {
-  const content = getProperty(message, "content");
-  if (typeof content === "string") return content;
+  const content = getProperty(message, 'content');
+  if (typeof content === 'string') return content;
   if (Array.isArray(content)) {
     const parts: string[] = [];
     for (const part of content) {
-      if (typeof part === "string") {
+      if (typeof part === 'string') {
         parts.push(part);
-      } else if (part && typeof part === "object") {
-        const type = getProperty(part, "type");
-        if (type === "text") {
-          const text = getProperty(part, "text");
-          if (typeof text === "string") parts.push(text);
-        } else if (type === "tool-result") {
+      } else if (part && typeof part === 'object') {
+        const type = getProperty(part, 'type');
+        if (type === 'text') {
+          const text = getProperty(part, 'text');
+          if (typeof text === 'string') parts.push(text);
+        } else if (type === 'tool-result') {
           // AI SDK JSONL format: tool-result part carries { output: { type, value } }.
-          const output = getProperty(part, "output");
-          if (output && typeof output === "object") {
-            const outType = getProperty(output, "type");
-            const outValue = getProperty(output, "value");
-            if (outType === "json") return outValue;
-            if (outType === "text") return typeof outValue === "string" ? outValue : String(outValue);
+          const output = getProperty(part, 'output');
+          if (output && typeof output === 'object') {
+            const outType = getProperty(output, 'type');
+            const outValue = getProperty(output, 'value');
+            if (outType === 'json') return outValue;
+            if (outType === 'text')
+              return typeof outValue === 'string' ? outValue : String(outValue);
             // fallthrough for other output types
             if (outValue !== undefined) return outValue;
           }
 
           // Some formats embed the result directly
-          const result = getProperty(part, "result");
+          const result = getProperty(part, 'result');
           if (result !== undefined) return result;
         }
       }
     }
-    return parts.length > 0 ? parts.join("\n") : content;
+    return parts.length > 0 ? parts.join('\n') : content;
   }
   if (content !== undefined) return content;
-  const result = getProperty(message, "result");
+  const result = getProperty(message, 'result');
   if (result !== undefined) return result;
   return undefined;
 }
 
-function extractToolResultsFromMessages(messages: ReadonlyArray<Record<string, unknown>>): ExtractedToolResult[] {
+function extractToolResultsFromMessages(
+  messages: ReadonlyArray<Record<string, unknown>>
+): ExtractedToolResult[] {
   const results: ExtractedToolResult[] = [];
   for (const message of messages) {
-    if (message.role !== "tool") continue;
+    if (message.role !== 'tool') continue;
 
     // Format A: tool message has top-level toolCallId/toolName (some AI SDK shapes)
-    const topLevelToolCallId = getProperty(message, "toolCallId");
-    if (typeof topLevelToolCallId === "string") {
-      const toolName = getProperty(message, "toolName");
+    const topLevelToolCallId = getProperty(message, 'toolCallId');
+    if (typeof topLevelToolCallId === 'string') {
+      const toolName = getProperty(message, 'toolName');
       results.push({
         toolCallId: topLevelToolCallId,
-        toolName: typeof toolName === "string" ? toolName : undefined,
+        toolName: typeof toolName === 'string' ? toolName : undefined,
         output: extractToolResultContent(message),
       });
       continue;
     }
 
     // Format B (your trace): tool message content[] contains tool-result parts with toolCallId/toolName/output
-    const content = getProperty(message, "content");
+    const content = getProperty(message, 'content');
     if (!Array.isArray(content)) continue;
     for (const part of content) {
-      if (!part || typeof part !== "object") continue;
-      const type = getProperty(part, "type");
-      if (type !== "tool-result") continue;
+      if (!part || typeof part !== 'object') continue;
+      const type = getProperty(part, 'type');
+      if (type !== 'tool-result') continue;
 
-      const toolCallId = getProperty(part, "toolCallId");
-      if (typeof toolCallId !== "string") continue;
-      const toolName = getProperty(part, "toolName");
+      const toolCallId = getProperty(part, 'toolCallId');
+      if (typeof toolCallId !== 'string') continue;
+      const toolName = getProperty(part, 'toolName');
 
       // Prefer decoding from part.output if available; fallback to whole-message extraction.
       const output = (() => {
-        const out = getProperty(part, "output");
-        if (out && typeof out === "object") {
-          const outType = getProperty(out, "type");
-          const outValue = getProperty(out, "value");
-          if (outType === "json") return outValue;
-          if (outType === "text") return typeof outValue === "string" ? outValue : String(outValue);
+        const out = getProperty(part, 'output');
+        if (out && typeof out === 'object') {
+          const outType = getProperty(out, 'type');
+          const outValue = getProperty(out, 'value');
+          if (outType === 'json') return outValue;
+          if (outType === 'text') return typeof outValue === 'string' ? outValue : String(outValue);
           if (outValue !== undefined) return outValue;
           return out;
         }
@@ -163,7 +168,7 @@ function extractToolResultsFromMessages(messages: ReadonlyArray<Record<string, u
 
       results.push({
         toolCallId,
-        toolName: typeof toolName === "string" ? toolName : undefined,
+        toolName: typeof toolName === 'string' ? toolName : undefined,
         output,
       });
     }
@@ -171,7 +176,10 @@ function extractToolResultsFromMessages(messages: ReadonlyArray<Record<string, u
   return results;
 }
 
-function matchToolCallsWithResults(toolCalls: ExtractedToolCall[], toolResults: ExtractedToolResult[]): ExtractedToolCall[] {
+function matchToolCallsWithResults(
+  toolCalls: ExtractedToolCall[],
+  toolResults: ExtractedToolResult[]
+): ExtractedToolCall[] {
   const resultMap = new Map<string, unknown>();
   for (const r of toolResults) resultMap.set(r.toolCallId, r.output);
   return toolCalls.map((tc) => {
@@ -181,7 +189,7 @@ function matchToolCallsWithResults(toolCalls: ExtractedToolCall[], toolResults: 
   });
 }
 
-type StepSelectionMethod = "start" | "preconditions-ordered" | "llm-ranked" | "none";
+type StepSelectionMethod = 'start' | 'preconditions-ordered' | 'llm-ranked' | 'none';
 
 type StepSelectionCandidate = {
   stepId: string;
@@ -226,12 +234,10 @@ export function TrajectoryView({ id }: TrajectoryViewProps) {
   const [data, setData] = useState<TrajectoryData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [stepFilter, setStepFilter] = useState("");
+  const [stepFilter, setStepFilter] = useState('');
 
   useEffect(() => {
-    Promise.all([
-      fetch(`/api/conversations/${id}/trajectory`).then((r) => r.json()),
-    ])
+    Promise.all([fetch(`/api/conversations/${id}/trajectory`).then((r) => r.json())])
       .then(([trajectoryData]) => {
         setData(trajectoryData);
         setLoading(false);
@@ -256,7 +262,7 @@ export function TrajectoryView({ id }: TrajectoryViewProps) {
     const stepDefs = meta?.stepGraph?.steps ?? [];
     for (const s of stepDefs) {
       const maybeId = s?.id;
-      if (typeof maybeId === "string") map.set(maybeId, s);
+      if (typeof maybeId === 'string') map.set(maybeId, s);
     }
     return map;
   }, [meta?.stepGraph?.steps]);
@@ -266,9 +272,9 @@ export function TrajectoryView({ id }: TrajectoryViewProps) {
     const q = stepFilter.trim().toLowerCase();
     if (!q) return stepsArr;
     return stepsArr.filter((s) => {
-      const id = typeof (s as any).id === "string" ? String((s as any).id) : "";
+      const id = typeof (s as any).id === 'string' ? String((s as any).id) : '';
       const instruction =
-        typeof (s as any).instruction === "string" ? String((s as any).instruction) : "";
+        typeof (s as any).instruction === 'string' ? String((s as any).instruction) : '';
       return id.toLowerCase().includes(q) || instruction.toLowerCase().includes(q);
     });
   }, [meta?.stepGraph?.steps, stepFilter]);
@@ -291,7 +297,7 @@ export function TrajectoryView({ id }: TrajectoryViewProps) {
 
   function renderMessageContent(content: unknown) {
     // Legacy helper kept for non-part content; most rendering now goes through parts.
-    if (typeof content === "string") return <MessageResponse>{content}</MessageResponse>;
+    if (typeof content === 'string') return <MessageResponse>{content}</MessageResponse>;
     if (Array.isArray(content)) {
       return (
         <pre className="code-block overflow-x-auto rounded bg-muted p-3 text-xs">
@@ -299,64 +305,65 @@ export function TrajectoryView({ id }: TrajectoryViewProps) {
         </pre>
       );
     }
-    if (content && typeof content === "object") {
+    if (content && typeof content === 'object') {
       return (
         <pre className="code-block overflow-x-auto rounded bg-muted p-3 text-xs">
           {JSON.stringify(content, null, 2)}
         </pre>
       );
     }
-    return <MessageResponse>{String(content ?? "")}</MessageResponse>;
+    return <MessageResponse>{String(content ?? '')}</MessageResponse>;
   }
 
   function messageToParts(msg: Record<string, unknown>): UIMessagePart[] {
-    const content = getProperty(msg, "content");
+    const content = getProperty(msg, 'content');
     // String → single text part
-    if (typeof content === "string") return [{ type: "text", text: content }];
+    if (typeof content === 'string') return [{ type: 'text', text: content }];
 
     // Array content → interpret known AI SDK part shapes
     if (Array.isArray(content)) {
       const parts: UIMessagePart[] = [];
       for (const part of content) {
-        if (!part || typeof part !== "object") continue;
-        const type = getProperty(part, "type");
+        if (!part || typeof part !== 'object') continue;
+        const type = getProperty(part, 'type');
 
-        if (type === "text") {
-          const text = getProperty(part, "text");
-          if (typeof text === "string") parts.push({ type: "text", text });
+        if (type === 'text') {
+          const text = getProperty(part, 'text');
+          if (typeof text === 'string') parts.push({ type: 'text', text });
           continue;
         }
 
-        if (type === "tool-call") {
-          const toolCallId = getProperty(part, "toolCallId");
-          const toolName = getProperty(part, "toolName");
-          const input = getProperty(part, "input") ?? getProperty(part, "args") ?? {};
-          if (typeof toolCallId === "string" && typeof toolName === "string") {
-            parts.push({ type: "tool", toolCallId, toolName, input });
+        if (type === 'tool-call') {
+          const toolCallId = getProperty(part, 'toolCallId');
+          const toolName = getProperty(part, 'toolName');
+          const input = getProperty(part, 'input') ?? getProperty(part, 'args') ?? {};
+          if (typeof toolCallId === 'string' && typeof toolName === 'string') {
+            parts.push({ type: 'tool', toolCallId, toolName, input });
           }
           continue;
         }
 
-        if (type === "tool-result") {
-          const toolCallId = getProperty(part, "toolCallId");
-          const toolName = getProperty(part, "toolName");
-          if (typeof toolCallId === "string" && typeof toolName === "string") {
+        if (type === 'tool-result') {
+          const toolCallId = getProperty(part, 'toolCallId');
+          const toolName = getProperty(part, 'toolName');
+          if (typeof toolCallId === 'string' && typeof toolName === 'string') {
             // output wrapper: { type: 'json'|'text', value: ... }
-            const outputWrapper = getProperty(part, "output");
+            const outputWrapper = getProperty(part, 'output');
             let output: unknown = undefined;
-            if (outputWrapper && typeof outputWrapper === "object") {
-              const outType = getProperty(outputWrapper, "type");
-              const outValue = getProperty(outputWrapper, "value");
-              if (outType === "json") output = outValue;
-              else if (outType === "text") output = typeof outValue === "string" ? outValue : String(outValue);
+            if (outputWrapper && typeof outputWrapper === 'object') {
+              const outType = getProperty(outputWrapper, 'type');
+              const outValue = getProperty(outputWrapper, 'value');
+              if (outType === 'json') output = outValue;
+              else if (outType === 'text')
+                output = typeof outValue === 'string' ? outValue : String(outValue);
               else if (outValue !== undefined) output = outValue;
               else output = outputWrapper;
             } else {
               // fallback to any legacy fields
-              output = getProperty(part, "result") ?? getProperty(part, "output");
+              output = getProperty(part, 'result') ?? getProperty(part, 'output');
             }
             parts.push({
-              type: "tool",
+              type: 'tool',
               toolCallId,
               toolName,
               input: {},
@@ -371,7 +378,7 @@ export function TrajectoryView({ id }: TrajectoryViewProps) {
 
     // Anything else: render as JSON in a "text" part to keep message component usage consistent
     if (content !== undefined) {
-      return [{ type: "text", text: JSON.stringify(content, null, 2) }];
+      return [{ type: 'text', text: JSON.stringify(content, null, 2) }];
     }
 
     return [];
@@ -394,7 +401,7 @@ export function TrajectoryView({ id }: TrajectoryViewProps) {
 
     const pushText = (text: string) => {
       if (text.trim().length === 0) return;
-      agentParts.push({ type: "text", text });
+      agentParts.push({ type: 'text', text });
     };
 
     const ensureToolPart = (args: {
@@ -406,12 +413,12 @@ export function TrajectoryView({ id }: TrajectoryViewProps) {
       const existingIdx = toolIndexById.get(args.toolCallId);
       if (existingIdx !== undefined) {
         const existing = agentParts[existingIdx];
-        if (existing && existing.type === "tool") {
+        if (existing && existing.type === 'tool') {
           // Merge fields (prefer existing input if present, then new input; output merges when it arrives).
           existing.input =
             existing.input && Object.keys(existing.input as any).length > 0
               ? existing.input
-              : args.input ?? existing.input ?? {};
+              : (args.input ?? existing.input ?? {});
           if (args.output !== undefined) existing.output = args.output;
           // Tool name should be stable; keep existing unless missing.
           if (!existing.toolName && args.toolName) existing.toolName = args.toolName;
@@ -421,7 +428,7 @@ export function TrajectoryView({ id }: TrajectoryViewProps) {
 
       const idx = agentParts.length;
       agentParts.push({
-        type: "tool",
+        type: 'tool',
         toolCallId: args.toolCallId,
         toolName: args.toolName,
         input: args.input ?? {},
@@ -434,7 +441,7 @@ export function TrajectoryView({ id }: TrajectoryViewProps) {
       const role = m?.role;
       const content = m?.content;
 
-      if (typeof content === "string") {
+      if (typeof content === 'string') {
         pushText(content);
         continue;
       }
@@ -446,18 +453,18 @@ export function TrajectoryView({ id }: TrajectoryViewProps) {
       }
 
       for (const part of content) {
-        if (!part || typeof part !== "object") continue;
+        if (!part || typeof part !== 'object') continue;
         const type = (part as any).type;
 
-        if (type === "text" && typeof (part as any).text === "string") {
+        if (type === 'text' && typeof (part as any).text === 'string') {
           pushText((part as any).text);
           continue;
         }
 
-        if (type === "tool-call") {
+        if (type === 'tool-call') {
           const toolCallId = (part as any).toolCallId;
           const toolName = (part as any).toolName;
-          if (typeof toolCallId === "string" && typeof toolName === "string") {
+          if (typeof toolCallId === 'string' && typeof toolName === 'string') {
             ensureToolPart({
               toolCallId,
               toolName,
@@ -467,17 +474,18 @@ export function TrajectoryView({ id }: TrajectoryViewProps) {
           continue;
         }
 
-        if (type === "tool-result") {
+        if (type === 'tool-result') {
           const toolCallId = (part as any).toolCallId;
           const toolName = (part as any).toolName;
-          if (typeof toolCallId === "string" && typeof toolName === "string") {
+          if (typeof toolCallId === 'string' && typeof toolName === 'string') {
             const outputWrapper = (part as any).output;
             let output: unknown = undefined;
-            if (outputWrapper && typeof outputWrapper === "object") {
+            if (outputWrapper && typeof outputWrapper === 'object') {
               const outType = (outputWrapper as any).type;
               const outValue = (outputWrapper as any).value;
-              if (outType === "json") output = outValue;
-              else if (outType === "text") output = typeof outValue === "string" ? outValue : String(outValue);
+              if (outType === 'json') output = outValue;
+              else if (outType === 'text')
+                output = typeof outValue === 'string' ? outValue : String(outValue);
               else if (outValue !== undefined) output = outValue;
               else output = outputWrapper;
             } else if ((part as any).result !== undefined) {
@@ -497,7 +505,7 @@ export function TrajectoryView({ id }: TrajectoryViewProps) {
       // If you later want separate assistant/system bubbles, we can split by role here.
       msgs.push({
         id: `turn-${turn.turnIndex}-agent`,
-        role: "assistant",
+        role: 'assistant',
         parts: agentParts,
       });
     }
@@ -509,9 +517,13 @@ export function TrajectoryView({ id }: TrajectoryViewProps) {
     <div className="space-y-6">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <a href="#/" className="hover:text-foreground transition-colors">Conversations</a>
+        <a href="#/" className="hover:text-foreground transition-colors">
+          Conversations
+        </a>
         <span>/</span>
-        <a href={`#/conversations/${id}`} className="hover:text-foreground transition-colors">{id}</a>
+        <a href={`#/conversations/${id}`} className="hover:text-foreground transition-colors">
+          {id}
+        </a>
         <span>/</span>
         <span className="text-foreground font-medium">Trajectory</span>
       </div>
@@ -536,7 +548,7 @@ export function TrajectoryView({ id }: TrajectoryViewProps) {
           <div>
             <CardTitle className="text-lg">Trajectory details</CardTitle>
             <div className="mt-1 text-sm text-muted-foreground">
-              {meta?.goal ? meta.goal : "No goal metadata available."}
+              {meta?.goal ? meta.goal : 'No goal metadata available.'}
             </div>
           </div>
         </CardHeader>
@@ -544,17 +556,17 @@ export function TrajectoryView({ id }: TrajectoryViewProps) {
           <div className="space-y-2">
             <div className="text-xs font-semibold text-muted-foreground">Persona</div>
             <div className="text-sm">
-              <div className="font-medium">{meta?.persona?.name ?? "—"}</div>
-              <div className="text-muted-foreground">{meta?.persona?.description ?? "—"}</div>
+              <div className="font-medium">{meta?.persona?.name ?? '—'}</div>
+              <div className="text-muted-foreground">{meta?.persona?.description ?? '—'}</div>
             </div>
           </div>
           <div className="space-y-2">
             <div className="text-xs font-semibold text-muted-foreground">Created</div>
             <div className="text-sm">
-              {meta?.createdAt ? new Date(meta.createdAt).toLocaleString() : "—"}
+              {meta?.createdAt ? new Date(meta.createdAt).toLocaleString() : '—'}
             </div>
             <div className="text-xs font-semibold text-muted-foreground">Max turns</div>
-            <div className="text-sm">{meta?.maxTurns ?? "—"}</div>
+            <div className="text-sm">{meta?.maxTurns ?? '—'}</div>
           </div>
         </CardContent>
 
@@ -582,9 +594,7 @@ export function TrajectoryView({ id }: TrajectoryViewProps) {
                   <div className="space-y-1">
                     <div className="text-xs font-semibold text-muted-foreground">Terminals</div>
                     <div className="font-mono text-xs">
-                      {meta.stepGraph.terminals?.length
-                        ? meta.stepGraph.terminals.join(", ")
-                        : "—"}
+                      {meta.stepGraph.terminals?.length ? meta.stepGraph.terminals.join(', ') : '—'}
                     </div>
                   </div>
                 </div>
@@ -611,24 +621,28 @@ export function TrajectoryView({ id }: TrajectoryViewProps) {
                   ) : null}
 
                   {filteredStepGraphSteps.map((s, idx) => {
-                    const id = typeof (s as any).id === "string" ? ((s as any).id as string) : `step-${idx}`;
+                    const id =
+                      typeof (s as any).id === 'string' ? ((s as any).id as string) : `step-${idx}`;
                     const instruction =
-                      typeof (s as any).instruction === "string"
+                      typeof (s as any).instruction === 'string'
                         ? ((s as any).instruction as string)
                         : undefined;
-                    const hints =
-                      Array.isArray((s as any).hints)
-                        ? (((s as any).hints as unknown[]).filter(
-                            (h): h is string => typeof h === "string"
-                          ) as string[])
-                        : [];
+                    const hints = Array.isArray((s as any).hints)
+                      ? (((s as any).hints as unknown[]).filter(
+                          (h): h is string => typeof h === 'string'
+                        ) as string[])
+                      : [];
                     const preconditions = Array.isArray((s as any).preconditions)
                       ? ((s as any).preconditions as unknown[])
                       : undefined;
                     const maxAttempts =
-                      typeof (s as any).maxAttempts === "number" ? ((s as any).maxAttempts as number) : undefined;
+                      typeof (s as any).maxAttempts === 'number'
+                        ? ((s as any).maxAttempts as number)
+                        : undefined;
                     const timeoutMs =
-                      typeof (s as any).timeoutMs === "number" ? ((s as any).timeoutMs as number) : undefined;
+                      typeof (s as any).timeoutMs === 'number'
+                        ? ((s as any).timeoutMs as number)
+                        : undefined;
                     const hasExtraMeta =
                       (preconditions && preconditions.length > 0) ||
                       maxAttempts !== undefined ||
@@ -640,7 +654,7 @@ export function TrajectoryView({ id }: TrajectoryViewProps) {
                           <div className="min-w-0">
                             <div className="font-mono text-xs">{id}</div>
                             <div className="text-xs text-muted-foreground truncate">
-                              {instruction ?? "—"}
+                              {instruction ?? '—'}
                             </div>
                           </div>
                           <span className="text-xs text-muted-foreground">
@@ -648,10 +662,12 @@ export function TrajectoryView({ id }: TrajectoryViewProps) {
                               hints.length ? `hints: ${hints.length}` : null,
                               maxAttempts !== undefined ? `maxAttempts: ${maxAttempts}` : null,
                               timeoutMs !== undefined ? `timeout: ${timeoutMs}ms` : null,
-                              preconditions?.length ? `preconditions: ${preconditions.length}` : null,
+                              preconditions?.length
+                                ? `preconditions: ${preconditions.length}`
+                                : null,
                             ]
                               .filter(Boolean)
-                              .join("  •  ")}
+                              .join('  •  ')}
                           </span>
                         </summary>
 
@@ -661,12 +677,14 @@ export function TrajectoryView({ id }: TrajectoryViewProps) {
                               Instruction
                             </div>
                             <div className="mt-1 text-sm whitespace-pre-wrap">
-                              {instruction ?? "—"}
+                              {instruction ?? '—'}
                             </div>
                           </div>
                           {hints.length ? (
                             <div>
-                              <div className="text-xs font-semibold text-muted-foreground">Hints</div>
+                              <div className="text-xs font-semibold text-muted-foreground">
+                                Hints
+                              </div>
                               <ul className="mt-1 list-disc pl-5 text-sm text-muted-foreground">
                                 {hints.map((h, i) => (
                                   <li key={i} className="whitespace-pre-wrap">
@@ -680,15 +698,21 @@ export function TrajectoryView({ id }: TrajectoryViewProps) {
                           {hasExtraMeta ? (
                             <div className="grid gap-3 md:grid-cols-2">
                               <div className="space-y-1">
-                                <div className="text-xs font-semibold text-muted-foreground">maxAttempts</div>
-                                <div className="text-sm">{maxAttempts ?? "—"}</div>
+                                <div className="text-xs font-semibold text-muted-foreground">
+                                  maxAttempts
+                                </div>
+                                <div className="text-sm">{maxAttempts ?? '—'}</div>
                               </div>
                               <div className="space-y-1">
-                                <div className="text-xs font-semibold text-muted-foreground">timeoutMs</div>
-                                <div className="text-sm">{timeoutMs ?? "—"}</div>
+                                <div className="text-xs font-semibold text-muted-foreground">
+                                  timeoutMs
+                                </div>
+                                <div className="text-sm">{timeoutMs ?? '—'}</div>
                               </div>
                               <div className="space-y-1 md:col-span-2">
-                                <div className="text-xs font-semibold text-muted-foreground">preconditions</div>
+                                <div className="text-xs font-semibold text-muted-foreground">
+                                  preconditions
+                                </div>
                                 {preconditions?.length ? (
                                   <pre className="code-block overflow-x-auto rounded bg-background p-3 text-xs">
                                     {JSON.stringify(preconditions, null, 2)}
@@ -726,13 +750,13 @@ export function TrajectoryView({ id }: TrajectoryViewProps) {
                     const candidatesCount = turn.selection?.candidates?.length ?? 0;
                     const stepDef = turn.stepId ? stepById.get(turn.stepId) : undefined;
                     const instruction =
-                      stepDef && typeof (stepDef as any).instruction === "string"
+                      stepDef && typeof (stepDef as any).instruction === 'string'
                         ? ((stepDef as any).instruction as string)
                         : undefined;
                     const hints =
                       stepDef && Array.isArray((stepDef as any).hints)
                         ? ((stepDef as any).hints as unknown[]).filter(
-                            (h): h is string => typeof h === "string"
+                            (h): h is string => typeof h === 'string'
                           )
                         : [];
 
@@ -747,13 +771,13 @@ export function TrajectoryView({ id }: TrajectoryViewProps) {
                             </span>
                             <span className="h-4 w-px bg-border" />
                             <span className="rounded bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">
-                              {turn.selection?.method ?? "—"}
+                              {turn.selection?.method ?? '—'}
                             </span>
                             <span className="rounded bg-secondary px-2 py-0.5 text-xs text-secondary-foreground font-mono">
-                              {turn.stepId ?? "—"}
+                              {turn.stepId ?? '—'}
                             </span>
                             <span className="min-w-0 text-xs text-muted-foreground truncate">
-                              {instruction ?? "—"}
+                              {instruction ?? '—'}
                             </span>
                           </div>
 
@@ -768,8 +792,8 @@ export function TrajectoryView({ id }: TrajectoryViewProps) {
                               <summary
                                 className={`list-none text-xs ${
                                   candidatesCount === 0
-                                    ? "cursor-not-allowed text-muted-foreground/60"
-                                    : "cursor-pointer text-primary hover:underline"
+                                    ? 'cursor-not-allowed text-muted-foreground/60'
+                                    : 'cursor-pointer text-primary hover:underline'
                                 }`}
                                 onClick={(e) => {
                                   if (candidatesCount === 0) {
@@ -790,7 +814,7 @@ export function TrajectoryView({ id }: TrajectoryViewProps) {
                                       Step candidates
                                     </div>
                                     <div className="text-xs text-muted-foreground">
-                                      method: {turn.selection?.method ?? "—"}
+                                      method: {turn.selection?.method ?? '—'}
                                     </div>
                                   </div>
 
@@ -815,7 +839,7 @@ export function TrajectoryView({ id }: TrajectoryViewProps) {
                                             <td className="px-3 py-2 font-mono">{c.stepId}</td>
                                             <td className="px-3 py-2">{c.score}</td>
                                             <td className="px-3 py-2 text-muted-foreground">
-                                              {c.reasons?.length ? c.reasons.join(" • ") : "—"}
+                                              {c.reasons?.length ? c.reasons.join(' • ') : '—'}
                                             </td>
                                           </tr>
                                         ))}
@@ -830,10 +854,7 @@ export function TrajectoryView({ id }: TrajectoryViewProps) {
 
                         {/* Messages (AI Elements-style parts rendering) */}
                         {uiMessages.map((message) => (
-                          <UIMessageBlock 
-                            key={message.id}
-                            message={message}
-                          />
+                          <UIMessageBlock key={message.id} message={message} />
                         ))}
                       </div>
                     );
