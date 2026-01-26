@@ -14,6 +14,7 @@ import {
 } from "../components/ai-elements/conversation";
 import { Message, MessageContent, MessageResponse } from "../components/ai-elements/message";
 import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from "../components/ai-elements/tool";
+import { cn } from "@/lib/utils";
 
 interface RunViewProps {
   convId: string;
@@ -518,7 +519,7 @@ export function RunView({ convId, runId }: RunViewProps) {
                                       <Tool
                                         key={`${message.id}-${i}`}
                                         defaultOpen={false}
-                                        className="mt-2"
+                                        className={cn("mt-2", message.parts[i + 1]?.type === "tool" && "-mb-2")}
                                       >
                                         <ToolHeader
                                           type={`tool-${part.toolName}`}
