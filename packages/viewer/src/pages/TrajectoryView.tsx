@@ -7,8 +7,9 @@ import {
   ConversationContent,
   ConversationScrollButton,
 } from "../components/ai-elements/conversation";
-import { Message, MessageContent, MessageResponse } from "../components/ai-elements/message";
-import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from "../components/ai-elements/tool";
+import { MessageResponse } from "../components/ai-elements/message";
+import type { UIMessagePart, UIMessage } from "@/types";
+import { UIMessageBlock } from "@/components/UIMessageBlock";
 
 type ExtractedToolCall = {
   toolCallId: string;
@@ -28,7 +29,7 @@ function getProperty(obj: unknown, key: string): unknown {
   return undefined;
 }
 
-function extractToolCallsFromMessages(messages: readonly Array<Record<string, unknown>>): ExtractedToolCall[] {
+function extractToolCallsFromMessages(messages: ReadonlyArray<Record<string, unknown>>): ExtractedToolCall[] {
   const toolCalls: ExtractedToolCall[] = [];
   const seenIds = new Set<string>();
 
@@ -117,7 +118,7 @@ function extractToolResultContent(message: Record<string, unknown>): unknown {
   return undefined;
 }
 
-function extractToolResultsFromMessages(messages: readonly Array<Record<string, unknown>>): ExtractedToolResult[] {
+function extractToolResultsFromMessages(messages: ReadonlyArray<Record<string, unknown>>): ExtractedToolResult[] {
   const results: ExtractedToolResult[] = [];
   for (const message of messages) {
     if (message.role !== "tool") continue;
@@ -307,22 +308,6 @@ export function TrajectoryView({ id }: TrajectoryViewProps) {
     }
     return <MessageResponse>{String(content ?? "")}</MessageResponse>;
   }
-
-  type UIMessagePart =
-    | { type: "text"; text: string }
-    | {
-        type: "tool";
-        toolCallId: string;
-        toolName: string;
-        input: unknown;
-        output?: unknown;
-      };
-
-  type UIMessage = {
-    id: string;
-    role: string;
-    parts: UIMessagePart[];
-  };
 
   function messageToParts(msg: Record<string, unknown>): UIMessagePart[] {
     const content = getProperty(msg, "content");
@@ -845,41 +830,10 @@ export function TrajectoryView({ id }: TrajectoryViewProps) {
 
                         {/* Messages (AI Elements-style parts rendering) */}
                         {uiMessages.map((message) => (
-                          <Message from={message.role} key={message.id}>
-                            <MessageContent>
-                              {message.parts.map((part, i) => {
-                                switch (part.type) {
-                                  case "text":
-                                    return (
-                                      <MessageResponse key={`${message.id}-${i}`}>
-                                        {part.text}
-                                      </MessageResponse>
-                                    );
-                                  case "tool":
-                                    return (
-                                      <Tool key={`${message.id}-${i}`} defaultOpen={false} className="mt-2">
-                                        <ToolHeader
-                                          type={`tool-${part.toolName}`}
-                                          state={part.output !== undefined ? "completed" : "running"}
-                                        />
-                                        <ToolContent>
-                                          <ToolInput input={part.input} />
-                                          <ToolOutput
-                                            output={
-                                              <pre className="code-block overflow-x-auto">
-                                                {JSON.stringify(part.output ?? null, null, 2)}
-                                              </pre>
-                                            }
-                                          />
-                                        </ToolContent>
-                                      </Tool>
-                                    );
-                                  default:
-                                    return null;
-                                }
-                              })}
-                            </MessageContent>
-                          </Message>
+                          <UIMessageBlock 
+                            key={message.id}
+                            message={message}
+                          />
                         ))}
                       </div>
                     );
