@@ -117,25 +117,25 @@ describe('Travel Planner Agent - Golden Path', () => {
     const answerRelevanceEval = defineSingleTurnEval({
       name: 'Answer Relevance',
       metric: answerRelevance,
-      verdict: thresholdVerdict(0.5), // Golden path: agent should answer questions, but some turns may be questions
+      verdict: thresholdVerdict(2.5), // Golden path: agent should answer questions, but some turns may be questions
     });
 
     const completenessEval = defineSingleTurnEval({
       name: 'Completeness',
       metric: completeness,
-      verdict: thresholdVerdict(0.3), // Lower threshold: agent asks questions, so some turns are incomplete
+      verdict: thresholdVerdict(3), // Lower threshold: agent asks questions, so some turns are incomplete
     });
 
     const roleAdherenceEval = defineMultiTurnEval({
       name: 'Role Adherence',
       metric: roleAdherence,
-      verdict: thresholdVerdict(0.7), // Golden path: agent should consistently act as travel assistant
+      verdict: thresholdVerdict(3.5), // Golden path: agent should consistently act as travel assistant
     });
 
     const knowledgeRetentionEval = defineMultiTurnEval({
       name: 'Knowledge Retention',
       metric: knowledgeRetention,
-      verdict: thresholdVerdict(0.7), // Golden path: agent should remember the user's preferences well since they are unchanging
+      verdict: thresholdVerdict(3.5), // Golden path: agent should remember the user's preferences well since they are unchanging
     });
 
     const overallQualityEval = defineScorerEval({
