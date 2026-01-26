@@ -472,6 +472,9 @@ export function RunView({ convId, runId }: RunViewProps) {
               <span className="text-muted-foreground">Steps</span>{" "}
               <span className="font-mono text-foreground">{conversationEvalSummary.steps}</span>{" "}
               <span className="text-muted-foreground">·</span>{" "}
+              <span className="text-muted-foreground">Evals</span>{" "}
+              <span className="font-mono text-blue-700 dark:text-blue-300">{conversationEvalSummary.passCount + conversationEvalSummary.failCount}</span>{" "}
+              <span className="text-muted-foreground">·</span>{" "}
               <span className="text-muted-foreground">Pass</span>{" "}
               <span className="font-mono text-emerald-600 dark:text-emerald-400">
                 {conversationEvalSummary.passCount}
