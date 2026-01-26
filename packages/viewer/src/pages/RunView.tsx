@@ -474,7 +474,7 @@ export function RunView({ convId, runId }: RunViewProps) {
               <span className="font-mono text-foreground">{conversationEvalSummary.steps}</span>{" "}
               <span className="text-muted-foreground">·</span>{" "}
               <span className="text-muted-foreground">Evals</span>{" "}
-              <span className="font-mono text-blue-700 dark:text-blue-300">{conversationEvalSummary.passCount + conversationEvalSummary.failCount}</span>{" "}
+              <span className="font-mono text-foreground">{conversationEvalSummary.passCount + conversationEvalSummary.failCount}</span>{" "}
               <span className="text-muted-foreground">·</span>{" "}
               <span className="text-muted-foreground">Pass</span>{" "}
               <span className="font-mono text-emerald-600 dark:text-emerald-400">
@@ -649,7 +649,7 @@ export function RunView({ convId, runId }: RunViewProps) {
                                           <td className="px-3 py-2 align-top font-mono text-xs">
                                             {typeof m.score === "number" ? m.score.toFixed(3) : "—"}
                                           </td>
-                                          <td className="px-3 py-2 align-top font-mono text-xs">
+                                          <td className={cn("px-3 py-2 align-top font-mono text-xs", m.rawValue !== undefined && getHeatClass(m.score))}>
                                             {raw}
                                           </td>
                                           <td className="px-3 py-2 align-top font-mono text-xs">
