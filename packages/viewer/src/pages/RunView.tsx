@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { ChevronLeft } from "lucide-react";
+import { ChevronDownIcon,
+ChevronLeft } from "lucide-react";
 import type { TallyRunArtifact } from "@tally-evals/core";
 import { MetricSummaryPopover } from "../components/MetricSummaryPopover";
 import {
@@ -736,9 +737,10 @@ export function RunView({ convId, runId }: RunViewProps) {
               outcomes directly on each eval result. */}
 
           {/* Keep raw payload available for debugging */}
-          <details className="rounded-md border border-border bg-background">
-            <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium">
+          <details className="group rounded-md border border-border bg-background">
+            <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium flex items-center justify-between">
               Raw run JSON
+              <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
             </summary>
             <div className="border-t border-border px-4 py-3">
               <pre className="code-block overflow-x-auto rounded bg-muted p-3 text-xs">
