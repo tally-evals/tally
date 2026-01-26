@@ -1,32 +1,18 @@
 import { ArrowDown, ArrowUp, ChevronLeft, GitBranch, Play } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-
-interface Run {
-  id: string;
-  type: string;
-  timestamp: Date | null;
-}
-
+import type { RunRef,
+TrajectoryMeta } from '@tally-evals/core';
 interface ConversationViewProps {
   id: string;
 }
-
-type TrajectoryMeta = {
-  trajectoryId: string;
-  createdAt: string;
-  goal: string;
-  persona: { name?: string; description: string; guardrails?: string[] };
-  maxTurns?: number;
-};
-
 type TrajectoryData = {
   meta: TrajectoryMeta | null;
 };
 
 export function ConversationView({ id }: ConversationViewProps) {
   const [trajectory, setTrajectory] = useState<TrajectoryData | null>(null);
-  const [runs, setRuns] = useState<Run[]>([]);
+  const [runs, setRuns] = useState<RunRef[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortRunsAscending, setSortRunsAscending] = useState(false);
