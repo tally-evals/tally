@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { ChevronDownIcon,
-ChevronLeft } from "lucide-react";
+import { CheckIcon,
+ChevronDownIcon,
+ChevronLeft, 
+CopyIcon} from "lucide-react";
 import type { TallyRunArtifact } from "@tally-evals/core";
 import { MetricSummaryPopover } from "../components/MetricSummaryPopover";
 import {
@@ -163,6 +165,12 @@ export function RunView({ convId, runId }: RunViewProps) {
   const [conversation, setConversation] = useState<ConversationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [rawRunCopied, setRawRunCopied] = useState(false);
+  const copyRawRun = async () => {
+    await navigator.clipboard.writeText(JSON.stringify(run, null, 2));
+    setRawRunCopied(true);
+    setTimeout(() => setRawRunCopied(false), 2000);
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -740,7 +748,16 @@ export function RunView({ convId, runId }: RunViewProps) {
           <details className="group rounded-md border border-border bg-background">
             <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium flex items-center justify-between">
               Raw run JSON
+              <div className="flex items-center gap-2">
+              <button
+                onClick={copyRawRun}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                title="Copy to clipboard"
+              >
+                {rawRunCopied ? <CheckIcon className="size-4 text-emerald-500" /> : <CopyIcon className="size-4" />}
+              </button>
               <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
+            </div>
             </summary>
             <div className="border-t border-border px-4 py-3">
               <pre className="code-block overflow-x-auto rounded bg-muted p-3 text-xs">
