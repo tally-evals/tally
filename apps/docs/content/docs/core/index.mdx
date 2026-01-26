@@ -1,0 +1,24 @@
+---
+title: Core
+description: Foundational types and utilities for Tally.
+---
+
+The `@tally-evals/core` package provides the essential building blocks for the entire Tally ecosystem. It ensures type safety and consistent data structures between conversation generation and evaluation.
+
+## Key Features
+
+- **Shared Types**: Canonical definitions for `Conversation`, `StepTrace`, and `ModelMessage`.
+- **Configuration**: A unified way to configure storage and project settings.
+- **Storage Adapters**: Pluggable backends for saving evaluation artifacts (Local, S3, Redis).
+- **Codecs**: Zod-based serialization for all Tally data formats.
+- **Message Utilities**: Helpers for extracting text and tool calls from LLM messages.
+
+## Installation
+
+```bash
+pnpm add @tally-evals/core
+```
+
+## Why use Core?
+
+While you primarily interact with `@tally-evals/tally` or `@tally-evals/trajectories`, the `@tally-evals/core` package is where you'll find the type definitions and configuration helpers needed for deeper integration and custom extensions.

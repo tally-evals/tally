@@ -1,0 +1,135 @@
+---
+title: Evals
+description: Turning measurements into actionable business decisions.
+---
+
+In Tally, **Evals** represent the **Decision Layer**. While Metrics capture individual signals and Scorers combine multiple metrics into composite scores, Evals turn those measurements into an actionable signal: **Pass or Fail**.
+
+An Eval is the "Voice of the Business." It defines the threshold of quality that your agent must meet before it is trusted to interact with users or be deployed to production.
+
+---
+
+## Why Evals Matter
+
+Without Evals, you only have numbers. With Evals, you have a **judgment**.
+
+| Feature | The Value of Evals |
+| :--- | :--- |
+| **Actionable Signal** | Instead of looking at a relevance score of `0.72` and wondering if it's "good enough," an Eval provides a definitive `Pass` or `Fail` status. |
+| **CI/CD Integration** | Evals are designed to be the gatekeepers of your development cycle. You can automatically block a PR if the **Pass Rate** falls below your required threshold. |
+| **Policy vs. Measurement** | By separating the *measurement* (Metric) from the *policy* (Verdict), you can change your standards (e.g., making a test stricter) without needing to change your domain measures. |
+
+---
+
+## The Anatomy of an Eval
+
+Every Eval is composed of two parts:
+1.  **The Measures**: A [Metric](/docs/tally/metrics) or a [Scorer](/docs/tally/scorers) that produces a value.
+2.  **The Verdict**: A **Verdict Policy** that decides if that value constitutes a "Pass."
+
+---
+
+## Types of Evals
+
+### 1. Single-Turn Evals
+The most granular check. Use these to ensure every single interaction meets a minimum standard of safety or correctness.
+
+```ts
+import { defineSingleTurnEval, thresholdVerdict } from '@tally-evals/tally';
+
+// Decision: "Every response must be at least 70% relevant"
+const relevanceEval = defineSingleTurnEval({
+  name: 'Response Relevance',
+  metric: relevanceMetric,
+  verdict: thresholdVerdict(0.7),
+});
+```
+
+### 2. Multi-Turn Evals
+The "big picture" check. Use these to evaluate high-level goals that can only be judged by looking at the entire conversation.
+
+```ts
+import { defineMultiTurnEval, thresholdVerdict } from '@tally-evals/tally';
+
+// Decision: "The user's goal must be 100% achieved by the end"
+const successEval = defineMultiTurnEval({
+  name: 'Goal Completion',
+  metric: goalCompletionMetric,
+  verdict: thresholdVerdict(1.0),
+});
+```
+
+### 3. Scorer Evals
+The weighted decision. Use these when "quality" depends on a balance of several factors (e.g., a mix of relevance, speed, and tone).
+
+```ts
+import { defineScorerEval, thresholdVerdict } from '@tally-evals/tally';
+
+// Decision: "The overall weighted quality must be >= 0.8"
+const qualityEval = defineScorerEval({
+  name: 'Production Quality',
+  scorer: qualityScorer,
+  verdict: thresholdVerdict(0.8),
+});
+```
+
+---
+
+## Verdict Policies
+
+A verdict policy is the rule that converts a score (usually 0–1) into a status (`pass`, `fail`, or `error`).
+
+### `thresholdVerdict(threshold)`
+Passes if the score is greater than or equal to the threshold. The most common way to set a "quality bar."
+
+```ts
+const verdict = thresholdVerdict(0.8);
+```
+
+### `booleanVerdict(passWhen)`
+Designed for binary checks. Pass `true` to pass when the value is truthy, or `false` to pass when the value is falsy.
+
+```ts
+const verdict = booleanVerdict(true);  // Pass when value is true
+const verdict = booleanVerdict(false); // Pass when value is false
+```
+
+### `rangeVerdict(min, max)`
+Passes if the score falls within a specific window. Useful for checking if an agent is staying within a balanced zone (e.g., "neither too brief nor too verbose").
+
+```ts
+const verdict = rangeVerdict(0.4, 0.6);
+```
+
+### `customVerdict(fn)`
+When your business rules are complex.
+
+The callback signature is:
+
+```ts
+customVerdict<T extends MetricScalar>(
+  fn: (score: Score, rawValue: T) => 'pass' | 'fail' | 'unknown'
+)
+```
+
+```ts
+const verdict = customVerdict((score, rawValue) => {
+  // Example: if this metric is being treated as a release gate,
+  // require a stronger score.
+  if (score >= 0.9) return 'pass';
+
+  // You can also branch on the raw value (boolean/number/string),
+  // depending on the metric's valueType.
+  return rawValue ? 'pass' : 'fail';
+});
+```
+
+---
+
+## Summary
+
+Use **Evals** to draw a line in the sand. They transform Tally from a measurement tool into a **trust-building engine** for your LLM agents.
+
+## API Reference
+
+For full type definitions and factory options, see the [Evals API Reference](/docs/tally/reference/evals).

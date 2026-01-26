@@ -62,9 +62,11 @@ export const demandLetterTools = {
 		description: 'Validate user inputs against the template field requirements',
 		inputSchema: z.object({
 			fieldId: z.string().describe('The field ID to validate'),
-			value: z.union([z.string(), z.number()]).describe('The value to validate'),
+			value: z.string().describe('The value to validate (use string representation for numbers)'),
 		}),
-		execute: async ({ fieldId, value }) => {
+		execute: async ({ fieldId, value: rawValue }) => {
+			// Parse numeric values from string if needed
+			const value = /^\d+(\.\d+)?$/.test(rawValue) ? Number(rawValue) : rawValue;
 			const fields: TemplateField[] = [
 				{ id: 'recipientName', name: 'recipientName', label: 'Recipient Name', type: 'text', required: true, description: '' },
 				{ id: 'recipientAddress', name: 'recipientAddress', label: 'Recipient Address', type: 'textarea', required: true, description: '' },

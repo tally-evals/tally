@@ -1,0 +1,69 @@
+{
+  "name": "@tally-evals/cli",
+  "version": "0.0.0",
+  "description": "A CLI for the Tally evaluation framework",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "tally": "./dist/bin.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tally-evals/tally.git",
+    "directory": "packages/cli"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "bun run build:lib && bun run build:bin",
+    "build:lib": "bun build ./src/index.ts --outdir ./dist --target bun --sourcemap=external --external react-devtools-core && bun x tsc --emitDeclarationOnly --declaration --outDir dist",
+    "build:bin": "bun build ./src/bin.ts --outfile ./dist/bin.js --target bun --external react-devtools-core && awk 'NR==1{print;next} !/^#!\\/usr\\/bin\\/env bun$/{print}' ./dist/bin.js > ./dist/bin.tmp && mv ./dist/bin.tmp ./dist/bin.js && chmod +x ./dist/bin.js",
+    "dev": "bun --watch src/bin.ts",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "tally",
+    "evaluation",
+    "llm",
+    "ai",
+    "cli"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@byteland/ink-scroll-bar": "^0.1.1",
+    "@tally-evals/core": "workspace:*",
+    "@tally-evals/tally": "workspace:*",
+    "@tally-evals/viewer": "workspace:*",
+    "chalk": "^5.3.0",
+    "cli-table3": "^0.6.4",
+    "commander": "^12.1.0",
+    "ink": "^6.6.0",
+    "ink-scroll-list": "^0.4.1",
+    "ink-scroll-view": "^0.3.5",
+    "ink-select-input": "^6.2.0",
+    "ink-spinner": "^5.0.0",
+    "ink-text-input": "^6.0.0",
+    "react": "19.2.0",
+    "react-devtools-core": "^6.1.5"
+  },
+  "devDependencies": {
+    "@tally-evals/biome-config": "workspace:*",
+    "@tally-evals/typescript-config": "workspace:*",
+    "@types/bun": "^1.2.8",
+    "@types/react": "19.2.0",
+    "typescript": "^5.3.3"
+  }
+}

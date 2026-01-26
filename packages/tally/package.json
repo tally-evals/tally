@@ -2,9 +2,9 @@
   "name": "@tally-evals/tally",
   "version": "0.0.0",
   "description": "A TypeScript evaluation framework for running model evaluations with datasets, evaluators, metrics, and aggregators",
-  "main": "./dist/index.js",
+  "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/index.d.mts",
   "repository": {
     "type": "git",
     "url": "https://github.com/tally-evals/tally.git",
@@ -12,76 +12,92 @@
   },
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js",
-      "default": "./dist/index.mjs"
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     },
     "./metrics": {
-      "types": "./dist/metrics/index.d.ts",
-      "import": "./dist/metrics/index.mjs",
-      "require": "./dist/metrics/index.js",
-      "default": "./dist/metrics/index.mjs"
+      "import": {
+        "types": "./dist/metrics/index.d.mts",
+        "default": "./dist/metrics/index.mjs"
+      },
+      "require": {
+        "types": "./dist/metrics/index.d.cts",
+        "default": "./dist/metrics/index.cjs"
+      }
     },
     "./scorers": {
-      "types": "./dist/scorers/index.d.ts",
-      "import": "./dist/scorers/index.mjs",
-      "require": "./dist/scorers/index.js",
-      "default": "./dist/scorers/index.mjs"
+      "import": {
+        "types": "./dist/scorers/index.d.mts",
+        "default": "./dist/scorers/index.mjs"
+      },
+      "require": {
+        "types": "./dist/scorers/index.d.cts",
+        "default": "./dist/scorers/index.cjs"
+      }
     },
     "./aggregators": {
-      "types": "./dist/aggregators/index.d.ts",
-      "import": "./dist/aggregators/index.mjs",
-      "require": "./dist/aggregators/index.js",
-      "default": "./dist/aggregators/index.mjs"
+      "import": {
+        "types": "./dist/aggregators/index.d.mts",
+        "default": "./dist/aggregators/index.mjs"
+      },
+      "require": {
+        "types": "./dist/aggregators/index.d.cts",
+        "default": "./dist/aggregators/index.cjs"
+      }
     },
     "./normalization": {
-      "types": "./dist/normalization/index.d.ts",
-      "import": "./dist/normalization/index.mjs",
-      "require": "./dist/normalization/index.js",
-      "default": "./dist/normalization/index.mjs"
+      "import": {
+        "types": "./dist/normalization/index.d.mts",
+        "default": "./dist/normalization/index.mjs"
+      },
+      "require": {
+        "types": "./dist/normalization/index.d.cts",
+        "default": "./dist/normalization/index.cjs"
+      }
     },
     "./data": {
-      "types": "./dist/data/index.d.ts",
-      "import": "./dist/data/index.mjs",
-      "require": "./dist/data/index.js",
-      "default": "./dist/data/index.mjs"
+      "import": {
+        "types": "./dist/data/index.d.mts",
+        "default": "./dist/data/index.mjs"
+      },
+      "require": {
+        "types": "./dist/data/index.d.cts",
+        "default": "./dist/data/index.cjs"
+      }
     }
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "scripts": {
-    "build": "tsup",
-    "dev": "tsup --watch",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "test:ui": "vitest --ui",
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "clean": "rm -rf dist"
   },
-  "keywords": [
-    "evaluation",
-    "llm",
-    "ai",
-    "testing",
-    "metrics",
-    "datasets"
-  ],
+  "keywords": ["evaluation", "llm", "ai", "testing", "metrics", "datasets"],
   "author": "",
   "license": "MIT",
+  "dependencies": {
+    "@tally-evals/core": "workspace:*",
+    "ts-pattern": "^5.9.0"
+  },
   "devDependencies": {
-    "@ai-sdk/google": "^2.0.29",
+    "@ai-sdk/google": "^2.0.52",
     "@tally-evals/biome-config": "workspace:*",
     "@tally-evals/typescript-config": "workspace:*",
-    "@tally-evals/trajectories": "workspace:*",
+    "@types/bun": "latest",
     "@types/node": "24.6.2",
-    "@vitest/ui": "^1.1.0",
     "dotenv": "^17.2.3",
-    "tsup": "^8.0.1",
+    "tsdown": "^0.20.0-beta.3",
     "tsx": "^4.7.0",
-    "typescript": "^5.3.3",
-    "vitest": "^1.1.0"
+    "typescript": "^5.3.3"
   }
 }

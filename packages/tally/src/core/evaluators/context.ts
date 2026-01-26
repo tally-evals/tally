@@ -7,11 +7,11 @@
  */
 
 import type {
-	EvaluationContext,
-	SingleTurnRunPolicy,
-	Conversation,
-	DatasetItem,
-	ConversationStep,
+  Conversation,
+  ConversationStep,
+  DatasetItem,
+  EvaluationContext,
+  SingleTurnRunPolicy,
 } from '@tally/core/types';
 
 /**
@@ -19,13 +19,13 @@ import type {
  * Contains the selected targets and metadata about the selection
  */
 export interface TargetSelectionResult<T> {
-	targets: readonly T[];
-	policy: SingleTurnRunPolicy;
-	metadata?: {
-		totalAvailable: number;
-		selectedCount: number;
-		skippedIndices?: readonly number[];
-	};
+  targets: readonly T[];
+  policy: SingleTurnRunPolicy;
+  metadata?: {
+    totalAvailable: number;
+    selectedCount: number;
+    skippedIndices?: readonly number[];
+  };
 }
 
 /**
@@ -36,61 +36,61 @@ export interface TargetSelectionResult<T> {
  * @returns Selected conversation steps
  */
 export function selectConversationTargets(
-	conversation: Conversation,
-	policy: SingleTurnRunPolicy
+  conversation: Conversation,
+  policy: SingleTurnRunPolicy
 ): TargetSelectionResult<ConversationStep> {
-	const allSteps = conversation.steps;
-	const totalAvailable = allSteps.length;
+  const allSteps = conversation.steps;
+  const totalAvailable = allSteps.length;
 
-	switch (policy.run) {
-		case 'all': {
-			return {
-				targets: allSteps,
-				policy,
-				metadata: {
-					totalAvailable,
-					selectedCount: totalAvailable,
-				},
-			};
-		}
+  switch (policy.run) {
+    case 'all': {
+      return {
+        targets: allSteps,
+        policy,
+        metadata: {
+          totalAvailable,
+          selectedCount: totalAvailable,
+        },
+      };
+    }
 
-		case 'selectedSteps': {
-			const { stepIndices } = policy;
-			const validIndices = validateStepIndices(stepIndices, totalAvailable);
-			const selectedSteps = validIndices.valid
-				.map((idx) => allSteps[idx])
-				.filter((step): step is ConversationStep => step !== undefined);
+    case 'selectedSteps': {
+      const { stepIndices } = policy;
+      const validIndices = validateStepIndices(stepIndices, totalAvailable);
+      const selectedSteps = validIndices.valid
+        .map((idx) => allSteps[idx])
+        .filter((step): step is ConversationStep => step !== undefined);
 
-			return {
-				targets: selectedSteps,
-				policy,
-				metadata: {
-					totalAvailable,
-					selectedCount: selectedSteps.length,
-					skippedIndices: validIndices.invalid,
-				},
-			};
-		}
+      return {
+        targets: selectedSteps,
+        policy,
+        metadata: {
+          totalAvailable,
+          selectedCount: selectedSteps.length,
+          skippedIndices: validIndices.invalid,
+        },
+      };
+    }
 
-		case 'selectedItems': {
-			// For conversations, 'selectedItems' policy doesn't apply
-			// Return empty selection with metadata indicating mismatch
-			return {
-				targets: [],
-				policy,
-				metadata: {
-					totalAvailable,
-					selectedCount: 0,
-					skippedIndices: policy.itemIndices,
-				},
-			};
-		}
+    case 'selectedItems': {
+      // For conversations, 'selectedItems' policy doesn't apply
+      // Return empty selection with metadata indicating mismatch
+      return {
+        targets: [],
+        policy,
+        metadata: {
+          totalAvailable,
+          selectedCount: 0,
+          skippedIndices: policy.itemIndices,
+        },
+      };
+    }
 
-		default: {
-			const _exhaustive: never = policy;
-			throw new Error(`Unknown run policy: ${(_exhaustive as { run: string }).run}`);
-		}
-	}
+    default: {
+      const _exhaustive: never = policy;
+      throw new Error(`Unknown run policy: ${(_exhaustive as { run: string }).run}`);
+    }
+  }
 }
 
 /**
@@ -101,68 +101,68 @@ export function selectConversationTargets(
  * @returns Selected dataset items
  */
 export function selectDatasetTargets(
-	dataset: readonly DatasetItem[],
-	policy: SingleTurnRunPolicy
+  dataset: readonly DatasetItem[],
+  policy: SingleTurnRunPolicy
 ): TargetSelectionResult<DatasetItem> {
-	const totalAvailable = dataset.length;
+  const totalAvailable = dataset.length;
 
-	switch (policy.run) {
-		case 'all': {
-			return {
-				targets: dataset,
-				policy,
-				metadata: {
-					totalAvailable,
-					selectedCount: totalAvailable,
-				},
-			};
-		}
+  switch (policy.run) {
+    case 'all': {
+      return {
+        targets: dataset,
+        policy,
+        metadata: {
+          totalAvailable,
+          selectedCount: totalAvailable,
+        },
+      };
+    }
 
-		case 'selectedItems': {
-			const { itemIndices } = policy;
-			const validIndices = validateItemIndices(itemIndices, totalAvailable);
-			const selectedItems = validIndices.valid
-				.map((idx) => dataset[idx])
-				.filter((item): item is DatasetItem => item !== undefined);
+    case 'selectedItems': {
+      const { itemIndices } = policy;
+      const validIndices = validateItemIndices(itemIndices, totalAvailable);
+      const selectedItems = validIndices.valid
+        .map((idx) => dataset[idx])
+        .filter((item): item is DatasetItem => item !== undefined);
 
-			return {
-				targets: selectedItems,
-				policy,
-				metadata: {
-					totalAvailable,
-					selectedCount: selectedItems.length,
-					skippedIndices: validIndices.invalid,
-				},
-			};
-		}
+      return {
+        targets: selectedItems,
+        policy,
+        metadata: {
+          totalAvailable,
+          selectedCount: selectedItems.length,
+          skippedIndices: validIndices.invalid,
+        },
+      };
+    }
 
-		case 'selectedSteps': {
-			// For datasets, 'selectedSteps' policy doesn't apply
-			// Return empty selection with metadata indicating mismatch
-			return {
-				targets: [],
-				policy,
-				metadata: {
-					totalAvailable,
-					selectedCount: 0,
-					skippedIndices: policy.stepIndices,
-				},
-			};
-		}
+    case 'selectedSteps': {
+      // For datasets, 'selectedSteps' policy doesn't apply
+      // Return empty selection with metadata indicating mismatch
+      return {
+        targets: [],
+        policy,
+        metadata: {
+          totalAvailable,
+          selectedCount: 0,
+          skippedIndices: policy.stepIndices,
+        },
+      };
+    }
 
-		default: {
-			const _exhaustive: never = policy;
-			throw new Error(`Unknown run policy: ${(_exhaustive as { run: string }).run}`);
-		}
-	}
+    default: {
+      const _exhaustive: never = policy;
+      throw new Error(`Unknown run policy: ${(_exhaustive as { run: string }).run}`);
+    }
+  }
 }
 
 /**
  * Validation result for indices
  */
 interface IndexValidationResult {
-	valid: readonly number[];
-	invalid: readonly number[];
+  valid: readonly number[];
+  invalid: readonly number[];
 }
 
 /**
@@ -173,30 +173,30 @@ interface IndexValidationResult {
  * @returns Validation result with valid and invalid indices
  */
 export function validateStepIndices(
-	stepIndices: readonly number[],
-	maxSteps: number
+  stepIndices: readonly number[],
+  maxSteps: number
 ): IndexValidationResult {
-	if (stepIndices.length === 0) {
-		return { valid: [], invalid: [] };
-	}
+  if (stepIndices.length === 0) {
+    return { valid: [], invalid: [] };
+  }
 
-	const valid: number[] = [];
-	const invalid: number[] = [];
+  const valid: number[] = [];
+  const invalid: number[] = [];
 
-	for (const idx of stepIndices) {
-		if (typeof idx !== 'number' || Number.isNaN(idx) || !Number.isFinite(idx)) {
-			invalid.push(idx);
-			continue;
-		}
+  for (const idx of stepIndices) {
+    if (typeof idx !== 'number' || Number.isNaN(idx) || !Number.isFinite(idx)) {
+      invalid.push(idx);
+      continue;
+    }
 
-		if (idx >= 0 && idx < maxSteps) {
-			valid.push(idx);
-		} else {
-			invalid.push(idx);
-		}
-	}
+    if (idx >= 0 && idx < maxSteps) {
+      valid.push(idx);
+    } else {
+      invalid.push(idx);
+    }
+  }
 
-	return { valid, invalid };
+  return { valid, invalid };
 }
 
 /**
@@ -207,30 +207,30 @@ export function validateStepIndices(
  * @returns Validation result with valid and invalid indices
  */
 export function validateItemIndices(
-	itemIndices: readonly number[],
-	maxItems: number
+  itemIndices: readonly number[],
+  maxItems: number
 ): IndexValidationResult {
-	if (itemIndices.length === 0) {
-		return { valid: [], invalid: [] };
-	}
+  if (itemIndices.length === 0) {
+    return { valid: [], invalid: [] };
+  }
 
-	const valid: number[] = [];
-	const invalid: number[] = [];
+  const valid: number[] = [];
+  const invalid: number[] = [];
 
-	for (const idx of itemIndices) {
-		if (typeof idx !== 'number' || Number.isNaN(idx) || !Number.isFinite(idx)) {
-			invalid.push(idx);
-			continue;
-		}
+  for (const idx of itemIndices) {
+    if (typeof idx !== 'number' || Number.isNaN(idx) || !Number.isFinite(idx)) {
+      invalid.push(idx);
+      continue;
+    }
 
-		if (idx >= 0 && idx < maxItems) {
-			valid.push(idx);
-		} else {
-			invalid.push(idx);
-		}
-	}
+    if (idx >= 0 && idx < maxItems) {
+      valid.push(idx);
+    } else {
+      invalid.push(idx);
+    }
+  }
 
-	return { valid, invalid };
+  return { valid, invalid };
 }
 
 /**
@@ -240,9 +240,6 @@ export function validateItemIndices(
  * @param context - Evaluation context (may be undefined)
  * @returns Single-turn run policy or undefined
  */
-export function resolveRunPolicy(
-	context?: EvaluationContext
-): SingleTurnRunPolicy | undefined {
-	return context?.singleTurn;
+export function resolveRunPolicy(context?: EvaluationContext): SingleTurnRunPolicy | undefined {
+  return context?.singleTurn;
 }
-

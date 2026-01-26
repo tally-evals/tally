@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "trajectoryId": "demand-letter-golden",
+  "createdAt": "2026-01-19T17:22:15.055Z",
+  "goal": "Create a demand letter for an unpaid invoice successfully",
+  "persona": {
+    "name": "Business Owner",
+    "description": "You need to create a legal demand letter. You provide information as the agent guides you through the process. You are professional and want to ensure all required information is included.",
+    "guardrails": [
+      "Provide accurate information",
+      "Answer all questions asked by the agent",
+      "Request clarification if needed"
+    ]
+  },
+  "maxTurns": 10,
+  "stepGraph": {
+    "start": "step-1",
+    "terminals": [
+      "step-3"
+    ],
+    "steps": [
+      {
+        "id": "step-1",
+        "instruction": "Express need to create a demand letter for an unpaid invoice"
+      },
+      {
+        "id": "step-2",
+        "instruction": "Provide invoice details (amount: $2,500, due date: March 15th)"
+      },
+      {
+        "id": "step-3",
+        "instruction": "Provide recipient details (ABC Company, address)"
+      }
+    ]
+  }
+}

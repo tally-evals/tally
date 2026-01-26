@@ -1,0 +1,299 @@
+---
+title: Aggregators
+description: Summarize per-target scores into dataset-level statistics.
+---
+
+import { PropertyTable } from '@/components/PropertyTable';
+
+# Aggregators
+
+Aggregators summarize arrays of values into dataset-level statistics. They are discriminated by `kind` and attached to single-turn metrics via the `aggregators` field.
+
+## Import
+
+```ts
+import {
+  // Custom definitions
+  defineNumericAggregator,
+  defineBooleanAggregator,
+  defineCategoricalAggregator,
+  // Prebuilt factories
+  createMeanAggregator,
+  createPercentileAggregator,
+  createThresholdAggregator,
+  createTrueRateAggregator,
+  createFalseRateAggregator,
+  createDistributionAggregator,
+  createModeAggregator,
+  // Defaults
+  getDefaultAggregators,
+} from '@tally-evals/tally';
+```
+
+---
+
+## Aggregator Types
+
+Aggregators are discriminated by `kind`:
+
+| Kind | Operates On | Returns | Use Case |
+|------|-------------|---------|----------|
+| `'numeric'` | `number[]` | `number` | Scores, numeric raw values |
+| `'boolean'` | `boolean[]` | `number` | Boolean raw values (rate) |
+| `'categorical'` | `string[]` | `Record<string, number>` | String/ordinal raw values |
+
+---
+
+## Custom Aggregator Definitions
+
+### `defineNumericAggregator()`
+
+Creates a custom aggregator for numeric values. Use this when built-in aggregators don't fit your needs.
+
+<PropertyTable
+  content={[
+    { name: 'name', type: 'string', description: 'Aggregator name (appears in reports).' },
+    { name: 'description', type: 'string', description: 'Description of what this aggregator computes.', isOptional: true },
+    { name: 'aggregate', type: '(values: readonly number[]) => number', description: 'Aggregation function.' },
+    { name: 'metadata', type: 'Record<string, unknown>', description: 'Optional metadata.', isOptional: true },
+  ]}
+/>
+
+**Example:**
+```ts
+const stdDevAggregator = defineNumericAggregator({
+  name: 'StdDev',
+  description: 'Standard deviation of values',
+  aggregate: (values) => {
+    const mean = values.reduce((a, b) => a + b, 0) / values.length;
+    const squaredDiffs = values.map(v => (v - mean) ** 2);
+    return Math.sqrt(squaredDiffs.reduce((a, b) => a + b, 0) / values.length);
+  },
+});
+```
+
+---
+
+### `defineBooleanAggregator()`
+
+Creates a custom aggregator for boolean values. Use this for custom true/false counting logic.
+
+<PropertyTable
+  content={[
+    { name: 'name', type: 'string', description: 'Aggregator name (appears in reports).' },
+    { name: 'description', type: 'string', description: 'Description of what this aggregator computes.', isOptional: true },
+    { name: 'aggregate', type: '(values: readonly boolean[]) => number', description: 'Aggregation function returning a rate (0-1).' },
+    { name: 'metadata', type: 'Record<string, unknown>', description: 'Optional metadata.', isOptional: true },
+  ]}
+/>
+
+**Example:**
+```ts
+const consecutiveTrueAggregator = defineBooleanAggregator({
+  name: 'MaxTrueStreak',
+  description: 'Longest consecutive true values',
+  aggregate: (values) => {
+    let maxStreak = 0, currentStreak = 0;
+    for (const v of values) {
+      if (v) { currentStreak++; maxStreak = Math.max(maxStreak, currentStreak); }
+      else { currentStreak = 0; }
+    }
+    return maxStreak;
+  },
+});
+```
+
+---
+
+### `defineCategoricalAggregator()`
+
+Creates a custom aggregator for categorical (string) values. Returns a distribution or other summary of categories.
+
+<PropertyTable
+  content={[
+    { name: 'name', type: 'string', description: 'Aggregator name (appears in reports).' },
+    { name: 'description', type: 'string', description: 'Description of what this aggregator computes.', isOptional: true },
+    {
+      name: 'aggregate',
+      type: '(values: readonly string[]) => Record<string, number>',
+      description: 'Aggregation function returning category counts/frequencies.',
+    },
+    { name: 'metadata', type: 'Record<string, unknown>', description: 'Optional metadata.', isOptional: true },
+  ]}
+/>
+
+---
+
+## Prebuilt Aggregators
+
+### `createMeanAggregator()`
+
+Computes the arithmetic mean of numeric values. The most common way to summarize scores across targets.
+
+<PropertyTable
+  content={[
+    { name: 'description', type: 'string', description: 'Custom description.', isOptional: true },
+    { name: 'metadata', type: 'Record<string, unknown>', description: 'Optional metadata.', isOptional: true },
+  ]}
+/>
+
+**Returns:** `NumericAggregatorDef<'Mean'>`
+
+---
+
+### `createPercentileAggregator()`
+
+Computes a specific percentile of numeric values. Use for p50 (median), p90, p95, p99, etc.
+
+<PropertyTable
+  content={[
+    { name: 'percentile', type: 'number', description: 'Percentile value (0-100).' },
+    { name: 'description', type: 'string', description: 'Custom description.', isOptional: true },
+    { name: 'metadata', type: 'Record<string, unknown>', description: 'Optional metadata.', isOptional: true },
+  ]}
+/>
+
+**Returns:** `NumericAggregatorDef<'P50'>`, `NumericAggregatorDef<'P95'>`, etc. (name is derived from percentile value)
+
+**Example:**
+```ts
+const p95 = createPercentileAggregator({ percentile: 95 });
+// typeof p95.name is 'P95'
+```
+
+---
+
+### `createThresholdAggregator()`
+
+Computes the proportion of values that meet or exceed a threshold. Useful for "% above target" metrics.
+
+<PropertyTable
+  content={[
+    { name: 'threshold', type: 'number', description: 'Threshold value (0-1). Default: 0.5.', isOptional: true },
+    { name: 'name', type: 'string', description: 'Custom aggregator name.', isOptional: true },
+    { name: 'description', type: 'string', description: 'Custom description.', isOptional: true },
+    { name: 'metadata', type: 'Record<string, unknown>', description: 'Optional metadata.', isOptional: true },
+  ]}
+/>
+
+**Returns:** `NumericAggregatorDef<'Threshold >= 0.5'>`, etc. (name is derived from threshold value)
+
+---
+
+### `createTrueRateAggregator()`
+
+Computes the proportion of `true` values in a boolean array. Equivalent to a "success rate".
+
+<PropertyTable
+  content={[
+    { name: 'description', type: 'string', description: 'Custom description.', isOptional: true },
+    { name: 'metadata', type: 'Record<string, unknown>', description: 'Optional metadata.', isOptional: true },
+  ]}
+/>
+
+**Returns:** `BooleanAggregatorDef<'TrueRate'>`
+
+---
+
+### `createFalseRateAggregator()`
+
+Computes the proportion of `false` values in a boolean array. Equivalent to a "failure rate".
+
+<PropertyTable
+  content={[
+    { name: 'description', type: 'string', description: 'Custom description.', isOptional: true },
+    { name: 'metadata', type: 'Record<string, unknown>', description: 'Optional metadata.', isOptional: true },
+  ]}
+/>
+
+**Returns:** `BooleanAggregatorDef<'FalseRate'>`
+
+---
+
+### `createDistributionAggregator()`
+
+Computes the frequency distribution of categorical values. Returns counts or proportions for each unique value.
+
+<PropertyTable
+  content={[
+    { name: 'description', type: 'string', description: 'Custom description.', isOptional: true },
+    { name: 'proportions', type: 'boolean', description: 'Return proportions (true) or counts (false). Default: true.', isOptional: true },
+    { name: 'metadata', type: 'Record<string, unknown>', description: 'Optional metadata.', isOptional: true },
+  ]}
+/>
+
+**Returns:** `CategoricalAggregatorDef<'Distribution'>`
+
+---
+
+### `createModeAggregator()`
+
+Returns the most frequent value in a categorical array. Useful for finding the "typical" category.
+
+<PropertyTable
+  content={[
+    { name: 'description', type: 'string', description: 'Custom description.', isOptional: true },
+    { name: 'metadata', type: 'Record<string, unknown>', description: 'Optional metadata.', isOptional: true },
+  ]}
+/>
+
+**Returns:** `CategoricalAggregatorDef<'Mode'>`
+
+---
+
+## Default Aggregators
+
+Tally provides default aggregators based on the metric's `valueType`:
+
+```ts
+import { getDefaultAggregators } from '@tally-evals/tally';
+
+const numericAggs = getDefaultAggregators('number');
+// ['Mean', 'P50', 'P75', 'P90']
+
+const booleanAggs = getDefaultAggregators('boolean');
+// ['Mean', 'P50', 'P75', 'P90', 'TrueRate']
+
+const stringAggs = getDefaultAggregators('string');
+// ['Mean', 'P50', 'P75', 'P90', 'Distribution']
+```
+
+---
+
+## Attaching Aggregators to Metrics
+
+Aggregators are attached to single-turn metrics at definition time:
+
+```ts
+import { defineSingleTurnCode, defineBaseMetric } from '@tally-evals/tally';
+import { createPercentileAggregator } from '@tally-evals/tally';
+
+const latencyMetric = defineSingleTurnCode({
+  base: defineBaseMetric({ name: 'latencyMs', valueType: 'number' }),
+  compute: ({ data }) => data.latencyMs,
+  aggregators: [
+    createPercentileAggregator({ percentile: 50 }),
+    createPercentileAggregator({ percentile: 95 }),
+    createPercentileAggregator({ percentile: 99 }),
+  ],
+});
+```
+
+Default aggregators are automatically added based on `valueType`. Custom aggregators are merged with defaults.
+
+---
+
+## Reading Aggregation Results
+
+Access aggregation results through the report's summary:
+
+```ts
+const report = await tally.run();
+const summaries = report.view().summary();
+
+const relevanceSummary = summaries?.['Answer Relevance'];
+if (relevanceSummary?.aggregations?.score) {
+  console.log('Mean:', relevanceSummary.aggregations.score.mean);
+  console.log('P90:', relevanceSummary.aggregations.score.p90);
+}
+```

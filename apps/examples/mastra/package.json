@@ -1,35 +1,55 @@
 {
   "name": "@tally-evals/examples-mastra",
-  "version": "0.0.0",
-  "private": true,
-  "description": "Mastra LLM evaluation examples using the Tally framework",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "version": "1.0.0",
+  "description": "Mastra evaluation examples using the Tally framework",
+  "main": "./src/mastra/index.ts",
+  "types": "./src/mastra/index.ts",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "import": "./src/index.ts"
+      "types": "./src/mastra/index.ts",
+      "import": "./src/mastra/index.ts",
+      "require": "./src/mastra/index.ts"
     }
   },
   "scripts": {
-    "dev": "tsx src/index.ts",
+    "dev": "mastra dev",
+    "start": "mastra start",
     "build": "tsc",
-    "test": "vitest",
+    "test": "bun test",
+    "test:watch": "bun test --watch",
+    "cli:build": "bun run --filter @tally-evals/cli build",
+    "tui": "bun run cli:build && bunx --no-install tally browse",
+    "dev:server": "bun run cli:build && bunx --no-install tally dev server",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "clean": "rm -rf dist"
   },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "dependencies": {
-    "@mastra/core": "latest",
     "@ai-sdk/google": "^2.0.29",
-    "zod": "^3.23.8",
-    "@tally-evals/tally": "workspace:*"
+    "@faker-js/faker": "^10.2.0",
+    "@mastra/core": "^0.24.9",
+    "@mastra/evals": "^0.14.4",
+    "@mastra/libsql": "^0.16.4",
+    "@mastra/loggers": "^0.10.19",
+    "@mastra/memory": "^0.15.13",
+    "@tally-evals/core": "workspace:*",
+    "@tally-evals/tally": "workspace:*",
+    "@tally-evals/trajectories": "workspace:*",
+    "dotenv": "^17.2.3",
+    "zod": "^4"
   },
   "devDependencies": {
     "@tally-evals/typescript-config": "workspace:*",
-    "@tally-evals/biome-config": "workspace:*",
-    "typescript": "^5.3.3",
-    "tsx": "^4.7.0",
-    "vitest": "^1.1.0"
+    "@types/node": "^25.0.3",
+    "mastra": "^0.18.0",
+    "typescript": "^5.9.3",
+    "vite-tsconfig-paths": "^6.0.3"
   }
 }

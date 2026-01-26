@@ -1,0 +1,126 @@
+{
+  "runId": "run-1767864765136-8zeeq5q",
+  "timestamp": "2026-01-08T09:32:45.136Z",
+  "perTargetResults": [
+    {
+      "targetId": "travel-planner-golden",
+      "rawMetrics": [
+        {
+          "metricDef": {
+            "name": "answerRelevance",
+            "valueType": "number",
+            "description": "Measures how relevant the output is to the input query",
+            "scope": "single",
+            "type": "llm-based"
+          },
+          "value": 5,
+          "confidence": 0.9,
+          "reasoning": "The response directly addresses the user's stated need for help planning a trip to San Francisco by asking a relevant clarifying question about the dates of the visit.",
+          "executionTime": 2187,
+          "timestamp": "2026-01-08T09:32:47.324Z"
+        },
+        {
+          "metricDef": {
+            "name": "answerRelevance",
+            "valueType": "number",
+            "description": "Measures how relevant the output is to the input query",
+            "scope": "single",
+            "type": "llm-based"
+          },
+          "value": 2,
+          "confidence": 0.9,
+          "reasoning": "The response acknowledges a detail from the query but immediately pivots to a new question that doesn't directly address the departure date itself.",
+          "executionTime": 1732,
+          "timestamp": "2026-01-08T09:32:46.873Z"
+        }
+      ],
+      "derivedMetrics": [
+        {
+          "definition": {
+            "name": "Answer Relevance_score",
+            "valueType": "number",
+            "description": "Normalized score for Answer Relevance"
+          },
+          "value": 1
+        },
+        {
+          "definition": {
+            "name": "overallQuality",
+            "valueType": "number"
+          },
+          "value": 0.94
+        }
+      ],
+      "verdicts": {
+        "Answer Relevance": {
+          "verdict": "pass",
+          "score": 1,
+          "rawValue": null
+        },
+        "Overall Quality": {
+          "verdict": "pass",
+          "score": 0.94,
+          "rawValue": null
+        }
+      }
+    }
+  ],
+  "aggregateSummaries": [
+    {
+      "metric": {
+        "name": "Answer Relevance_score",
+        "valueType": "number",
+        "description": "Normalized score for Answer Relevance"
+      },
+      "aggregations": {
+        "mean": 1,
+        "percentiles": {
+          "p50": 1,
+          "p75": 1,
+          "p90": 1,
+          "p95": 1,
+          "p99": 1
+        },
+        "passRate": 1,
+        "failRate": 0,
+        "passCount": 1,
+        "failCount": 0
+      },
+      "count": 1
+    }
+  ],
+  "evalSummaries": {
+    "Answer Relevance": {
+      "evalName": "Answer Relevance",
+      "evalKind": "singleTurn",
+      "aggregations": {
+        "mean": 1,
+        "percentiles": {
+          "p50": 1,
+          "p75": 1,
+          "p90": 1,
+          "p95": 1,
+          "p99": 1
+        },
+        "passRate": 1,
+        "failRate": 0,
+        "passCount": 1,
+        "failCount": 0
+      },
+      "verdictSummary": {
+        "passRate": 1,
+        "failRate": 0,
+        "passCount": 1,
+        "failCount": 0,
+        "totalCount": 1
+      }
+    }
+  },
+  "metricToEvalMap": {
+    "answerRelevance": "Answer Relevance"
+  },
+  "metadata": {
+    "dataCount": 1,
+    "evaluatorCount": 1
+  }
+}

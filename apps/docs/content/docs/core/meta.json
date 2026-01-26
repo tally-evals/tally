@@ -1,0 +1,10 @@
+{
+  "title": "Core",
+  "root": true,
+  "pages": [
+    "index",
+    "configuration",
+    "storage",
+    "types"
+  ]
+}

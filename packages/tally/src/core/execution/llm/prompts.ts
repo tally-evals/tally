@@ -13,24 +13,24 @@ import type { PromptTemplate } from '@tally/core/types';
  * @returns Formatted rubric string
  */
 export function formatRubric(rubric: {
-	criteria: string;
-	scale?: string;
-	examples?: Array<{ score: number; reasoning: string }>;
+  criteria: string;
+  scale?: string;
+  examples?: Array<{ score: number; reasoning: string }>;
 }): string {
-	let rubricText = `Criteria: ${rubric.criteria}`;
+  let rubricText = `Criteria: ${rubric.criteria}`;
 
-	if (rubric.scale) {
-		rubricText += `\nScale: ${rubric.scale}`;
-	}
+  if (rubric.scale) {
+    rubricText += `\nScale: ${rubric.scale}`;
+  }
 
-	if (rubric.examples && rubric.examples.length > 0) {
-		rubricText += '\n\nExamples:';
-		for (const example of rubric.examples) {
-			rubricText += `\n- Score: ${example.score}, Reasoning: ${example.reasoning}`;
-		}
-	}
+  if (rubric.examples && rubric.examples.length > 0) {
+    rubricText += '\n\nExamples:';
+    for (const example of rubric.examples) {
+      rubricText += `\n- Score: ${example.score}, Reasoning: ${example.reasoning}`;
+    }
+  }
 
-	return rubricText;
+  return rubricText;
 }
 
 /**
@@ -40,23 +40,23 @@ export function formatRubric(rubric: {
  * @returns Formatted examples string
  */
 export function formatFewShotExamples<TVars extends readonly string[]>(
-	examples: PromptTemplate<TVars>['examples']
+  examples: PromptTemplate<TVars>['examples']
 ): string {
-	if (!examples || examples.length === 0) {
-		return '';
-	}
+  if (!examples || examples.length === 0) {
+    return '';
+  }
 
-	let examplesText = '\n\nExamples:\n';
-	for (let i = 0; i < examples.length; i++) {
-		const example = examples[i];
-		if (!example) continue;
+  let examplesText = '\n\nExamples:\n';
+  for (let i = 0; i < examples.length; i++) {
+    const example = examples[i];
+    if (!example) continue;
 
-		examplesText += `\nExample ${i + 1}:`;
-		examplesText += `\nInput: ${JSON.stringify(example.input, null, 2)}`;
-		examplesText += `\nExpected Output: ${example.expectedOutput}\n`;
-	}
+    examplesText += `\nExample ${i + 1}:`;
+    examplesText += `\nInput: ${JSON.stringify(example.input, null, 2)}`;
+    examplesText += `\nExpected Output: ${example.expectedOutput}\n`;
+  }
 
-	return examplesText;
+  return examplesText;
 }
 
 /**
@@ -67,19 +67,16 @@ export function formatFewShotExamples<TVars extends readonly string[]>(
  * @param variables - Object mapping variable names to values
  * @returns Substituted string
  */
-export function substituteVariables(
-	template: string,
-	variables: Record<string, unknown>
-): string {
-	let result = template;
+export function substituteVariables(template: string, variables: Record<string, unknown>): string {
+  let result = template;
 
-	for (const [key, value] of Object.entries(variables)) {
-		const placeholder = `{{${key}}}`;
-		const replacement = String(value);
-		result = result.replaceAll(placeholder, replacement);
-	}
+  for (const [key, value] of Object.entries(variables)) {
+    const placeholder = `{{${key}}}`;
+    const replacement = String(value);
+    result = result.replaceAll(placeholder, replacement);
+  }
 
-	return result;
+  return result;
 }
 
 /**
@@ -90,15 +87,14 @@ export function substituteVariables(
  * @returns Complete prompt string
  */
 export function buildPrompt<TVars extends readonly string[]>(
-	template: PromptTemplate<TVars>,
-	context: Record<string, unknown>
+  template: PromptTemplate<TVars>,
+  context: Record<string, unknown>
 ): string {
-	let prompt = substituteVariables(template.instruction, context);
+  let prompt = substituteVariables(template.instruction, context);
 
-	if (template.examples) {
-		prompt += formatFewShotExamples(template.examples);
-	}
+  if (template.examples) {
+    prompt += formatFewShotExamples(template.examples);
+  }
 
-	return prompt;
+  return prompt;
 }
-

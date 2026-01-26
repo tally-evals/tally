@@ -1,0 +1,54 @@
+---
+title: Step Graphs
+description: Designing structured conversation flows.
+---
+
+A **Step Graph** defines the structure of the conversation by specifying a set of milestones (steps) that the simulated user should attempt to achieve.
+
+## Step Definition
+
+Each step in the graph provides instructions to the user model on what to do next.
+
+```ts
+interface StepDefinition {
+  id: string;              // Unique identifier
+  instruction: string;     // Guidance for the user model
+  hints?: string[];        // Additional context for the LLM
+  preconditions?: any[];   // Requirements to enter this step
+  isSatisfied?: (ctx) => boolean; // Custom logic to mark step as done
+}
+```
+
+## Simple Flow
+
+In a simple flow, steps are executed in a linear sequence or as defined by the `start` and `terminals`.
+
+```ts
+const steps = {
+  steps: [
+    { 
+      id: 'ask-price', 
+      instruction: 'Ask for the price of the item.' 
+    },
+    { 
+      id: 'negotiate', 
+      instruction: 'Try to get a 10% discount.' 
+    },
+    { 
+      id: 'confirm', 
+      instruction: 'Confirm the purchase if the price is right.' 
+    },
+  ],
+  start: 'ask-price',
+  terminals: ['confirm'],
+};
+```
+
+## How Step Selection Works
+
+Trajectories uses a multi-stage selection process for each turn:
+
+1. **Precondition Check**: If a step has unsatisfied preconditions, it is ignored.
+2. **Deterministic Selection**: If a step is strictly next in the graph order and its preconditions are met, it is picked.
+3. **LLM Ranking**: If multiple steps are eligible, an LLM ranks them based on the conversation history to pick the most relevant next step.
+4. **Natural Continuation**: If no high-confidence step is found, the user model is allowed to respond naturally based on its persona and goal without specific step instructions.

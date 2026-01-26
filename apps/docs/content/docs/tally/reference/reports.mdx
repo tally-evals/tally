@@ -1,0 +1,634 @@
+---
+title: Reports
+description: SDK report objects, View API, and the schema-stable run artifact.
+---
+
+import { PropertyTable } from '@/components/PropertyTable';
+
+# Reports
+
+Tally exposes two report representations and a type-safe View API:
+
+- **`TallyRunReport`**: SDK-facing in-memory object returned from `await tally.run()`.
+- **`TargetRunView`**: Type-safe accessor for report data, created via `report.view()`.
+- **`TallyRunArtifact`**: Schema-stable, serializable artifact produced by `report.toArtifact()`.
+
+## Import
+
+```ts
+import type {
+  TallyRunReport,
+  TallyRunArtifact,
+  TargetRunView,
+  StepResults,
+  StepResultsWithIndex,
+  ConversationResults,
+  SummaryResults,
+  StepEvalResult,
+  ConversationEvalResult,
+  Measurement,
+  EvalOutcome,
+  EvalSummary,
+  VerdictSummary,
+} from '@tally-evals/tally';
+```
+
+---
+
+## View API
+
+The **View API** provides ergonomic, type-safe access to report data. Call `report.view()` to get a `TargetRunView`.
+
+### `TargetRunView`
+
+Type-safe view over run results with eval name autocomplete.
+
+<PropertyTable
+  content={[
+    { name: 'stepCount', type: 'number', description: 'Total number of steps in the conversation.' },
+    { name: 'defs', type: 'RunDefs', description: 'All definitions (metrics, evals, scorers) used in the run.' },
+    { name: 'step(index)', type: '(index: number) => StepResults', description: 'Get all single-turn eval results for a specific step.' },
+    { name: 'steps()', type: '() => Generator<StepResultsWithIndex>', description: 'Iterate over all steps with their results.' },
+    { name: 'conversation()', type: '() => ConversationResults', description: 'Get multi-turn evals and scalar scorer results.' },
+    { name: 'summary()', type: '() => SummaryResults | undefined', description: 'Get aggregated summaries by eval name.' },
+    { name: 'metric(name)', type: '(name: string) => MetricDefSnap | undefined', description: 'Look up a metric definition by name.' },
+    { name: 'eval(name)', type: '(name: string) => EvalDefSnap | undefined', description: 'Look up an eval definition by name.' },
+    { name: 'scorer(name)', type: '(name: string) => ScorerDefSnap | undefined', description: 'Look up a scorer definition by name.' },
+    { name: 'metricForEval(name)', type: '(name: string) => MetricDefSnap | undefined', description: 'Get the metric definition for an eval.' },
+  ]}
+/>
+
+---
+
+### `StepResults`
+
+Object returned by `view.step(index)`. Keys are eval names with type-safe autocomplete.
+
+<PropertyTable
+  content={[
+    {
+      name: '[evalName]',
+      type: 'StepEvalResult',
+      description: 'Result for a single-turn eval at this step. Keys are literal eval names.',
+    },
+  ]}
+/>
+
+---
+
+### `StepResultsWithIndex`
+
+Yielded by `view.steps()` generator. Same as `StepResults` plus an `index` property.
+
+<PropertyTable
+  content={[
+    { name: 'index', type: 'number', description: 'Step index (0-based).' },
+    {
+      name: '[evalName]',
+      type: 'StepEvalResult',
+      description: 'Result for a single-turn eval at this step.',
+    },
+  ]}
+/>
+
+---
+
+### `ConversationResults`
+
+Object returned by `view.conversation()`. Contains multi-turn evals and scalar scorers.
+
+<PropertyTable
+  content={[
+    {
+      name: '[evalName]',
+      type: 'ConversationEvalResult',
+      description: 'Result for a multi-turn eval or scalar scorer. Keys are literal eval names.',
+    },
+  ]}
+/>
+
+---
+
+### `SummaryResults`
+
+Object returned by `view.summary()`. Contains aggregated statistics by eval name.
+
+<PropertyTable
+  content={[
+    {
+      name: '[evalName]',
+      type: 'EvalSummary',
+      description: 'Summary for an eval including aggregations and verdict rates.',
+    },
+  ]}
+/>
+
+---
+
+### `StepEvalResult`
+
+Result for a single step evaluation.
+
+<PropertyTable
+  content={[
+    { name: 'evalRef', type: 'string', description: 'Name of the eval.' },
+    { name: 'measurement', type: 'Measurement', description: 'The measurement (score, rawValue, metadata).' },
+    { name: 'outcome', type: 'EvalOutcome', description: 'Verdict outcome (if verdict policy was defined).', isOptional: true },
+  ]}
+/>
+
+---
+
+### `ConversationEvalResult`
+
+Result for a conversation-level evaluation.
+
+<PropertyTable
+  content={[
+    { name: 'evalRef', type: 'string', description: 'Name of the eval.' },
+    { name: 'measurement', type: 'Measurement', description: 'The measurement (score, rawValue, metadata).' },
+    { name: 'outcome', type: 'EvalOutcome', description: 'Verdict outcome (if verdict policy was defined).', isOptional: true },
+  ]}
+/>
+
+---
+
+### `Measurement`
+
+The measured value from a metric execution.
+
+<PropertyTable
+  content={[
+    { name: 'metricRef', type: 'string', description: 'Reference to the metric in defs.metrics.' },
+    { name: 'score', type: 'number', description: 'Normalized score (0-1) after normalization.', isOptional: true },
+    { name: 'rawValue', type: 'number | boolean | string | null', description: 'Original metric value before normalization.', isOptional: true },
+    { name: 'confidence', type: 'number', description: 'LLM confidence (0-1) if applicable.', isOptional: true },
+    { name: 'reasoning', type: 'string', description: 'LLM reasoning if applicable.', isOptional: true },
+    { name: 'executionTimeMs', type: 'number', description: 'Execution time in milliseconds.', isOptional: true },
+    { name: 'timestamp', type: 'string', description: 'ISO timestamp of measurement.', isOptional: true },
+    { name: 'metadata', type: 'Record<string, unknown>', description: 'Additional metadata.', isOptional: true },
+  ]}
+/>
+
+---
+
+### `EvalOutcome`
+
+Verdict outcome from applying a verdict policy.
+
+<PropertyTable
+  content={[
+    { name: 'verdict', type: "'pass' | 'fail' | 'unknown'", description: 'The final verdict.' },
+    { name: 'policy', type: 'VerdictPolicyInfo', description: 'The policy used to compute the verdict.' },
+    { name: 'observed', type: '{ rawValue?: MetricScalar; score?: number }', description: 'The observed values used for the verdict.', isOptional: true },
+  ]}
+/>
+
+---
+
+### `EvalSummary`
+
+Aggregated summary for an eval across all targets.
+
+<PropertyTable
+  content={[
+    { name: 'eval', type: 'string', description: 'Eval name.' },
+    { name: 'kind', type: "'singleTurn' | 'multiTurn' | 'scorer'", description: 'Eval kind.' },
+    { name: 'count', type: 'number', description: 'Number of data points.' },
+    {
+      name: 'aggregations',
+      type: '{ score: Record<string, number>; raw?: Record<string, number | Record<string, number>> }',
+      description: 'Aggregated statistics (mean, percentiles, etc.).',
+      isOptional: true,
+    },
+    { name: 'verdictSummary', type: 'VerdictSummary', description: 'Pass/fail/unknown rates and counts.', isOptional: true },
+  ]}
+/>
+
+---
+
+### `VerdictSummary`
+
+Pass/fail statistics across all targets.
+
+<PropertyTable
+  content={[
+    { name: 'passRate', type: 'number', description: 'Proportion of passing verdicts (0-1).' },
+    { name: 'failRate', type: 'number', description: 'Proportion of failing verdicts (0-1).' },
+    { name: 'unknownRate', type: 'number', description: 'Proportion of unknown verdicts (0-1).' },
+    { name: 'passCount', type: 'number', description: 'Number of passing verdicts.' },
+    { name: 'failCount', type: 'number', description: 'Number of failing verdicts.' },
+    { name: 'unknownCount', type: 'number', description: 'Number of unknown verdicts.' },
+    { name: 'totalCount', type: 'number', description: 'Total number of verdicts.' },
+  ]}
+/>
+
+---
+
+## `TallyRunReport`
+
+Returned from `await tally.run()`.
+
+<PropertyTable
+  content={[
+    { name: 'runId', type: 'string', description: 'Run identifier.' },
+    { name: 'createdAt', type: 'Date', description: 'Creation time (in-memory Date).' },
+    {
+      name: 'defs',
+      type: 'RunDefs',
+      description: 'Deduped definitions referenced by the run.',
+      properties: [
+        {
+          type: 'RunDefs',
+          parameters: [
+            {
+              name: 'metrics',
+              type: 'Record<MetricName, MetricDefSnap>',
+              description: 'Metric definition snapshots.',
+              properties: [
+                {
+                  type: 'MetricDefSnap',
+                  parameters: [
+                    { name: 'name', type: 'MetricName', description: 'Metric name.' },
+                    { name: 'scope', type: "'single' | 'multi'", description: 'Metric scope.' },
+                    {
+                      name: 'valueType',
+                      type: "'number' | 'boolean' | 'string' | 'ordinal'",
+                      description: 'Metric value type.',
+                    },
+                    { name: 'description', type: 'string', description: 'Optional description.', isOptional: true },
+                    { name: 'metadata', type: 'Record<string, unknown>', description: 'Optional metadata.', isOptional: true },
+                    {
+                      name: 'llm',
+                      type: '{ provider?: Record<string, unknown>; prompt?: { instruction: string; variables?: readonly string[] }; rubric?: Record<string, unknown> }',
+                      description: 'Optional LLM snapshot (when metric is llm-based).',
+                      isOptional: true,
+                      properties: [
+                        {
+                          type: 'llm',
+                          parameters: [
+                            { name: 'provider', type: 'Record<string, unknown>', description: 'Provider info snapshot.', isOptional: true },
+                            {
+                              name: 'prompt',
+                              type: '{ instruction: string; variables?: readonly string[] }',
+                              description: 'Prompt snapshot.',
+                              isOptional: true,
+                            },
+                            { name: 'rubric', type: 'Record<string, unknown>', description: 'Rubric snapshot.', isOptional: true },
+                          ],
+                        },
+                      ],
+                    },
+                    {
+                      name: 'aggregators',
+                      type: "Array<{ kind: string; name: string; description?: string; config?: unknown }>",
+                      description: 'Optional aggregator snapshots (attached on single-turn metrics).',
+                      isOptional: true,
+                    },
+                    {
+                      name: 'normalization',
+                      type: 'MetricNormalizationSnap',
+                      description: 'Optional normalization snapshot.',
+                      isOptional: true,
+                      properties: [
+                        {
+                          type: 'MetricNormalizationSnap',
+                          parameters: [
+                            { name: 'normalizer', type: 'NormalizerSpecSnap', description: 'Serializable normalizer snapshot.' },
+                            {
+                              name: 'calibrate',
+                              type: 'unknown | { note: "not-serializable" }',
+                              description: 'Calibration snapshot (function becomes not-serializable note).',
+                              isOptional: true,
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              name: 'evals',
+              type: 'Record<EvalName, EvalDefSnap>',
+              description: 'Eval definition snapshots.',
+              properties: [
+                {
+                  type: 'EvalDefSnap',
+                  parameters: [
+                    { name: 'name', type: 'EvalName', description: 'Eval name.' },
+                    { name: 'kind', type: "'singleTurn' | 'multiTurn' | 'scorer'", description: 'Eval kind.' },
+                    { name: 'outputShape', type: "'seriesByStepIndex' | 'scalar'", description: 'Stored output shape.' },
+                    { name: 'metric', type: 'MetricName', description: 'Metric ref for this eval.' },
+                    { name: 'scorerRef', type: 'ScorerName', description: 'Optional scorer ref (scorer evals).', isOptional: true },
+                    { name: 'verdict', type: 'VerdictPolicyInfo', description: 'Optional verdict policy info.', isOptional: true },
+                    { name: 'description', type: 'string', description: 'Optional description.', isOptional: true },
+                    { name: 'metadata', type: 'Record<string, unknown>', description: 'Optional metadata.', isOptional: true },
+                  ],
+                },
+              ],
+            },
+            {
+              name: 'scorers',
+              type: 'Record<ScorerName, ScorerDefSnap>',
+              description: 'Scorer definition snapshots.',
+              properties: [
+                {
+                  type: 'ScorerDefSnap',
+                  parameters: [
+                    { name: 'name', type: 'ScorerName', description: 'Scorer name.' },
+                    { name: 'description', type: 'string', description: 'Optional description.', isOptional: true },
+                    { name: 'metadata', type: 'Record<string, unknown>', description: 'Optional metadata.', isOptional: true },
+                    { name: 'inputs', type: 'readonly ScorerInputSnap[]', description: 'Serializable scorer inputs.' },
+                    { name: 'fallbackScore', type: 'Score', description: 'Optional fallback score.', isOptional: true },
+                    {
+                      name: 'combine',
+                      type: '{ kind: ScorerCombineKind; note?: string }',
+                      description: 'Optional combine strategy snapshot.',
+                      isOptional: true,
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'result',
+      type: 'ConversationResult',
+      description: 'Per-eval results + optional summaries.',
+      properties: [
+        {
+          type: 'ConversationResult',
+          parameters: [
+            { name: 'stepCount', type: 'number', description: 'Number of steps in the conversation.' },
+            {
+              name: 'singleTurn',
+              type: 'Record<EvalName, SingleTurnEvalSeries>',
+              description: 'Single-turn eval results indexed by step (null = not evaluated).',
+              properties: [
+                {
+                  type: 'SingleTurnEvalSeries',
+                  parameters: [
+                    {
+                      name: 'byStepIndex',
+                      type: 'Array<StepEvalResult | null>',
+                      description: 'Array index == step index; null means not evaluated / not selected.',
+                      properties: [
+                        {
+                          type: 'StepEvalResult',
+                          parameters: [
+                            { name: 'evalRef', type: 'EvalName', description: 'Eval name reference.' },
+                            {
+                              name: 'measurement',
+                              type: 'Measurement',
+                              description: 'Observed measurement (raw + score + debug info).',
+                              properties: [
+                                {
+                                  type: 'Measurement',
+                                  parameters: [
+                                    { name: 'metricRef', type: 'MetricName', description: 'Reference into `defs.metrics`.' },
+                                    { name: 'score', type: 'Score', description: 'Normalized score (0..1) when applicable.', isOptional: true },
+                                    { name: 'rawValue', type: 'MetricScalar | null', description: 'Raw value when available.', isOptional: true },
+                                    { name: 'confidence', type: 'number', description: 'Optional LLM confidence.', isOptional: true },
+                                    { name: 'reasoning', type: 'string', description: 'Optional LLM reasoning.', isOptional: true },
+                                    { name: 'executionTimeMs', type: 'number', description: 'Optional execution timing.', isOptional: true },
+                                    { name: 'timestamp', type: 'string', description: 'Optional ISO timestamp.', isOptional: true },
+                                    { name: 'metadata', type: 'Record<string, unknown>', description: 'Optional metadata.', isOptional: true },
+                                  ],
+                                },
+                              ],
+                            },
+                            {
+                              name: 'outcome',
+                              type: 'EvalOutcome',
+                              description: 'Optional verdict outcome (policy + verdict).',
+                              isOptional: true,
+                              properties: [
+                                {
+                                  type: 'EvalOutcome',
+                                  parameters: [
+                                    { name: 'verdict', type: "'pass' | 'fail' | 'unknown'", description: 'Final verdict.' },
+                                    { name: 'policy', type: 'VerdictPolicyInfo', description: 'Serializable policy information.' },
+                                    {
+                                      name: 'observed',
+                                      type: '{ rawValue?: MetricScalar | null; score?: Score }',
+                                      description: 'Optional copy of observed values used for decision.',
+                                      isOptional: true,
+                                    },
+                                  ],
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              name: 'multiTurn',
+              type: 'Record<EvalName, ConversationEvalResult>',
+              description: 'Multi-turn eval results (one per conversation).',
+              properties: [
+                {
+                  type: 'ConversationEvalResult',
+                  parameters: [
+                    { name: 'evalRef', type: 'EvalName', description: 'Eval name reference.' },
+                    { name: 'measurement', type: 'Measurement', description: 'Observed measurement (raw + score + debug info).' },
+                    { name: 'outcome', type: 'EvalOutcome', description: 'Optional verdict outcome.', isOptional: true },
+                  ],
+                },
+              ],
+            },
+            {
+              name: 'scorers',
+              type:
+                "Record<EvalName, { shape: 'seriesByStepIndex'; series: SingleTurnEvalSeries } | { shape: 'scalar'; result: ConversationEvalResult }>",
+              description: 'Scorer eval results (explicitly declared as series vs scalar).',
+            },
+            {
+              name: 'summaries',
+              type: 'Summaries',
+              description: 'Optional summary rollups (aggregations + verdict summary) keyed by eval.',
+              isOptional: true,
+              properties: [
+                {
+                  type: 'Summaries',
+                  parameters: [
+                    {
+                      name: 'byEval',
+                      type: 'Record<EvalName, EvalSummarySnap>',
+                      description: 'Summary per eval.',
+                      properties: [
+                        {
+                          type: 'EvalSummarySnap',
+                          parameters: [
+                            { name: 'eval', type: 'EvalName', description: 'Eval name reference.' },
+                            { name: 'kind', type: "'singleTurn' | 'multiTurn' | 'scorer'", description: 'Eval kind.' },
+                            { name: 'count', type: 'number', description: 'Number of targets contributing to summary.' },
+                            {
+                              name: 'aggregations',
+                              type: '{ score: Aggregations; raw?: Aggregations }',
+                              description: 'Optional aggregations (score + optional raw).',
+                              isOptional: true,
+                            },
+                            {
+                              name: 'verdictSummary',
+                              type: 'VerdictSummary',
+                              description: 'Optional verdict rollup (counts + rates).',
+                              isOptional: true,
+                              properties: [
+                                {
+                                  type: 'VerdictSummary',
+                                  parameters: [
+                                    { name: 'passRate', type: 'Score', description: 'Pass rate.' },
+                                    { name: 'failRate', type: 'Score', description: 'Fail rate.' },
+                                    { name: 'unknownRate', type: 'Score', description: 'Unknown rate.' },
+                                    { name: 'passCount', type: 'number', description: 'Pass count.' },
+                                    { name: 'failCount', type: 'number', description: 'Fail count.' },
+                                    { name: 'unknownCount', type: 'number', description: 'Unknown count.' },
+                                    { name: 'totalCount', type: 'number', description: 'Total evaluated count.' },
+                                  ],
+                                },
+                              ],
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    { name: 'metadata', type: 'Record<string, unknown>', description: 'Optional metadata.', isOptional: true },
+    { name: 'view', type: '() => TargetRunView', description: 'Create an ergonomic view for assertions and inspection.' },
+    {
+      name: 'toArtifact',
+      type: '() => TallyRunArtifact',
+      description: 'Convert to a schema-stable artifact for persistence/UI tooling.',
+    },
+  ]}
+/>
+
+## `TallyRunArtifact`
+
+Serializable shape for storage and viewer/TUI tooling. Avoids `Map` in persisted fields.
+
+<PropertyTable
+  content={[
+    { name: 'schemaVersion', type: '1', description: 'Artifact schema version.' },
+    { name: 'runId', type: 'string', description: 'Run identifier.' },
+    { name: 'createdAt', type: 'string', description: 'ISO timestamp.' },
+    {
+      name: 'defs',
+      type: 'RunDefs',
+      description: 'Deduped metric/eval/scorer definitions.',
+      properties: [
+        {
+          type: 'RunDefs',
+          parameters: [
+            {
+              name: 'metrics',
+              type: 'Record<MetricName, MetricDefSnap>',
+              description: 'Metric definition snapshots.',
+              properties: [
+                {
+                  type: 'MetricDefSnap',
+                  parameters: [
+                    { name: 'name', type: 'MetricName', description: 'Metric name.' },
+                    { name: 'scope', type: "'single' | 'multi'", description: 'Metric scope.' },
+                    {
+                      name: 'valueType',
+                      type: "'number' | 'boolean' | 'string' | 'ordinal'",
+                      description: 'Metric value type.',
+                    },
+                    { name: 'description', type: 'string', description: 'Optional description.', isOptional: true },
+                    { name: 'metadata', type: 'Record<string, unknown>', description: 'Optional metadata.', isOptional: true },
+                    {
+                      name: 'llm',
+                      type: '{ provider?: Record<string, unknown>; prompt?: { instruction: string; variables?: readonly string[] }; rubric?: Record<string, unknown> }',
+                      description: 'Optional LLM snapshot (when metric is llm-based).',
+                      isOptional: true,
+                    },
+                    {
+                      name: 'aggregators',
+                      type: "Array<{ kind: string; name: string; description?: string; config?: unknown }>",
+                      description: 'Optional aggregator snapshots (attached on single-turn metrics).',
+                      isOptional: true,
+                    },
+                    {
+                      name: 'normalization',
+                      type: 'MetricNormalizationSnap',
+                      description: 'Optional normalization snapshot.',
+                      isOptional: true,
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              name: 'evals',
+              type: 'Record<EvalName, EvalDefSnap>',
+              description: 'Eval definition snapshots.',
+              properties: [
+                {
+                  type: 'EvalDefSnap',
+                  parameters: [
+                    { name: 'name', type: 'EvalName', description: 'Eval name.' },
+                    { name: 'kind', type: "'singleTurn' | 'multiTurn' | 'scorer'", description: 'Eval kind.' },
+                    { name: 'outputShape', type: "'seriesByStepIndex' | 'scalar'", description: 'Stored output shape.' },
+                    { name: 'metric', type: 'MetricName', description: 'Metric ref for this eval.' },
+                    { name: 'scorerRef', type: 'ScorerName', description: 'Optional scorer ref (scorer evals).', isOptional: true },
+                    { name: 'verdict', type: 'VerdictPolicyInfo', description: 'Optional verdict policy info.', isOptional: true },
+                    { name: 'description', type: 'string', description: 'Optional description.', isOptional: true },
+                    { name: 'metadata', type: 'Record<string, unknown>', description: 'Optional metadata.', isOptional: true },
+                  ],
+                },
+              ],
+            },
+            {
+              name: 'scorers',
+              type: 'Record<ScorerName, ScorerDefSnap>',
+              description: 'Scorer definition snapshots.',
+              properties: [
+                {
+                  type: 'ScorerDefSnap',
+                  parameters: [
+                    { name: 'name', type: 'ScorerName', description: 'Scorer name.' },
+                    { name: 'description', type: 'string', description: 'Optional description.', isOptional: true },
+                    { name: 'metadata', type: 'Record<string, unknown>', description: 'Optional metadata.', isOptional: true },
+                    { name: 'inputs', type: 'readonly ScorerInputSnap[]', description: 'Serializable scorer inputs.' },
+                    { name: 'fallbackScore', type: 'Score', description: 'Optional fallback score.', isOptional: true },
+                    {
+                      name: 'combine',
+                      type: '{ kind: ScorerCombineKind; note?: string }',
+                      description: 'Optional combine strategy snapshot.',
+                      isOptional: true,
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    {
+      name: 'result',
+      type: 'ConversationResult',
+      description: 'Per-eval results + optional summaries.',
+      notes: 'Same nested shape as `TallyRunReport.result` (see above).',
+    },
+    { name: 'metadata', type: 'Record<string, unknown>', description: 'Optional metadata.', isOptional: true },
+  ]}
+/>

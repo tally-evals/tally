@@ -1,5 +1,6 @@
 import type { ModelMessage, LanguageModel } from 'ai';
 import type { StepGraph } from './steps/types.js';
+import type { StepTrace, TrajectoryStopReason } from '@tally-evals/core';
 
 // ============================================================================
 // Trajectory Types
@@ -11,19 +12,13 @@ export interface Persona {
 	guardrails?: readonly string[];
 }
 
-export interface StorageConfig {
-	strategy: 'local' | 'none';
-	ttlMs?: number;
-	capacity?: number;
-	conversationId?: string;
-}
-
 export interface Trajectory {
 	goal: string;
 	persona: Persona;
 	steps?: StepGraph;
 	maxTurns?: number;
-	storage?: StorageConfig; // built-in storage; defaults to 'local'
+	/** Optional stable conversation id used for logs/export (defaults to generated id) */
+	conversationId?: string;
 	userModel?: LanguageModel; // AI SDK model function for user message generation
 	metadata?: Record<string, unknown>;
 	// Loop detection (mode-agnostic)
@@ -37,20 +32,7 @@ export interface Trajectory {
 // Execution Types
 // ============================================================================
 
-export interface StepTrace {
-	turnIndex: number;
-	userMessage: ModelMessage;
-	agentMessages: readonly ModelMessage[];
-	timestamp: Date;
-}
-
-export type TrajectoryStopReason =
-	| 'goal-reached'
-	| 'max-turns'
-	| 'policy-violation'
-	| 'agent-loop'
-	| 'no-step-match'
-	| 'error';
+export type { StepTrace, TrajectoryStopReason };
 
 export interface TrajectoryResult {
 	steps: readonly StepTrace[];

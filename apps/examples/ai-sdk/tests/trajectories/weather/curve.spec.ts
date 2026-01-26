@@ -4,13 +4,12 @@
  * Tests the weather agent with edge cases and challenging scenarios.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'bun:test';
 import { weatherAgent } from '../../../src/agents/weather';
 import { weatherCurveTrajectory } from './definitions';
-import { runCase } from '../../utils/harness';
+import { runCase, saveTallyReportToStore } from '../../utils/harness';
 import {
 	createTally,
-	createEvaluator,
 	runAllTargets,
 	defineBaseMetric,
 	defineInput,
@@ -31,7 +30,6 @@ describe('Weather Agent - Curve Ball', () => {
 		const { conversation } = await runCase({
 			trajectory: weatherCurveTrajectory,
 			agent: weatherAgent,
-			recordedPath: '_fixtures/recorded/weather/curve.jsonl',
 			conversationId: 'weather-curve',
 		});
 
@@ -50,7 +48,7 @@ describe('Weather Agent - Curve Ball', () => {
 		});
 
 		// Create overall quality scorer
-		const overallQuality = defineBaseMetric({
+		const overallQuality = defineBaseMetric<number>({
 			name: 'overallQuality',
 			valueType: 'number',
 		});
@@ -77,36 +75,33 @@ describe('Weather Agent - Curve Ball', () => {
 
 		const overallQualityEval = defineScorerEval({
 			name: 'Overall Quality',
-			inputs: [answerRelevance, completeness],
 			scorer: qualityScorer,
 			verdict: thresholdVerdict(0.5), // Lower threshold for curve ball
-		});
-
-		// Create evaluator
-		const evaluator = createEvaluator({
-			name: 'Weather Agent Quality',
-			evals: [answerRelevanceEval, completenessEval, overallQualityEval],
-			context: runAllTargets(),
 		});
 
 		// Run evaluation
 		const tally = createTally({
 			data: [conversation],
-			evaluators: [evaluator],
+			evals: [answerRelevanceEval, completenessEval, overallQualityEval],
+			context: runAllTargets(),
 		});
 
 		const report = await tally.run();
+		await saveTallyReportToStore({ conversationId: 'weather-curve', report: report.toArtifact() });
 
 		// Assertions
 		expect(report).toBeDefined();
-		expect(report.perTargetResults.length).toBeGreaterThan(0);
-		expect(report.evalSummaries.size).toBeGreaterThan(0);
+		expect(report.result.stepCount).toBeGreaterThan(0);
+		expect(Object.keys(report.result.summaries?.byEval ?? {}).length).toBeGreaterThan(0);
 
 		// For curve ball, we're more lenient - just check that agent handled it
 		// The agent should still respond appropriately even if the request is ambiguous
-		const overallQualitySummary = report.evalSummaries.get('Overall Quality');
+		const overallQualitySummary = report.result.summaries?.byEval?.['Overall Quality'];
 		if (overallQualitySummary) {
-			expect(overallQualitySummary.aggregations.mean).toBeGreaterThan(0.4); // At least 0.4 average score
+			const mean = (overallQualitySummary.aggregations?.score as any)?.mean;
+			if (typeof mean === 'number') {
+				expect(mean).toBeGreaterThan(0.4); // At least 0.4 average score
+			}
 		}
 	});
 });
