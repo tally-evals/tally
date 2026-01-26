@@ -78,25 +78,25 @@ describe('Travel Planner Agent - Curve Ball', () => {
     const answerRelevanceEval = defineSingleTurnEval({
       name: 'Answer Relevance',
       metric: answerRelevance,
-      verdict: thresholdVerdict(0.6), // Curve ball: agent should answer questions, but some turns may be questions
+      verdict: thresholdVerdict(3), // Curve ball: agent should answer questions, but some turns may be questions
     });
 
     const completenessEval = defineSingleTurnEval({
       name: 'Completeness',
       metric: completeness,
-      verdict: thresholdVerdict(0.4), // Curve ball: user is uncertain about their preferences, so some turns may be incomplete
+      verdict: thresholdVerdict(2), // Curve ball: user is uncertain about their preferences, so some turns may be incomplete
     });
 
     const roleAdherenceEval = defineMultiTurnEval({
       name: 'Role Adherence',
       metric: roleAdherence,
-      verdict: thresholdVerdict(0.7), // Curve ball: agent should consistently act as travel assistant regardless of user behavior
+      verdict: thresholdVerdict(3.5), // Curve ball: agent should consistently act as travel assistant regardless of user behavior
     });
 
     const knowledgeRetentionEval = defineMultiTurnEval({
       name: 'Knowledge Retention',
       metric: knowledgeRetention,
-      verdict: thresholdVerdict(0.5), // Curve ball: even though user's preferences are changing, agent should remember them well
+      verdict: thresholdVerdict(2.5), // Curve ball: even though user's preferences are changing, agent should remember them well
     });
 
     const overallQualityEval = defineScorerEval({

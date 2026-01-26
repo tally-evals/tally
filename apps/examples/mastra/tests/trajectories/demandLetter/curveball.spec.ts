@@ -119,25 +119,25 @@ describe('Demand Letter Agent - Curve Ball', () => {
     const answerRelevanceEval = defineSingleTurnEval({
       name: 'Answer Relevance',
       metric: answerRelevance,
-      verdict: thresholdVerdict(0.5),
+      verdict: thresholdVerdict(2.5),
     });
 
     const completenessEval = defineSingleTurnEval({
       name: 'Completeness',
       metric: completeness,
-      verdict: thresholdVerdict(0.3),
+      verdict: thresholdVerdict(1.5),
     });
 
     const roleAdherenceEval = defineMultiTurnEval({
       name: 'Role Adherence',
       metric: roleAdherence,
-      verdict: thresholdVerdict(0.7),
+      verdict: thresholdVerdict(3.5),
     });
 
     const knowledgeRetentionEval = defineMultiTurnEval({
       name: 'Knowledge Retention',
       metric: knowledgeRetention,
-      verdict: thresholdVerdict(0.6), // Slightly lower threshold for curveball as info changes
+      verdict: thresholdVerdict(3), // Slightly lower threshold for curveball as info changes
     });
 
     const overallQualityEval = defineScorerEval({
