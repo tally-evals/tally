@@ -9,6 +9,17 @@ export function CodeSnippet({
   lang?: string;
   code: string;
 }) {
-  return <DynamicCodeBlock lang={lang} code={code} />;
+  return (
+    <DynamicCodeBlock
+      lang={lang}
+      code={code}
+      options={{
+        themes: {
+          light: 'github-light',
+          dark: 'github-dark',
+        },
+      }}
+    />
+  );
 }
 

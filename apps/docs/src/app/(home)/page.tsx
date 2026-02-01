@@ -165,9 +165,10 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div className="relative order-2 lg:order-1">
             <div className="absolute -inset-4 bg-[#FF7B00]/5 rounded-[2.5rem] blur-2xl" />
-            <CodeWindow title="trajectory.ts">
-              <pre className="text-fd-primary/90">
-                <code>{`const trajectory = createTrajectory({
+            <CodeWindow 
+              title="trajectory.ts"
+              lang="typescript"
+              code={`const trajectory = createTrajectory({
   goal: 'Test edge case for payment',
   persona: { description: 'Angry customer' },
   steps: {
@@ -181,9 +182,8 @@ export default function HomePage() {
   userModel: google('gemini-2.0-flash'),
 }, myAgent);
 
-const result = await runTrajectory(trajectory);`}</code>
-              </pre>
-            </CodeWindow>
+const result = await runTrajectory(trajectory);`}
+            />
           </div>
           <div className="space-y-8 order-1 lg:order-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-[#FF7B00]/10 text-[#FF7B00] text-xs font-bold uppercase tracking-wider">
@@ -228,11 +228,15 @@ const result = await runTrajectory(trajectory);`}</code>
           <p className="text-xs font-bold text-neutral-500 uppercase tracking-[0.3em] mb-12">
             Works natively with your stack
           </p>
-          <div className="flex flex-wrap justify-center items-center gap-x-16 gap-y-12 opacity-40 grayscale group hover:grayscale-0 transition-all duration-700">
-             <div className="flex items-center gap-3"><div className="size-8 rounded bg-white" /><span className="text-2xl font-black tracking-tighter text-white">AI SDK</span></div>
-             <div className="flex items-center gap-3"><div className="size-8 rounded-full bg-white" /><span className="text-2xl font-black tracking-tighter text-white">Mastra</span></div>
-             <div className="flex items-center gap-3"><div className="size-8 border-2 border-white" /><span className="text-2xl font-black tracking-tighter text-white">LangChain</span></div>
-             <div className="flex items-center gap-3"><div className="size-8 rounded rotate-45 bg-white" /><span className="text-2xl font-black tracking-tighter text-white">LlamaIndex</span></div>
+          <div className="flex flex-wrap justify-center items-center gap-x-16 gap-y-12">
+             <div className="flex items-center gap-3">
+               <img src="/vercel-ai.png" alt="AI SDK" className="size-10" />
+               <span className="text-2xl font-black tracking-tighter text-white">AI SDK</span>
+             </div>
+             <div className="flex items-center gap-3">
+               <img src="/mastra.png" alt="Mastra" className="size-10" />
+               <span className="text-2xl font-black tracking-tighter text-white">Mastra</span>
+             </div>
           </div>
         </div>
       </section>

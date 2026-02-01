@@ -1,14 +1,19 @@
 import { cn } from '@/lib/cn';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { CodeSnippet } from './CodeSnippet';
 
 export function CodeWindow({ 
-  children, 
+  children,
+  code,
+  lang = 'typescript',
   title = 'example.ts',
   className,
   light = false
 }: { 
-  children: ReactNode; 
+  children?: ReactNode;
+  code?: string;
+  lang?: string;
   title?: string;
   className?: string;
   light?: boolean;
@@ -16,12 +21,12 @@ export function CodeWindow({
   return (
     <div className={cn(
       "relative rounded-xl border transition-all duration-500",
-      light ? "bg-white border-slate-200 shadow-xl" : "bg-neutral-950 border-neutral-800 shadow-2xl",
+      light ? "bg-white border-slate-200 shadow-xl" : "bg-black border-neutral-800 shadow-2xl",
       className
     )}>
       <div className={cn(
         "flex items-center justify-between px-5 py-3 border-b",
-        light ? "bg-slate-50 border-slate-200" : "bg-neutral-900 border-neutral-800"
+        light ? "bg-slate-50 border-slate-200" : "bg-neutral-900/50 border-neutral-800"
       )}>
         <div className="flex items-center gap-3">
           <div className="flex gap-1.5">
@@ -35,11 +40,17 @@ export function CodeWindow({
           )}>{title}</span>
         </div>
       </div>
-      <div className={cn(
-        "p-6 font-mono text-sm leading-relaxed overflow-x-auto",
-        light ? "text-slate-800" : "text-neutral-300"
-      )}>
-        {children}
+      <div className="overflow-x-auto [&_pre]:!bg-black [&_pre]:!p-6 [&_pre]:!m-0 [&_figure]:!bg-black [&_figure]:!m-0">
+        {code ? (
+          <CodeSnippet lang={lang} code={code} />
+        ) : (
+          <div className={cn(
+            "p-6 font-mono text-sm leading-relaxed",
+            light ? "text-slate-800" : "text-neutral-300"
+          )}>
+            {children}
+          </div>
+        )}
       </div>
     </div>
   );
