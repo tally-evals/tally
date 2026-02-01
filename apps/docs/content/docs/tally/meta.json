@@ -25,10 +25,7 @@
     "reference/evals",
     "---Execution---",
     "reference/create-tally",
-    "---Reporting (API)---",
-    "reference/reports",
-    "---IO & Utilities---",
-    "reference/data",
-    "reference/utils"
+    "---Reports---",
+    "reference/reports"
   ]
 }

@@ -15,137 +15,85 @@ import {
   TestTube, 
   FileText,
   History,
-  TrendingUp
+  TrendingUp,
+  Terminal,
+  SlidersHorizontal,
+  CheckCircle2
 } from 'lucide-react';
 import { InstallCommand } from '@/components/InstallCommand';
+import { CopyButton } from '@/components/CopyButton';
 import { CodeWindow, FeatureCard } from '@/components/HomeComponents';
+import { TallyLogo } from '@/components/Logo';
 
 export default function HomePage() {
   return (
-    <main className="flex flex-col flex-1 relative">
-      {/* Background Decor */}
-      <div className="fixed inset-0 -z-10 h-full w-full bg-fd-background [background:radial-gradient(125%_125%_at_50%_10%,#fff_40%,#63e_100%)] dark:[background:radial-gradient(125%_125%_at_50%_10%,#000_40%,#3b82f6_100%)] opacity-20" />
-      <div className="fixed inset-0 -z-10 h-full w-full bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px]" />
-
+    <main className="flex flex-col flex-1 relative bg-black">
       {/* Hero Section */}
-      <section className="relative pt-32 pb-24 px-6 overflow-hidden">
-        <div className="max-w-7xl mx-auto flex flex-col items-center text-center">
-          <Link 
-            href="/docs/tally/getting-started"
-            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-fd-primary/10 text-fd-primary text-[11px] font-bold uppercase tracking-[0.2em] mb-12 border border-fd-primary/20 hover:bg-fd-primary/20 transition-all duration-300 backdrop-blur-sm"
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-fd-primary opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-fd-primary"></span>
-            </span>
-            Tally v0.1 Public Beta
-          </Link>
-          
-          <h1 className="text-6xl md:text-[7.5rem] font-black leading-[0.9] tracking-tighter mb-10 bg-gradient-to-b from-fd-foreground to-fd-foreground/40 bg-clip-text text-transparent">
-            Make your <br /> Agents Reliable.
-          </h1>
-          
-          <p className="text-lg md:text-xl text-fd-muted-foreground max-w-2xl mb-14 leading-relaxed font-medium">
-            Tally is a **typesafe and composable** LLM evaluation framework. 
-            Separate evaluation policy from domain measures. Measure multi-turn trajectories. Build production-grade agents with confidence.
-          </p>
-
-          <div className="flex flex-wrap items-center justify-center gap-6 mb-32">
-            <Link
-              href="/docs/tally/getting-started"
-              className="group inline-flex items-center gap-2 px-10 py-5 rounded-2xl bg-fd-primary hover:bg-fd-primary/90 text-fd-primary-foreground font-black shadow-2xl shadow-fd-primary/25 transition-all hover:scale-[1.02] active:scale-[0.98]"
-            >
-              Get Started
-              <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" />
-            </Link>
-            <Link
-              href="https://github.com/tally-evals/tally"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-3 px-10 py-5 rounded-2xl bg-fd-background/50 hover:bg-fd-secondary/80 text-fd-secondary-foreground font-black border border-fd-border/50 backdrop-blur-md shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
-            >
-              <Github className="size-5" />
-              Github
-            </Link>
+      <section className="relative min-h-screen flex items-center justify-center px-6 py-32 bg-black">
+        <div className="max-w-5xl mx-auto flex flex-col items-center text-center">
+          {/* Logo */}
+          <div className="mb-8">
+            <TallyLogo size={64} className="text-white" />
           </div>
 
-          {/* Hero Interactive Area */}
-          <div className="w-full max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 items-center text-left">
-            <div className="space-y-8 pr-0 lg:pr-12">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-emerald-500/10 text-emerald-500 text-xs font-bold uppercase tracking-wider">
-                <Play className="size-3 fill-current" />
-                Live Demo
-              </div>
-              <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
-                Composable by value. <br />
-                <span className="text-fd-primary">Typesafe by design.</span>
-              </h2>
-              <p className="text-fd-muted-foreground leading-relaxed">
-                Decouple evaluation policy from domain measures. Compose metrics, scorers, and evaluators as first-class TypeScript objects.
-              </p>
-              <ul className="space-y-4">
-                {[
-                  'Typesafe object composition',
-                  'Phased 5-step execution pipeline',
-                  'Support for single and multi-turn targets',
-                  'Deterministic, reproducible results'
-                ].map((item, i) => (
-                  <li key={i} className="flex items-center gap-3 text-sm font-semibold">
-                    <div className="size-5 rounded-full bg-fd-primary/10 text-fd-primary flex items-center justify-center shrink-0">
-                      <Zap className="size-3 fill-current" />
-                    </div>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="relative group">
-              <div className="absolute -inset-4 bg-fd-primary/10 rounded-[2.5rem] blur-3xl opacity-50 group-hover:opacity-75 transition-opacity duration-500" />
-              <CodeWindow title="evaluator.ts">
-                <pre className="text-fd-primary/90">
-                  <code>{`import { createTally, createEvaluator } from '@tally/core';
-import { relevanceMetric } from './metrics';
+          {/* Beta Badge */}
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-900 border border-neutral-800 mb-12">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span className="text-white text-sm font-medium">Tally v0.1 Public Beta</span>
+          </div>
+          
+          {/* Main Headline */}
+          <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold leading-[1.1] tracking-tight mb-8 text-white">
+            Make your Agents<br />Reliable.
+          </h1>
+          
+          {/* Subtitle */}
+          <p className="text-xl md:text-2xl text-neutral-400 max-w-3xl mb-6 leading-relaxed font-medium">
+            Traditional eval frameworks are built for prompts.<br />
+            <span className="text-white">Tally is built for Agents.</span>
+          </p>
+          <p className="text-base md:text-lg text-neutral-500 max-w-2xl mb-12 leading-relaxed">
+            Stop grading prompts. Start testing behavior. Turn "it feels better" into verifiable, regression-proof confidence.
+          </p>
 
-// Compose by value, not by name
-const evaluator = createEvaluator({
-  name: 'Agent Quality',
-  metrics: [relevanceMetric],
-  scorer: createWeightedScorer({
-    inputs: [{ metric: relevanceMetric, weight: 1.0 }]
-  }),
-});
-
-const tally = createTally({ data, evaluators });
-const report = await tally.run();`}</code>
-                </pre>
-              </CodeWindow>
-            </div>
+          {/* CTA Buttons */}
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <Link
+              href="/docs/tally/getting-started"
+              className="inline-flex items-center justify-center px-8 py-4 rounded-lg bg-[#FF7B00] hover:bg-[#FF8C1A] text-white font-semibold text-base transition-colors"
+            >
+              Get Started
+            </Link>
+            <CopyButton command="bun add @tally-evals/tally" />
           </div>
         </div>
       </section>
 
       {/* Multi-Turn Native Section */}
-      <section className="py-32 px-6 border-y bg-fd-muted/10">
+      <section className="py-32 px-6 border-y border-neutral-900 bg-black">
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-fd-primary/10 text-fd-primary text-xs font-bold uppercase tracking-wider mb-6">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-[#FF7B00]/10 text-[#FF7B00] text-xs font-bold uppercase tracking-wider mb-6">
                 <Layers className="size-3" />
                 The Tally Advantage
               </div>
-              <h2 className="text-4xl md:text-6xl font-black mb-8 tracking-tight leading-tight">
+              <h2 className="text-4xl md:text-6xl font-black mb-8 tracking-tight leading-tight text-white">
                 Multi-Turn <br />
-                <span className="text-fd-primary">Native Evaluation.</span>
+                <span className="text-[#FF7B00]">Native Evaluation.</span>
               </h2>
-              <p className="text-lg text-fd-muted-foreground mb-10 leading-relaxed">
-                Most frameworks treat LLMs as single-turn completions. Tally is built for the complexity of **agentic trajectories**, evaluating tool usage, message history, and state transitions as first-class citizens.
+              <p className="text-lg text-neutral-400 mb-10 leading-relaxed">
+                Grading single responses ignores the conversation. An agent can be polite, relevant, and <span className="text-white font-medium">completely fail</span> to solve the user's problem. Tally evaluates tool usage, message history, and state transitions as first-class citizens.
               </p>
               
               <div className="space-y-6">
                 {[
                   { 
-                    title: 'Trajectory Context', 
-                    desc: 'Metrics have full access to conversation history and metadata.',
+                    title: 'Beyond Row-by-Row', 
+                    desc: 'Evaluate the full trajectory, not just individual responses in isolation.',
                     icon: History 
                   },
                   { 
@@ -154,18 +102,18 @@ const report = await tally.run();`}</code>
                     icon: Target 
                   },
                   { 
-                    title: 'Automatic Rollups', 
-                    desc: 'Seamlessly aggregate step-level scores into conversation-wide verdicts.',
+                    title: 'Conversation Verdicts', 
+                    desc: '"Did the agent actually book the flight by step 5?" — not just "was this response polite?"',
                     icon: TrendingUp 
                   }
                 ].map((item, i) => (
                   <div key={i} className="flex gap-4">
-                    <div className="size-10 rounded-xl bg-fd-primary/5 text-fd-primary flex items-center justify-center shrink-0">
+                    <div className="size-10 rounded-xl bg-[#FF7B00]/10 text-[#FF7B00] flex items-center justify-center shrink-0">
                       <item.icon className="size-5" />
                     </div>
                     <div>
-                      <h4 className="font-bold tracking-tight">{item.title}</h4>
-                      <p className="text-sm text-fd-muted-foreground">{item.desc}</p>
+                      <h4 className="font-bold tracking-tight text-white">{item.title}</h4>
+                      <p className="text-sm text-neutral-400">{item.desc}</p>
                     </div>
                   </div>
                 ))}
@@ -173,37 +121,37 @@ const report = await tally.run();`}</code>
             </div>
 
             <div className="relative">
-              <div className="absolute -inset-10 bg-fd-primary/5 rounded-full blur-3xl" />
+              <div className="absolute -inset-10 bg-[#FF7B00]/5 rounded-full blur-3xl" />
               <div className="relative space-y-4">
                 {/* Visualizing a conversation trace being evaluated */}
-                <div className="p-4 rounded-2xl border bg-fd-background/80 backdrop-blur-sm shadow-sm flex items-center gap-4 translate-x-4">
-                  <div className="size-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-[10px] font-bold">U</div>
+                <div className="p-4 rounded-2xl border border-neutral-800 bg-neutral-900/80 backdrop-blur-sm shadow-sm flex items-center gap-4 translate-x-4">
+                  <div className="size-8 rounded-full bg-neutral-800 flex items-center justify-center text-[10px] font-bold text-white">U</div>
                   <div className="flex-1 space-y-1">
-                    <div className="h-2 w-24 bg-fd-muted rounded" />
-                    <div className="h-2 w-32 bg-fd-muted/50 rounded" />
+                    <div className="h-2 w-24 bg-neutral-700 rounded" />
+                    <div className="h-2 w-32 bg-neutral-800 rounded" />
                   </div>
                 </div>
-                <div className="p-4 rounded-2xl border border-fd-primary/30 bg-fd-primary/5 backdrop-blur-sm shadow-md flex items-center gap-4 scale-105 z-10 relative">
-                  <div className="size-8 rounded-full bg-fd-primary text-fd-primary-foreground flex items-center justify-center text-[10px] font-bold">A</div>
+                <div className="p-4 rounded-2xl border border-[#FF7B00]/30 bg-[#FF7B00]/5 backdrop-blur-sm shadow-md flex items-center gap-4 scale-105 z-10 relative">
+                  <div className="size-8 rounded-full bg-[#FF7B00] text-white flex items-center justify-center text-[10px] font-bold">A</div>
                   <div className="flex-1 space-y-1">
-                    <div className="h-2 w-40 bg-fd-primary/40 rounded" />
-                    <div className="h-2 w-20 bg-fd-primary/20 rounded" />
+                    <div className="h-2 w-40 bg-[#FF7B00]/40 rounded" />
+                    <div className="h-2 w-20 bg-[#FF7B00]/20 rounded" />
                   </div>
                   <div className="px-2 py-1 rounded bg-emerald-500/10 text-emerald-500 text-[10px] font-bold tracking-tighter border border-emerald-500/20">
                     RELEVANCE: 0.94
                   </div>
                 </div>
-                <div className="p-4 rounded-2xl border bg-fd-background/80 backdrop-blur-sm shadow-sm flex items-center gap-4 -translate-x-4 opacity-60">
-                  <div className="size-8 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center text-[10px] font-bold">T</div>
+                <div className="p-4 rounded-2xl border border-neutral-800 bg-neutral-900/80 backdrop-blur-sm shadow-sm flex items-center gap-4 -translate-x-4 opacity-60">
+                  <div className="size-8 rounded-full bg-neutral-800 flex items-center justify-center text-[10px] font-bold text-white">T</div>
                   <div className="flex-1 space-y-1">
-                    <div className="h-2 w-16 bg-fd-muted rounded" />
-                    <div className="h-2 w-24 bg-fd-muted/50 rounded" />
+                    <div className="h-2 w-16 bg-neutral-700 rounded" />
+                    <div className="h-2 w-24 bg-neutral-800 rounded" />
                   </div>
                 </div>
                 
                 <div className="pt-8 flex justify-center">
-                  <div className="px-6 py-3 rounded-2xl bg-fd-secondary border border-fd-border font-black text-sm tracking-tight shadow-xl">
-                    CONVERSATION VERDICT: <span className="text-fd-primary italic">PASS</span>
+                  <div className="px-6 py-3 rounded-2xl bg-neutral-900 border border-neutral-800 font-black text-sm tracking-tight shadow-xl text-white">
+                    CONVERSATION VERDICT: <span className="text-[#FF7B00] italic">PASS</span>
                   </div>
                 </div>
               </div>
@@ -213,10 +161,10 @@ const report = await tally.run();`}</code>
       </section>
 
       {/* Trajectories Section */}
-      <section className="py-32 px-6">
+      <section className="py-32 px-6 bg-black">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div className="relative order-2 lg:order-1">
-            <div className="absolute -inset-4 bg-fd-primary/5 rounded-[2.5rem] blur-2xl" />
+            <div className="absolute -inset-4 bg-[#FF7B00]/5 rounded-[2.5rem] blur-2xl" />
             <CodeWindow title="trajectory.ts">
               <pre className="text-fd-primary/90">
                 <code>{`const trajectory = createTrajectory({
@@ -238,35 +186,35 @@ const result = await runTrajectory(trajectory);`}</code>
             </CodeWindow>
           </div>
           <div className="space-y-8 order-1 lg:order-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-fd-primary/10 text-fd-primary text-xs font-bold uppercase tracking-wider">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-[#FF7B00]/10 text-[#FF7B00] text-xs font-bold uppercase tracking-wider">
               <TestTube className="size-3" />
               Generation
             </div>
-            <h2 className="text-4xl md:text-6xl font-black tracking-tight leading-tight">
+            <h2 className="text-4xl md:text-6xl font-black tracking-tight leading-tight text-white">
               Don't wait for users. <br />
-              <span className="text-fd-primary">Generate your data.</span>
+              <span className="text-[#FF7B00]">Generate your data.</span>
             </h2>
-            <p className="text-lg text-fd-muted-foreground leading-relaxed">
-              Use `@tally-evals/trajectories` to simulate multi-turn interactions. Test your agent against personas, goals, and step-graphs before going to production.
+            <p className="text-lg text-neutral-400 leading-relaxed">
+              Hand-writing multi-turn conversation logs is tedious and brittle. Use <code className="px-1.5 py-0.5 rounded bg-neutral-900 border border-neutral-800 text-neutral-300 font-mono text-sm">@tally-evals/trajectories</code> to simulate impatient, confused, or adversarial users at scale. Works with <span className="text-white">any agent framework</span>.
             </p>
             <div className="grid grid-cols-2 gap-6">
               {[
-                { title: 'Simulate Personas', icon: MessageSquare },
-                { title: 'Step-Graph Logic', icon: Workflow },
-                { title: 'Adversarial Tests', icon: Shield },
-                { title: 'AI SDK Native', icon: Cpu }
+                { title: 'User Personas', icon: MessageSquare },
+                { title: 'Step-Graph Paths', icon: Workflow },
+                { title: 'Stress Testing', icon: Shield },
+                { title: 'Framework Agnostic', icon: Cpu }
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <div className="size-8 rounded-lg bg-fd-primary/10 text-fd-primary flex items-center justify-center">
+                  <div className="size-8 rounded-lg bg-[#FF7B00]/10 text-[#FF7B00] flex items-center justify-center">
                     <item.icon className="size-4" />
                   </div>
-                  <span className="text-sm font-bold tracking-tight">{item.title}</span>
+                  <span className="text-sm font-bold tracking-tight text-white">{item.title}</span>
                 </div>
               ))}
             </div>
             <Link 
               href="/docs/trajectories" 
-              className="inline-flex items-center gap-2 text-sm font-black text-fd-primary hover:gap-3 transition-all"
+              className="inline-flex items-center gap-2 text-sm font-black text-[#FF7B00] hover:gap-3 transition-all"
             >
               Learn about Trajectories <ArrowRight className="size-4" />
             </Link>
@@ -275,52 +223,52 @@ const result = await runTrajectory(trajectory);`}</code>
       </section>
 
       {/* Trust Section */}
-      <section className="py-24 border-y bg-fd-muted/20">
+      <section className="py-24 border-y border-neutral-900 bg-black">
         <div className="max-w-7xl mx-auto px-6 text-center">
-          <p className="text-xs font-bold text-fd-muted-foreground uppercase tracking-[0.3em] mb-12 opacity-60">
+          <p className="text-xs font-bold text-neutral-500 uppercase tracking-[0.3em] mb-12">
             Works natively with your stack
           </p>
           <div className="flex flex-wrap justify-center items-center gap-x-16 gap-y-12 opacity-40 grayscale group hover:grayscale-0 transition-all duration-700">
-             <div className="flex items-center gap-3"><div className="size-8 rounded bg-fd-foreground" /><span className="text-2xl font-black tracking-tighter">AI SDK</span></div>
-             <div className="flex items-center gap-3"><div className="size-8 rounded-full bg-fd-foreground" /><span className="text-2xl font-black tracking-tighter">Mastra</span></div>
-             <div className="flex items-center gap-3"><div className="size-8 border-2 border-fd-foreground" /><span className="text-2xl font-black tracking-tighter">LangChain</span></div>
-             <div className="flex items-center gap-3"><div className="size-8 rounded rotate-45 bg-fd-foreground" /><span className="text-2xl font-black tracking-tighter">LlamaIndex</span></div>
+             <div className="flex items-center gap-3"><div className="size-8 rounded bg-white" /><span className="text-2xl font-black tracking-tighter text-white">AI SDK</span></div>
+             <div className="flex items-center gap-3"><div className="size-8 rounded-full bg-white" /><span className="text-2xl font-black tracking-tighter text-white">Mastra</span></div>
+             <div className="flex items-center gap-3"><div className="size-8 border-2 border-white" /><span className="text-2xl font-black tracking-tighter text-white">LangChain</span></div>
+             <div className="flex items-center gap-3"><div className="size-8 rounded rotate-45 bg-white" /><span className="text-2xl font-black tracking-tighter text-white">LlamaIndex</span></div>
           </div>
         </div>
       </section>
 
       {/* Features Grid */}
-      <section className="py-32 px-6">
+      <section className="py-32 px-6 bg-black">
         <div className="max-w-7xl mx-auto text-center mb-24">
-          <h2 className="text-4xl md:text-6xl font-black mb-8 tracking-tight leading-tight">Everything you need.</h2>
-          <p className="text-xl text-fd-muted-foreground max-w-2xl mx-auto font-medium leading-relaxed">
-            A comprehensive toolkit designed for the modern LLM engineer.
+          <h2 className="text-4xl md:text-6xl font-black mb-8 tracking-tight leading-tight text-white">Everything you need.</h2>
+          <p className="text-xl text-neutral-400 max-w-2xl mx-auto font-medium leading-relaxed">
+            Engineering primitives, not just scripts. A complete reliability stack with debugging tools built in.
           </p>
         </div>
         
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
           <FeatureCard 
-            icon={Workflow}
-            title="Durable Context"
-            description="Tally maintains state through every measurement. Caching, resolution, and normalization are handled out of the box."
-            badge="Infrastructure"
+            icon={Terminal}
+            title="TUI & Dev Server"
+            description="Visualize traces, debug failures, and analyze results in a beautiful terminal interface or local dev server."
+            badge="Developer Experience"
           />
           <FeatureCard 
-            icon={Target}
-            title="Branded Scores"
-            description="Strict type-safety for measurement results. Tally enforces [0, 1] Score invariants through the entire pipeline."
+            icon={CheckCircle2}
+            title="Compile-Time Safety"
+            description="Catch misconfigured metrics and missing scorers before runtime. If it builds, it runs."
             badge="Type-Safe"
           />
           <FeatureCard 
-            icon={Cpu}
-            title="Multi-Turn Native"
-            description="Designed for conversation steps, not just prompts. Evaluate tool calls, message history, and state changes."
-            badge="Advanced"
+            icon={SlidersHorizontal}
+            title="Decoupled Policy"
+            description="Same metrics, different thresholds. Pass at 0.6 in dev, 0.8 in staging, 0.95 in prod. Zero code duplication."
+            badge="Flexible"
           />
           <FeatureCard 
             icon={Search}
-            title="Flexible Metrics"
-            description="Mix LLM-based graders with code-based assertions. Re-use MetricDefs across multiple scorers and datasets."
+            title="Composable Metrics"
+            description="Mix LLM-based graders with code assertions. Metrics → Scorers → Evals, all reusable TypeScript objects."
             badge="Modular"
           />
           <FeatureCard 
@@ -331,36 +279,35 @@ const result = await runTrajectory(trajectory);`}</code>
           />
           <FeatureCard 
             icon={Shield}
-            title="CI/CD Optimized"
-            description="Lightweight and fast. Run evaluations as part of your PR workflow to prevent regression in agent performance."
+            title="CI/CD Ready"
+            description="Lightweight and fast. Run evaluations in your PR workflow to catch regressions before your users do."
             badge="Production"
           />
         </div>
       </section>
 
       {/* Final CTA Section */}
-      <section className="py-40 px-6 relative overflow-hidden">
-        <div className="absolute inset-0 -z-10 [background:radial-gradient(circle_at_center,_var(--tw-gradient-from)_0%,_transparent_70%)] from-fd-primary/10 opacity-50" />
+      <section className="py-40 px-6 relative overflow-hidden bg-black">
         <div className="max-w-5xl mx-auto">
-          <div className="relative p-12 md:p-24 rounded-[4rem] bg-fd-primary text-fd-primary-foreground text-center overflow-hidden shadow-[0_0_100px_-20px_rgba(99,102,241,0.5)]">
-            <div className="absolute top-0 right-0 -mr-20 -mt-20 size-[30rem] bg-white/10 rounded-full blur-3xl animate-pulse" />
-            <div className="absolute bottom-0 left-0 -ml-20 -mb-20 size-[30rem] bg-black/20 rounded-full blur-3xl" />
+          <div className="relative p-12 md:p-24 rounded-[3rem] bg-neutral-900 border border-neutral-800 text-white text-center overflow-hidden">
+            <div className="absolute top-0 right-0 -mr-20 -mt-20 size-[30rem] bg-[#FF7B00]/10 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-0 -ml-20 -mb-20 size-[30rem] bg-[#FF7B00]/5 rounded-full blur-3xl" />
             
-            <h2 className="text-5xl md:text-7xl font-black mb-10 tracking-tighter relative leading-[0.9]">
+            <h2 className="text-5xl md:text-7xl font-black mb-10 tracking-tight relative leading-[1.1]">
               Start measuring <br />what matters.
             </h2>
-            <p className="text-xl md:text-2xl opacity-90 mb-16 max-w-xl mx-auto relative font-medium leading-relaxed">
-              Tally is the foundation for your evaluation pipeline. Get started with the beta today.
+            <p className="text-xl md:text-2xl text-neutral-400 mb-16 max-w-xl mx-auto relative font-medium leading-relaxed">
+              From vibes to verdicts. Deploy on Friday, sleep on Saturday.
             </p>
             
-            <div className="max-w-md mx-auto relative mb-16 shadow-2xl rounded-2xl">
+            <div className="max-w-md mx-auto relative mb-16">
               <InstallCommand command="bun add @tally-evals/tally" />
             </div>
 
             <div className="flex flex-wrap justify-center gap-6 relative z-10">
               <Link
                 href="/docs/tally/getting-started"
-                className="inline-flex items-center gap-3 px-12 py-6 rounded-2xl bg-white text-blue-600 font-black text-lg hover:bg-slate-50 transition-all hover:scale-105 active:scale-95 shadow-xl"
+                className="inline-flex items-center gap-3 px-12 py-6 rounded-xl bg-[#FF7B00] hover:bg-[#FF8C1A] text-white font-semibold text-lg transition-colors"
               >
                 Go to Docs
                 <ArrowRight className="size-6" />
@@ -371,14 +318,14 @@ const result = await runTrajectory(trajectory);`}</code>
       </section>
 
       {/* Footer-ish */}
-      <footer className="py-20 text-center opacity-40">
-        <div className="flex justify-center gap-8 text-sm font-bold uppercase tracking-[0.2em] mb-4">
-          <Link href="/docs/tally" className="hover:text-fd-primary transition-colors">Tally</Link>
-          <Link href="/docs/trajectories" className="hover:text-fd-primary transition-colors">Trajectories</Link>
-          <Link href="/docs/core" className="hover:text-fd-primary transition-colors">Core</Link>
+      <footer className="py-20 text-center bg-black">
+        <div className="flex justify-center gap-8 text-sm font-bold uppercase tracking-[0.2em] mb-4 text-neutral-500">
+          <Link href="/docs/tally" className="hover:text-[#FF7B00] transition-colors">Tally</Link>
+          <Link href="/docs/trajectories" className="hover:text-[#FF7B00] transition-colors">Trajectories</Link>
+          <Link href="/docs/core" className="hover:text-[#FF7B00] transition-colors">Core</Link>
         </div>
-        <p className="text-[10px] font-black uppercase tracking-widest text-fd-muted-foreground">
-          Built for the next generation of LLM Agents.
+        <p className="text-[10px] font-black uppercase tracking-widest text-neutral-600">
+          The Evaluation Stack for Reliable Agents.
         </p>
       </footer>
     </main>
