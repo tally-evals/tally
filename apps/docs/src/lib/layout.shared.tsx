@@ -6,6 +6,12 @@ export function baseOptions(): BaseLayoutProps {
     nav: {
       title: <TallyLogoWithText size={28} />,
     },
+    links: [
+      {
+        text: 'Talk',
+        url: '/talk',
+      },
+    ],
     githubUrl: 'https://github.com/tally-evals/tally',
     themeSwitch: {
       enabled: true,
