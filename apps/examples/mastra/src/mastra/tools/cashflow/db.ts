@@ -54,9 +54,7 @@ export type Activity = z.infer<typeof ActivitySchema>;
 
 /**
  * Simple local storage for financial data using Mastra's LibSQLStore.
- * In a real app, this might be a dedicated table, but for this demo, 
- * we'll use a single JSON blob in a metadata-like store or a simple local file.
- * Since Mastra's LibSQLStore is primarily for memory/traces, we'll implement
+ * we'll implement
  * a simple file-based JSON store for the "local budget model" to keep it deterministic.
  */
 import fs from 'fs';
