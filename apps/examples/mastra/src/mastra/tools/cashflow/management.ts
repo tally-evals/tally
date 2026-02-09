@@ -19,6 +19,20 @@ export const updateBalanceTool = createTool({
   },
 });
 
+export const updateSafetyBufferTool = createTool({
+  id: 'update-safety-buffer',
+  description: 'Update the safety buffer / emergency fund minimum amount that the user wants to maintain',
+  inputSchema: z.object({
+    amount: z.number().describe('The minimum safety buffer amount to maintain'),
+  }),
+  execute: async ({ context }) => {
+    const profile = getProfile();
+    profile.safetyBuffer = context.amount;
+    saveProfile(profile);
+    return { success: true, safetyBuffer: profile.safetyBuffer };
+  },
+});
+
 export const upsertIncomeTool = createTool({
   id: 'upsert-income',
   description: 'Add or update an income source',

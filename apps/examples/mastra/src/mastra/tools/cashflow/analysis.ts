@@ -91,8 +91,27 @@ export const getForecastTool = createTool({
     const lowestPoint = forecast.reduce((prev, curr) => (curr.balance < prev.balance ? curr : prev), forecast[0]!);
     const risks = forecast.filter(f => f.balance < profile.safetyBuffer);
 
+    // Create a timeline of significant events (days with income or expenses)
+    const timeline: Array<{ date: string; events: string[]; balance: number }> = [];
+    
+    for (const day of forecast) {
+      if (day.events.length > 0) {
+        const eventDescriptions = day.events.map(e => 
+          e.type === 'income' 
+            ? `+${e.amount.toLocaleString()} (${e.name})`
+            : `-${e.amount.toLocaleString()} (${e.name})`
+        );
+        timeline.push({
+          date: day.date,
+          events: eventDescriptions,
+          balance: day.balance,
+        });
+      }
+    }
+
     return {
       forecast,
+      timeline, // Add the timeline for easy presentation
       summary: {
         startingBalance: profile.currentBalance,
         endingBalance: forecast[forecast.length - 1]!.balance,

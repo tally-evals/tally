@@ -60,6 +60,17 @@ export const checkAffordabilityTool = createTool({
     const simulatedLowest = getSimulatedLowestBalance(simulatedProfile);
 
     const hitsBuffer = simulatedLowest.balance < profile.safetyBuffer;
+    const bufferDifference = simulatedLowest.balance - profile.safetyBuffer;
+
+    // Create calculation breakdown
+    const calculationSteps = [
+      `Current balance: ${profile.currentBalance.toLocaleString()}`,
+      `Purchase amount: ${context.amount.toLocaleString()}`,
+      `Balance after purchase: ${profile.currentBalance.toLocaleString()} - ${context.amount.toLocaleString()} = ${simulatedProfile.currentBalance.toLocaleString()}`,
+      `Lowest projected balance (with upcoming bills): ${simulatedLowest.balance.toLocaleString()} on ${simulatedLowest.date}`,
+      `Safety buffer: ${profile.safetyBuffer.toLocaleString()}`,
+      `Difference: ${simulatedLowest.balance.toLocaleString()} - ${profile.safetyBuffer.toLocaleString()} = ${bufferDifference.toLocaleString()}`,
+    ];
 
     return {
       affordable: !hitsBuffer,
@@ -67,9 +78,68 @@ export const checkAffordabilityTool = createTool({
       simulatedLowest: simulatedLowest.balance,
       lowestDate: simulatedLowest.date,
       safetyBuffer: profile.safetyBuffer,
+      bufferDifference,
+      calculationSteps,
       message: hitsBuffer 
         ? `Buying this for ${context.amount} would cause your balance to drop to ${simulatedLowest.balance} on ${simulatedLowest.date}, which is below your ${profile.safetyBuffer} buffer.`
         : `Yes, you can afford this. Your lowest projected balance would be ${simulatedLowest.balance} on ${simulatedLowest.date}.`,
+    };
+  },
+});
+
+export const calculateAffordabilityFrequencyTool = createTool({
+  id: 'calculate-affordability-frequency',
+  description: 'Calculate how many times the user can afford a recurring expense (like dining out, sports club visits) based on their available balance above the safety buffer',
+  inputSchema: z.object({
+    costPerVisit: z.number().describe('Cost per visit/activity'),
+    activityName: z.string().describe('Name of the activity (e.g., "dining out", "sports club")'),
+  }),
+  execute: async ({ context }) => {
+    const profile = getProfile();
+    const originalForecast = getSimulatedLowestBalance(profile, 30);
+    
+    // Available balance is the lowest balance minus safety buffer
+    // This represents how much "extra" money they have beyond their safety buffer
+    const availableBalance = originalForecast.balance - profile.safetyBuffer;
+    
+    // Calculate how many times they can afford it
+    // We use Math.floor to ensure we don't exceed the available balance
+    const maxAffordableTimes = Math.floor(availableBalance / context.costPerVisit);
+    const totalCost = maxAffordableTimes * context.costPerVisit;
+    
+    // Simulate adding the activities to see the actual impact on lowest balance
+    // We subtract the total cost from the starting balance to simulate the activities
+    const simulatedProfile = { 
+      ...profile, 
+      currentBalance: profile.currentBalance - totalCost 
+    };
+    const simulatedForecast = getSimulatedLowestBalance(simulatedProfile, 30);
+    const remainingAfterActivities = simulatedForecast.balance - profile.safetyBuffer;
+
+    // Create calculation breakdown for user-friendly explanation
+    const calculationSteps = [
+      `Lowest projected balance: ${originalForecast.balance.toLocaleString()}`,
+      `Safety buffer: ${profile.safetyBuffer.toLocaleString()}`,
+      `Available for activities: ${originalForecast.balance.toLocaleString()} - ${profile.safetyBuffer.toLocaleString()} = ${availableBalance.toLocaleString()}`,
+      `Cost per ${context.activityName}: ${context.costPerVisit.toLocaleString()}`,
+      `Number of times: ${availableBalance.toLocaleString()} ÷ ${context.costPerVisit.toLocaleString()} = ${Math.max(0, maxAffordableTimes)} times`,
+    ];
+
+    return {
+      activityName: context.activityName,
+      costPerVisit: context.costPerVisit,
+      originalLowestProjectedBalance: originalForecast.balance,
+      lowestProjectedBalance: simulatedForecast.balance,
+      lowestBalanceDate: simulatedForecast.date,
+      safetyBuffer: profile.safetyBuffer,
+      availableBalance,
+      maxAffordableTimes: Math.max(0, maxAffordableTimes),
+      totalCostIfMaxUsed: totalCost,
+      remainingBalanceAfterMax: remainingAfterActivities,
+      calculationSteps, // Add this for the agent to show step-by-step
+      message: maxAffordableTimes > 0
+        ? `You can afford ${maxAffordableTimes} ${context.activityName} visit(s) (${context.costPerVisit} each). After these activities, your lowest projected balance would be ${simulatedForecast.balance} on ${simulatedForecast.date}, which is ${remainingAfterActivities >= 0 ? 'above' : 'below'} your safety buffer of ${profile.safetyBuffer}.`
+        : `You cannot afford any ${context.activityName} visits. Your available balance (${availableBalance}) is below the cost per visit (${context.costPerVisit}).`,
     };
   },
 });
