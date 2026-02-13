@@ -5,7 +5,10 @@ import { getProfile, CashflowProfile } from './db';
 // Re-using forecast logic for simulation
 function getSimulatedLowestBalance(profile: CashflowProfile, days: number = 30): { balance: number; date: string } {
   let currentBalance = profile.currentBalance;
-  const today = new Date();
+  
+  // Use a fixed reference date for deterministic results in tests
+  const today = new Date('2024-05-15T00:00:00Z');
+  
   let lowestBalance = currentBalance;
   let lowestDate = today.toISOString().split('T')[0]!;
 

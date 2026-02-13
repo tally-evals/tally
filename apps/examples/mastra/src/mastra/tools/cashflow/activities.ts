@@ -6,37 +6,16 @@ import { getProfile, saveProfile, Activity } from './db';
 const generateId = () => `act-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
 /**
- * Convert hours and minutes to total minutes
- */
-const convertToMinutes = (hours?: number, minutes?: number, totalMinutes?: number): number => {
-  if (totalMinutes !== undefined) return totalMinutes;
-  return (hours || 0) * 60 + (minutes || 0);
-};
-
-/**
- * Convert minutes to human-readable format
- */
-const formatDuration = (minutes: number): string => {
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  if (hours === 0) return `${mins} min`;
-  if (mins === 0) return `${hours} hr`;
-  return `${hours} hr ${mins} min`;
-};
-
-/**
  * Tool to set monthly activity goals
  * User specifies activities they want to do this month
  */
 export const setMonthlyActivitiesTool = createTool({
   id: 'set-monthly-activities',
-  description: 'Set the list of activities the user wants to do this month. Each activity includes name, cost, duration (in hours/minutes), and desired frequency.',
+  description: 'Set the list of activities the user wants to do this month. Each activity includes name, cost, and desired frequency.',
   inputSchema: z.object({
     activities: z.array(z.object({
       name: z.string().describe('Activity name (e.g., "Yoga class")'),
       cost: z.number().describe('Cost per activity'),
-      durationHours: z.number().optional().describe('Duration in hours (e.g., 1.5 for 1 hour 30 minutes)'),
-      durationMinutes: z.number().optional().describe('Duration in minutes (e.g., 90)'),
       count: z.number().describe('Number of times they want to do this activity this month'),
     })),
   }),
@@ -47,23 +26,13 @@ export const setMonthlyActivitiesTool = createTool({
     const newActivities: Activity[] = [];
     
     for (const activityInput of context.activities) {
-      // Convert duration to minutes
-      const durationInMinutes = convertToMinutes(
-        activityInput.durationHours,
-        activityInput.durationMinutes
-      );
-      
-      if (durationInMinutes <= 0) {
-        throw new Error(`Invalid duration for activity "${activityInput.name}". Please provide duration in hours or minutes.`);
-      }
-      
       // Create multiple instances based on count
       for (let i = 0; i < activityInput.count; i++) {
         newActivities.push({
           id: generateId(),
           name: activityInput.name,
           cost: activityInput.cost,
-          duration: durationInMinutes,
+          duration: 0, // No longer used but kept for DB compatibility
           status: 'planned',
         });
       }
@@ -74,17 +43,13 @@ export const setMonthlyActivitiesTool = createTool({
     
     // Calculate totals
     const totalCost = newActivities.reduce((sum, act) => sum + act.cost, 0);
-    const totalDuration = newActivities.reduce((sum, act) => sum + act.duration, 0);
     
     // Group by activity name for summary
     const summary = context.activities.map(act => {
-      const durationInMinutes = convertToMinutes(act.durationHours, act.durationMinutes);
       return {
         name: act.name,
         count: act.count,
         totalCost: act.cost * act.count,
-        totalDuration: durationInMinutes * act.count,
-        durationPerActivity: formatDuration(durationInMinutes),
       };
     });
     
@@ -92,7 +57,6 @@ export const setMonthlyActivitiesTool = createTool({
       success: true,
       totalActivities: newActivities.length,
       totalCost,
-      totalDuration: formatDuration(totalDuration),
       summary,
       message: `Set ${newActivities.length} activities for the month`,
     };
@@ -100,25 +64,15 @@ export const setMonthlyActivitiesTool = createTool({
 });
 
 /**
- * Tool to suggest activities based on available time
- * Filters activities by time available and checks affordability
+ * Tool to suggest activities based on affordability
+ * Checks which activities the user can afford
  */
-export const suggestActivitiesForTimeTool = createTool({
-  id: 'suggest-activities-for-time',
-  description: 'Suggest activities that fit within the available time the user has today, considering both time constraints and affordability.',
-  inputSchema: z.object({
-    availableHours: z.number().optional().describe('Available time in hours (e.g., 2 for 2 hours)'),
-    availableMinutes: z.number().optional().describe('Available time in minutes (e.g., 120)'),
-  }),
-  execute: async ({ context }) => {
+export const suggestActivitiesTool = createTool({
+  id: 'suggest-activities',
+  description: 'Suggest activities from the planned list based on affordability.',
+  inputSchema: z.object({}),
+  execute: async () => {
     const profile = getProfile();
-    
-    // Convert available time to minutes
-    const availableMinutes = convertToMinutes(context.availableHours, context.availableMinutes);
-    
-    if (availableMinutes <= 0) {
-      throw new Error('Please provide available time in hours or minutes.');
-    }
     
     // Get remaining (planned) activities
     const remainingActivities = profile.activities?.filter(act => act.status === 'planned') || [];
@@ -132,26 +86,8 @@ export const suggestActivitiesForTimeTool = createTool({
       };
     }
     
-    // Filter activities that fit in available time
-    const timeFitActivities = remainingActivities.filter(act => act.duration <= availableMinutes);
-    
-    if (timeFitActivities.length === 0) {
-      const shortestDuration = Math.min(...remainingActivities.map(a => a.duration));
-      return {
-        success: true,
-        suggestions: [],
-        remaining: remainingActivities.map(act => ({
-          id: act.id,
-          name: act.name,
-          cost: act.cost,
-          duration: formatDuration(act.duration),
-        })),
-        message: `No activities fit in ${formatDuration(availableMinutes)}. Your shortest activity is ${formatDuration(shortestDuration)}.`,
-      };
-    }
-    
-    // Check affordability for each time-fit activity
-    const suggestions = timeFitActivities.map(act => {
+    // Check affordability for each activity
+    const suggestions = remainingActivities.map(act => {
       const afterPurchase = profile.currentBalance - act.cost;
       const affordable = afterPurchase >= profile.safetyBuffer;
       
@@ -159,48 +95,35 @@ export const suggestActivitiesForTimeTool = createTool({
         id: act.id,
         name: act.name,
         cost: act.cost,
-        duration: formatDuration(act.duration),
         affordable,
         balanceAfter: afterPurchase,
-        timeRemaining: formatDuration(availableMinutes - act.duration),
       };
     });
     
-    // Sort by: affordable first, then by duration (shortest first)
+    // Sort by: affordable first, then by cost (cheapest first)
     const sortedSuggestions = suggestions.sort((a, b) => {
       if (a.affordable !== b.affordable) return b.affordable ? 1 : -1;
-      // For sorting, parse duration back to minutes
-      const getDuration = (formattedDuration: string) => {
-        const match = formattedDuration.match(/(\d+)\s*hr(?:\s*(\d+)\s*min)?|(\d+)\s*min/);
-        if (!match) return 0;
-        const hours = match[1] ? parseInt(match[1]) : 0;
-        const mins = match[2] ? parseInt(match[2]) : (match[3] ? parseInt(match[3]) : 0);
-        return hours * 60 + mins;
-      };
-      return getDuration(a.duration) - getDuration(b.duration);
+      return a.cost - b.cost;
     });
     
     // Group remaining activities by name with counts
     const remainingByName = remainingActivities.reduce((acc, act) => {
       if (!acc[act.name]) {
-        acc[act.name] = { count: 0, cost: act.cost, duration: act.duration };
+        acc[act.name] = { count: 0, cost: act.cost };
       }
-      acc[act.name].count++;
+      acc[act.name]!.count++;
       return acc;
-    }, {} as Record<string, { count: number; cost: number; duration: number }>);
+    }, {} as Record<string, { count: number; cost: number }>);
     
     const remainingSummary = Object.entries(remainingByName).map(([name, data]) => ({
       name,
       count: data.count,
       costPerActivity: data.cost,
-      durationPerActivity: formatDuration(data.duration),
       totalCost: data.cost * data.count,
-      totalDuration: formatDuration(data.duration * data.count),
     }));
     
     return {
       success: true,
-      availableTime: formatDuration(availableMinutes),
       suggestions: sortedSuggestions,
       remaining: remainingSummary,
       totalRemaining: remainingActivities.length,
@@ -255,7 +178,6 @@ export const markActivityCompletedTool = createTool({
       completed: {
         name: activity.name,
         cost: activity.cost,
-        duration: formatDuration(activity.duration),
       },
       newBalance: profile.currentBalance,
       remainingActivities: remaining.length,
@@ -289,30 +211,26 @@ export const viewRemainingActivitiesTool = createTool({
     // Group by activity name
     const byName = remaining.reduce((acc, act) => {
       if (!acc[act.name]) {
-        acc[act.name] = { count: 0, cost: act.cost, duration: act.duration };
+        acc[act.name] = { count: 0, cost: act.cost };
       }
-      acc[act.name].count++;
+      acc[act.name]!.count++;
       return acc;
-    }, {} as Record<string, { count: number; cost: number; duration: number }>);
+    }, {} as Record<string, { count: number; cost: number }>);
     
     const summary = Object.entries(byName).map(([name, data]) => ({
       name,
       count: data.count,
       costPerActivity: data.cost,
-      durationPerActivity: formatDuration(data.duration),
       totalCost: data.cost * data.count,
-      totalDuration: formatDuration(data.duration * data.count),
     }));
     
     const totalCost = remaining.reduce((sum, act) => sum + act.cost, 0);
-    const totalDuration = remaining.reduce((sum, act) => sum + act.duration, 0);
     
     return {
       success: true,
       remaining: summary,
       totalRemaining: remaining.length,
       totalCost,
-      totalDuration: formatDuration(totalDuration),
       completed: completed.length,
       currentBalance: profile.currentBalance,
       safetyBuffer: profile.safetyBuffer,

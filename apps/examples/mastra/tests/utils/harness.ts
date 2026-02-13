@@ -6,7 +6,7 @@
  */
 
 import { config } from 'dotenv';
-import { resolve } from 'node:path';
+import { resolve, join } from 'node:path';
 import type {  Trajectory, TrajectoryResult } from '@tally-evals/trajectories';
 import {
 	createTrajectory,
@@ -19,8 +19,10 @@ import type { Agent } from '@mastra/core/agent';
 import { stepTracesToConversation, TallyStore } from '@tally-evals/core';
 import { rm } from 'node:fs/promises';
 
-// Load .env.local if it exists
-config({ path: resolve(process.cwd(), '.env.local') });
+// Load .env.local and .env from the package root
+const pkgRoot = resolve(__dirname, '..', '..');
+config({ path: join(pkgRoot, '.env.local') });
+config({ path: join(pkgRoot, '.env') });
 
 const RECORD_MODE = process.env.RECORD_TRAJECTORIES === '1';
 

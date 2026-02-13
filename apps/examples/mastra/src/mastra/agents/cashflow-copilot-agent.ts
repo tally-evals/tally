@@ -14,7 +14,7 @@ import { getForecastTool, getRiskAnalysisTool } from '../tools/cashflow/analysis
 import { checkAffordabilityTool, simulateScenarioTool, calculateAffordabilityFrequencyTool } from '../tools/cashflow/simulation';
 import { 
   setMonthlyActivitiesTool, 
-  suggestActivitiesForTimeTool, 
+  suggestActivitiesTool, 
   markActivityCompletedTool,
   viewRemainingActivitiesTool,
   clearActivitiesTool 
@@ -63,6 +63,7 @@ Your goal is to build and maintain a simple cashflow plan based on what the user
    - Always start with the current balance before showing transactions.
    - Highlight the "lowest point" in the month.
    - When user asks for a summary or remaining balance, generate and show the forecast.
+   - IMPORTANT: When showing the forecast, if there are planned activities, show the calculation for them (e.g., "3 yoga classes at 1,500 each = 4,500") and confirm they are included in the forecast.
 
 3. **Risk Analysis**:
    - Proactively use the get-risk-analysis tool after setting up the profile.
@@ -88,10 +89,9 @@ Your goal is to build and maintain a simple cashflow plan based on what the user
      * Hours and minutes: "1 hour 30 minutes" → durationHours: 1, durationMinutes: 30
    - If duration is not provided, ask: "How long does [activity] typically take?"
    - After setting activities, check affordability against their cashflow projection.
-   - When a user asks "I have X hours/minutes today, what can I do?", use the suggest-activities-for-time tool.
-     * Pass time as availableHours (for hours) or availableMinutes (for minutes)
-     * The tool will return suggestions that fit both time AND budget constraints
-     * Present suggestions in order of affordability and time-fit
+   - When a user asks "what can I do today?" or "what activities can I accomplish?", use the suggest-activities tool.
+     * The tool will return suggestions from the planned list based on affordability
+     * Present suggestions in order of affordability
      * Show remaining activities for the month
    - When a user completes an activity, use mark-activity-completed to update the list and deduct from balance.
    - Use view-remaining-activities to show what's left to do this month.
@@ -105,10 +105,8 @@ Your goal is to build and maintain a simple cashflow plan based on what the user
 - "I pay 2000 at 4th day of each month" → upsertBill with dueDateRule "monthly_day_4", amount 2000
 - "I want to save 1000 each month" → upsertBudget with name "Savings", amount 1000, frequency "monthly"
 - "Netflix subscription 500 per month" → upsertSubscription with name "Netflix", amount 500
-- "I want to do 3 yoga classes (1500 each, 1.5 hours), 4 movies (4000 each, 3 hours), 4 dinners (5000 each, 2 hours)" → setMonthlyActivities
-- "I want to do 3 yoga classes at 1500 each for 90 minutes" → setMonthlyActivities with durationMinutes: 90
-- "I have 2 hours today, what can I do?" → suggestActivitiesForTime with availableHours: 2
-- "I have 90 minutes free, what can I do?" → suggestActivitiesForTime with availableMinutes: 90
+- "I want to do 3 yoga classes (1500 each), 4 movies (4000 each), 4 dinners (5000 each)" → setMonthlyActivities
+- "What can I do today?" → suggestActivities
 - "I completed the yoga class" → markActivityCompleted
 
 ### Tone and Style:
@@ -143,7 +141,7 @@ export const cashflowCopilotAgent = new Agent({
     calculateAffordabilityFrequency: calculateAffordabilityFrequencyTool as any,
     simulateScenario: simulateScenarioTool as any,
     setMonthlyActivities: setMonthlyActivitiesTool as any,
-    suggestActivitiesForTime: suggestActivitiesForTimeTool as any,
+    suggestActivities: suggestActivitiesTool as any,
     markActivityCompleted: markActivityCompletedTool as any,
     viewRemainingActivities: viewRemainingActivitiesTool as any,
     clearActivities: clearActivitiesTool as any,

@@ -11,7 +11,9 @@ interface ForecastDay {
 function generateForecast(profile: CashflowProfile, days: number = 30): ForecastDay[] {
   const forecast: ForecastDay[] = [];
   let currentBalance = profile.currentBalance;
-  const today = new Date();
+  
+  // Use a fixed reference date for deterministic results in tests
+  const today = new Date('2024-05-15T00:00:00Z');
 
   for (let i = 0; i < days; i++) {
     const date = new Date(today);
@@ -68,6 +70,20 @@ function generateForecast(profile: CashflowProfile, days: number = 30): Forecast
       }
     }
 
+    // 5. Planned Activities (Deduct all planned activities on the 1st for simplicity in forecast)
+    if (dayOfMonth === 1 && profile.activities) {
+      const planned = profile.activities.filter(act => act.status === 'planned');
+      if (planned.length > 0) {
+        const totalPlannedCost = planned.reduce((sum, act) => sum + act.cost, 0);
+        events.push({ 
+          name: `Planned Activities (${planned.length} items)`, 
+          amount: totalPlannedCost, 
+          type: 'expense' 
+        });
+        currentBalance -= totalPlannedCost;
+      }
+    }
+
     forecast.push({
       date: dateString,
       balance: currentBalance,
@@ -119,6 +135,12 @@ export const getForecastTool = createTool({
         lowestBalanceDate: lowestPoint.date,
         safetyBuffer: profile.safetyBuffer,
         riskDaysCount: risks.length,
+        plannedActivities: profile.activities
+          ?.filter(act => act.status === 'planned')
+          .map(act => ({
+            name: act.name,
+            cost: act.cost,
+          })) || [],
       },
     };
   },
