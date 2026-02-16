@@ -6,42 +6,81 @@ import { getProfile, CashflowProfile } from './db';
 function getSimulatedLowestBalance(profile: CashflowProfile, days: number = 30): { balance: number; date: string } {
   let currentBalance = profile.currentBalance;
   
-  // Use a fixed reference date for deterministic results in tests
-  const today = new Date('2024-05-15T00:00:00Z');
+  // Start from the 1st of the current month
+  const today = new Date('2024-05-01T00:00:00Z');
   
   let lowestBalance = currentBalance;
   let lowestDate = today.toISOString().split('T')[0]!;
 
+  const incomeReceivedDates: string[] = [];
+
   for (let i = 0; i < days; i++) {
     const date = new Date(today);
     date.setDate(today.getDate() + i);
+    const dateString = date.toISOString().split('T')[0]!;
     const dayOfMonth = date.getDate();
     const dayOfWeek = date.getDay();
 
-    // Income
-    for (const income of profile.income) {
-      if (income.schedule === `monthly_day_${dayOfMonth}`) currentBalance += income.amount;
-      const daysMap: Record<string, number> = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
-      const dayName = income.schedule.split('_')[1];
-      if (income.schedule.startsWith('weekly_') && daysMap[dayName!] === dayOfWeek) currentBalance += income.amount;
-    }
-    // Bills
+    // --- PRIORITY 1: BILLS & SUBSCRIPTIONS ---
     for (const bill of profile.bills) {
-      if (bill.dueDateRule === `monthly_day_${dayOfMonth}`) currentBalance -= bill.amount;
+      if (bill.dueDateRule === `monthly_day_${dayOfMonth}`) {
+        currentBalance -= bill.amount;
+      }
     }
-    // Subscriptions
     for (const sub of profile.subscriptions) {
-      if (sub.status === 'active' && dayOfMonth === 1) currentBalance -= sub.amount;
+      if (sub.status === 'active' && dayOfMonth === 1) {
+        currentBalance -= sub.amount;
+      }
     }
-    // Budgets
+
+    // --- PRIORITY 2: INCOME ---
+    let receivedIncomeThisDay = false;
+    for (const income of profile.income) {
+      if (income.schedule === `monthly_day_${dayOfMonth}`) {
+        currentBalance += income.amount;
+        receivedIncomeThisDay = true;
+      }
+      const daysMap: Record<string, number> = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
+      if (income.schedule.startsWith('weekly_')) {
+        const dayName = income.schedule.split('_')[1];
+        if (daysMap[dayName!] === dayOfWeek) {
+          currentBalance += income.amount;
+          receivedIncomeThisDay = true;
+        }
+      }
+      if (income.schedule === 'bi_weekly') {
+        const startRef = new Date('2024-05-15T00:00:00Z');
+        const diffTime = date.getTime() - startRef.getTime();
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays >= 0 && diffDays % 14 === 0) {
+          currentBalance += income.amount;
+          receivedIncomeThisDay = true;
+        }
+      }
+    }
+
+    if (receivedIncomeThisDay) {
+      incomeReceivedDates.push(dateString);
+    }
+
+    // --- PRIORITY 3: BUDGETS ---
     for (const budget of profile.budgets) {
-      if (budget.frequency === 'weekly' && dayOfWeek === 1) currentBalance -= budget.amount;
-      else if (budget.frequency === 'monthly' && dayOfMonth === 1) currentBalance -= budget.amount;
+      if (budget.name.toLowerCase() === 'groceries') {
+        const isFirstIncomeDay = receivedIncomeThisDay && incomeReceivedDates.length === 1;
+        if (isFirstIncomeDay) {
+          currentBalance -= budget.amount;
+        }
+      } else {
+        if (budget.frequency === 'weekly' && dayOfWeek === 1) currentBalance -= budget.amount;
+        else if (budget.frequency === 'monthly' && dayOfMonth === 1) {
+          currentBalance -= budget.amount;
+        }
+      }
     }
 
     if (currentBalance < lowestBalance) {
       lowestBalance = currentBalance;
-      lowestDate = date.toISOString().split('T')[0]!;
+      lowestDate = dateString;
     }
   }
   return { balance: lowestBalance, date: lowestDate };
@@ -165,7 +204,13 @@ export const simulateScenarioTool = createTool({
       if (sub) sub.status = 'cancelled';
     } else if (context.action === 'move_bill') {
       const bill = simulatedProfile.bills.find(b => b.name.toLowerCase() === context.itemName.toLowerCase());
-      if (bill) bill.dueDateRule = `monthly_day_${context.newValue}`;
+      if (bill) {
+        // Handle both "monthly_day_X" and just "X" as input
+        const day = context.newValue.includes('monthly_day_') 
+          ? context.newValue 
+          : `monthly_day_${context.newValue}`;
+        bill.dueDateRule = day;
+      }
     } else if (context.action === 'change_budget') {
       const budget = simulatedProfile.budgets.find(b => b.name.toLowerCase() === context.itemName.toLowerCase());
       if (budget) budget.amount = Number(context.newValue);

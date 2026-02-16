@@ -12,8 +12,8 @@ function generateForecast(profile: CashflowProfile, days: number = 30): Forecast
   const forecast: ForecastDay[] = [];
   let currentBalance = profile.currentBalance;
   
-  // Use a fixed reference date for deterministic results in tests
-  const today = new Date('2024-05-15T00:00:00Z');
+  // Start from the 1st of the current month (May 2024 in this context)
+  const today = new Date('2024-05-01T00:00:00Z');
 
   for (let i = 0; i < days; i++) {
     const date = new Date(today);
@@ -24,22 +24,7 @@ function generateForecast(profile: CashflowProfile, days: number = 30): Forecast
 
     const events: ForecastDay['events'] = [];
 
-    // 1. Income
-    for (const income of profile.income) {
-      if (income.schedule === `monthly_day_${dayOfMonth}`) {
-        events.push({ name: income.name, amount: income.amount, type: 'income' });
-        currentBalance += income.amount;
-      }
-      // Simple weekly logic: weekly_monday, weekly_tuesday, etc.
-      const daysMap: Record<string, number> = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
-      const dayName = income.schedule.split('_')[1];
-      if (income.schedule.startsWith('weekly_') && daysMap[dayName!] === dayOfWeek) {
-        events.push({ name: income.name, amount: income.amount, type: 'income' });
-        currentBalance += income.amount;
-      }
-    }
-
-    // 2. Bills
+    // --- PRIORITY 1: BILLS & SUBSCRIPTIONS (Deduct first on the same day) ---
     for (const bill of profile.bills) {
       if (bill.dueDateRule === `monthly_day_${dayOfMonth}`) {
         events.push({ name: bill.name, amount: bill.amount, type: 'expense' });
@@ -47,10 +32,8 @@ function generateForecast(profile: CashflowProfile, days: number = 30): Forecast
       }
     }
 
-    // 3. Subscriptions (active only)
     for (const sub of profile.subscriptions) {
       if (sub.status === 'active') {
-        // Assume subscriptions are monthly on the 1st for simplicity unless otherwise specified
         if (dayOfMonth === 1) {
           events.push({ name: sub.name, amount: sub.amount, type: 'expense' });
           currentBalance -= sub.amount;
@@ -58,19 +41,59 @@ function generateForecast(profile: CashflowProfile, days: number = 30): Forecast
       }
     }
 
-    // 4. Budgets (Variable spending)
-    // Distribute weekly budgets across the week or on a specific day
-    for (const budget of profile.budgets) {
-      if (budget.frequency === 'weekly' && dayOfWeek === 1) { // Every Monday
-        events.push({ name: `${budget.name} (Weekly)`, amount: budget.amount, type: 'expense' });
-        currentBalance -= budget.amount;
-      } else if (budget.frequency === 'monthly' && dayOfMonth === 1) {
-        events.push({ name: `${budget.name} (Monthly)`, amount: budget.amount, type: 'expense' });
-        currentBalance -= budget.amount;
+    // --- PRIORITY 2: INCOME ---
+    let receivedIncomeThisDay = false;
+    for (const income of profile.income) {
+      if (income.schedule === `monthly_day_${dayOfMonth}`) {
+        events.push({ name: income.name, amount: income.amount, type: 'income' });
+        currentBalance += income.amount;
+        receivedIncomeThisDay = true;
+      }
+      
+      const daysMap: Record<string, number> = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
+      if (income.schedule.startsWith('weekly_')) {
+        const dayName = income.schedule.split('_')[1];
+        if (daysMap[dayName!] === dayOfWeek) {
+          events.push({ name: income.name, amount: income.amount, type: 'income' });
+          currentBalance += income.amount;
+          receivedIncomeThisDay = true;
+        }
+      }
+
+      if (income.schedule === 'bi_weekly') {
+        // Assume paychecks start on the 15th for this specific user scenario
+        const startRef = new Date('2024-05-15T00:00:00Z'); 
+        const diffTime = date.getTime() - startRef.getTime();
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+        if (diffDays >= 0 && diffDays % 14 === 0) {
+          events.push({ name: income.name, amount: income.amount, type: 'income' });
+          currentBalance += income.amount;
+          receivedIncomeThisDay = true;
+        }
       }
     }
 
-    // 5. Planned Activities (Deduct all planned activities on the 1st for simplicity in forecast)
+    // --- PRIORITY 3: BUDGETS (Groceries on first payday) ---
+    for (const budget of profile.budgets) {
+      if (budget.name.toLowerCase() === 'groceries') {
+        // Logic: Deduct full monthly grocery budget on the day of the FIRST income event
+        const isFirstIncomeDay = receivedIncomeThisDay && !forecast.some(d => d.events.some(e => e.type === 'income'));
+        if (isFirstIncomeDay) {
+          events.push({ name: `${budget.name} (Monthly)`, amount: budget.amount, type: 'expense' });
+          currentBalance -= budget.amount;
+        }
+      } else {
+        if (budget.frequency === 'weekly' && dayOfWeek === 1) {
+          events.push({ name: `${budget.name} (Weekly)`, amount: budget.amount, type: 'expense' });
+          currentBalance -= budget.amount;
+        } else if (budget.frequency === 'monthly' && dayOfMonth === 1) {
+          events.push({ name: `${budget.name} (Monthly)`, amount: budget.amount, type: 'expense' });
+          currentBalance -= budget.amount;
+        }
+      }
+    }
+
+    // --- PRIORITY 4: PLANNED ACTIVITIES ---
     if (dayOfMonth === 1 && profile.activities) {
       const planned = profile.activities.filter(act => act.status === 'planned');
       if (planned.length > 0) {

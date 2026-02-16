@@ -95,6 +95,10 @@ temp/
 *.swo
 *~
 
+# Tally conversation logs (Cashflow only)
+apps/examples/mastra/.tally/conversations/cashflow-curve/
+apps/examples/mastra/.tally/conversations/cashflow-golden/
+
 # OS generated files
 .DS_Store
 .DS_Store?
