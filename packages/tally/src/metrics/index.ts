@@ -13,6 +13,9 @@ export { createRoleAdherenceMetric } from './multiTurn/roleAdherence';
 export { createGoalCompletionMetric } from './multiTurn/goalCompletion';
 export { createTopicAdherenceMetric } from './multiTurn/topicAdherence';
 
+// Cashflow Copilot Metrics
+export * from './cashflow';
+
 // Metric utilities
 export {
   extractInputOutput,

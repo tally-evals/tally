@@ -1,0 +1,301 @@
+{
+  "currentBalance": 98500,
+  "safetyBuffer": 0,
+  "income": [
+    {
+      "name": "Salary",
+      "amount": 120000,
+      "schedule": "monthly_day_5",
+      "id": "id-1770810234076-nw9thh24l"
+    },
+    {
+      "name": "Second Salary",
+      "amount": 70000,
+      "schedule": "monthly_day_1",
+      "id": "id-1770810252659-9jayefta2"
+    },
+    {
+      "name": "Freelance Income",
+      "amount": 1500,
+      "schedule": "monthly_day_1",
+      "id": "id-1770810269287-gb9gwowyb"
+    },
+    {
+      "name": "Paycheck",
+      "amount": 2500,
+      "schedule": "bi_weekly",
+      "id": "id-1770894239502-vxe5l2idd"
+    },
+    {
+      "name": "Bi-weekly Income",
+      "amount": 2500,
+      "schedule": "bi_weekly",
+      "id": "id-1770895092516-63sd9y46x"
+    }
+  ],
+  "bills": [
+    {
+      "name": "Mortgage",
+      "amount": 15000,
+      "dueDateRule": "monthly_day_10",
+      "priority": "must-pay",
+      "id": "id-1770810246654-p7gnin7pg"
+    },
+    {
+      "name": "Car Payment",
+      "amount": 300,
+      "dueDateRule": "monthly_day_18",
+      "priority": "must-pay",
+      "id": "id-1770810246654-xy1remwlu"
+    },
+    {
+      "name": "Student Loan",
+      "amount": 8000,
+      "dueDateRule": "monthly_day_25",
+      "priority": "must-pay",
+      "id": "id-1770810297553-avd8upn6q"
+    },
+    {
+      "name": "Internet Bill",
+      "amount": 5000,
+      "dueDateRule": "monthly_day_28",
+      "priority": "must-pay",
+      "id": "id-1770888059941-ytj5cbfn0"
+    },
+    {
+      "name": "Property Tax",
+      "amount": 2000,
+      "dueDateRule": "monthly_day_20",
+      "priority": "must-pay",
+      "id": "id-1770888474173-9cl5t3867"
+    },
+    {
+      "name": "Rent",
+      "amount": 50000,
+      "dueDateRule": "monthly_day_4",
+      "priority": "must-pay",
+      "id": "id-1770888582968-5c90i7twz"
+    },
+    {
+      "name": "Car Insurance",
+      "amount": 500,
+      "dueDateRule": "monthly_day_15",
+      "priority": "must-pay",
+      "id": "id-1770891458189-z9e95ryjg"
+    },
+    {
+      "name": "Car Registration",
+      "amount": 1500,
+      "dueDateRule": "monthly_day_1",
+      "priority": "must-pay",
+      "id": "id-1770891487719-3mpzbajri"
+    },
+    {
+      "name": "Utilities",
+      "amount": 150,
+      "dueDateRule": "monthly_day_1",
+      "priority": "must-pay",
+      "id": "id-1770894239503-riv7y9nhr"
+    },
+    {
+      "name": "Phone Bill",
+      "amount": 75,
+      "dueDateRule": "monthly_day_20",
+      "priority": "must-pay",
+      "id": "id-1770894239506-xxjkcnxsi"
+    },
+    {
+      "name": "Internet",
+      "amount": 5000,
+      "dueDateRule": "monthly_day_10",
+      "priority": "must-pay",
+      "id": "id-1770895299545-yv75kmf62"
+    }
+  ],
+  "budgets": [
+    {
+      "name": "Groceries & Living Expenses",
+      "amount": 20000,
+      "frequency": "monthly",
+      "id": "id-1770810246655-idcp56528"
+    },
+    {
+      "name": "Entertainment",
+      "amount": 500,
+      "frequency": "monthly",
+      "id": "id-1770810297559-x1ys9ga1n"
+    },
+    {
+      "name": "Transportation (Fuel & Public Transport)",
+      "amount": 4000,
+      "frequency": "monthly",
+      "id": "id-1770810297560-kyehwjxot"
+    },
+    {
+      "name": "Miscellaneous Expenses",
+      "amount": 1200,
+      "frequency": "monthly",
+      "id": "id-1770888404520-te3qgjqw6"
+    },
+    {
+      "name": "Rent",
+      "amount": 1500,
+      "frequency": "monthly",
+      "id": "id-1770888417927-fliw5i3n0"
+    },
+    {
+      "name": "Savings",
+      "amount": 10000,
+      "frequency": "monthly",
+      "id": "id-1770888558905-s5gqs6b7z"
+    },
+    {
+      "name": "Car Registration Savings",
+      "amount": 150,
+      "frequency": "monthly",
+      "id": "id-1770891511995-7jpkhyi5w"
+    },
+    {
+      "name": "Groceries",
+      "amount": 350,
+      "frequency": "monthly",
+      "id": "id-1770894239507-1g53b0p9t"
+    },
+    {
+      "name": "Dining Out",
+      "amount": 1000,
+      "frequency": "monthly",
+      "id": "id-1770894239507-g8061vdly"
+    },
+    {
+      "name": "Shopping",
+      "amount": 800,
+      "frequency": "monthly",
+      "id": "id-1770895324714-ukz96p6mz"
+    },
+    {
+      "name": "Travel",
+      "amount": 2000,
+      "frequency": "monthly",
+      "id": "id-1770895324715-bz2cbwm9n"
+    },
+    {
+      "name": "Miscellaneous",
+      "amount": 700,
+      "frequency": "monthly",
+      "id": "id-1770895324716-90xgtxmh2"
+    }
+  ],
+  "subscriptions": [
+    {
+      "name": "Streaming Services",
+      "amount": 50,
+      "status": "active",
+      "id": "id-1770810297557-yy3uxstp1"
+    },
+    {
+      "name": "Gym Membership",
+      "amount": 85,
+      "status": "active",
+      "id": "id-1770810297558-wiq1tkzxu"
+    },
+    {
+      "name": "Software Subscriptions",
+      "amount": 3000,
+      "status": "active",
+      "id": "id-1770810297559-jk3diq9nv"
+    },
+    {
+      "name": "Netflix",
+      "amount": 500,
+      "status": "active",
+      "id": "id-1770888077250-dvneaxjve"
+    },
+    {
+      "name": "Gym",
+      "amount": 50,
+      "status": "active",
+      "id": "id-1770894239505-hdtectk91"
+    }
+  ],
+  "activities": [
+    {
+      "id": "act-1770895349297-rdy2ktfsq",
+      "name": "Yoga classes",
+      "cost": 1500,
+      "duration": 90,
+      "status": "completed",
+      "completedAt": "2026-02-12T11:22:37.556Z"
+    },
+    {
+      "id": "act-1770895349297-3lub2914a",
+      "name": "Yoga classes",
+      "cost": 1500,
+      "duration": 90,
+      "status": "planned"
+    },
+    {
+      "id": "act-1770895349297-9iap46f9a",
+      "name": "Yoga classes",
+      "cost": 1500,
+      "duration": 90,
+      "status": "planned"
+    },
+    {
+      "id": "act-1770895349297-kqojlw0xs",
+      "name": "Movies",
+      "cost": 4000,
+      "duration": 180,
+      "status": "planned"
+    },
+    {
+      "id": "act-1770895349297-3rlfox0lj",
+      "name": "Movies",
+      "cost": 4000,
+      "duration": 180,
+      "status": "planned"
+    },
+    {
+      "id": "act-1770895349297-45qdlyfta",
+      "name": "Movies",
+      "cost": 4000,
+      "duration": 180,
+      "status": "planned"
+    },
+    {
+      "id": "act-1770895349297-9ao4cvfiz",
+      "name": "Movies",
+      "cost": 4000,
+      "duration": 180,
+      "status": "planned"
+    },
+    {
+      "id": "act-1770895349297-dhu4are7p",
+      "name": "Dinners",
+      "cost": 5000,
+      "duration": 120,
+      "status": "planned"
+    },
+    {
+      "id": "act-1770895349297-bbqz6b96y",
+      "name": "Dinners",
+      "cost": 5000,
+      "duration": 120,
+      "status": "planned"
+    },
+    {
+      "id": "act-1770895349297-4ir2i4qoa",
+      "name": "Dinners",
+      "cost": 5000,
+      "duration": 120,
+      "status": "planned"
+    },
+    {
+      "id": "act-1770895349297-j2xblv1pz",
+      "name": "Dinners",
+      "cost": 5000,
+      "duration": 120,
+      "status": "planned"
+    }
+  ]
+}

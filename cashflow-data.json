@@ -1,0 +1,130 @@
+{
+  "currentBalance": 100000,
+  "safetyBuffer": 20000,
+  "income": [
+    {
+      "name": "Salary",
+      "amount": 120000,
+      "schedule": "monthly_day_5",
+      "id": "id-1771251388543-02upsyvj2"
+    }
+  ],
+  "bills": [
+    {
+      "name": "Rent",
+      "amount": 45000,
+      "dueDateRule": "monthly_day_4",
+      "priority": "must-pay",
+      "id": "id-1771251047601-ykgrx6mg4"
+    },
+    {
+      "name": "Utilities",
+      "amount": 20000,
+      "dueDateRule": "monthly_day_1",
+      "priority": "must-pay",
+      "id": "id-1771251047601-nb0dluihu"
+    },
+    {
+      "name": "Gym Membership",
+      "amount": 1000,
+      "dueDateRule": "monthly_day_1",
+      "priority": "must-pay",
+      "id": "id-1771251047601-gym"
+    }
+  ],
+  "budgets": [
+    {
+      "name": "Groceries",
+      "amount": 700,
+      "frequency": "monthly",
+      "id": "id-1771251047601-nxm0c61pb"
+    }
+  ],
+  "subscriptions": [
+    {
+      "name": "Netflix",
+      "amount": 500,
+      "status": "active",
+      "id": "id-1771251401380-y8ifjgyzm"
+    }
+  ],
+  "activities": [
+    {
+      "id": "act-1771251427506-4mtxb9j0z",
+      "name": "Yoga class",
+      "cost": 1500,
+      "duration": 0,
+      "status": "planned"
+    },
+    {
+      "id": "act-1771251427506-b21w4t765",
+      "name": "Yoga class",
+      "cost": 1500,
+      "duration": 0,
+      "status": "planned"
+    },
+    {
+      "id": "act-1771251427506-yoga-3",
+      "name": "Yoga class",
+      "cost": 1500,
+      "duration": 0,
+      "status": "planned"
+    },
+    {
+      "id": "act-1771251427506-og4xbiw0n",
+      "name": "Movie",
+      "cost": 4000,
+      "duration": 0,
+      "status": "planned"
+    },
+    {
+      "id": "act-1771251427506-fpgh7jff5",
+      "name": "Movie",
+      "cost": 4000,
+      "duration": 0,
+      "status": "planned"
+    },
+    {
+      "id": "act-1771251427506-rj6nw0thj",
+      "name": "Movie",
+      "cost": 4000,
+      "duration": 0,
+      "status": "planned"
+    },
+    {
+      "id": "act-1771251427506-v2pnj2fc6",
+      "name": "Movie",
+      "cost": 4000,
+      "duration": 0,
+      "status": "planned"
+    },
+    {
+      "id": "act-1771251427506-egno7gbb8",
+      "name": "Dinner",
+      "cost": 5000,
+      "duration": 0,
+      "status": "planned"
+    },
+    {
+      "id": "act-1771251427506-6ev7ynqzr",
+      "name": "Dinner",
+      "cost": 5000,
+      "duration": 0,
+      "status": "planned"
+    },
+    {
+      "id": "act-1771251427506-074dag9hj",
+      "name": "Dinner",
+      "cost": 5000,
+      "duration": 0,
+      "status": "planned"
+    },
+    {
+      "id": "act-1771251427506-bww1j07jo",
+      "name": "Dinner",
+      "cost": 5000,
+      "duration": 0,
+      "status": "planned"
+    }
+  ]
+}
