@@ -1,13 +1,7 @@
 {
-  "currentBalance": 98500,
+  "currentBalance": 100000,
   "safetyBuffer": 20000,
   "income": [
-    {
-      "name": "Paycheck",
-      "amount": 3000,
-      "schedule": "bi_weekly",
-      "id": "id-1771251047600-3eyfwhs7w"
-    },
     {
       "name": "Salary",
       "amount": 120000,
@@ -18,41 +12,35 @@
   "bills": [
     {
       "name": "Rent",
-      "amount": 50000,
+      "amount": 45000,
       "dueDateRule": "monthly_day_4",
       "priority": "must-pay",
       "id": "id-1771251047601-ykgrx6mg4"
     },
     {
       "name": "Utilities",
-      "amount": 150,
-      "dueDateRule": "monthly_day_15",
+      "amount": 20000,
+      "dueDateRule": "monthly_day_1",
       "priority": "must-pay",
       "id": "id-1771251047601-nb0dluihu"
     },
     {
-      "name": "Subscriptions",
-      "amount": 50,
-      "dueDateRule": "monthly_day_10",
-      "priority": "optional",
-      "id": "id-1771251047602-djr715wvb"
+      "name": "Gym Membership",
+      "amount": 1000,
+      "dueDateRule": "monthly_day_1",
+      "priority": "must-pay",
+      "id": "id-1771251047601-gym"
     }
   ],
   "budgets": [
     {
       "name": "Groceries",
-      "amount": 400,
+      "amount": 700,
       "frequency": "monthly",
       "id": "id-1771251047601-nxm0c61pb"
     }
   ],
   "subscriptions": [
-    {
-      "name": "Subscriptions",
-      "amount": 50,
-      "status": "active",
-      "id": "id-1771251047601-fnz54ulpk"
-    },
     {
       "name": "Netflix",
       "amount": 500,
@@ -62,14 +50,6 @@
   ],
   "activities": [
     {
-      "id": "act-1771251427506-1s2k9d1i0",
-      "name": "Yoga class",
-      "cost": 1500,
-      "duration": 0,
-      "status": "completed",
-      "completedAt": "2026-02-16T14:17:27.437Z"
-    },
-    {
       "id": "act-1771251427506-4mtxb9j0z",
       "name": "Yoga class",
       "cost": 1500,
@@ -78,6 +58,13 @@
     },
     {
       "id": "act-1771251427506-b21w4t765",
+      "name": "Yoga class",
+      "cost": 1500,
+      "duration": 0,
+      "status": "planned"
+    },
+    {
+      "id": "act-1771251427506-yoga-3",
       "name": "Yoga class",
       "cost": 1500,
       "duration": 0,

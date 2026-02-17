@@ -88,43 +88,132 @@ function getSimulatedLowestBalance(profile: CashflowProfile, days: number = 30):
 
 export const checkAffordabilityTool = createTool({
   id: 'check-affordability',
-  description: 'Check if a purchase is affordable without hitting the safety buffer',
+  description: 'Check if a purchase is affordable without hitting the safety buffer. Can simulate purchase at a specific date.',
   inputSchema: z.object({
     amount: z.number(),
     description: z.string().optional(),
+    purchaseDate: z.string().optional().describe('ISO date string (YYYY-MM-DD) for when the purchase occurs. Defaults to today.'),
   }),
   execute: async ({ context }) => {
     const profile = getProfile();
+    const purchaseDate = context.purchaseDate || '2024-05-01'; // Default to start of simulation for consistency
+    
+    // Original forecast without purchase
     const originalLowest = getSimulatedLowestBalance(profile);
     
-    // Simulate purchase
-    const simulatedProfile = { ...profile, currentBalance: profile.currentBalance - context.amount };
-    const simulatedLowest = getSimulatedLowestBalance(simulatedProfile);
+    // Simulate purchase by creating a custom profile that includes the purchase as a one-time bill on the purchaseDate
+    const simulatedProfile = JSON.parse(JSON.stringify(profile)) as CashflowProfile;
+    
+    // Add the purchase as a one-time "bill" in the simulation logic
+    // We modify getSimulatedLowestBalance slightly or handle it here by adjusting the starting balance 
+    // IF the purchase is today, or by adding it to the loop logic.
+    // Given the current getSimulatedLowestBalance structure, the easiest way to support a "future" purchase 
+    // without changing the core loop is to pass the purchase details to it.
+    
+    const getSimulatedLowestWithPurchase = (p: CashflowProfile, pAmount: number, pDate: string) => {
+      let currentBalance = p.currentBalance;
+      const today = new Date('2024-05-01T00:00:00Z');
+      const pDateObj = new Date(`${pDate}T00:00:00Z`);
+      
+      let lowestBalance = currentBalance;
+      let lowestDate = today.toISOString().split('T')[0]!;
+      const incomeReceivedDates: string[] = [];
 
-    const hitsBuffer = simulatedLowest.balance < profile.safetyBuffer;
-    const bufferDifference = simulatedLowest.balance - profile.safetyBuffer;
+      for (let i = 0; i < 30; i++) {
+        const date = new Date(today);
+        date.setDate(today.getDate() + i);
+        const dateString = date.toISOString().split('T')[0]!;
+        const dayOfMonth = date.getDate();
+        const dayOfWeek = date.getDay();
 
-    // Create calculation breakdown
-    const calculationSteps = [
-      `Current balance: ${profile.currentBalance.toLocaleString()}`,
-      `Purchase amount: ${context.amount.toLocaleString()}`,
-      `Balance after purchase: ${profile.currentBalance.toLocaleString()} - ${context.amount.toLocaleString()} = ${simulatedProfile.currentBalance.toLocaleString()}`,
-      `Lowest projected balance (with upcoming bills): ${simulatedLowest.balance.toLocaleString()} on ${simulatedLowest.date}`,
-      `Safety buffer: ${profile.safetyBuffer.toLocaleString()}`,
-      `Difference: ${simulatedLowest.balance.toLocaleString()} - ${profile.safetyBuffer.toLocaleString()} = ${bufferDifference.toLocaleString()}`,
-    ];
+        // Apply purchase if it's this day
+        if (dateString === pDate) {
+          currentBalance -= pAmount;
+        }
+
+        // --- PRIORITY 1: BILLS & SUBSCRIPTIONS ---
+        for (const bill of p.bills) {
+          if (bill.dueDateRule === `monthly_day_${dayOfMonth}`) {
+            currentBalance -= bill.amount;
+          }
+        }
+        for (const sub of p.subscriptions) {
+          if (sub.status === 'active' && dayOfMonth === 1) {
+            currentBalance -= sub.amount;
+          }
+        }
+
+        // --- PRIORITY 2: INCOME ---
+        let receivedIncomeThisDay = false;
+        for (const income of p.income) {
+          if (income.schedule === `monthly_day_${dayOfMonth}`) {
+            currentBalance += income.amount;
+            receivedIncomeThisDay = true;
+          }
+          // ... weekly/bi-weekly logic ...
+          const daysMap: Record<string, number> = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
+          if (income.schedule.startsWith('weekly_')) {
+            const dayName = income.schedule.split('_')[1];
+            if (daysMap[dayName!] === dayOfWeek) {
+              currentBalance += income.amount;
+              receivedIncomeThisDay = true;
+            }
+          }
+          if (income.schedule === 'bi_weekly') {
+            const startRef = new Date('2024-05-15T00:00:00Z');
+            const diffTime = date.getTime() - startRef.getTime();
+            const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+            if (diffDays >= 0 && diffDays % 14 === 0) {
+              currentBalance += income.amount;
+              receivedIncomeThisDay = true;
+            }
+          }
+        }
+
+        if (receivedIncomeThisDay) incomeReceivedDates.push(dateString);
+
+        // --- PRIORITY 3: BUDGETS ---
+        for (const budget of p.budgets) {
+          if (budget.name.toLowerCase() === 'groceries') {
+            if (receivedIncomeThisDay && incomeReceivedDates.length === 1) currentBalance -= budget.amount;
+          } else {
+            if (budget.frequency === 'weekly' && dayOfWeek === 1) currentBalance -= budget.amount;
+            else if (budget.frequency === 'monthly' && dayOfMonth === 1) currentBalance -= budget.amount;
+          }
+        }
+
+        // --- PRIORITY 4: PLANNED ACTIVITIES ---
+        if (dayOfMonth === 1 && p.activities) {
+          const planned = p.activities.filter(act => act.status === 'planned');
+          if (planned.length > 0) {
+            currentBalance -= planned.reduce((sum, act) => sum + act.cost, 0);
+          }
+        }
+
+        if (currentBalance < lowestBalance) {
+          lowestBalance = currentBalance;
+          lowestDate = dateString;
+        }
+      }
+      return { balance: lowestBalance, date: lowestDate, endingBalance: currentBalance };
+    };
+
+    const simulatedResult = getSimulatedLowestWithPurchase(profile, context.amount, purchaseDate);
+    const hitsBuffer = simulatedResult.balance < profile.safetyBuffer;
+    const bufferDifference = simulatedResult.balance - profile.safetyBuffer;
 
     return {
       affordable: !hitsBuffer,
+      purchaseDate,
       originalLowest: originalLowest.balance,
-      simulatedLowest: simulatedLowest.balance,
-      lowestDate: simulatedLowest.date,
+      simulatedLowest: simulatedResult.balance,
+      lowestDate: simulatedResult.date,
+      endingBalance: simulatedResult.endingBalance,
       safetyBuffer: profile.safetyBuffer,
       bufferDifference,
-      calculationSteps,
       message: hitsBuffer 
-        ? `Buying this for ${context.amount} would cause your balance to drop to ${simulatedLowest.balance} on ${simulatedLowest.date}, which is below your ${profile.safetyBuffer} buffer.`
-        : `Yes, you can afford this. Your lowest projected balance would be ${simulatedLowest.balance} on ${simulatedLowest.date}.`,
+        ? `If you buy this for ${context.amount.toLocaleString()} on ${purchaseDate}, your balance would drop to ${simulatedResult.balance.toLocaleString()} on ${simulatedResult.date}, which is below your ${profile.safetyBuffer.toLocaleString()} buffer.`
+        : `Yes, you can afford this if purchased on ${purchaseDate}. Your lowest projected balance would be ${simulatedResult.balance.toLocaleString()} and your ending balance would be ${simulatedResult.endingBalance.toLocaleString()}.`,
     };
   },
 });
