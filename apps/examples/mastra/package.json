@@ -1,6 +1,7 @@
 {
   "name": "@tally-evals/examples-mastra",
   "version": "1.0.0",
+  "private": true,
   "description": "Mastra evaluation examples using the Tally framework",
   "main": "./src/mastra/index.ts",
   "types": "./src/mastra/index.ts",
