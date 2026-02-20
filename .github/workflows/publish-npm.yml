@@ -36,6 +36,6 @@ jobs:
       - name: Update npm for publishing
         run: npm install -g npm@latest
       - name: Publish
-        run: NODE_AUTH_TOKEN="" changeset publish
+        run: NODE_AUTH_TOKEN="" bunx changeset publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
