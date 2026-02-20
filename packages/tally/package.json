@@ -1,6 +1,6 @@
 {
   "name": "@tally-evals/tally",
-  "version": "0.0.0",
+  "version": "0.1.0-alpha.0",
   "description": "A TypeScript evaluation framework for running model evaluations with datasets, evaluators, metrics, and aggregators",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
@@ -73,6 +73,11 @@
     }
   },
   "files": ["dist"],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true,
+    "registry": "https://registry.npmjs.org/"
+  },
   "scripts": {
     "build": "tsdown",
     "dev": "tsdown --watch",

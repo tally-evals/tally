@@ -1,6 +1,6 @@
 {
   "name": "@tally-evals/cli",
-  "version": "0.0.0",
+  "version": "0.1.0-alpha.0",
   "description": "A CLI for the Tally evaluation framework",
   "type": "module",
   "main": "./dist/index.js",
@@ -22,6 +22,11 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true,
+    "registry": "https://registry.npmjs.org/"
+  },
   "scripts": {
     "build": "bun run build:lib && bun run build:bin",
     "build:lib": "bun build ./src/index.ts --outdir ./dist --target bun --sourcemap=external --external react-devtools-core && bun x tsc --emitDeclarationOnly --declaration --outDir dist",
