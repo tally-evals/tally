@@ -1,0 +1,41 @@
+name: Publish (NPM)
+
+on:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  publish:
+    permissions:
+      contents: read
+      id-token: write
+    name: Publish to NPM
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
+          ref: ${{ github.head_ref }}
+          persist-credentials: false
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Setup Node 22 for NPM publishing
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          registry-url: "https://registry.npmjs.org"
+      - name: Install Dependencies
+        run: bun install
+      - name: Build
+        run: bun run build
+      - name: Update npm for publishing
+        run: npm install -g npm@latest
+      - name: Publish
+        run: NODE_AUTH_TOKEN="" changeset publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
