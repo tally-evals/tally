@@ -13,7 +13,6 @@
     "@tally-evals/examples-agent-kit",
     "@tally-evals/examples-ai-sdk",
     "@tally-evals/examples-mastra",
-    "@tally-evals/viewer",
     "docs"
   ]
 }
