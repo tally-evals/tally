@@ -1,6 +1,6 @@
 {
   "name": "@tally-evals/core",
-  "version": "0.0.0",
+  "version": "0.1.0-alpha.0",
   "description": "Core types, configuration, and utilities for the Tally evaluation framework",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
@@ -23,6 +23,11 @@
     }
   },
   "files": ["dist"],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true,
+    "registry": "https://registry.npmjs.org/"
+  },
   "scripts": {
     "build": "tsdown",
     "dev": "tsdown --watch",

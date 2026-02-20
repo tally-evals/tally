@@ -1,0 +1,18 @@
+{
+  "mode": "pre",
+  "tag": "alpha",
+  "initialVersions": {
+    "docs": "0.0.0",
+    "@tally-evals/examples-agent-kit": "0.0.0",
+    "@tally-evals/examples-ai-sdk": "0.0.0",
+    "@tally-evals/examples-mastra": "1.0.0",
+    "@tally-evals/biome-config": "0.0.0",
+    "@tally-evals/cli": "0.1.0-alpha.0",
+    "@tally-evals/core": "0.1.0-alpha.0",
+    "@tally-evals/tally": "0.1.0-alpha.0",
+    "@tally-evals/trajectories": "0.1.0-alpha.0",
+    "@tally-evals/typescript-config": "0.0.0",
+    "@tally-evals/viewer": "0.0.0"
+  },
+  "changesets": []
+}
