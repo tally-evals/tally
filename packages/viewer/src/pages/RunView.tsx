@@ -1,16 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { ChevronLeft } from "lucide-react";
-import type { TallyRunArtifact } from "@tally-evals/core";
-import { MetricSummaryPopover } from "../components/MetricSummaryPopover";
+import { UIMessageBlock } from '@/components/UIMessageBlock';
+import { cn } from '@/lib/utils';
+import type { TallyRunArtifact } from '@tally-evals/core';
+import { CheckIcon, ChevronDownIcon, ChevronLeft, CopyIcon } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { MetricSummaryPopover } from '../components/MetricSummaryPopover';
 import {
   Conversation,
   ConversationContent,
   ConversationEmptyState,
   ConversationScrollButton,
-} from "../components/ai-elements/conversation";
-import { Message, MessageContent, MessageResponse } from "../components/ai-elements/message";
-import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from "../components/ai-elements/tool";
+} from '../components/ai-elements/conversation';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 
 interface RunViewProps {
   convId: string;
@@ -34,22 +34,22 @@ type ConversationData = {
 type RunData = TallyRunArtifact;
 
 function getProperty(obj: unknown, key: string): unknown {
-  if (obj && typeof obj === "object" && key in obj) return (obj as Record<string, unknown>)[key];
+  if (obj && typeof obj === 'object' && key in obj) return (obj as Record<string, unknown>)[key];
   return undefined;
 }
 
 type UIMessagePart =
-  | { type: "text"; text: string }
-  | { type: "tool"; toolCallId: string; toolName: string; input: unknown; output?: unknown };
+  | { type: 'text'; text: string }
+  | { type: 'tool'; toolCallId: string; toolName: string; input: unknown; output?: unknown };
 
 type UIMessage = { id: string; role: string; parts: UIMessagePart[] };
 
 function extractToolOutputFromWrapper(outputWrapper: unknown): unknown {
-  if (!outputWrapper || typeof outputWrapper !== "object") return outputWrapper;
-  const outType = getProperty(outputWrapper, "type");
-  const outValue = getProperty(outputWrapper, "value");
-  if (outType === "json") return outValue;
-  if (outType === "text") return typeof outValue === "string" ? outValue : String(outValue);
+  if (!outputWrapper || typeof outputWrapper !== 'object') return outputWrapper;
+  const outType = getProperty(outputWrapper, 'type');
+  const outValue = getProperty(outputWrapper, 'value');
+  if (outType === 'json') return outValue;
+  if (outType === 'text') return typeof outValue === 'string' ? outValue : String(outValue);
   if (outValue !== undefined) return outValue;
   return outputWrapper;
 }
@@ -61,22 +61,28 @@ function buildAgentPartsFromMessages(messages: ModelMessage[]): UIMessagePart[] 
 
   const pushText = (text: string) => {
     if (text.trim().length === 0) return;
-    parts.push({ type: "text", text });
+    parts.push({ type: 'text', text });
   };
 
-  const ensureTool = (args: { toolCallId: string; toolName: string; input?: unknown; output?: unknown }) => {
+  const ensureTool = (args: {
+    toolCallId: string;
+    toolName: string;
+    input?: unknown;
+    output?: unknown;
+  }) => {
     const existingIdx = toolIndexById.get(args.toolCallId);
     if (existingIdx !== undefined) {
       const existing = parts[existingIdx];
-      if (existing && existing.type === "tool") {
-        if (args.input !== undefined && JSON.stringify(existing.input) === "{}") existing.input = args.input;
+      if (existing && existing.type === 'tool') {
+        if (args.input !== undefined && JSON.stringify(existing.input) === '{}')
+          existing.input = args.input;
         if (args.output !== undefined) existing.output = args.output;
       }
       return;
     }
     const idx = parts.length;
     parts.push({
-      type: "tool",
+      type: 'tool',
       toolCallId: args.toolCallId,
       toolName: args.toolName,
       input: args.input ?? {},
@@ -87,7 +93,7 @@ function buildAgentPartsFromMessages(messages: ModelMessage[]): UIMessagePart[] 
 
   for (const msg of messages) {
     const content = msg.content;
-    if (typeof content === "string") {
+    if (typeof content === 'string') {
       pushText(content);
       continue;
     }
@@ -97,20 +103,24 @@ function buildAgentPartsFromMessages(messages: ModelMessage[]): UIMessagePart[] 
     }
 
     for (const part of content as any[]) {
-      if (!part || typeof part !== "object") continue;
+      if (!part || typeof part !== 'object') continue;
       const type = part.type;
-      if (type === "text" && typeof part.text === "string") {
+      if (type === 'text' && typeof part.text === 'string') {
         pushText(part.text);
         continue;
       }
-      if (type === "tool-call") {
-        if (typeof part.toolCallId === "string" && typeof part.toolName === "string") {
-          ensureTool({ toolCallId: part.toolCallId, toolName: part.toolName, input: part.input ?? part.args ?? {} });
+      if (type === 'tool-call') {
+        if (typeof part.toolCallId === 'string' && typeof part.toolName === 'string') {
+          ensureTool({
+            toolCallId: part.toolCallId,
+            toolName: part.toolName,
+            input: part.input ?? part.args ?? {},
+          });
         }
         continue;
       }
-      if (type === "tool-result") {
-        if (typeof part.toolCallId === "string" && typeof part.toolName === "string") {
+      if (type === 'tool-result') {
+        if (typeof part.toolCallId === 'string' && typeof part.toolName === 'string') {
           const output = extractToolOutputFromWrapper(part.output ?? part.result);
           ensureTool({ toolCallId: part.toolCallId, toolName: part.toolName, output });
         }
@@ -129,16 +139,16 @@ function buildStepUIMessages(step: ConversationStep): UIMessage[] {
     id: `step-${step.stepIndex}-user`,
     role: step.input.role,
     parts:
-      typeof step.input.content === "string"
-        ? [{ type: "text", text: step.input.content }]
-        : [{ type: "text", text: JSON.stringify(step.input.content, null, 2) }],
+      typeof step.input.content === 'string'
+        ? [{ type: 'text', text: step.input.content }]
+        : [{ type: 'text', text: JSON.stringify(step.input.content, null, 2) }],
   });
 
   const agentParts = buildAgentPartsFromMessages([...step.output]);
   if (agentParts.length) {
     msgs.push({
       id: `step-${step.stepIndex}-agent`,
-      role: "assistant",
+      role: 'assistant',
       parts: agentParts,
     });
   }
@@ -162,6 +172,12 @@ export function RunView({ convId, runId }: RunViewProps) {
   const [conversation, setConversation] = useState<ConversationData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [rawRunCopied, setRawRunCopied] = useState(false);
+  const copyRawRun = async () => {
+    await navigator.clipboard.writeText(JSON.stringify(run, null, 2));
+    setRawRunCopied(true);
+    setTimeout(() => setRawRunCopied(false), 2000);
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -203,23 +219,23 @@ export function RunView({ convId, runId }: RunViewProps) {
       stepIndex: number;
     }) => {
       const metricName =
-        typeof args.measurement.metricRef === "string"
+        typeof args.measurement.metricRef === 'string'
           ? args.measurement.metricRef
           : run?.defs?.evals?.[args.evalName]?.metric;
 
       byStep[args.stepIndex]?.push({
         evalName: args.evalName,
         ...(metricName ? { metricName } : {}),
-        verdict: typeof args.outcome?.verdict === "string" ? args.outcome.verdict : "unknown",
-        ...(typeof args.measurement.score === "number" ? { score: args.measurement.score } : {}),
+        verdict: typeof args.outcome?.verdict === 'string' ? args.outcome.verdict : 'unknown',
+        ...(typeof args.measurement.score === 'number' ? { score: args.measurement.score } : {}),
         ...(args.measurement.rawValue !== undefined ? { rawValue: args.measurement.rawValue } : {}),
-        ...(typeof args.measurement.confidence === "number"
+        ...(typeof args.measurement.confidence === 'number'
           ? { confidence: args.measurement.confidence }
           : {}),
-        ...(typeof args.measurement.executionTimeMs === "number"
+        ...(typeof args.measurement.executionTimeMs === 'number'
           ? { timeMs: args.measurement.executionTimeMs }
           : {}),
-        ...(typeof args.measurement.reasoning === "string"
+        ...(typeof args.measurement.reasoning === 'string'
           ? { reasoning: args.measurement.reasoning }
           : {}),
       });
@@ -241,8 +257,8 @@ export function RunView({ convId, runId }: RunViewProps) {
 
     // Include scorers that produce per-step series (shape: seriesByStepIndex)
     for (const [evalName, s] of Object.entries(scorerResults)) {
-      if (!s || typeof s !== "object") continue;
-      if (!("shape" in s) || (s as any).shape !== "seriesByStepIndex") continue;
+      if (!s || typeof s !== 'object') continue;
+      if (!('shape' in s) || (s as any).shape !== 'seriesByStepIndex') continue;
       const arr = (s as any).series?.byStepIndex ?? [];
       for (let stepIndex = 0; stepIndex < Math.min(arr.length, steps.length); stepIndex++) {
         const r = arr[stepIndex];
@@ -265,8 +281,8 @@ export function RunView({ convId, runId }: RunViewProps) {
     let failCount = 0;
     for (const stepRows of perStepEvals) {
       for (const r of stepRows) {
-        if (r.verdict === "pass") passCount++;
-        else if (r.verdict === "fail") failCount++;
+        if (r.verdict === 'pass') passCount++;
+        else if (r.verdict === 'fail') failCount++;
       }
     }
     return {
@@ -289,50 +305,47 @@ export function RunView({ convId, runId }: RunViewProps) {
   const evalSummaryRows = useMemo(() => {
     const rows = endOfConversationEvals.map(([name, ev]) => {
       const evalName = ev.eval ?? name;
-      const kind = ev.kind ?? "unknown";
+      const kind = ev.kind ?? 'unknown';
       const scoreAggs = ev.aggregations?.score ?? {};
       const rawAggs = ev.aggregations?.raw ?? {};
 
-      const getAgg = (
-        aggs: Record<string, unknown>,
-        key: string,
-      ): number | undefined => {
+      const getAgg = (aggs: Record<string, unknown>, key: string): number | undefined => {
         const candidates: string[] = [key];
         const lower = key.toLowerCase();
         const upper = key.toUpperCase();
         candidates.push(lower, upper);
-        if (lower === "mean") candidates.push("Mean");
+        if (lower === 'mean') candidates.push('Mean');
         if (/^p\d+$/.test(lower)) candidates.push(`P${lower.slice(1)}`);
 
         for (const k of candidates) {
           const v = aggs[k];
-          if (typeof v === "number") return v;
+          if (typeof v === 'number') return v;
         }
         return undefined;
       };
 
       // For multi-turn we store a scalar under `value` (not Mean/Pxx).
       const scoreMeanOrValue =
-        getAgg(scoreAggs as Record<string, unknown>, "mean") ??
-        getAgg(scoreAggs as Record<string, unknown>, "value");
+        getAgg(scoreAggs as Record<string, unknown>, 'mean') ??
+        getAgg(scoreAggs as Record<string, unknown>, 'value');
       const rawMeanOrValue =
-        getAgg(rawAggs as Record<string, unknown>, "mean") ??
-        getAgg(rawAggs as Record<string, unknown>, "value");
+        getAgg(rawAggs as Record<string, unknown>, 'mean') ??
+        getAgg(rawAggs as Record<string, unknown>, 'value');
 
-      const scoreP50 = getAgg(scoreAggs as Record<string, unknown>, "p50");
-      const scoreP75 = getAgg(scoreAggs as Record<string, unknown>, "p75");
-      const scoreP90 = getAgg(scoreAggs as Record<string, unknown>, "p90");
+      const scoreP50 = getAgg(scoreAggs as Record<string, unknown>, 'p50');
+      const scoreP75 = getAgg(scoreAggs as Record<string, unknown>, 'p75');
+      const scoreP90 = getAgg(scoreAggs as Record<string, unknown>, 'p90');
 
-      const rawP50 = getAgg(rawAggs as Record<string, unknown>, "p50");
-      const rawP75 = getAgg(rawAggs as Record<string, unknown>, "p75");
-      const rawP90 = getAgg(rawAggs as Record<string, unknown>, "p90");
+      const rawP50 = getAgg(rawAggs as Record<string, unknown>, 'p50');
+      const rawP75 = getAgg(rawAggs as Record<string, unknown>, 'p75');
+      const rawP90 = getAgg(rawAggs as Record<string, unknown>, 'p90');
 
       const passRate =
-        ev.verdictSummary && typeof ev.verdictSummary === "object"
+        ev.verdictSummary && typeof ev.verdictSummary === 'object'
           ? (ev.verdictSummary as any).passRate
           : undefined;
 
-      const scorerRef = kind === "scorer" ? run?.defs?.evals?.[evalName]?.scorerRef : undefined;
+      const scorerRef = kind === 'scorer' ? run?.defs?.evals?.[evalName]?.scorerRef : undefined;
       const calcKind = scorerRef ? run?.defs?.scorers?.[scorerRef]?.combine?.kind : undefined;
 
       return {
@@ -356,54 +369,52 @@ export function RunView({ convId, runId }: RunViewProps) {
   }, [endOfConversationEvals, run?.defs]);
 
   const getHeatClass = (score01: number | undefined): string => {
-    if (typeof score01 !== "number") return "text-muted-foreground";
-    if (score01 >= 0.8) return "text-emerald-600 dark:text-emerald-400";
-    if (score01 >= 0.6) return "text-emerald-500 dark:text-emerald-300";
-    if (score01 >= 0.4) return "text-yellow-600 dark:text-yellow-300";
-    return "text-red-600 dark:text-red-400";
+    if (typeof score01 !== 'number') return 'text-muted-foreground';
+    if (score01 >= 0.8) return 'text-emerald-600 dark:text-emerald-400';
+    if (score01 >= 0.6) return 'text-emerald-500 dark:text-emerald-300';
+    if (score01 >= 0.4) return 'text-yellow-600 dark:text-yellow-300';
+    return 'text-red-600 dark:text-red-400';
   };
 
   const renderKindTag = (kind: string): React.ReactNode => {
     const label =
-      kind === "singleTurn"
-        ? "Single Turn"
-        : kind === "multiTurn"
-          ? "Multi Turn"
-          : kind === "scorer"
-            ? "Scorer"
+      kind === 'singleTurn'
+        ? 'Single Turn'
+        : kind === 'multiTurn'
+          ? 'Multi Turn'
+          : kind === 'scorer'
+            ? 'Scorer'
             : kind;
-    const base = "inline-flex items-center rounded px-2 py-0.5 text-xs font-medium";
+    const base = 'inline-flex items-center rounded px-2 py-0.5 text-xs font-medium';
     const cls =
-      kind === "singleTurn"
-        ? "bg-blue-500/10 text-blue-700 dark:text-blue-300"
-        : kind === "multiTurn"
-          ? "bg-purple-500/10 text-purple-700 dark:text-purple-300"
-          : kind === "scorer"
-            ? "bg-amber-500/10 text-amber-700 dark:text-amber-300"
-            : "bg-muted text-muted-foreground";
-    return <span className={[base, cls].join(" ")}>{label}</span>;
+      kind === 'singleTurn'
+        ? 'bg-blue-500/10 text-blue-700 dark:text-blue-300'
+        : kind === 'multiTurn'
+          ? 'bg-purple-500/10 text-purple-700 dark:text-purple-300'
+          : kind === 'scorer'
+            ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300'
+            : 'bg-muted text-muted-foreground';
+    return <span className={[base, cls].join(' ')}>{label}</span>;
   };
 
   const formatDualCell = (args: {
     raw: number | undefined;
     score: number | undefined;
   }): React.ReactNode => {
-    const rawText = typeof args.raw === "number" ? args.raw.toFixed(3) : "—";
-    const scoreText = typeof args.score === "number" ? args.score.toFixed(3) : "—";
+    const rawText = typeof args.raw === 'number' ? args.raw.toFixed(3) : '—';
+    const scoreText = typeof args.score === 'number' ? args.score.toFixed(3) : '—';
     return (
       <div className="leading-tight">
-        <div className={["font-mono text-xs", getHeatClass(args.score)].join(" ")}>
-          {rawText}
-        </div>
+        <div className={['font-mono text-xs', getHeatClass(args.score)].join(' ')}>{rawText}</div>
         <div className="font-mono text-[11px] text-muted-foreground">{scoreText}</div>
       </div>
     );
   };
 
   const formatRateCell = (rate01: number | undefined): React.ReactNode => {
-    if (typeof rate01 !== "number") return "—";
+    if (typeof rate01 !== 'number') return '—';
     return (
-      <span className={["font-mono text-xs", getHeatClass(rate01)].join(" ")}>
+      <span className={['font-mono text-xs', getHeatClass(rate01)].join(' ')}>
         {rate01.toFixed(3)}
       </span>
     );
@@ -460,15 +471,20 @@ export function RunView({ convId, runId }: RunViewProps) {
           <div className="flex items-center justify-between gap-4">
             <CardTitle className="text-lg">Conversation</CardTitle>
             <div className="text-xs">
-              <span className="text-muted-foreground">Steps</span>{" "}
-              <span className="font-mono text-foreground">{conversationEvalSummary.steps}</span>{" "}
-              <span className="text-muted-foreground">·</span>{" "}
-              <span className="text-muted-foreground">Pass</span>{" "}
+              <span className="text-muted-foreground">Steps</span>{' '}
+              <span className="font-mono text-foreground">{conversationEvalSummary.steps}</span>{' '}
+              <span className="text-muted-foreground">·</span>{' '}
+              <span className="text-muted-foreground">Evals</span>{' '}
+              <span className="font-mono text-foreground">
+                {conversationEvalSummary.passCount + conversationEvalSummary.failCount}
+              </span>{' '}
+              <span className="text-muted-foreground">·</span>{' '}
+              <span className="text-muted-foreground">Pass</span>{' '}
               <span className="font-mono text-emerald-600 dark:text-emerald-400">
                 {conversationEvalSummary.passCount}
-              </span>{" "}
-              <span className="text-muted-foreground">·</span>{" "}
-              <span className="text-muted-foreground">Fail</span>{" "}
+              </span>{' '}
+              <span className="text-muted-foreground">·</span>{' '}
+              <span className="text-muted-foreground">Fail</span>{' '}
               <span className="font-mono text-red-600 dark:text-red-400">
                 {conversationEvalSummary.failCount}
               </span>
@@ -491,45 +507,7 @@ export function RunView({ convId, runId }: RunViewProps) {
                     return (
                       <div key={step.stepIndex} className="space-y-3">
                         {uiMessages.map((message) => (
-                          <Message from={message.role} key={message.id}>
-                            <MessageContent>
-                              {message.parts.map((part, i) => {
-                                switch (part.type) {
-                                  case "text":
-                                    return (
-                                      <MessageResponse key={`${message.id}-${i}`}>
-                                        {part.text}
-                                      </MessageResponse>
-                                    );
-                                  case "tool":
-                                    return (
-                                      <Tool
-                                        key={`${message.id}-${i}`}
-                                        defaultOpen={false}
-                                        className="mt-2"
-                                      >
-                                        <ToolHeader
-                                          type={`tool-${part.toolName}`}
-                                          state={part.output !== undefined ? "completed" : "running"}
-                                        />
-                                        <ToolContent>
-                                          <ToolInput input={part.input} />
-                                          <ToolOutput
-                                            output={
-                                              <pre className="code-block overflow-x-auto">
-                                                {JSON.stringify(part.output ?? null, null, 2)}
-                                              </pre>
-                                            }
-                                          />
-                                        </ToolContent>
-                                      </Tool>
-                                    );
-                                  default:
-                                    return null;
-                                }
-                              })}
-                            </MessageContent>
-                          </Message>
+                          <UIMessageBlock key={message.id} message={message} />
                         ))}
 
                         {/* Per-step evals */}
@@ -538,28 +516,28 @@ export function RunView({ convId, runId }: RunViewProps) {
                             <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium">
                               {(() => {
                                 const passCount = stepMetrics.filter(
-                                  (m) => m.verdict === "pass",
+                                  (m) => m.verdict === 'pass'
                                 ).length;
                                 const failCount = stepMetrics.filter(
-                                  (m) => m.verdict === "fail",
+                                  (m) => m.verdict === 'fail'
                                 ).length;
                                 return (
                                   <span className="inline-flex items-center gap-3">
                                     <span>Step evals</span>
                                     <span className="text-xs text-muted-foreground">
-                                      Evals{" "}
+                                      Evals{' '}
                                       <span className="font-mono text-foreground">
                                         {stepMetrics.length}
                                       </span>
                                     </span>
                                     <span className="text-xs">
-                                      <span className="text-muted-foreground">Pass</span>{" "}
+                                      <span className="text-muted-foreground">Pass</span>{' '}
                                       <span className="font-mono text-emerald-600 dark:text-emerald-400">
                                         {passCount}
                                       </span>
                                     </span>
                                     <span className="text-xs">
-                                      <span className="text-muted-foreground">Fail</span>{" "}
+                                      <span className="text-muted-foreground">Fail</span>{' '}
                                       <span className="font-mono text-red-600 dark:text-red-400">
                                         {failCount}
                                       </span>
@@ -595,14 +573,17 @@ export function RunView({ convId, runId }: RunViewProps) {
                                   </thead>
                                   <tbody>
                                     {stepMetrics.map((m, idx) => {
-                                      const verdict = m.verdict ?? "unknown";
+                                      const verdict = m.verdict ?? 'unknown';
                                       const raw =
-                                        m.rawValue === undefined ? "—" : JSON.stringify(m.rawValue);
+                                        m.rawValue === undefined ? '—' : JSON.stringify(m.rawValue);
                                       const time =
-                                        typeof m.timeMs === "number" ? m.timeMs : undefined;
+                                        typeof m.timeMs === 'number' ? m.timeMs : undefined;
 
                                       return (
-                                        <tr key={idx} className="border-b border-border/60 last:border-0">
+                                        <tr
+                                          key={idx}
+                                          className="border-b border-border/60 last:border-0"
+                                        >
                                           <td className="px-3 py-2 align-top">
                                             <div className="space-y-0.5">
                                               <span className="inline-flex items-center gap-2">
@@ -615,32 +596,37 @@ export function RunView({ convId, runId }: RunViewProps) {
                                                 ) : null}
                                               </span>
                                               <div className="text-xs text-muted-foreground">
-                                                {m.metricName ?? "—"}
+                                                {m.metricName ?? '—'}
                                               </div>
                                             </div>
                                           </td>
                                           <td className="px-3 py-2 align-top">
                                             <span
                                               className={[
-                                                "inline-flex items-center rounded px-2 py-0.5 text-xs font-medium",
-                                                verdict === "pass"
-                                                  ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                                                  : verdict === "fail"
-                                                    ? "bg-red-500/10 text-red-700 dark:text-red-300"
-                                                    : "bg-muted text-muted-foreground",
-                                              ].join(" ")}
+                                                'inline-flex items-center rounded px-2 py-0.5 text-xs font-medium',
+                                                verdict === 'pass'
+                                                  ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300'
+                                                  : verdict === 'fail'
+                                                    ? 'bg-red-500/10 text-red-700 dark:text-red-300'
+                                                    : 'bg-muted text-muted-foreground',
+                                              ].join(' ')}
                                             >
                                               {String(verdict)}
                                             </span>
                                           </td>
                                           <td className="px-3 py-2 align-top font-mono text-xs">
-                                            {typeof m.score === "number" ? m.score.toFixed(3) : "—"}
+                                            {typeof m.score === 'number' ? m.score.toFixed(3) : '—'}
                                           </td>
-                                          <td className="px-3 py-2 align-top font-mono text-xs">
+                                          <td
+                                            className={cn(
+                                              'px-3 py-2 align-top font-mono text-xs',
+                                              m.rawValue !== undefined && getHeatClass(m.score)
+                                            )}
+                                          >
                                             {raw}
                                           </td>
                                           <td className="px-3 py-2 align-top font-mono text-xs">
-                                            {time ?? "—"}
+                                            {time ?? '—'}
                                           </td>
                                           <td className="px-3 py-2 align-top">
                                             {m.reasoning ? (
@@ -653,7 +639,9 @@ export function RunView({ convId, runId }: RunViewProps) {
                                                 </div>
                                               </details>
                                             ) : (
-                                              <span className="text-xs text-muted-foreground">—</span>
+                                              <span className="text-xs text-muted-foreground">
+                                                —
+                                              </span>
                                             )}
                                           </td>
                                         </tr>
@@ -684,18 +672,34 @@ export function RunView({ convId, runId }: RunViewProps) {
         <CardContent className="space-y-4">
           {evalSummaryRows.length ? (
             <div className="space-y-2">
-              <div className="text-xs font-semibold text-muted-foreground">Evaluation summaries</div>
+              <div className="text-xs font-semibold text-muted-foreground">
+                Evaluation summaries
+              </div>
               <div className="overflow-x-auto rounded-md border border-border bg-background">
                 <table className="w-full text-sm">
                   <thead className="bg-muted/40">
                     <tr className="border-b border-border">
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Eval</th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Kind</th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Mean</th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">P50</th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">P75</th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">P90</th>
-                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">Pass rate</th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">
+                        Eval
+                      </th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">
+                        Kind
+                      </th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">
+                        Mean
+                      </th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">
+                        P50
+                      </th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">
+                        P75
+                      </th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">
+                        P90
+                      </th>
+                      <th className="px-3 py-2 text-left text-xs font-semibold text-muted-foreground">
+                        Pass rate
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -704,7 +708,10 @@ export function RunView({ convId, runId }: RunViewProps) {
                         <td className="px-3 py-2 align-top">
                           <span className="inline-flex items-center gap-2">
                             <span className="font-medium">{r.evalName}</span>
-                            <MetricSummaryPopover run={run as TallyRunArtifact} evalName={r.evalName} />
+                            <MetricSummaryPopover
+                              run={run as TallyRunArtifact}
+                              evalName={r.evalName}
+                            />
                           </span>
                         </td>
                         <td className="px-3 py-2 align-top">{renderKindTag(String(r.kind))}</td>
@@ -728,7 +735,9 @@ export function RunView({ convId, runId }: RunViewProps) {
               </div>
             </div>
           ) : (
-            <div className="text-sm text-muted-foreground">No end-of-conversation eval summaries.</div>
+            <div className="text-sm text-muted-foreground">
+              No end-of-conversation eval summaries.
+            </div>
           )}
 
           {/* NOTE: Legacy sections (aggregateSummaries/derivedMetrics/verdicts) were removed.
@@ -736,9 +745,23 @@ export function RunView({ convId, runId }: RunViewProps) {
               outcomes directly on each eval result. */}
 
           {/* Keep raw payload available for debugging */}
-          <details className="rounded-md border border-border bg-background">
-            <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium">
+          <details className="group rounded-md border border-border bg-background">
+            <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium flex items-center justify-between">
               Raw run JSON
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={copyRawRun}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  title="Copy to clipboard"
+                >
+                  {rawRunCopied ? (
+                    <CheckIcon className="size-4 text-emerald-500" />
+                  ) : (
+                    <CopyIcon className="size-4" />
+                  )}
+                </button>
+                <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-open:rotate-180" />
+              </div>
             </summary>
             <div className="border-t border-border px-4 py-3">
               <pre className="code-block overflow-x-auto rounded bg-muted p-3 text-xs">
@@ -751,4 +774,3 @@ export function RunView({ convId, runId }: RunViewProps) {
     </div>
   );
 }
-

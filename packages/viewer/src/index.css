@@ -62,7 +62,7 @@
 
 /* Code blocks */
 .code-block {
-  font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  font-family: "JetBrains Mono", "Fira Code", ui-monospace, monospace;
   font-size: 0.8125rem;
   line-height: 1.5;
   white-space: pre-wrap;
