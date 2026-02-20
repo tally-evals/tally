@@ -1,6 +1,6 @@
 {
   "name": "@tally-evals/trajectories",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.1",
   "description": "A framework-agnostic trajectory generation package for building multi-turn conversation trajectories",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",

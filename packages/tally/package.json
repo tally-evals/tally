@@ -1,6 +1,6 @@
 {
   "name": "@tally-evals/tally",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.1",
   "description": "A TypeScript evaluation framework for running model evaluations with datasets, evaluators, metrics, and aggregators",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
@@ -72,7 +72,9 @@
       }
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "publishConfig": {
     "access": "public",
     "provenance": true,
@@ -87,7 +89,14 @@
     "lint:fix": "biome check --write .",
     "clean": "rm -rf dist"
   },
-  "keywords": ["evaluation", "llm", "ai", "testing", "metrics", "datasets"],
+  "keywords": [
+    "evaluation",
+    "llm",
+    "ai",
+    "testing",
+    "metrics",
+    "datasets"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
