@@ -28,7 +28,7 @@
     "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
-    "build": "bun run build:lib && bun run build:bin",
+    "build": "bun run build:lib && bun run build:bin && cp -r ../viewer/dist ./dist/viewer",
     "build:lib": "bun build ./src/index.ts --outdir ./dist --target bun --sourcemap=external --external react-devtools-core && bun x tsc --emitDeclarationOnly --declaration --outDir dist",
     "build:bin": "bun build ./src/bin.ts --outfile ./dist/bin.js --target bun --external react-devtools-core && awk 'NR==1{print;next} !/^#!\\/usr\\/bin\\/env bun$/{print}' ./dist/bin.js > ./dist/bin.tmp && mv ./dist/bin.tmp ./dist/bin.js && chmod +x ./dist/bin.js",
     "dev": "bun --watch src/bin.ts",
@@ -51,7 +51,6 @@
     "@byteland/ink-scroll-bar": "^0.1.1",
     "@tally-evals/core": "workspace:*",
     "@tally-evals/tally": "workspace:*",
-    "@tally-evals/viewer": "workspace:*",
     "chalk": "^5.3.0",
     "cli-table3": "^0.6.4",
     "commander": "^12.1.0",
@@ -67,6 +66,7 @@
   "devDependencies": {
     "@tally-evals/biome-config": "workspace:*",
     "@tally-evals/typescript-config": "workspace:*",
+    "@tally-evals/viewer": "workspace:*",
     "@types/bun": "^1.2.8",
     "@types/react": "19.2.0",
     "typescript": "^5.3.3"
