@@ -1,6 +1,6 @@
 {
   "name": "@tally-evals/core",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.1",
   "description": "Core types, configuration, and utilities for the Tally evaluation framework",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
@@ -22,7 +22,9 @@
       }
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "publishConfig": {
     "access": "public",
     "provenance": true,
@@ -41,7 +43,14 @@
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down"
   },
-  "keywords": ["tally", "evaluation", "llm", "ai", "core", "types"],
+  "keywords": [
+    "tally",
+    "evaluation",
+    "llm",
+    "ai",
+    "core",
+    "types"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {

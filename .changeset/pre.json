@@ -1,5 +1,5 @@
 {
-  "mode": "pre",
+  "mode": "exit",
   "tag": "alpha",
   "initialVersions": {
     "docs": "0.0.0",
@@ -14,5 +14,7 @@
     "@tally-evals/typescript-config": "0.0.0",
     "@tally-evals/viewer": "0.0.0"
   },
-  "changesets": []
+  "changesets": [
+    "lovely-hands-travel"
+  ]
 }
