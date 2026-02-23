@@ -15,7 +15,7 @@
   "scripts": {
     "dev": "mastra dev",
     "start": "mastra start",
-    "build": "tsc",
+    "build": "echo 'No build needed for example package'",
     "test": "bun test",
     "test:watch": "bun test --watch",
     "cli:build": "bun run --filter @tally-evals/cli build",
