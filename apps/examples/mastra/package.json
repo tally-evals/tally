@@ -42,11 +42,14 @@
     "@tally-evals/core": "workspace:*",
     "@tally-evals/tally": "workspace:*",
     "@tally-evals/trajectories": "workspace:*",
+    "better-sqlite3": "^12.6.2",
     "dotenv": "^17.2.3",
+    "drizzle-orm": "^0.45.1",
     "zod": "^4"
   },
   "devDependencies": {
     "@tally-evals/typescript-config": "workspace:*",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^25.0.3",
     "mastra": "^0.18.0",
     "typescript": "^5.9.3",

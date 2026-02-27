@@ -1,5 +1,13 @@
 /**
  * Cashflow Copilot Agent - Golden Path Test
+ * 
+ * This test is used to evaluate the cashflow copilot agent's ability to manage cashflow successfully.
+ * It is a golden path scenario where the user provides complete information and the agent should handle it gracefully.
+ * It is also used to evaluate the agent's ability to ask for the right missing information and not ask for information already provided.
+ * It is also used to evaluate the agent's ability to follow the role of a cashflow management assistant.
+ * It is also used to evaluate the agent's ability to handle the context of the conversation.
+ * It is also used to evaluate the agent's ability to handle the user's intent.
+ * It is also used to evaluate the agent's ability to handle the user's language.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -25,6 +33,8 @@ import {
   createAffordabilityDecisionMetric,
   createClarificationPrecisionMetric,
   createOverClarificationMetric,
+  createBufferConsiderationMetric,
+  createImpactReportingMetric,
 } from '@tally-evals/tally/metrics';
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
 import { google } from '@ai-sdk/google';
@@ -105,6 +115,18 @@ describe('Cashflow Copilot Agent - Golden Path', () => {
       provider: model,
     });
 
+    // Buffer Consideration: Agent should mention safety buffer and upcoming commitments
+    // when answering affordability questions (e.g. step-8 requests a 20k buffer projection)
+    const bufferConsideration = createBufferConsiderationMetric({
+      provider: model,
+    });
+
+    // Impact Reporting: Agent should report quantified impact for what-if scenarios
+    // (e.g. step-9 asks about a 50k emergency expense)
+    const impactReporting = createImpactReportingMetric({
+      provider: model,
+    });
+
     // Overall Quality: Combined score of all metrics
     const overallQuality = defineBaseMetric({
       name: 'overallQuality',
@@ -115,12 +137,14 @@ describe('Cashflow Copilot Agent - Golden Path', () => {
       name: 'OverallQuality',
       output: overallQuality,
       inputs: [
-        defineInput({ metric: answerRelevance, weight: 0.25 }),
-        defineInput({ metric: roleAdherence, weight: 0.2 }),
+        defineInput({ metric: answerRelevance, weight: 0.2 }),
+        defineInput({ metric: roleAdherence, weight: 0.15 }),
         defineInput({ metric: affordabilityDecision, weight: 0.2 }),
-        defineInput({ metric: clarificationPrecision, weight: 0.15 }),
-        defineInput({ metric: overClarification, weight: 0.15 }),
+        defineInput({ metric: clarificationPrecision, weight: 0.1 }),
+        defineInput({ metric: overClarification, weight: 0.1 }),
         defineInput({ metric: completeness, weight: 0.05 }),
+        defineInput({ metric: bufferConsideration, weight: 0.1 }),
+        defineInput({ metric: impactReporting, weight: 0.1 }),
       ],
     });
 
@@ -161,6 +185,18 @@ describe('Cashflow Copilot Agent - Golden Path', () => {
       verdict: thresholdVerdict(3.5),
     });
 
+    const bufferConsiderationEval = defineSingleTurnEval({
+      name: 'Buffer Consideration',
+      metric: bufferConsideration,
+      verdict: thresholdVerdict(0.5),
+    });
+
+    const impactReportingEval = defineSingleTurnEval({
+      name: 'Impact Reporting',
+      metric: impactReporting,
+      verdict: thresholdVerdict(0.5),
+    });
+
     const overallQualityEval = defineScorerEval({
       name: 'Overall Quality',
       scorer: qualityScorer,
@@ -176,6 +212,8 @@ describe('Cashflow Copilot Agent - Golden Path', () => {
         affordabilityDecisionEval,
         clarificationPrecisionEval,
         overClarificationEval,
+        bufferConsiderationEval,
+        impactReportingEval,
         overallQualityEval,
       ],
       context: runAllTargets(),

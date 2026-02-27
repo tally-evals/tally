@@ -1,5 +1,13 @@
 /**
- * Cashflow Copilot Agent - Curve Ball Test
+ * Cashflow Copilot Agent - Curve Ball Test 
+ * 
+ * This test is used to evaluate the cashflow copilot agent's ability to handle ambiguous requests and incomplete information.
+ * It is a curveball scenario where the user provides incomplete information and the agent should handle it gracefully.
+ * It is also used to evaluate the agent's ability to ask for the right missing information and not ask for information already provided.
+ * It is also used to evaluate the agent's ability to follow the role of a cashflow management assistant.
+ * It is also used to evaluate the agent's ability to handle the context of the conversation.
+ * It is also used to evaluate the agent's ability to handle the user's intent.
+ * It is also used to evaluate the agent's ability to handle the user's language.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -23,6 +31,8 @@ import {
   createRoleAdherenceMetric,
   createClarificationPrecisionMetric,
   createOverClarificationMetric,
+  createBufferConsiderationMetric,
+  createImpactReportingMetric,
 } from '@tally-evals/tally/metrics';
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
 import { google } from '@ai-sdk/google';
@@ -74,6 +84,18 @@ describe('Cashflow Copilot Agent - Curve Ball', () => {
       provider: model,
     });
 
+    // Buffer Consideration: Agent should reference safety buffer/commitments in answers
+    // (e.g. step-10 asks about buying a car — agent should factor in upcoming bills)
+    const bufferConsideration = createBufferConsiderationMetric({
+      provider: model,
+    });
+
+    // Impact Reporting: Agent should quantify scenario impact when answering what-ifs
+    // (e.g. step-10 asks whether a 100k car purchase causes a deficit)
+    const impactReporting = createImpactReportingMetric({
+      provider: model,
+    });
+
     // Overall Quality: Combined score of all metrics 
     const overallQuality = defineBaseMetric({
       name: 'overallQuality',
@@ -84,10 +106,12 @@ describe('Cashflow Copilot Agent - Curve Ball', () => {
       name: 'OverallQuality',
       output: overallQuality,
       inputs: [
-        defineInput({ metric: answerRelevance, weight: 0.3 }),
-        defineInput({ metric: roleAdherence, weight: 0.25 }),
-        defineInput({ metric: clarificationPrecision, weight: 0.25 }),
+        defineInput({ metric: answerRelevance, weight: 0.2 }),
+        defineInput({ metric: roleAdherence, weight: 0.2 }),
+        defineInput({ metric: clarificationPrecision, weight: 0.2 }),
         defineInput({ metric: overClarification, weight: 0.2 }),
+        defineInput({ metric: bufferConsideration, weight: 0.1 }),
+        defineInput({ metric: impactReporting, weight: 0.1 }),
       ],
     });
 
@@ -123,6 +147,18 @@ describe('Cashflow Copilot Agent - Curve Ball', () => {
       verdict: thresholdVerdict(3), // Agent should not ask for info already provided
     });
 
+    const bufferConsiderationEval = defineSingleTurnEval({
+      name: 'Buffer Consideration',
+      metric: bufferConsideration,
+      verdict: thresholdVerdict(0.4), // Lower threshold: user setup is incomplete
+    });
+
+    const impactReportingEval = defineSingleTurnEval({
+      name: 'Impact Reporting',
+      metric: impactReporting,
+      verdict: thresholdVerdict(0.4), // Lower threshold: curveball scenario
+    });
+
     const overallQualityEval = defineScorerEval({
       name: 'Overall Quality',
       scorer: qualityScorer,
@@ -137,6 +173,8 @@ describe('Cashflow Copilot Agent - Curve Ball', () => {
         roleAdherenceEval,
         clarificationPrecisionEval,
         overClarificationEval,
+        bufferConsiderationEval,
+        impactReportingEval,
         overallQualityEval,
       ],
       context: runAllTargets(),

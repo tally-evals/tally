@@ -1,139 +1,86 @@
 /**
  * Cashflow Copilot Agent Trajectory Definitions
+ * Based on the new domain model: User → CashPosition → RecurringCashflow / FutureCashflow → Projection
  */
 
 import { google } from '@ai-sdk/google';
 import type { Trajectory } from '@tally-evals/trajectories';
 
 /**
- * Golden Path: Complete cashflow setup and management flow
+ * Golden Path: Full cashflow projection setup and simulation flow
  */
 export const cashflowGoldenTrajectory: Trajectory = {
-  goal: 'Set up a complete cashflow profile, check affordability, view forecasts, and manage activities',
+  goal: 'Set up a complete cashflow profile, run projections, simulate what-if scenarios, and understand financial risk',
   persona: {
     name: 'Financial Planner',
     description:
-      'You are setting up your cashflow management system. You have clear financial information and provide it step by step as the agent asks. You are organized and want to understand your financial situation.',
+      'You are setting up your personal cashflow tracking system. You have clear financial information and provide it naturally. You are organized and want to understand your projected balance and any risks over the next few months.',
     guardrails: [
-      'Provide information naturally and conversationally',
+      'Provide financial information naturally and conversationally',
       'Answer clarifying questions when asked',
-      'Express preferences when relevant',
-      'Ask follow-up questions about affordability and forecasts',
+      'Ask about projections and scenarios after setting up data',
+      'Respond to the agent with reasonable follow-up questions about affordability',
     ],
   },
   steps: {
     steps: [
       {
         id: 'step-1',
-        instruction: 'Express interest in setting up cashflow management and provide current balance: "I have 100,000 in my account"',
+        instruction: 'Introduce yourself and start setup: "Hi, I want to set up cashflow tracking. My name is Alex and I use USD."',
       },
       {
         id: 'step-2',
-        instruction: 'Set safety buffer: "I want to keep at least 20,000 as emergency buffer"',
+        instruction: 'Provide current balance: "I currently have 150,000 in my account."',
       },
       {
         id: 'step-3',
-        instruction: 'Provide income: "I receive 120,000 salary on the 5th day of each month"',
+        instruction: 'Add recurring income: "I receive a salary of 120,000 every month starting on the 5th."',
       },
       {
         id: 'step-4',
-        instruction: 'Provide a bill: "I pay 45,000 rent on the 4th day of each month"',
+        instruction: 'Add recurring expense: "I pay 45,000 rent every month."',
       },
       {
         id: 'step-5',
-        instruction: 'Provide another bill: "I pay 5,000 for internet on the 10th day of each month"',
+        instruction: 'Add another recurring expense: "I also pay 5,000 for internet monthly and 2,000 for a gym subscription monthly."',
       },
       {
         id: 'step-6',
-        instruction: 'Set up a budget: "I want to save 10,000 each month"',
+        instruction: 'Add a one-time future expense: "I\'m planning a vacation that will cost 30,000 next month around the 20th."',
       },
       {
         id: 'step-7',
-        instruction: 'Add a subscription: "I have Netflix subscription for 500 per month"',
+        instruction: 'Add a one-time future income: "I also have a freelance payment of 25,000 coming in on the 15th of next month."',
+        preconditions: [{ type: 'stepSatisfied', stepId: 'step-6' }],
       },
       {
         id: 'step-8',
-        instruction: 'Ask for cashflow forecast: "Can you show me my cashflow forecast for this month?"',
-        preconditions: [
-          {
-            type: 'stepSatisfied',
-            stepId: 'step-7',
-          },
-        ],
+        instruction: 'Ask for a projection: "Can you show me my cashflow projection for the next 90 days with a safety buffer of 20,000?"',
+        preconditions: [{ type: 'stepSatisfied', stepId: 'step-7' }],
       },
       {
         id: 'step-9',
-        instruction: 'Ask about affordability: "Can I afford to buy a laptop for 30,000?"',
-        preconditions: [
-          {
-            type: 'stepSatisfied',
-            stepId: 'step-8',
-          },
-        ],
+        instruction: 'Ask a what-if scenario: "What if I also had an emergency expense of 50,000 next month? Would I go into deficit?"',
+        preconditions: [{ type: 'stepSatisfied', stepId: 'step-8' }],
       },
       {
         id: 'step-10',
-        instruction: 'Ask about frequency: "How many times can I dine out if each dinner costs 5,000?"',
-        preconditions: [
-          {
-            type: 'stepSatisfied',
-            stepId: 'step-9',
-          },
-        ],
+        instruction: 'Update a recurring item: "Actually my rent increased to 50,000 per month."',
+        preconditions: [{ type: 'stepSatisfied', stepId: 'step-9' }],
       },
       {
         id: 'step-11',
-        instruction: 'Set up monthly activities: "I want to do 3 yoga classes (1,500 each), 4 movies (4,000 each), and 4 dinners (5,000 each)"',
-        preconditions: [
-          {
-            type: 'stepSatisfied',
-            stepId: 'step-10',
-          },
-        ],
+        instruction: 'Cancel a future cashflow: "The freelance payment has been cancelled, please remove it."',
+        preconditions: [{ type: 'stepSatisfied', stepId: 'step-10' }],
       },
       {
         id: 'step-12',
-        instruction: 'Ask for activity suggestions: "What activities can I accomplish today?"',
-        preconditions: [
-          {
-            type: 'stepSatisfied',
-            stepId: 'step-11',
-          },
-        ],
-      },
-      {
-        id: 'step-13',
-        instruction: 'Mark activity as completed: "I completed the yoga class"',
-        preconditions: [
-          {
-            type: 'stepSatisfied',
-            stepId: 'step-12',
-          },
-        ],
-      },
-      {
-        id: 'step-14',
-        instruction: 'Update an existing bill: "Actually, my rent increased to 50,000"',
-        preconditions: [
-          {
-            type: 'stepSatisfied',
-            stepId: 'step-13',
-          },
-        ],
-      },
-      {
-        id: 'step-15',
-        instruction: 'Ask for updated forecast after the change',
-        preconditions: [
-          {
-            type: 'stepSatisfied',
-            stepId: 'step-14',
-          },
-        ],
+        instruction: 'Ask for a final updated projection after all changes.',
+        preconditions: [{ type: 'stepSatisfied', stepId: 'step-11' }],
       },
     ],
     start: 'step-1',
-    terminals: ['step-15'],
+    terminals: ['step-12'],
   },
   maxTurns: 30,
   loopDetection: {
@@ -146,68 +93,70 @@ export const cashflowGoldenTrajectory: Trajectory = {
  * Curve Ball: Ambiguous requests, incomplete information, changing plans
  */
 export const cashflowCurveTrajectory: Trajectory = {
-  goal: 'Test agent handling of ambiguous financial information and changing plans',
+  goal: 'Test agent handling of ambiguous financial information, incomplete setup, and changing plans',
   persona: {
     name: 'Uncertain Planner',
     description:
-      'You want to set up cashflow management but are unsure about details. You might provide incomplete information, change amounts or dates mid-conversation, or ask questions before providing necessary context.',
+      'You want to track your cashflow but are unsure about details. You provide incomplete information, change amounts mid-conversation, and ask about projections before fully setting up your data.',
     guardrails: [
-      'Provide incomplete information sometimes',
+      'Provide incomplete information sometimes (e.g. income amount without a start date)',
       'Change amounts or dates mid-conversation',
-      'Be ambiguous about schedules (e.g., "sometime in the month")',
-      'Ask about affordability before setting up the profile',
-      'Provide conflicting information',
+      'Ask about projections before all data is entered',
+      'Mention vague one-time events without dates (e.g. "sometime next month")',
+      'Provide conflicting or contradictory amounts',
     ],
   },
   steps: {
     steps: [
       {
         id: 'step-1',
-        instruction: 'Ask about affordability without providing any financial information: "Can I afford a vacation?"',
+        instruction: 'Ask about your runway without providing any information: "How many days can I survive financially?"',
       },
       {
         id: 'step-2',
-        instruction: 'Provide balance but no other details: "I have some money in my account"',
+        instruction: 'Provide a name but no balance: "My name is Jordan, I use PKR"',
       },
       {
         id: 'step-3',
-        instruction: 'Provide income with ambiguous schedule: "I get paid sometime each month"',
+        instruction: 'Provide balance without currency confirmation: "I have some money, maybe around 200,000"',
       },
       {
         id: 'step-4',
-        instruction: 'Change the income amount: "Actually, my salary is different, let me check... it\'s actually 100,000"',
+        instruction: 'Add income with no frequency: "I get paid 100,000"',
       },
       {
         id: 'step-5',
-        instruction: 'Provide a bill without amount: "I pay rent"',
+        instruction: 'Clarify frequency ambiguously: "it\'s monthly I think, or maybe bi-weekly"',
       },
       {
         id: 'step-6',
-        instruction: 'Provide amount but no date: "The rent is 40,000"',
+        instruction: 'Change the income amount: "Actually I think my salary is 80,000 after taxes"',
       },
       {
         id: 'step-7',
-        instruction: 'Change the rent amount: "Wait, I think it\'s 45,000, not 40,000"',
+        instruction: 'Add a future expense with a vague date: "I have a medical bill coming sometime next month"',
       },
       {
         id: 'step-8',
-        instruction: 'Request forecast before providing all necessary information',
+        instruction: 'Request a projection even though setup is incomplete.',
       },
       {
         id: 'step-9',
-        instruction: 'Set up activities without providing costs: "I want to do yoga classes"',
+        instruction: 'Add conflicting data: "Wait I forgot I also have a second income of 50,000 every week but only until end of next month"',
       },
       {
         id: 'step-10',
-        instruction: 'Provide conflicting information: "I want to save 20,000 each month but I only have 10,000 left after expenses"',
+        instruction: 'Ask about a scenario: "What if I spend 100,000 on a car next week?"',
+        preconditions: [{ type: 'stepSatisfied', stepId: 'step-8' }],
       },
       {
         id: 'step-11',
-        instruction: 'Ask to update a bill that was never properly set up',
+        instruction: 'Try to delete a recurring item without knowing its id: "Remove my gym subscription" (which was never added)',
       },
       {
         id: 'step-12',
-        instruction: 'Request activity suggestions without setting up activities first',
+        instruction: 'Ask for a final projection and the lowest balance in that period.',
+        preconditions: [{ type: 'stepSatisfied', stepId: 'step-10' }],
       },
     ],
     start: 'step-1',
@@ -216,4 +165,3 @@ export const cashflowCurveTrajectory: Trajectory = {
   maxTurns: 25,
   userModel: google('models/gemini-2.5-flash-lite'),
 };
-
