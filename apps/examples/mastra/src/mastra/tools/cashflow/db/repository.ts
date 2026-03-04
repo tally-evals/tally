@@ -2,15 +2,12 @@ import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import { eq } from 'drizzle-orm';
 import {
-  users,
   cashPositions,
   recurringCashflows,
   futureCashflows,
-  type User,
   type CashPosition,
   type RecurringCashflow,
   type FutureCashflow,
-  type UserRow,
   type CashPositionRow,
   type RecurringCashflowRow,
   type FutureCashflowRow,
@@ -37,26 +34,6 @@ export interface FutureCashflowFilter {
   userId?: string;
   type?: FutureCashflow['type'];
   status?: FutureCashflow['status'];
-}
-
-// -----------------------------
-// User
-// -----------------------------
-
-export async function createUser(user: User): Promise<User> {
-  await db.insert(users).values(user);
-  return user;
-}
-
-export async function getUserById(id: string): Promise<User | null> {
-  const rows = await db.select().from(users).where(eq(users.id, id)).limit(1);
-  if (rows.length === 0) return null;
-  const row: UserRow = rows[0]!;
-  return {
-    id: row.id,
-    name: row.name,
-    baseCurrency: row.baseCurrency,
-  };
 }
 
 // -----------------------------
@@ -152,41 +129,6 @@ export async function createRecurringCashflow(data: RecurringCashflow): Promise<
   return data;
 }
 
-export async function updateRecurringCashflow(
-  id: string,
-  updates: Partial<RecurringCashflow>,
-): Promise<RecurringCashflow | null> {
-  const existingRows = await db
-    .select()
-    .from(recurringCashflows)
-    .where(eq(recurringCashflows.id, id))
-    .limit(1);
-
-  if (existingRows.length === 0) return null;
-
-  const existing = toRecurringCashflow(existingRows[0]!);
-  const next: RecurringCashflow = { ...existing, ...updates };
-
-  await db
-    .update(recurringCashflows)
-    .set({
-      userId: next.userId,
-      type: next.type,
-      amount: next.amount,
-      frequency: next.frequency,
-      startDate: next.startDate,
-      endDate: next.endDate ?? null,
-      status: next.status,
-    })
-    .where(eq(recurringCashflows.id, id));
-
-  return next;
-}
-
-export async function deleteRecurringCashflow(id: string): Promise<void> {
-  await db.delete(recurringCashflows).where(eq(recurringCashflows.id, id));
-}
-
 // -----------------------------
 // Future Cashflows
 // -----------------------------
@@ -236,39 +178,4 @@ export async function createFutureCashflow(data: FutureCashflow): Promise<Future
   });
   return data;
 }
-
-export async function updateFutureCashflow(
-  id: string,
-  updates: Partial<FutureCashflow>,
-): Promise<FutureCashflow | null> {
-  const existingRows = await db
-    .select()
-    .from(futureCashflows)
-    .where(eq(futureCashflows.id, id))
-    .limit(1);
-
-  if (existingRows.length === 0) return null;
-
-  const existing = toFutureCashflow(existingRows[0]!);
-  const next: FutureCashflow = { ...existing, ...updates };
-
-  await db
-    .update(futureCashflows)
-    .set({
-      userId: next.userId,
-      type: next.type,
-      amount: next.amount,
-      date: next.date,
-      probability: next.probability ?? null,
-      status: next.status,
-    })
-    .where(eq(futureCashflows.id, id));
-
-  return next;
-}
-
-export async function deleteFutureCashflow(id: string): Promise<void> {
-  await db.delete(futureCashflows).where(eq(futureCashflows.id, id));
-}
-
 

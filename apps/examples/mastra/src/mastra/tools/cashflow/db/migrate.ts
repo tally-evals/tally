@@ -2,12 +2,6 @@ import type Database from 'better-sqlite3';
 
 export function initSchema(sqlite: InstanceType<typeof Database>): void {
   sqlite.exec(`
-    CREATE TABLE IF NOT EXISTS users (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      base_currency TEXT NOT NULL
-    );
-
     CREATE TABLE IF NOT EXISTS cash_positions (
       user_id TEXT PRIMARY KEY,
       current_balance REAL NOT NULL,

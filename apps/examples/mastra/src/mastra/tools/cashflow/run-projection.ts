@@ -14,8 +14,8 @@ export const runProjectionTool = createTool({
     description:
         'Run a cashflow projection simulation for a user between two dates. ' +
         'Applies all active recurring cashflows, planned future cashflows, and optional scenario adjustments. ' +
-        'Returns a day-by-day timeline with balance, income, expenses, and risk levels, ' +
-        'plus summary: lowest balance, deficit dates, and runway days.',
+        'Returns a day-by-day timeline plus month-by-month summaries with balances, income, expenses, and risk levels, ' +
+        'plus overall summary: lowest balance, deficit dates, and runway days.',
     inputSchema: z.object({
         userId: z.string().describe('The user id to run the projection for'),
         startDate: z.string().describe('ISO date YYYY-MM-DD — start of simulation'),
@@ -27,7 +27,7 @@ export const runProjectionTool = createTool({
         scenarioAdjustments: z
             .array(ScenarioAdjustmentSchema)
             .optional()
-            .describe('What-if temporary changes (e.g. add a vacation expense, simulate a bonus)'),
+            .describe('What-if temporary changes (e.g. add a travel expense, simulate a bonus)'),
     }),
     execute: async ({ context }) => {
         const result = await runProjection({
@@ -43,6 +43,10 @@ export const runProjectionTool = createTool({
             ...result,
             summary: {
                 totalDays: result.timeline.length,
+                totalMonths: result.monthlySummaries.length,
+                totalIncome: result.totalIncome,
+                totalExpense: result.totalExpense,
+                netCashflow: result.totalIncome - result.totalExpense,
                 lowestBalance: result.lowestBalance,
                 lowestBalanceDate: result.lowestBalanceDate,
                 deficitDays: result.deficitDates.length,

@@ -36,7 +36,7 @@ export interface EntityExtractionMetadata {
 export interface EntityExtractionOptions {
   /**
    * Tool names to consider for entity extraction
-   * @default All tool calls with 'add' prefix
+   * @default ['updateCashPosition', 'createRecurring', 'createFutureCashflow']
    */
   entityToolNames?: string[];
   /**
@@ -101,13 +101,12 @@ export function createEntityExtractionMetric(
         toolCalls = extractToolCalls(outputMessage);
       }
 
-      // Filter to entity-related tool calls if specified
-      if (entityToolNames && entityToolNames.length > 0) {
-        toolCalls = toolCalls.filter((tc) => entityToolNames.includes(tc.toolName));
-      } else {
-        // Default: consider tool calls with 'add' prefix (addIncome, addBill, etc.)
-        toolCalls = toolCalls.filter((tc) => tc.toolName.startsWith('add'));
-      }
+      const activeToolNames = entityToolNames ?? [
+        'updateCashPosition',
+        'createRecurring',
+        'createFutureCashflow',
+      ];
+      toolCalls = toolCalls.filter((tc) => activeToolNames.includes(tc.toolName));
 
       // Extract expected entities from metadata
       const metadata = item.metadata as EntityExtractionMetadata | undefined;
@@ -178,8 +177,9 @@ export function createEntityExtractionMetric(
               }
             }
           } else {
-            // Lenient: check only name or type
-            if (expected.name && args.name !== expected.name) {
+            // Lenient: for current cashflow tools, many entities do not carry a name field.
+            // If a name is present in both expected and actual values, compare it; otherwise rely on type match.
+            if (expected.name && typeof args.name === 'string' && args.name !== expected.name) {
               fieldsMatch = false;
             }
           }
@@ -243,6 +243,19 @@ function checkEntityTypeMatch(toolName: string, entityType: string): boolean {
     (lowerToolName.includes('salary') || lowerToolName.includes('revenue'))
   ) {
     return true;
+  }
+
+  // Current cashflow agent tool mapping
+  if (toolName === 'updateCashPosition' && entityType === 'activity') {
+    return true;
+  }
+
+  if (toolName === 'createRecurring') {
+    return entityType === 'income' || entityType === 'bill' || entityType === 'subscription' || entityType === 'budget';
+  }
+
+  if (toolName === 'createFutureCashflow') {
+    return entityType === 'activity';
   }
 
   return false;

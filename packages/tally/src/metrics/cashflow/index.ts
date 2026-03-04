@@ -15,6 +15,12 @@ export {
 } from './entityExtraction';
 
 export {
+  createCashflowRelevanceMetric,
+  type CashflowRelevanceOptions,
+  type CashflowRelevanceMetadata,
+} from './relevance';
+
+export {
   createAmountNormalizationMetric,
   type AmountNormalizationOptions,
   type AmountNormalizationMetadata,

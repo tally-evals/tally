@@ -5,12 +5,6 @@ import type { InferInsertModel, InferSelectModel } from 'drizzle-orm';
 // Domain Models (new spec)
 // -----------------------------
 
-export interface User {
-  id: string;
-  name: string;
-  baseCurrency: string;
-}
-
 export interface CashPosition {
   userId: string;
   currentBalance: number;
@@ -19,7 +13,7 @@ export interface CashPosition {
 
 export type CashflowType = 'income' | 'expense';
 
-export type Frequency = 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly';
+export type Frequency = 'daily' | 'weekly' | 'biweekly' | 'monthly' | 'yearly' | 'semimonthly';
 
 export interface RecurringCashflow {
   id: string;
@@ -45,15 +39,6 @@ export interface FutureCashflow {
 // -----------------------------
 // SQLite Tables (Drizzle ORM)
 // -----------------------------
-
-export const users = sqliteTable('users', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  baseCurrency: text('base_currency').notNull(),
-});
-
-export type UserRow = InferSelectModel<typeof users>;
-export type NewUserRow = InferInsertModel<typeof users>;
 
 export const cashPositions = sqliteTable('cash_positions', {
   userId: text('user_id').primaryKey(),
@@ -90,4 +75,3 @@ export const futureCashflows = sqliteTable('future_cashflows', {
 
 export type FutureCashflowRow = InferSelectModel<typeof futureCashflows>;
 export type NewFutureCashflowRow = InferInsertModel<typeof futureCashflows>;
-

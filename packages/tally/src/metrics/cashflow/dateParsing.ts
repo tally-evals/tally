@@ -37,7 +37,7 @@ export interface DateParsingMetadata {
 export interface DateParsingOptions {
   /**
    * Field name(s) to extract date from in tool call args
-   * @default ['dueDateRule', 'dueDate', 'date', 'effectiveDate']
+   * @default ['dueDateRule', 'dueDate', 'date', 'effectiveDate', 'startDate', 'endDate']
    */
   dateFields?: string[];
   /**
@@ -69,7 +69,7 @@ export function createDateParsingMetric(
   options: DateParsingOptions = {}
 ): SingleTurnMetricDef<number, DatasetItem> {
   const {
-    dateFields = ['dueDateRule', 'dueDate', 'date', 'effectiveDate'],
+    dateFields = ['dueDateRule', 'dueDate', 'date', 'effectiveDate', 'startDate', 'endDate'],
     allowSemanticMatch = true,
     aggregators,
   } = options;

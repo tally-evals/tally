@@ -29,13 +29,29 @@ export interface ProjectionPoint {
   riskLevel?: 'safe' | 'tight' | 'deficit';
 }
 
+export interface MonthlyProjectionSummary {
+  month: string;
+  startingBalance: number;
+  endingBalance: number;
+  totalIncome: number;
+  totalExpense: number;
+  netCashflow: number;
+  lowestBalance: number;
+  lowestBalanceDate: string;
+  deficitDates: string[];
+  safetyBufferBreached: boolean;
+}
+
 // defines the output of a projection run (summarise the financial risk)
 export interface ProjectionResult {
   timeline: ProjectionPoint[];
+  monthlySummaries: MonthlyProjectionSummary[];
   lowestBalance: number;
   lowestBalanceDate: string;
   deficitDates: string[];
   runwayDays?: number;
+  totalIncome: number;
+  totalExpense: number;
 }
 
 // -----------------------------
@@ -46,6 +62,7 @@ export interface ProjectionResult {
 const toDate = (s: string): Date => new Date(`${s}T00:00:00Z`);
 // slice the date string to the format YYYY-MM-DD
 const formatDate = (d: Date): string => d.toISOString().slice(0, 10);
+const formatMonth = (d: Date): string => d.toISOString().slice(0, 7);
 
 
 // Projection is simulated day-by-day, so we need to generate a list of dates between the start and end date.
@@ -72,6 +89,16 @@ function occursOnDate(cf: RecurringCashflow, date: Date): boolean {
     case 'daily':    return true;
     case 'weekly':   return diff % 7 === 0;
     case 'biweekly': return diff % 14 === 0;
+    case 'semimonthly': {
+      const day = date.getUTCDate();
+      const startDay = start.getUTCDate();
+      if (startDay === 1) return day === 1 || day === 15;
+      if (startDay === 15) {
+        const lastDay = new Date(date.getUTCFullYear(), date.getUTCMonth() + 1, 0).getDate();
+        return day === 15 || day === lastDay;
+      }
+      return day === startDay || day === (startDay + 15) % 30 || (startDay > 15 && day === startDay - 15);
+    }
     case 'monthly':  return date.getUTCDate() === start.getUTCDate();
     case 'yearly':   return date.getUTCDate() === start.getUTCDate() && date.getUTCMonth() === start.getUTCMonth();
     default:         return false;
@@ -126,14 +153,38 @@ export async function runProjection(request: ProjectionRequest): Promise<Project
   let balance = cashPosition?.currentBalance ?? 0;
   let lowestBalance = balance;
   let lowestBalanceDate = startDate;
+  let totalIncome = 0;
+  let totalExpense = 0;
   const deficitDates: string[] = [];
   const timeline: ProjectionPoint[] = [];
-
+  const monthlySummaries: MonthlyProjectionSummary[] = [];
+  let currentMonthSummary: MonthlyProjectionSummary | null = null;
 
   for (const date of eachDay(toDate(startDate), toDate(endDate))) {
     const dateStr = formatDate(date);
+    const monthKey = formatMonth(date);
 
-    //we filter just the income, the rest of the things are counted as expenses 
+    if (currentMonthSummary === null || currentMonthSummary.month !== monthKey) {
+      if (currentMonthSummary !== null) {
+        currentMonthSummary.netCashflow =
+          currentMonthSummary.totalIncome - currentMonthSummary.totalExpense;
+        monthlySummaries.push(currentMonthSummary);
+      }
+
+      currentMonthSummary = {
+        month: monthKey,
+        startingBalance: balance,
+        endingBalance: balance,
+        totalIncome: 0,
+        totalExpense: 0,
+        netCashflow: 0,
+        lowestBalance: balance,
+        lowestBalanceDate: dateStr,
+        deficitDates: [],
+        safetyBufferBreached: safetyBuffer !== undefined ? balance < safetyBuffer : false,
+      };
+    }
+
     const fromRecurring = sumAmounts(recurring.filter((cf) => occursOnDate(cf, date)), 'income');
     const fromFuture = sumAmounts(futureByDate.get(dateStr) ?? [], 'income');
     const fromAdjustments = sumAmounts(adjustmentsByDate.get(dateStr) ?? [], 'add_income');
@@ -141,13 +192,27 @@ export async function runProjection(request: ProjectionRequest): Promise<Project
     const income = fromRecurring.income + fromFuture.income + fromAdjustments.income;
     const expense = fromRecurring.expense + fromFuture.expense + fromAdjustments.expense;
 
+    totalIncome += income;
+    totalExpense += expense;
+    currentMonthSummary.totalIncome += income;
+    currentMonthSummary.totalExpense += expense;
+
     balance += income - expense;
+    currentMonthSummary.endingBalance = balance;
 
     if (balance < lowestBalance){
         lowestBalance = balance; 
         lowestBalanceDate = dateStr; 
       }
+    if (balance < currentMonthSummary.lowestBalance) {
+      currentMonthSummary.lowestBalance = balance;
+      currentMonthSummary.lowestBalanceDate = dateStr;
+    }
     if (balance < 0) deficitDates.push(dateStr);
+    if (balance < 0) currentMonthSummary.deficitDates.push(dateStr);
+    if (safetyBuffer !== undefined && balance < safetyBuffer) {
+      currentMonthSummary.safetyBufferBreached = true;
+    }
 
     /* 
     makes an object like this: { date: '2026-01-01', balance: 1000, income: 1000, expense: 0 }
@@ -159,6 +224,12 @@ export async function runProjection(request: ProjectionRequest): Promise<Project
 
     timeline.push(point);
   }
+
+  if (currentMonthSummary !== null) {
+    currentMonthSummary.netCashflow =
+      currentMonthSummary.totalIncome - currentMonthSummary.totalExpense;
+    monthlySummaries.push(currentMonthSummary);
+  }
 /*
 time line is an array of objects like this: { date: '2026-01-01', balance: 1000, income: 1000, expense: 0 }
 findIndex returns the index of the first item where balance < 0.
@@ -168,7 +239,15 @@ if there's a deficit, then firstDeficit is the index of the first deficit and ru
 */
   const firstDeficit = timeline.findIndex((p) => p.balance < 0);
   // if there is a deficit, we calculate the runway days (number of days until the first deficit)
-  const result: ProjectionResult = { timeline, lowestBalance, lowestBalanceDate, deficitDates };
+  const result: ProjectionResult = {
+    timeline,
+    monthlySummaries,
+    lowestBalance,
+    lowestBalanceDate,
+    deficitDates,
+    totalIncome,
+    totalExpense,
+  };
   // if there is a deficit, we add the runway days to the result
   if (firstDeficit >= 0) result.runwayDays = firstDeficit;
 
