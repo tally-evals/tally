@@ -20,4 +20,4 @@ async function main() {
   // - Performance benchmarking
 }
 
-main().catch(console.error)
+main().catch(console.error);
