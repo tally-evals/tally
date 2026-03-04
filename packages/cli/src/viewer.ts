@@ -74,8 +74,7 @@ export async function startViewerServer(
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown error';
     throw new Error(
-      `Cannot open Tally store: ${msg}\n` +
-        `Hint: ensure the directory contains a .tally/ folder or tally.config.ts`
+      `Cannot open Tally store: ${msg}\nHint: ensure the directory contains a .tally/ folder or tally.config.ts`
     );
   }
 
