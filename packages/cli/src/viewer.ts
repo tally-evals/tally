@@ -3,8 +3,8 @@
  * Serves pre-built static assets and provides TallyStore API routes.
  */
 
-import { TallyStore } from '@tally-evals/core';
 import { resolve } from 'node:path';
+import { TallyStore } from '@tally-evals/core';
 
 const CONTENT_TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -74,8 +74,7 @@ export async function startViewerServer(
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown error';
     throw new Error(
-      `Cannot open Tally store: ${msg}\n` +
-        `Hint: ensure the directory contains a .tally/ folder or tally.config.ts`
+      `Cannot open Tally store: ${msg}\nHint: ensure the directory contains a .tally/ folder or tally.config.ts`
     );
   }
 

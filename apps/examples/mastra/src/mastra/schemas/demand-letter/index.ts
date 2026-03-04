@@ -10,11 +10,13 @@ export const templateFieldSchema = z.object({
   required: z.boolean(),
   description: z.string(),
   options: z.array(z.string()).optional(),
-  validation: z.object({
-    min: z.number().optional(),
-    max: z.number().optional(),
-    pattern: z.string().optional(),
-  }).optional(),
+  validation: z
+    .object({
+      min: z.number().optional(),
+      max: z.number().optional(),
+      pattern: z.string().optional(),
+    })
+    .optional(),
 });
 
 export type TemplateField = z.infer<typeof templateFieldSchema>;

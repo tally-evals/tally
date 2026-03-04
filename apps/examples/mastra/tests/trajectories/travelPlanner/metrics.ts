@@ -1,7 +1,12 @@
-import { Conversation, defineMultiTurnLLM, defineBaseMetric, MultiTurnMetricDef } from "@tally-evals/tally";
-import { extractTextFromMessage } from "@tally-evals/tally/metrics";
-import { createMinMaxNormalizer } from "@tally-evals/tally/normalization";
-import { LanguageModel } from "ai";
+import {
+  type Conversation,
+  type MultiTurnMetricDef,
+  defineBaseMetric,
+  defineMultiTurnLLM,
+} from '@tally-evals/tally';
+import { extractTextFromMessage } from '@tally-evals/tally/metrics';
+import { createMinMaxNormalizer } from '@tally-evals/tally/normalization';
+import type { LanguageModel } from 'ai';
 
 export interface KnowledgeRetentionOptions {
   /**
@@ -16,9 +21,7 @@ export interface KnowledgeRetentionOptions {
 }
 
 // Custom Knowledge Retention Metric for Travel Planner
-export const createKnowledgeRetentionMetric = (
-  options: KnowledgeRetentionOptions,
-) => {
+export const createKnowledgeRetentionMetric = (options: KnowledgeRetentionOptions) => {
   const { parameters, provider } = options;
 
   const base = defineBaseMetric({
@@ -39,8 +42,7 @@ export const createKnowledgeRetentionMetric = (
             .map(extractTextFromMessage)
             .filter((text) => text.length > 0)
             .join('\n\n');
-          return `Turn ${index + 1
-            }:\nUser: ${userText}\nAssistant: ${assistantText}`;
+          return `Turn ${index + 1}:\nUser: ${userText}\nAssistant: ${assistantText}`;
         })
         .join('\n\n');
 
@@ -52,10 +54,11 @@ export const createKnowledgeRetentionMetric = (
     prompt: {
       instruction: `You are evaluating knowledge retention in a travel planning conversation.
 
-      **Parameters to Track:** ${parameters
+      **Parameters to Track:** ${
+        parameters
           ? parameters.join(', ')
           : 'Things like (destination, dates, preferences) if they are brought up'
-        }
+      }
 
       For each parameter, analyze the ENTIRE conversation and:
       1. Identify when the parameter value is first established
@@ -79,16 +82,14 @@ export const createKnowledgeRetentionMetric = (
     },
     rubric: {
       criteria: `Evaluate knowledge retention based on:
-1. Information Recall: Does the assistant remember key details (${parameters
-          ? `SPECIFICALLY ${parameters.join(', ')}`
-          : 'destinations, dates, preferences'
-        }) mentioned earlier?
+1. Information Recall: Does the assistant remember key details (${
+        parameters ? `SPECIFICALLY ${parameters.join(', ')}` : 'destinations, dates, preferences'
+      }) mentioned earlier?
 2. Reference Quality: When the assistant references earlier information, are the references accurate and helpful?
 3. Consistency: Are details about the same trip elements consistent across the conversation?
 4. Integration: How well does the assistant integrate earlier information into new responses?
 5. Efficiency: Does the assistant avoid asking for information already provided?`,
-      scale:
-        '0-5 scale where 5 = excellent knowledge retention, 0 = poor retention',
+      scale: '0-5 scale where 5 = excellent knowledge retention, 0 = poor retention',
       examples: [
         {
           score: 5,

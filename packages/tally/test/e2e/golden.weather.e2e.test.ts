@@ -16,12 +16,7 @@ import {
   defineSingleTurnEval,
   thresholdVerdict,
 } from '../../src/evals';
-import {
-  createTally,
-  defineBaseMetric,
-  defineInput,
-  formatReportAsTables,
-} from '../_exports';
+import { createTally, defineBaseMetric, defineInput, formatReportAsTables } from '../_exports';
 import {
   createAnswerRelevanceMetric,
   createCompletenessMetric,
@@ -160,7 +155,7 @@ describe.skipIf(!process.env.GOOGLE_GENERATIVE_AI_API_KEY)('E2E | Metrics | Gold
     expect(Object.keys(report.result.singleTurn).length).toBeGreaterThan(0);
     for (const series of Object.values(report.result.singleTurn)) {
       expect((series as { byStepIndex: unknown[] }).byStepIndex.length).toBe(
-        report.result.stepCount,
+        report.result.stepCount
       );
     }
 
@@ -215,7 +210,7 @@ describe.skipIf(!process.env.GOOGLE_GENERATIVE_AI_API_KEY)('E2E | Metrics | Gold
     // Verify quality thresholds are met for golden conversation
     // These are "golden" conversations, so they should meet quality thresholds
     const answerRelevanceSummary = summaries['Answer Relevance'];
-    const completenessSummary = summaries['Completeness'];
+    const completenessSummary = summaries.Completeness;
     const roleAdherenceSummary = summaries['Role Adherence'];
     const goalCompletionSummary = summaries['Goal Completion'];
     const topicAdherenceSummary = summaries['Topic Adherence'];

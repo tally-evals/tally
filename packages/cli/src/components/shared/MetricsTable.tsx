@@ -45,7 +45,7 @@ function MetricsTableComponent({
         rawColWidth -
         passAtColWidth -
         verdictColWidth -
-        borderOverhead,
+        borderOverhead
     );
 
     const table = new Table({
@@ -91,19 +91,9 @@ function MetricsTableComponent({
       const reasoning =
         maxReasoningLength > 40
           ? fullReasoning.split('\n')[0]
-          : truncateText(
-              fullReasoning.split('\n')[0] as string,
-              maxReasoningLength,
-            );
+          : truncateText(fullReasoning.split('\n')[0] as string, maxReasoningLength);
 
-      table.push([
-        name,
-        score,
-        raw,
-        passAt,
-        verdictIcon,
-        reasoning as string,
-      ]);
+      table.push([name, score, raw, passAt, verdictIcon, reasoning as string]);
     }
 
     return table.toString();

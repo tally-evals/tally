@@ -1,22 +1,12 @@
 {
   "extends": "@tally-evals/typescript-config/strict.json",
   "compilerOptions": {
-    "lib": [
-      "ES2022"
-    ],
+    "lib": ["ES2022"],
     "outDir": "dist",
     "paths": {
-      "~/*": [
-        "./src/mastra/*"
-      ]
+      "~/*": ["./src/mastra/*"]
     }
   },
-  "include": [
-    "src/**/*",
-    "tests/**/*"
-  ],
-  "exclude": [
-    "dist",
-    "node_modules"
-  ]
+  "include": ["src/**/*", "tests/**/*"],
+  "exclude": ["dist", "node_modules"]
 }

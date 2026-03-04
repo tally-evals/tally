@@ -4,8 +4,8 @@
  * Convenience functions for creating verdict policies
  */
 
-import type { MetricScalar, Score } from '../core/types';
 import type { VerdictPolicyFor } from '../core/evals/types';
+import type { MetricScalar, Score } from '../core/types';
 
 /**
  * Create a boolean verdict policy

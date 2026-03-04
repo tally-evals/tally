@@ -1,6 +1,6 @@
 /**
- * Cashflow Copilot Agent - Curve Ball Test 
- * 
+ * Cashflow Copilot Agent - Curve Ball Test
+ *
  * This test is used to evaluate the cashflow copilot agent's ability to handle ambiguous requests and incomplete information.
  * It is a curveball scenario where the user provides incomplete information and the agent should handle it gracefully.
  * It is also used to evaluate the agent's ability to ask for the right missing information and not ask for information already provided.
@@ -10,32 +10,32 @@
  * It is also used to evaluate the agent's ability to handle the user's language.
  */
 
-import { describe, it, expect } from 'vitest';
-import { cashflowCopilotAgent } from '../../../src/mastra/agents/cashflow-copilot-agent';
-import { cashflowCurveTrajectory } from './definitions';
-import { runCase, saveTallyReportToStore } from '../../utils/harness';
+import { google } from '@ai-sdk/google';
 import {
   createTally,
-  runAllTargets,
   defineBaseMetric,
   defineInput,
-  defineSingleTurnEval,
   defineMultiTurnEval,
   defineScorerEval,
-  thresholdVerdict,
+  defineSingleTurnEval,
   formatReportAsTables,
+  runAllTargets,
+  thresholdVerdict,
 } from '@tally-evals/tally';
 import {
   createAnswerRelevanceMetric,
-  createCompletenessMetric,
-  createRoleAdherenceMetric,
-  createClarificationPrecisionMetric,
-  createOverClarificationMetric,
   createBufferConsiderationMetric,
+  createClarificationPrecisionMetric,
+  createCompletenessMetric,
   createImpactReportingMetric,
+  createOverClarificationMetric,
+  createRoleAdherenceMetric,
 } from '@tally-evals/tally/metrics';
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
-import { google } from '@ai-sdk/google';
+import { describe, expect, it } from 'vitest';
+import { cashflowCopilotAgent } from '../../../src/mastra/agents/cashflow-copilot-agent';
+import { runCase, saveTallyReportToStore } from '../../utils/harness';
+import { cashflowCurveTrajectory } from './definitions';
 
 describe('Cashflow Copilot Agent - Curve Ball', () => {
   it('should handle ambiguous requests and incomplete information', async () => {
@@ -96,7 +96,7 @@ describe('Cashflow Copilot Agent - Curve Ball', () => {
       provider: model,
     });
 
-    // Overall Quality: Combined score of all metrics 
+    // Overall Quality: Combined score of all metrics
     const overallQuality = defineBaseMetric({
       name: 'overallQuality',
       valueType: 'number',
@@ -192,7 +192,7 @@ describe('Cashflow Copilot Agent - Curve Ball', () => {
     console.log('📊 Evaluation Results:');
     console.log(`   Steps evaluated: ${conversation.steps.length}`);
     console.log(
-      `   Overall Quality mean: ${(overallQualitySummary?.aggregations?.score as any)?.Mean}`,
+      `   Overall Quality mean: ${(overallQualitySummary?.aggregations?.score as any)?.Mean}`
     );
 
     expect(report).toBeDefined();
@@ -208,4 +208,3 @@ describe('Cashflow Copilot Agent - Curve Ball', () => {
     }
   }, 300000);
 });
-

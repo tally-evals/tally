@@ -1,11 +1,11 @@
+import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'bun:test';
 import { decodeConversation, decodeRunArtifact } from '../../src/codecs';
 import { TallyStore } from '../../src/store/TallyStore';
-import { sampleStepTrace, stepTraceWithToolCall } from '../fixtures/messages';
 import type { TrajectoryRunMeta } from '../../src/types/runs';
+import { sampleStepTrace, stepTraceWithToolCall } from '../fixtures/messages';
 
 describe('TallyStore (store layer)', () => {
   let tempDir: string;

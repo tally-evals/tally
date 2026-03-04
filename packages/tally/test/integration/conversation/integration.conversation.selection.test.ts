@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'bun:test';
 import {
   type ConversationStep,
-  defineSingleTurnCode,
   createWeightedAverageScorer,
   defineBaseMetric,
   defineInput,
+  defineSingleTurnCode,
   runAllTargets,
   runSpecificSteps,
 } from '../../_exports';
@@ -22,7 +22,7 @@ describe('Integration | Conversation | Selection', () => {
       compute: async ({ data }) => {
         const step = data as ConversationStep;
         const assistant = step.output?.find(
-          (o) => o.role === 'assistant' && typeof o.content === 'string',
+          (o) => o.role === 'assistant' && typeof o.content === 'string'
         );
         const content = (assistant?.content as string) ?? '';
         const len = content.length;

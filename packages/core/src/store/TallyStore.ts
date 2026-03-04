@@ -1,12 +1,17 @@
 import path from 'node:path';
+import {
+  decodeStepTraces,
+  decodeTrajectoryMeta,
+  encodeStepTraces,
+  encodeTrajectoryMeta,
+} from '../codecs/trajectory';
 import { resolveConfig } from '../config/resolver';
 import type { TallyConfigInput } from '../config/types';
 import { CONVERSATIONS, META, STEP_TRACES, TRAJECTORY_META } from '../constants';
-import { decodeStepTraces, decodeTrajectoryMeta, encodeStepTraces, encodeTrajectoryMeta } from '../codecs/trajectory';
 import { createStorage } from '../storage/factory';
 import type { IStorage } from '../storage/storage.interface';
-import { ConversationRef } from './ConversationRef';
 import type { Conversation, StepTrace, TrajectoryMeta } from '../types';
+import { ConversationRef } from './ConversationRef';
 
 export class TallyStore {
   private constructor(
@@ -79,7 +84,7 @@ export class TallyStore {
    * Save a conversation (creates folder if needed, writes conversation.jsonl).
    */
   async saveConversation(id: string, conversation: Conversation): Promise<ConversationRef> {
-    const ref = await this.getConversation(id) ?? await this.createConversation(id);
+    const ref = (await this.getConversation(id)) ?? (await this.createConversation(id));
     await ref.save(conversation);
     return ref;
   }

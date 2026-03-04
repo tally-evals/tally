@@ -7,8 +7,8 @@
 
 import type { Eval } from './evaluators';
 import type { ConversationResult, RunDefs } from './results';
-import type { TargetRunView } from './runView';
 import type { TallyRunArtifact } from './runArtifact';
+import type { TargetRunView } from './runView';
 
 /**
  * SDK-facing, ergonomic, in-memory representation of a run.

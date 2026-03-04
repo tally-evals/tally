@@ -6,12 +6,13 @@
  */
 
 import { describe, expect, it } from 'bun:test';
+import { defineMultiTurnEval, defineSingleTurnEval, thresholdVerdict } from '../../../src/evals';
 import {
-  defineMultiTurnCode,
-  defineSingleTurnCode,
+  type ConversationStep,
   createTally,
   defineBaseMetric,
-  type ConversationStep,
+  defineMultiTurnCode,
+  defineSingleTurnCode,
 } from '../../_exports';
 import {
   createIdentityNormalizer,
@@ -19,13 +20,12 @@ import {
   createMinMaxNormalizer,
   createThresholdNormalizer,
 } from '../../_exports';
-import { defineSingleTurnEval, defineMultiTurnEval, thresholdVerdict } from '../../../src/evals';
 import { conversationExampleA, conversationExampleB } from '../../_fixtures/conversation.examples';
 
 /** Helper to extract assistant content from a ConversationStep */
 function getAssistantContent(step: ConversationStep): string {
   const assistant = step.output?.find(
-    (o) => o.role === 'assistant' && typeof o.content === 'string',
+    (o) => o.role === 'assistant' && typeof o.content === 'string'
   );
   return (assistant?.content as string) ?? '';
 }
@@ -64,15 +64,15 @@ describe('Integration | Conversation | Normalization', () => {
       expect(report.result.stepCount).toBe(2);
 
       // Check single-turn results
-      const singleTurn = report.result.singleTurn['ResponseLength'];
+      const singleTurn = report.result.singleTurn.ResponseLength;
       expect(singleTurn).toBeDefined();
       expect(singleTurn.byStepIndex).toHaveLength(2);
 
       // Verify scores are normalized (0-1 range, capped)
       for (const stepResult of singleTurn.byStepIndex) {
         expect(stepResult).toBeDefined();
-        expect(stepResult!.measurement.score).toBeGreaterThanOrEqual(0);
-        expect(stepResult!.measurement.score).toBeLessThanOrEqual(1);
+        expect(stepResult?.measurement.score).toBeGreaterThanOrEqual(0);
+        expect(stepResult?.measurement.score).toBeLessThanOrEqual(1);
       }
     });
 
@@ -106,13 +106,13 @@ describe('Integration | Conversation | Normalization', () => {
 
       expect(report).toBeDefined();
 
-      const singleTurn = report.result.singleTurn['HasContent'];
+      const singleTurn = report.result.singleTurn.HasContent;
       expect(singleTurn).toBeDefined();
 
       // Both responses have content > 5 chars, so scores should be 1
       for (const stepResult of singleTurn.byStepIndex) {
         expect(stepResult).toBeDefined();
-        expect(stepResult!.measurement.score).toBe(1);
+        expect(stepResult?.measurement.score).toBe(1);
       }
     });
 
@@ -148,16 +148,16 @@ describe('Integration | Conversation | Normalization', () => {
       expect(report).toBeDefined();
       expect(report.result.stepCount).toBe(3);
 
-      const singleTurn = report.result.singleTurn['WordCount'];
+      const singleTurn = report.result.singleTurn.WordCount;
       expect(singleTurn).toBeDefined();
       expect(singleTurn.byStepIndex).toHaveLength(3);
 
       // Verify linear normalization was applied
       for (const stepResult of singleTurn.byStepIndex) {
         expect(stepResult).toBeDefined();
-        expect(stepResult!.measurement.score).toBeGreaterThanOrEqual(0);
+        expect(stepResult?.measurement.score).toBeGreaterThanOrEqual(0);
         // Score = wordCount * 0.1, capped at 1
-        expect(stepResult!.measurement.score).toBeLessThanOrEqual(1);
+        expect(stepResult?.measurement.score).toBeLessThanOrEqual(1);
       }
     });
   });
@@ -193,7 +193,7 @@ describe('Integration | Conversation | Normalization', () => {
 
       expect(report).toBeDefined();
 
-      const multiTurn = report.result.multiTurn['ConversationLength'];
+      const multiTurn = report.result.multiTurn.ConversationLength;
       expect(multiTurn).toBeDefined();
 
       // conversationExampleB has 3 steps, normalized with min=0, max=5 => 3/5 = 0.6
@@ -231,7 +231,7 @@ describe('Integration | Conversation | Normalization', () => {
 
       expect(report).toBeDefined();
 
-      const multiTurn = report.result.multiTurn['RawStepCount'];
+      const multiTurn = report.result.multiTurn.RawStepCount;
       expect(multiTurn).toBeDefined();
 
       // Identity normalizer: score should equal raw value
@@ -294,14 +294,14 @@ describe('Integration | Conversation | Normalization', () => {
 
       // Verify summaries exist
       const summaries = report.result.summaries?.byEval ?? {};
-      expect(summaries['ResponseLength']).toBeDefined();
-      expect(summaries['Progress']).toBeDefined();
+      expect(summaries.ResponseLength).toBeDefined();
+      expect(summaries.Progress).toBeDefined();
 
       // Check aggregations exist
-      const lengthSummary = summaries['ResponseLength'];
+      const lengthSummary = summaries.ResponseLength;
       expect(lengthSummary?.aggregations?.score).toBeDefined();
 
-      const progressSummary = summaries['Progress'];
+      const progressSummary = summaries.Progress;
       expect(progressSummary?.aggregations?.score).toBeDefined();
     });
   });

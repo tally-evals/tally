@@ -6,12 +6,12 @@
  */
 
 import type {
-  MetricScalar,
-  Score,
-  MetricDef,
   MetricContainer,
-  SingleTurnContainer,
+  MetricDef,
+  MetricScalar,
   MultiTurnContainer,
+  Score,
+  SingleTurnContainer,
 } from './metrics';
 import type { Scorer } from './scorers';
 
@@ -71,28 +71,19 @@ export type VerdictPolicyFor<TMetricValue extends MetricScalar> = TMetricValue e
         | { kind: 'number'; type: 'range'; min?: number; max?: number }
         | {
             kind: 'custom';
-            verdict: (
-              score: Score,
-              rawValue: number,
-            ) => 'pass' | 'fail' | 'unknown';
+            verdict: (score: Score, rawValue: number) => 'pass' | 'fail' | 'unknown';
           }
     : TMetricValue extends string
       ?
           | { kind: 'ordinal'; passWhenIn: readonly string[] }
           | {
               kind: 'custom';
-              verdict: (
-                score: Score,
-                rawValue: string,
-              ) => 'pass' | 'fail' | 'unknown';
+              verdict: (score: Score, rawValue: string) => 'pass' | 'fail' | 'unknown';
             }
       :
           | {
               kind: 'custom';
-              verdict: (
-                score: Score,
-                rawValue: TMetricValue,
-              ) => 'pass' | 'fail' | 'unknown';
+              verdict: (score: Score, rawValue: TMetricValue) => 'pass' | 'fail' | 'unknown';
             }
           | { kind: 'none' };
 
@@ -108,10 +99,7 @@ export type VerdictPolicy =
   | { kind: 'ordinal'; passWhenIn: readonly string[] }
   | {
       kind: 'custom';
-      verdict: (
-        score: Score,
-        rawValue: MetricScalar,
-      ) => 'pass' | 'fail' | 'unknown';
+      verdict: (score: Score, rawValue: MetricScalar) => 'pass' | 'fail' | 'unknown';
     }
   | { kind: 'none' };
 
@@ -262,10 +250,8 @@ export type Eval<
   TName extends string = string,
   // biome-ignore lint/suspicious/noExplicitAny: Required for variance - see TSDoc above
   _TContainer extends MetricContainer = MetricContainer,
-> =
-  // biome-ignore lint/suspicious/noExplicitAny: Required for variance
-  | SingleTurnEval<TName, SingleTurnContainer, any>
-  // biome-ignore lint/suspicious/noExplicitAny: Required for variance
-  | MultiTurnEval<TName, MultiTurnContainer, any>
-  | ScorerEval<TName>;
-
+> = // biome-ignore lint/suspicious/noExplicitAny: Required for variance
+| SingleTurnEval<TName, SingleTurnContainer, any>
+// biome-ignore lint/suspicious/noExplicitAny: Required for variance
+| MultiTurnEval<TName, MultiTurnContainer, any>
+| ScorerEval<TName>;

@@ -1,7 +1,7 @@
 import { Agent } from '@mastra/core/agent';
 import { getTemplateFieldsTool } from '../tools/demand-letter/get-template-fields';
-import { validateInputsTool } from '../tools/demand-letter/validate-inputs';
 import { renderPreviewTool } from '../tools/demand-letter/render-preview';
+import { validateInputsTool } from '../tools/demand-letter/validate-inputs';
 
 const DEFAULT_MODEL_ID = 'google/gemini-2.5-flash-lite';
 const DEFAULT_MAX_STEPS = 20;

@@ -4,53 +4,53 @@
 
 import { generateText } from 'ai';
 import type { ModelMessage } from 'ai';
-import type { Trajectory, StepTrace } from './types.js';
-import type { StepDefinition } from './steps/types.js';
 import { formatConversationFromTraces } from '../utils/messageFormatting.js';
+import type { StepDefinition } from './steps/types.js';
+import type { StepTrace, Trajectory } from './types.js';
 
 export interface UserMessageContext {
-	trajectory: Trajectory;
-	stepTraces: readonly StepTrace[];
-	lastNSteps?: number;
-	nextStep?: StepDefinition;
+  trajectory: Trajectory;
+  stepTraces: readonly StepTrace[];
+  lastNSteps?: number;
+  nextStep?: StepDefinition;
 }
 
 /**
  * Generate a user message based on persona, goal, and current step
- * 
+ *
  * @param context - Context for generating the user message
  * @param model - AI SDK model function to use for generation
  */
 export async function generateUserMessage(
-	context: UserMessageContext,
-	model: Parameters<typeof generateText>[0]['model']
+  context: UserMessageContext,
+  model: Parameters<typeof generateText>[0]['model']
 ): Promise<ModelMessage> {
-	const { trajectory, stepTraces, lastNSteps = 2, nextStep } = context;
+  const { trajectory, stepTraces, lastNSteps = 2, nextStep } = context;
 
-	// Build the prompt for the AI-as-user
-	const personaDesc = trajectory.persona.description;
-	const personaName = trajectory.persona.name
-		? `You are ${trajectory.persona.name}. ${personaDesc}`
-		: personaDesc;
-	const guardrails = trajectory.persona.guardrails
-		? `\n\nGuardrails:\n${trajectory.persona.guardrails.map((g) => `- ${g}`).join('\n')}`
-		: '';
+  // Build the prompt for the AI-as-user
+  const personaDesc = trajectory.persona.description;
+  const personaName = trajectory.persona.name
+    ? `You are ${trajectory.persona.name}. ${personaDesc}`
+    : personaDesc;
+  const guardrails = trajectory.persona.guardrails
+    ? `\n\nGuardrails:\n${trajectory.persona.guardrails.map((g) => `- ${g}`).join('\n')}`
+    : '';
 
-	const goalDesc = `Your goal is: ${trajectory.goal}`;
+  const goalDesc = `Your goal is: ${trajectory.goal}`;
 
-	let stepDesc = '';
-	if (nextStep) {
-		stepDesc = `\n\nCurrent step instruction: ${nextStep.instruction}`;
-		if (nextStep.hints && nextStep.hints.length > 0) {
-			stepDesc += `\nHints: ${nextStep.hints.join(', ')}`;
-		}
-	}
+  let stepDesc = '';
+  if (nextStep) {
+    stepDesc = `\n\nCurrent step instruction: ${nextStep.instruction}`;
+    if (nextStep.hints && nextStep.hints.length > 0) {
+      stepDesc += `\nHints: ${nextStep.hints.join(', ')}`;
+    }
+  }
 
-	// Format conversation from step traces
-	const { conversationContext: conversationHistory, lastAssistantMessage: assistantQuestion } =
-		formatConversationFromTraces(stepTraces, lastNSteps);
+  // Format conversation from step traces
+  const { conversationContext: conversationHistory, lastAssistantMessage: assistantQuestion } =
+    formatConversationFromTraces(stepTraces, lastNSteps);
 
-		const systemMessage = `${personaName}${guardrails}
+  const systemMessage = `${personaName}${guardrails}
 
 CRITICAL: You are the USER/CUSTOMER in this conversation, NOT the assistant. The assistant is helping YOU achieve YOUR goal.
 
@@ -103,34 +103,43 @@ Weather information:
 - User: "Today is fine, and could you give it in celsius?"
 `;
 
-		const userPrompt = `${goalDesc}${stepDesc}
+  const userPrompt = `${goalDesc}${stepDesc}
 
-${assistantQuestion ? `The assistant just said: "${assistantQuestion}"
+${
+  assistantQuestion
+    ? `The assistant just said: "${assistantQuestion}"
 
-You MUST respond to this as the USER/CUSTOMER. Answer their question or respond to what they said naturally based on your persona and goal. Do NOT ask questions back unless you're asking about YOUR own needs.` : ''}
+You MUST respond to this as the USER/CUSTOMER. Answer their question or respond to what they said naturally based on your persona and goal. Do NOT ask questions back unless you're asking about YOUR own needs.`
+    : ''
+}
 
-${nextStep ? `Your current task is to: ${nextStep.instruction}
+${
+  nextStep
+    ? `Your current task is to: ${nextStep.instruction}
 
 You MUST follow this instruction while responding to the assistant. If the step instruction asks you to provide specific information (e.g., an order number "123-456", a date "June 15th", a recipient address, or a location), make sure you include that information in your response. Respond naturally as ${trajectory.persona.name || 'the user'}, but ensure your message:
 1. Answers the assistant's question/statement (if they asked one)
 2. Accomplishes what the step instruction asks
-3. Sounds like YOU (the customer) talking to the assistant, not the other way around` : assistantQuestion ? `Respond naturally to what the assistant said, staying true to your persona (${trajectory.persona.name || 'the user'}) and working towards your goal. Be authentic and conversational - answer their question or respond to their statement in a way that feels natural for someone with your characteristics.` : 'Generate your next message as the user/customer, responding naturally based on your persona and goal.'}
+3. Sounds like YOU (the customer) talking to the assistant, not the other way around`
+    : assistantQuestion
+      ? `Respond naturally to what the assistant said, staying true to your persona (${trajectory.persona.name || 'the user'}) and working towards your goal. Be authentic and conversational - answer their question or respond to their statement in a way that feels natural for someone with your characteristics.`
+      : 'Generate your next message as the user/customer, responding naturally based on your persona and goal.'
+}
 
 Conversation history:
 ${conversationHistory || '(no history yet)'}
 
 Generate your message as the USER/CUSTOMER now:`;
 
-	// Use AI SDK to generate the user message
-	const result = await generateText({
-		model,
-			system: systemMessage,
-			prompt: userPrompt,
-	});
+  // Use AI SDK to generate the user message
+  const result = await generateText({
+    model,
+    system: systemMessage,
+    prompt: userPrompt,
+  });
 
-	return {
-		role: 'user',
-		content: result.text,
-	};
+  return {
+    role: 'user',
+    content: result.text,
+  };
 }
-

@@ -77,7 +77,7 @@ const fetchWeather = createStep({
       condition: getWeatherCondition(data.current.weathercode),
       precipitationChance: data.hourly.precipitation_probability.reduce(
         (acc, curr) => Math.max(acc, curr),
-        0,
+        0
       ),
       location: name,
     };

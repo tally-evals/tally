@@ -20,10 +20,10 @@
  * - **Aggregations** - Typed based on aggregator definitions
  */
 
-import type { MetricScalar, Score } from './primitives';
 import type { Eval, VerdictPolicyFor } from './evaluators';
-import type { NormalizationContextFor, NormalizerSpec } from './normalization';
 import type { CategoricalAggregatorDef } from './metrics';
+import type { NormalizationContextFor, NormalizerSpec } from './normalization';
+import type { MetricScalar, Score } from './primitives';
 import type { Scorer, ScorerInput } from './scorers';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -141,7 +141,10 @@ export interface EvalOutcome<TValue extends MetricScalar = MetricScalar> {
    * Policy typed to metric value.
    * Uses VerdictPolicyInfo for serialization compatibility.
    */
-  policy: VerdictPolicyFor<TValue> | { kind: 'none' } | { kind: 'custom'; note: 'not-serializable' };
+  policy:
+    | VerdictPolicyFor<TValue>
+    | { kind: 'none' }
+    | { kind: 'custom'; note: 'not-serializable' };
 
   /** Observed values typed to metric value */
   observed?: { rawValue?: TValue | null; score?: Score };
@@ -190,7 +193,9 @@ export interface ConversationEvalResult<TValue extends MetricScalar = MetricScal
 /**
  * Extracts the eval name as a literal type from an Eval.
  */
-export type ExtractEvalName<TEval> = TEval extends { readonly name: infer N extends string } ? N : never;
+export type ExtractEvalName<TEval> = TEval extends { readonly name: infer N extends string }
+  ? N
+  : never;
 
 /**
  * Extracts the metric value type from an Eval.
@@ -231,8 +236,12 @@ export type EvalNamesOfKind<TEvals extends readonly Eval[], TKind extends string
 /**
  * Checks if a kind has any evals.
  */
-export type HasEvalsOfKind<TEvals extends readonly Eval[], TKind extends string> =
-  FilterByKind<TEvals, TKind> extends never ? false : true;
+export type HasEvalsOfKind<TEvals extends readonly Eval[], TKind extends string> = FilterByKind<
+  TEvals,
+  TKind
+> extends never
+  ? false
+  : true;
 
 /**
  * Extracts the typed verdict policy from an eval.

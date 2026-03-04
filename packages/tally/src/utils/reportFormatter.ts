@@ -11,11 +11,8 @@ import { createTargetRunView } from '../views/targetRunView';
  * Format evaluation report as console tables
  * Shows turn-by-turn conversation with single-turn metrics, then multi-turn metrics
  */
-export function formatReportAsTables(
-  artifact: TallyRunArtifact,
-  conversation: Conversation
-): void {
-  console.log('\n' + '='.repeat(80));
+export function formatReportAsTables(artifact: TallyRunArtifact, conversation: Conversation): void {
+  console.log(`\n${'='.repeat(80)}`);
   console.log('TALLY RUN ARTIFACT');
   console.log('='.repeat(80));
   console.log(`Run ID: ${artifact.runId}`);
@@ -32,11 +29,8 @@ export function formatReportAsTables(
 /**
  * Format a single conversation as a table
  */
-function formatConversationTable(
-  artifact: TallyRunArtifact,
-  conversation: Conversation
-): void {
-  console.log('\n' + '-'.repeat(80));
+function formatConversationTable(artifact: TallyRunArtifact, conversation: Conversation): void {
+  console.log(`\n${'-'.repeat(80)}`);
   console.log(`CONVERSATION: ${conversation.id}`);
   console.log('-'.repeat(80));
 
@@ -67,13 +61,7 @@ function formatConversationTable(
       const score = stepRes.measurement?.score;
       const verdict = stepRes.outcome?.verdict;
       const verdictIcon =
-        verdict === 'pass'
-          ? '✓'
-          : verdict === 'fail'
-            ? '✗'
-            : verdict === 'unknown'
-              ? '?'
-              : '';
+        verdict === 'pass' ? '✓' : verdict === 'fail' ? '✗' : verdict === 'unknown' ? '?' : '';
       row[evalName] =
         score !== undefined ? `${Number(score).toFixed(3)} ${verdictIcon}` : `- ${verdictIcon}`;
     }
@@ -97,7 +85,8 @@ function formatConversationTable(
     };
 
     if (sortedStepEvalNames.length > 0) {
-      multiTurnRow[sortedStepEvalNames[0]!] = `${score !== undefined ? Number(score).toFixed(3) : '-'} ${verdictIcon}`;
+      multiTurnRow[sortedStepEvalNames[0]!] =
+        `${score !== undefined ? Number(score).toFixed(3) : '-'} ${verdictIcon}`;
       for (let i = 1; i < sortedStepEvalNames.length; i++) {
         multiTurnRow[sortedStepEvalNames[i]!] = '-';
       }
@@ -148,10 +137,8 @@ function printTableWithNewlines(
 
   // Print header
   const headerRow = columnOrder.map((col) => col.padEnd(columnWidths.get(col) ?? 0)).join('│');
-  console.log('│' + headerRow + '│');
-  console.log(
-    '├' + columnOrder.map((col) => '─'.repeat(columnWidths.get(col) ?? 0)).join('┼') + '┤'
-  );
+  console.log(`│${headerRow}│`);
+  console.log(`├${columnOrder.map((col) => '─'.repeat(columnWidths.get(col) ?? 0)).join('┼')}┤`);
 
   // Print rows
   for (const row of rows) {
@@ -173,7 +160,7 @@ function printTableWithNewlines(
         const line = lines[lineIdx] ?? '';
         return line.padEnd(columnWidths.get(col) ?? 0);
       });
-      console.log('│' + lineCells.join('│') + '│');
+      console.log(`│${lineCells.join('│')}│`);
     }
   }
 }
@@ -182,7 +169,7 @@ function printTableWithNewlines(
  * Format summary table with eval summaries
  */
 function formatSummaryTable(artifact: TallyRunArtifact): void {
-  console.log('\n' + '-'.repeat(80));
+  console.log(`\n${'-'.repeat(80)}`);
   console.log('EVAL SUMMARIES (SCORES)');
   console.log('-'.repeat(80));
 
@@ -243,7 +230,7 @@ function formatSummaryTable(artifact: TallyRunArtifact): void {
 
   console.table(summaryRows);
 
-  console.log('\n' + '-'.repeat(80));
+  console.log(`\n${'-'.repeat(80)}`);
   console.log('EVAL SUMMARIES (RAW VALUES)');
   console.log('-'.repeat(80));
 
@@ -327,7 +314,7 @@ function extractTextFromMessages(messages: readonly unknown[]): string {
  */
 function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
-  return text.substring(0, maxLength - 3) + '...';
+  return `${text.substring(0, maxLength - 3)}...`;
 }
 
 /**

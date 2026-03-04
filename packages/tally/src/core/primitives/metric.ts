@@ -5,6 +5,7 @@
  * Use these to create custom metric implementations.
  */
 
+import { getDefaultAggregators } from '../../aggregators/default';
 import type {
   Aggregator,
   BaseMetricDef,
@@ -24,7 +25,6 @@ import type {
   SingleTurnMetricDef,
   VarsTuple,
 } from '../types';
-import { getDefaultAggregators } from '../../aggregators/default';
 
 // -----------------------------------------------------------------------------
 // Base Metric Definition
@@ -117,7 +117,10 @@ export function withMetadata<
  * @typeParam TMetricValue - The metric value type
  * @typeParam TContainer - The container type
  */
-export function withMetric<TMetricValue extends MetricScalar, TContainer extends SingleTurnContainer>(
+export function withMetric<
+  TMetricValue extends MetricScalar,
+  TContainer extends SingleTurnContainer,
+>(
   metric: SingleTurnMetricDef<TMetricValue, TContainer>,
   aggregator: CompatibleAggregator<TMetricValue>
 ): Aggregator<TMetricValue, TContainer> {
@@ -175,9 +178,10 @@ export function defineSingleTurnCode<
     ...(dependencies !== undefined && { dependencies }),
     ...(cacheable !== undefined && { cacheable }),
     ...(preProcessor !== undefined && { preProcessor }),
-    aggregators: [...(aggregators ?? []), ...getDefaultAggregators<TMetricValue>(base.valueType)].map(
-      (aggregator) => withMetric<TMetricValue, TContainer>(mergedBase, aggregator)
-    ),
+    aggregators: [
+      ...(aggregators ?? []),
+      ...getDefaultAggregators<TMetricValue>(base.valueType),
+    ].map((aggregator) => withMetric<TMetricValue, TContainer>(mergedBase, aggregator)),
   } as MetricDef<TMetricValue, TContainer>;
 }
 
@@ -233,9 +237,10 @@ export function defineSingleTurnLLM<
     type: 'llm-based',
     ...llmFields,
     ...(preProcessor !== undefined && { preProcessor }),
-    aggregators: [...(aggregators ?? []), ...getDefaultAggregators<TMetricValue>(base.valueType)].map(
-      (aggregator) => withMetric<TMetricValue, TContainer>(mergedBase, aggregator)
-    ),
+    aggregators: [
+      ...(aggregators ?? []),
+      ...getDefaultAggregators<TMetricValue>(base.valueType),
+    ].map((aggregator) => withMetric<TMetricValue, TContainer>(mergedBase, aggregator)),
   } as MetricDef<TMetricValue, TContainer>;
 }
 

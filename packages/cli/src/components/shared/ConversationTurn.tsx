@@ -7,10 +7,10 @@ import { Box, Text } from 'ink';
 import type React from 'react';
 import { colors } from '../../utils/colors';
 import {
+  type MetricScalar,
   extractTextFromMessage,
   extractTextFromMessages,
   extractToolCallsFromMessages,
-  type MetricScalar,
   sanitizeText,
   truncateText,
 } from '../../utils/formatters';
@@ -55,8 +55,7 @@ export function ConversationTurn({
       paddingX={1}
     >
       <Text>
-        {colors.bold(`Turn ${stepIndex + 1}`)}{' '}
-        {colors.muted(`[${step.timestamp}]`)}
+        {colors.bold(`Turn ${stepIndex + 1}`)} {colors.muted(`[${step.timestamp}]`)}
       </Text>
 
       <Box marginTop={1} flexDirection="column">
@@ -73,10 +72,7 @@ export function ConversationTurn({
         <Box marginTop={1} flexDirection="column">
           <Text>{colors.bold('Metrics:')}</Text>
           <Box>
-            <MetricsTable
-              metrics={metrics}
-              maxReasoningLength={expanded ? 100 : 40}
-            />
+            <MetricsTable metrics={metrics} maxReasoningLength={expanded ? 100 : 40} />
           </Box>
         </Box>
       )}

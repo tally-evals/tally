@@ -7,7 +7,7 @@ export const renderPreviewTool = createTool({
   inputSchema: renderPreviewParamsSchema,
   execute: async ({ context }) => {
     // console.log('RENDER PREVIEW CONTEXT:', JSON.stringify(context, null, 2));
-    
+
     const {
       senderName,
       senderAddress,
@@ -22,8 +22,8 @@ export const renderPreviewTool = createTool({
 
     // Ensure amount is a number
     const amountNum = Number(amount);
-    if (isNaN(amountNum)) {
-        throw new Error(`Invalid amount: ${amount}`);
+    if (Number.isNaN(amountNum)) {
+      throw new Error(`Invalid amount: ${amount}`);
     }
 
     const today = new Date().toLocaleDateString('en-US', {

@@ -251,7 +251,12 @@ function checkEntityTypeMatch(toolName: string, entityType: string): boolean {
   }
 
   if (toolName === 'createRecurring') {
-    return entityType === 'income' || entityType === 'bill' || entityType === 'subscription' || entityType === 'budget';
+    return (
+      entityType === 'income' ||
+      entityType === 'bill' ||
+      entityType === 'subscription' ||
+      entityType === 'budget'
+    );
   }
 
   if (toolName === 'createFutureCashflow') {

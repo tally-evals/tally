@@ -26,7 +26,8 @@ export const cashflowGoldenTrajectory: Trajectory = {
     steps: [
       {
         id: 'step-1',
-        instruction: 'Introduce yourself and start setup: "Hi, I want to set up cashflow tracking. My name is Alex and I use USD."',
+        instruction:
+          'Introduce yourself and start setup: "Hi, I want to set up cashflow tracking. My name is Alex and I use USD."',
       },
       {
         id: 'step-2',
@@ -34,7 +35,8 @@ export const cashflowGoldenTrajectory: Trajectory = {
       },
       {
         id: 'step-3',
-        instruction: 'Add recurring income: "I receive a salary of 120,000 every month starting on the 5th."',
+        instruction:
+          'Add recurring income: "I receive a salary of 120,000 every month starting on the 5th."',
       },
       {
         id: 'step-4',
@@ -42,15 +44,18 @@ export const cashflowGoldenTrajectory: Trajectory = {
       },
       {
         id: 'step-5',
-        instruction: 'Add another recurring expense: "I also pay 5,000 for internet monthly on the 10th and 2,000 for a gym subscription monthly on the 12th."',
+        instruction:
+          'Add another recurring expense: "I also pay 5,000 for internet monthly on the 10th and 2,000 for a gym subscription monthly on the 12th."',
       },
       {
         id: 'step-6',
-        instruction: 'Add a one-time future expense: "I\'m planning a vacation that will cost 30,000 next month around the 20th."',
+        instruction:
+          'Add a one-time future expense: "I\'m planning a vacation that will cost 30,000 next month around the 20th."',
       },
       {
         id: 'step-7',
-        instruction: 'Add a one-time future income: "I also have a freelance payment of 25,000 coming in on the 15th of next month."',
+        instruction:
+          'Add a one-time future income: "I also have a freelance payment of 25,000 coming in on the 15th of next month."',
         preconditions: [{ type: 'stepSatisfied', stepId: 'step-6' }],
       },
       {
@@ -65,17 +70,20 @@ export const cashflowGoldenTrajectory: Trajectory = {
       },
       {
         id: 'step-10',
-        instruction: 'Request a concrete projection: "Project the next 3 months with a safety buffer of 20,000."',
+        instruction:
+          'Request a concrete projection: "Project the next 3 months with a safety buffer of 20,000."',
         preconditions: [{ type: 'stepSatisfied', stepId: 'step-9' }],
       },
       {
         id: 'step-11',
-        instruction: 'Ask a what-if scenario: "What if I also had an emergency expense of 50,000 next month? Would I go into deficit?"',
+        instruction:
+          'Ask a what-if scenario: "What if I also had an emergency expense of 50,000 next month? Would I go into deficit?"',
         preconditions: [{ type: 'stepSatisfied', stepId: 'step-10' }],
       },
       {
         id: 'step-12',
-        instruction: 'Ask for a final updated projection after the scenario: "Show me the updated 3-month projection and the lowest balance again."',
+        instruction:
+          'Ask for a final updated projection after the scenario: "Show me the updated 3-month projection and the lowest balance again."',
         preconditions: [{ type: 'stepSatisfied', stepId: 'step-11' }],
       },
     ],
@@ -110,7 +118,8 @@ export const cashflowCurveTrajectory: Trajectory = {
     steps: [
       {
         id: 'step-1',
-        instruction: 'Ask about your runway without providing any information: "How many days can I survive financially?"',
+        instruction:
+          'Ask about your runway without providing any information: "How many days can I survive financially?"',
       },
       {
         id: 'step-2',
@@ -118,7 +127,8 @@ export const cashflowCurveTrajectory: Trajectory = {
       },
       {
         id: 'step-3',
-        instruction: 'Provide balance without currency confirmation: "I have some money, maybe around 200,000"',
+        instruction:
+          'Provide balance without currency confirmation: "I have some money, maybe around 200,000"',
       },
       {
         id: 'step-4',
@@ -134,19 +144,23 @@ export const cashflowCurveTrajectory: Trajectory = {
       },
       {
         id: 'step-7',
-        instruction: 'Add a future expense with a vague date: "I have a medical bill coming sometime next month"',
+        instruction:
+          'Add a future expense with a vague date: "I have a medical bill coming sometime next month"',
       },
       {
         id: 'step-8',
-        instruction: 'Request a projection even though setup is incomplete: "Can you just project it now?"',
+        instruction:
+          'Request a projection even though setup is incomplete: "Can you just project it now?"',
       },
       {
         id: 'step-9',
-        instruction: 'Add conflicting data: "Wait I forgot I also have a second income of 50,000 every week but only until end of next month"',
+        instruction:
+          'Add conflicting data: "Wait I forgot I also have a second income of 50,000 every week but only until end of next month"',
       },
       {
         id: 'step-10',
-        instruction: 'Provide the missing date and confirm the summary: "Use the 12th of next month for the medical bill, and yes, the rest looks right."',
+        instruction:
+          'Provide the missing date and confirm the summary: "Use the 12th of next month for the medical bill, and yes, the rest looks right."',
         preconditions: [{ type: 'stepSatisfied', stepId: 'step-9' }],
       },
       {
@@ -156,7 +170,8 @@ export const cashflowCurveTrajectory: Trajectory = {
       },
       {
         id: 'step-12',
-        instruction: 'Ask for a 2-month projection with a scenario: "Project the next 2 months. What if I spend 100,000 on a car next week, and what is the lowest balance in that period?"',
+        instruction:
+          'Ask for a 2-month projection with a scenario: "Project the next 2 months. What if I spend 100,000 on a car next week, and what is the lowest balance in that period?"',
         preconditions: [{ type: 'stepSatisfied', stepId: 'step-11' }],
       },
     ],

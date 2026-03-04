@@ -7,39 +7,49 @@
 
 import type {
   Conversation,
+  ConversationEvalResult,
+  ConversationResult,
   DatasetItem,
   Eval,
-  EvaluationContext,
-  MetricScalar,
-  ScorerInput,
-  ScorerCombineKind,
-  ScorerInputSnap,
-  TallyRunArtifact,
-  TallyRunReport,
-  RunDefs,
-  MetricDefSnap,
   EvalDefSnap,
-  ConversationResult,
+  EvalOutcome,
+  EvaluationContext,
+  MetricDefSnap,
+  MetricNormalizationSnap,
+  MetricScalar,
+  MetricScalarOrNull,
+  NormalizerSpecSnap,
+  RunDefs,
+  Score,
+  ScorerCombineKind,
+  ScorerInput,
+  ScorerInputSnap,
   SingleTurnEvalSeries,
   StepEvalResult,
-  ConversationEvalResult,
   Summaries,
-  EvalOutcome,
-  VerdictPolicyInfo,
   Tally,
-  Score,
-  MetricScalarOrNull,
-  MetricNormalizationSnap,
-  NormalizerSpecSnap,
+  TallyRunArtifact,
+  TallyRunReport,
+  VerdictPolicyInfo,
 } from '@tally/core/types';
-import { match, P } from 'ts-pattern';
+import { P, match } from 'ts-pattern';
 import { generateRunId } from '../utils/ids';
-import { createTallyRunReport } from './runReport';
 import { buildFromEvals } from './evals/builder';
+import {
+  resolveRunPolicy,
+  selectConversationTargets,
+  selectDatasetTargets,
+} from './evaluators/context';
 import type { MemoryCache } from './execution/cache/memoryCache';
 import type { GenerateObjectOptions } from './execution/llm/generateObject';
-import { type DerivedScoreEntry, type PipelineOptions, type PipelineResult, type PipelineVerdict, executePipeline } from './pipeline';
-import { resolveRunPolicy, selectConversationTargets, selectDatasetTargets } from './evaluators/context';
+import {
+  type DerivedScoreEntry,
+  type PipelineOptions,
+  type PipelineResult,
+  type PipelineVerdict,
+  executePipeline,
+} from './pipeline';
+import { createTallyRunReport } from './runReport';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -54,7 +64,10 @@ function asScorerCombineKind(value: unknown): ScorerCombineKind | undefined {
     : undefined;
 }
 
-function getScorerCombineKind(scorer: { metadata?: Record<string, unknown>; combineScores?: unknown }): ScorerCombineKind {
+function getScorerCombineKind(scorer: {
+  metadata?: Record<string, unknown>;
+  combineScores?: unknown;
+}): ScorerCombineKind {
   const meta = scorer.metadata;
   if (isRecord(meta) && isRecord(meta.__tally)) {
     const tagged = asScorerCombineKind(meta.__tally.combineKind);
@@ -77,13 +90,14 @@ function toPolicyInfo(policy: unknown): VerdictPolicyInfo {
     return { kind: 'boolean', passWhen: Boolean(isRecord(policy) ? policy.passWhen : false) };
   }
   if (kind === 'ordinal') {
-    const passWhenIn = isRecord(policy) && Array.isArray(policy.passWhenIn) ? policy.passWhenIn : [];
+    const passWhenIn =
+      isRecord(policy) && Array.isArray(policy.passWhenIn) ? policy.passWhenIn : [];
     return { kind: 'ordinal', passWhenIn };
   }
   if (kind === 'number') {
     const type = isRecord(policy) ? policy.type : undefined;
     if (type === 'threshold') {
-      const passAt = Number(isRecord(policy) ? policy.passAt : NaN);
+      const passAt = Number(isRecord(policy) ? policy.passAt : Number.NaN);
       return { kind: 'number', type: 'threshold', passAt };
     }
     return {
@@ -99,7 +113,8 @@ function toPolicyInfo(policy: unknown): VerdictPolicyInfo {
 
 function asMetricScalarOrNull(value: unknown): MetricScalarOrNull | undefined {
   if (value === null) return null;
-  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'string')
+    return value;
   return undefined;
 }
 
@@ -124,8 +139,7 @@ function toNormalizationSnap(
         : (normalizer as NormalizerSpecSnap);
 
   // Calibration: if it's a function, mark as not-serializable; otherwise use the value
-  const calibration =
-    typeof n.calibrate === 'function' ? undefined : n.calibrate;
+  const calibration = typeof n.calibrate === 'function' ? undefined : n.calibrate;
 
   return {
     normalizer: normalizerSnap,
@@ -204,12 +218,14 @@ function buildRunDefs(args: {
 
       scorers[ie.scorer.name] = {
         name: ie.scorer.name,
-        inputs: (ie.scorer.inputs as readonly ScorerInput[]).map((input): ScorerInputSnap => ({
-          metricRef: input.metric.name,
-          weight: input.weight,
-          ...(input.required !== undefined ? { required: input.required } : {}),
-          ...(input.normalizerOverride !== undefined ? { hasNormalizerOverride: true } : {}),
-        })),
+        inputs: (ie.scorer.inputs as readonly ScorerInput[]).map(
+          (input): ScorerInputSnap => ({
+            metricRef: input.metric.name,
+            weight: input.weight,
+            ...(input.required !== undefined ? { required: input.required } : {}),
+            ...(input.normalizerOverride !== undefined ? { hasNormalizerOverride: true } : {}),
+          })
+        ),
         ...(ie.scorer.normalizeWeights !== undefined
           ? { normalizeWeights: ie.scorer.normalizeWeights }
           : {}),
@@ -237,10 +253,7 @@ function buildRunDefs(args: {
   return { metrics, evals, scorers };
 }
 
-function findDerivedForEval(
-  derived: ReadonlyMap<string, DerivedScoreEntry>,
-  evalName: string
-) {
+function findDerivedForEval(derived: ReadonlyMap<string, DerivedScoreEntry>, evalName: string) {
   for (const entry of derived.values()) {
     if (entry.evalName === evalName) return entry;
   }
@@ -259,7 +272,10 @@ function buildSingleTurnSeries(args: {
   verdicts: readonly PipelineVerdict[] | undefined;
   policy: VerdictPolicyInfo;
 }): SingleTurnEvalSeries {
-  const byStepIndex: Array<StepEvalResult | null> = Array.from({ length: args.stepCount }, () => null);
+  const byStepIndex: Array<StepEvalResult | null> = Array.from(
+    { length: args.stepCount },
+    () => null
+  );
   const metricResults = args.metricName
     ? args.rawMetrics.filter((m) => m.metricDef.name === args.metricName)
     : [];
@@ -441,13 +457,19 @@ function buildConversationResult(args: {
 
   // summaries.byEval from pipeline evalSummaries
   // Use Record type for dynamic construction, cast to Summaries when returning
-  const byEval: Record<string, {
-    eval: string;
-    kind: 'singleTurn' | 'multiTurn' | 'scorer';
-    count: number;
-    aggregations?: { score: Record<string, number>; raw?: Record<string, number | Record<string, number>> };
-    verdictSummary?: import('@tally-evals/core').VerdictSummary;
-  }> = {};
+  const byEval: Record<
+    string,
+    {
+      eval: string;
+      kind: 'singleTurn' | 'multiTurn' | 'scorer';
+      count: number;
+      aggregations?: {
+        score: Record<string, number>;
+        raw?: Record<string, number | Record<string, number>>;
+      };
+      verdictSummary?: import('@tally-evals/core').VerdictSummary;
+    }
+  > = {};
   for (const [evalName, summary] of args.pipeline.evalSummaries.entries()) {
     const derivedEntryForCount = findDerivedForEval(targetDerived, evalName);
     const count = derivedEntryForCount?.scores.length ?? 0;
@@ -458,15 +480,13 @@ function buildConversationResult(args: {
       // Cast aggregations - pipeline type is more general but values match expected structure
       // biome-ignore lint/suspicious/noExplicitAny: Runtime compatible
       ...(summary.aggregations ? { aggregations: summary.aggregations as any } : {}),
-      ...(summary.verdictSummary
-        ? { verdictSummary: summary.verdictSummary }
-        : {}),
+      ...(summary.verdictSummary ? { verdictSummary: summary.verdictSummary } : {}),
     };
   }
   // Cast to Summaries - runtime structure matches, types are compatible via defaults
   const summaries: Summaries | undefined = Object.keys(byEval).length
-    // biome-ignore lint/suspicious/noExplicitAny: Runtime serialization - types are compatible
-    ? ({ byEval } as any as Summaries)
+    ? // biome-ignore lint/suspicious/noExplicitAny: Runtime serialization - types are compatible
+      ({ byEval } as any as Summaries)
     : undefined;
 
   // Cast to ConversationResult - runtime structure is compatible
@@ -479,7 +499,6 @@ function buildConversationResult(args: {
     ...(summaries ? { summaries } : {}),
   } as unknown as ConversationResult;
 }
-
 
 /**
  * Tally container implementation.
@@ -496,11 +515,7 @@ export class TallyContainer<
   public readonly evals: TEvals;
   public readonly context?: EvaluationContext;
 
-  constructor(
-    data: readonly TContainer[],
-    evals: TEvals,
-    context?: EvaluationContext,
-  ) {
+  constructor(data: readonly TContainer[], evals: TEvals, context?: EvaluationContext) {
     if (!Array.isArray(data)) {
       throw new Error('Tally: data must be an array');
     }

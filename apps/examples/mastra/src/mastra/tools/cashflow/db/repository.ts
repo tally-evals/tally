@@ -1,18 +1,18 @@
-import { drizzle } from 'drizzle-orm/better-sqlite3';
 import Database from 'better-sqlite3';
 import { eq } from 'drizzle-orm';
-import {
-  cashPositions,
-  recurringCashflows,
-  futureCashflows,
-  type CashPosition,
-  type RecurringCashflow,
-  type FutureCashflow,
-  type CashPositionRow,
-  type RecurringCashflowRow,
-  type FutureCashflowRow,
-} from './schema';
+import { drizzle } from 'drizzle-orm/better-sqlite3';
 import { initSchema } from './migrate';
+import {
+  type CashPosition,
+  type CashPositionRow,
+  type FutureCashflow,
+  type FutureCashflowRow,
+  type RecurringCashflow,
+  type RecurringCashflowRow,
+  cashPositions,
+  futureCashflows,
+  recurringCashflows,
+} from './schema';
 
 // Use :memory: for tests, file-based DB for dev/production
 const DB_PATH = process.env.CASHFLOW_DB_PATH ?? './cashflow.db';
@@ -22,14 +22,13 @@ initSchema(sqlite);
 
 const db = drizzle(sqlite);
 
-
 export interface RecurringCashflowFilter {
   userId?: string;
   type?: RecurringCashflow['type'];
   status?: RecurringCashflow['status'];
 }
 
-// for future cashflows like investments, loans, etc. 
+// for future cashflows like investments, loans, etc.
 export interface FutureCashflowFilter {
   userId?: string;
   type?: FutureCashflow['type'];
@@ -41,7 +40,11 @@ export interface FutureCashflowFilter {
 // -----------------------------
 
 export async function getCashPosition(userId: string): Promise<CashPosition | null> {
-  const rows = await db.select().from(cashPositions).where(eq(cashPositions.userId, userId)).limit(1);
+  const rows = await db
+    .select()
+    .from(cashPositions)
+    .where(eq(cashPositions.userId, userId))
+    .limit(1);
   if (rows.length === 0) return null;
   const row: CashPositionRow = rows[0]!;
   return {
@@ -81,7 +84,7 @@ export async function upsertCashPosition(position: CashPosition): Promise<CashPo
 // Recurring Cashflows
 // -----------------------------
 
-// convert database row to recurring cashflow object 
+// convert database row to recurring cashflow object
 const toRecurringCashflow = (row: RecurringCashflowRow): RecurringCashflow => {
   const base: RecurringCashflow = {
     id: row.id,
@@ -101,7 +104,7 @@ const toRecurringCashflow = (row: RecurringCashflowRow): RecurringCashflow => {
 };
 
 export async function listRecurringCashflows(
-  filter: RecurringCashflowFilter = {},
+  filter: RecurringCashflowFilter = {}
 ): Promise<RecurringCashflow[]> {
   const rows = await db.select().from(recurringCashflows);
 
@@ -111,7 +114,7 @@ export async function listRecurringCashflows(
       (cf) =>
         (!filter.userId || cf.userId === filter.userId) &&
         (!filter.type || cf.type === filter.type) &&
-        (!filter.status || cf.status === filter.status),
+        (!filter.status || cf.status === filter.status)
     );
 }
 
@@ -133,7 +136,7 @@ export async function createRecurringCashflow(data: RecurringCashflow): Promise<
 // Future Cashflows
 // -----------------------------
 
-// convert database row to future cashflow object  
+// convert database row to future cashflow object
 const toFutureCashflow = (row: FutureCashflowRow): FutureCashflow => {
   const base: FutureCashflow = {
     id: row.id,
@@ -152,7 +155,7 @@ const toFutureCashflow = (row: FutureCashflowRow): FutureCashflow => {
 };
 
 export async function listFutureCashflows(
-  filter: FutureCashflowFilter = {},
+  filter: FutureCashflowFilter = {}
 ): Promise<FutureCashflow[]> {
   const rows = await db.select().from(futureCashflows);
 
@@ -162,7 +165,7 @@ export async function listFutureCashflows(
       (cf) =>
         (!filter.userId || cf.userId === filter.userId) &&
         (!filter.type || cf.type === filter.type) &&
-        (!filter.status || cf.status === filter.status),
+        (!filter.status || cf.status === filter.status)
     );
 }
 
@@ -178,4 +181,3 @@ export async function createFutureCashflow(data: FutureCashflow): Promise<Future
   });
   return data;
 }
-

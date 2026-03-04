@@ -7,15 +7,8 @@
 
 import type { LanguageModel } from 'ai';
 import type { Conversation, ConversationStep } from './conversation';
-import type {
-  MetricNormalization,
-  NormalizationContextFor,
-} from './normalization';
-import type {
-  MetricScalar,
-  ValueTypeFor,
-  DatasetItem,
-} from './primitives';
+import type { MetricNormalization, NormalizationContextFor } from './normalization';
+import type { DatasetItem, MetricScalar, ValueTypeFor } from './primitives';
 
 // Re-export primitives for convenience
 export type {
@@ -155,9 +148,7 @@ export interface LLMMetricFields<
  *
  * @typeParam TMetricValue - The metric value type
  */
-export interface CodeMetricFields<
-  TMetricValue extends MetricScalar = MetricScalar,
-> {
+export interface CodeMetricFields<TMetricValue extends MetricScalar = MetricScalar> {
   /** Discriminator for metric implementation type */
   type: 'code-based';
   /** Function that computes the metric value from input data */
@@ -220,9 +211,7 @@ export interface SingleTurnMetricDef<
    * Prepares the selected target into a normalized payload for execution.
    * Default shape exposes `{ input, output }`.
    */
-  preProcessor?: (
-    selected: SingleTargetFor<TContainer>,
-  ) => Promise<unknown> | unknown;
+  preProcessor?: (selected: SingleTargetFor<TContainer>) => Promise<unknown> | unknown;
   /** Aggregators for combining results across items */
   aggregators?: Aggregator<TMetricValue, TContainer>[];
 }
@@ -264,10 +253,8 @@ export type SingleTurnMetricVariants<
   TContainer extends SingleTurnContainer = SingleTurnContainer,
   TPromptVars extends VarsTuple = readonly [],
 > =
-  | (SingleTurnMetricDef<TMetricValue, TContainer> &
-      LLMMetricFields<TMetricValue, TPromptVars>)
-  | (SingleTurnMetricDef<TMetricValue, TContainer> &
-      CodeMetricFields<TMetricValue>);
+  | (SingleTurnMetricDef<TMetricValue, TContainer> & LLMMetricFields<TMetricValue, TPromptVars>)
+  | (SingleTurnMetricDef<TMetricValue, TContainer> & CodeMetricFields<TMetricValue>);
 
 /**
  * Multi-turn metric variants (LLM or Code-based).
@@ -281,8 +268,7 @@ export type MultiTurnMetricVariants<
   TContainer extends MultiTurnContainer = MultiTurnContainer,
   TPromptVars extends VarsTuple = readonly [],
 > =
-  | (MultiTurnMetricDef<TMetricValue, TContainer> &
-      LLMMetricFields<TMetricValue, TPromptVars>)
+  | (MultiTurnMetricDef<TMetricValue, TContainer> & LLMMetricFields<TMetricValue, TPromptVars>)
   | (MultiTurnMetricDef<TMetricValue, TContainer> & CodeMetricFields<TMetricValue>);
 
 /**
@@ -299,9 +285,7 @@ export type MetricDef<
 > =
   | SingleTurnMetricVariants<
       TMetricValue,
-      TContainer extends SingleTurnContainer
-        ? TContainer
-        : SingleTurnContainer
+      TContainer extends SingleTurnContainer ? TContainer : SingleTurnContainer
     >
   | (TContainer extends MultiTurnContainer
       ? MultiTurnMetricVariants<TMetricValue, TContainer>
@@ -312,8 +296,7 @@ export type MetricDef<
  *
  * @typeParam TContainer - The container type
  */
-export type MetricDefFor<TContainer extends MetricContainer> =
-  AnyMetricDefFor<TContainer>;
+export type MetricDefFor<TContainer extends MetricContainer> = AnyMetricDefFor<TContainer>;
 
 /**
  * Accepts any MetricDef for a container type, regardless of value type.
@@ -328,7 +311,9 @@ export type AnyMetricDefFor<TContainer extends MetricContainer> =
     ? SingleTurnMetricDef<MetricScalar, TContainer>
     : TContainer extends MultiTurnContainer
       ? MultiTurnMetricDef<MetricScalar, TContainer>
-      : SingleTurnMetricDef<MetricScalar, SingleTurnContainer> | MultiTurnMetricDef<MetricScalar, MultiTurnContainer>;
+      :
+          | SingleTurnMetricDef<MetricScalar, SingleTurnContainer>
+          | MultiTurnMetricDef<MetricScalar, MultiTurnContainer>;
 
 /**
  * Runtime metric result.
@@ -380,7 +365,8 @@ interface BaseAggregatorDef<TName extends string = string> {
  *
  * @typeParam TName - Literal string type for aggregator name
  */
-export interface NumericAggregatorDef<TName extends string = string> extends BaseAggregatorDef<TName> {
+export interface NumericAggregatorDef<TName extends string = string>
+  extends BaseAggregatorDef<TName> {
   readonly kind: 'numeric';
   /** Aggregation function */
   aggregate: (values: readonly number[]) => number;
@@ -394,7 +380,8 @@ export interface NumericAggregatorDef<TName extends string = string> extends Bas
  *
  * @typeParam TName - Literal string type for aggregator name
  */
-export interface BooleanAggregatorDef<TName extends string = string> extends BaseAggregatorDef<TName> {
+export interface BooleanAggregatorDef<TName extends string = string>
+  extends BaseAggregatorDef<TName> {
   readonly kind: 'boolean';
   /** Aggregation function returning a rate (0-1) */
   aggregate: (values: readonly boolean[]) => number;
@@ -408,7 +395,8 @@ export interface BooleanAggregatorDef<TName extends string = string> extends Bas
  *
  * @typeParam TName - Literal string type for aggregator name
  */
-export interface CategoricalAggregatorDef<TName extends string = string> extends BaseAggregatorDef<TName> {
+export interface CategoricalAggregatorDef<TName extends string = string>
+  extends BaseAggregatorDef<TName> {
   readonly kind: 'categorical';
   /** Aggregation function returning category counts/frequencies */
   aggregate: (values: readonly string[]) => Record<string, number>;

@@ -11,5 +11,5 @@ import { InMemoryAgentMemory } from '../memory/InMemoryAgentMemory.js';
  * Durable persistence (if desired) is handled via core TallyStore.
  */
 export function initializeAgentMemory(): InMemoryAgentMemory {
-	return new InMemoryAgentMemory();
+  return new InMemoryAgentMemory();
 }
