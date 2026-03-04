@@ -23,6 +23,7 @@ import {
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
 import { travelPlannerAgent } from '../../../src/agents/travelPlanner';
 import { getTrajectoryTestSkipReason, runCase, saveTallyReportToStore } from '../../utils/harness';
+import { getSummaryScoreValue } from '../../utils/summary';
 import { travelPlannerCurveTrajectory } from './definitions';
 import { createKnowledgeRetentionMetric } from './metrics';
 
@@ -135,11 +136,9 @@ describeTravelPlannerCurve('Travel Planner Agent - Curve Ball', () => {
     expect(Object.keys(report.result.summaries?.byEval ?? {}).length).toBeGreaterThan(0);
 
     const overallQualitySummary = report.result.summaries?.byEval?.['Overall Quality'];
-    if (overallQualitySummary) {
-      const mean = (overallQualitySummary.aggregations?.score as any)?.Mean;
-      if (typeof mean === 'number') {
-        expect(mean).toBeGreaterThan(0.4);
-      }
+    const mean = overallQualitySummary ? getSummaryScoreValue(overallQualitySummary) : undefined;
+    if (typeof mean === 'number') {
+      expect(mean).toBeGreaterThan(0.4);
     }
   });
 });

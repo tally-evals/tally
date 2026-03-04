@@ -19,6 +19,7 @@ import { createAnswerRelevanceMetric, createCompletenessMetric } from '@tally-ev
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
 import { weatherAgent } from '../../../src/agents/weather';
 import { getTrajectoryTestSkipReason, runCase, saveTallyReportToStore } from '../../utils/harness';
+import { getSummaryScoreValue } from '../../utils/summary';
 import { weatherGoldenTrajectory } from './definitions';
 
 const skipReason = getTrajectoryTestSkipReason('weather-golden');
@@ -100,14 +101,13 @@ describeWeatherGolden('Weather Agent - Golden Path', () => {
 
     // Debug output
     const overallQualitySummary = report.result.summaries?.byEval?.['Overall Quality'];
+    const overallQualityMean = overallQualitySummary
+      ? getSummaryScoreValue(overallQualitySummary)
+      : undefined;
     console.log('📊 Evaluation Results:');
     console.log(`   Steps evaluated: ${conversation.steps.length}`);
-    console.log(
-      `   Overall Quality mean: ${(overallQualitySummary?.aggregations?.score as any)?.mean}`
-    );
-    console.log(
-      `   Pass rate: ${overallQualitySummary?.verdictSummary && (overallQualitySummary.verdictSummary as any).passRate}`
-    );
+    console.log(`   Overall Quality mean: ${overallQualityMean}`);
+    console.log(`   Pass rate: ${overallQualitySummary?.verdictSummary?.passRate}`);
 
     // Assertions
     expect(report).toBeDefined();
@@ -117,11 +117,8 @@ describeWeatherGolden('Weather Agent - Golden Path', () => {
     // Check mean score (should be reasonable for golden path)
     // Note: passRate can be 0 even with mean=1 due to how thresholdVerdict is computed
     // This is a known quirk - the mean is the more reliable quality indicator
-    if (overallQualitySummary) {
-      const mean = (overallQualitySummary.aggregations?.score as any)?.mean;
-      if (typeof mean === 'number') {
-        expect(mean).toBeGreaterThan(0.5); // At least 0.5 average score
-      }
+    if (typeof overallQualityMean === 'number') {
+      expect(overallQualityMean).toBeGreaterThan(0.5); // At least 0.5 average score
     }
   });
 });

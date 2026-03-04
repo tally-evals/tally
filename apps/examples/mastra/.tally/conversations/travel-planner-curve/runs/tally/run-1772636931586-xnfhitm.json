@@ -1,0 +1,548 @@
+{
+  "schemaVersion": 1,
+  "runId": "run-1772636931586-xnfhitm",
+  "createdAt": "2026-03-04T15:08:51.586Z",
+  "defs": {
+    "metrics": {
+      "answerRelevance": {
+        "name": "answerRelevance",
+        "scope": "single",
+        "valueType": "number",
+        "description": "Measures how relevant the output is to the input query using LLM-based statement-level relevance analysis",
+        "normalization": {
+          "normalizer": {
+            "type": "min-max",
+            "min": 0,
+            "max": 5,
+            "clip": true
+          }
+        }
+      },
+      "completeness": {
+        "name": "completeness",
+        "scope": "single",
+        "valueType": "number",
+        "description": "Measures how complete an answer is relative to expected coverage using LLM-based analysis",
+        "normalization": {
+          "normalizer": {
+            "type": "min-max",
+            "min": 0,
+            "max": 5,
+            "clip": true
+          }
+        }
+      },
+      "roleAdherence": {
+        "name": "roleAdherence",
+        "scope": "multi",
+        "valueType": "number",
+        "description": "Measures how well the assistant adheres to a specified role across an entire conversation",
+        "metadata": {
+          "expectedRole": "travel planning assistant",
+          "checkConsistency": true
+        },
+        "normalization": {
+          "normalizer": {
+            "type": "min-max",
+            "min": 0,
+            "max": 5,
+            "clip": true
+          }
+        }
+      },
+      "knowledgeRetention": {
+        "name": "knowledgeRetention",
+        "scope": "multi",
+        "valueType": "number",
+        "description": "Measures how well the assistant retains and uses information from earlier parts of the conversation",
+        "normalization": {
+          "normalizer": {
+            "type": "min-max",
+            "min": 0,
+            "max": 5,
+            "clip": true
+          }
+        }
+      }
+    },
+    "evals": {
+      "Answer Relevance": {
+        "name": "Answer Relevance",
+        "kind": "singleTurn",
+        "outputShape": "seriesByStepIndex",
+        "metric": "answerRelevance",
+        "verdict": {
+          "kind": "number",
+          "type": "threshold",
+          "passAt": 3
+        }
+      },
+      "Completeness": {
+        "name": "Completeness",
+        "kind": "singleTurn",
+        "outputShape": "seriesByStepIndex",
+        "metric": "completeness",
+        "verdict": {
+          "kind": "number",
+          "type": "threshold",
+          "passAt": 2
+        }
+      },
+      "Role Adherence": {
+        "name": "Role Adherence",
+        "kind": "multiTurn",
+        "outputShape": "scalar",
+        "metric": "roleAdherence",
+        "verdict": {
+          "kind": "number",
+          "type": "threshold",
+          "passAt": 3.5
+        }
+      },
+      "Knowledge Retention": {
+        "name": "Knowledge Retention",
+        "kind": "multiTurn",
+        "outputShape": "scalar",
+        "metric": "knowledgeRetention",
+        "verdict": {
+          "kind": "number",
+          "type": "threshold",
+          "passAt": 2.5
+        }
+      },
+      "Overall Quality": {
+        "name": "Overall Quality",
+        "kind": "scorer",
+        "outputShape": "scalar",
+        "metric": "OverallQuality",
+        "scorerRef": "OverallQuality",
+        "verdict": {
+          "kind": "number",
+          "type": "threshold",
+          "passAt": 0.5
+        }
+      }
+    },
+    "scorers": {
+      "OverallQuality": {
+        "name": "OverallQuality",
+        "inputs": [
+          {
+            "metricRef": "answerRelevance",
+            "weight": 0.3,
+            "required": true
+          },
+          {
+            "metricRef": "roleAdherence",
+            "weight": 0.25,
+            "required": true
+          },
+          {
+            "metricRef": "knowledgeRetention",
+            "weight": 0.25,
+            "required": true
+          },
+          {
+            "metricRef": "completeness",
+            "weight": 0.2,
+            "required": true
+          }
+        ],
+        "normalizeWeights": true,
+        "combine": {
+          "kind": "weightedAverage"
+        },
+        "description": "Weighted average scorer combining 4 metrics",
+        "metadata": {
+          "__tally": {
+            "combineKind": "weightedAverage"
+          }
+        }
+      }
+    }
+  },
+  "result": {
+    "stepCount": 2,
+    "singleTurn": {
+      "Answer Relevance": {
+        "byStepIndex": [
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 0.8,
+              "rawValue": 4,
+              "confidence": 0.9,
+              "reasoning": "The response acknowledges the query about planning a trip in the fall and immediately seeks clarification to provide a more tailored recommendation. It doesn't offer specific destinations yet, but it directly addresses the planning aspect and sets up a path to a full answer.",
+              "executionTimeMs": 4661,
+              "timestamp": "2026-03-04T15:08:56.249Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3
+              },
+              "observed": {
+                "rawValue": 4,
+                "score": 0.8
+              }
+            }
+          },
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.9,
+              "reasoning": "The response directly addresses the user's openness to new ideas and suggests specific, diverse travel experiences. It actively seeks further input, indicating a strong understanding of the user's exploratory request.",
+              "executionTimeMs": 4205,
+              "timestamp": "2026-03-04T15:08:55.798Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          }
+        ]
+      },
+      "Completeness": {
+        "byStepIndex": [
+          {
+            "evalRef": "Completeness",
+            "measurement": {
+              "metricRef": "completeness",
+              "score": 0.4,
+              "rawValue": 2,
+              "confidence": 0.9,
+              "reasoning": "The response acknowledges the user's general timeframe (fall) but does not offer any specific destination suggestions or information related to fall travel. Instead, it asks clarifying questions, which is a good conversational step, but it doesn't provide any of the travel planning information the user implicitly requested. It's incomplete in terms of providing concrete travel ideas.",
+              "executionTimeMs": 3931,
+              "timestamp": "2026-03-04T15:08:55.525Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2
+              },
+              "observed": {
+                "rawValue": 2,
+                "score": 0.4
+              }
+            }
+          },
+          {
+            "evalRef": "Completeness",
+            "measurement": {
+              "metricRef": "completeness",
+              "score": 0.8,
+              "rawValue": 4,
+              "confidence": 0.9,
+              "reasoning": "The response offers three distinct and 'different' experience ideas (Northern Lights, Machu Picchu, Kyoto) that align with the user's open-ended request for 'something different'. It provides a good starting point and prompts for further clarification. However, it doesn't go into extensive detail about each option, which could have made it slightly more complete. It covers the core request well but could be deeper.",
+              "executionTimeMs": 3438,
+              "timestamp": "2026-03-04T15:08:55.032Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2
+              },
+              "observed": {
+                "rawValue": 4,
+                "score": 0.8
+              }
+            }
+          }
+        ]
+      }
+    },
+    "multiTurn": {
+      "Role Adherence": {
+        "evalRef": "Role Adherence",
+        "measurement": {
+          "metricRef": "roleAdherence",
+          "score": 1,
+          "rawValue": 5,
+          "confidence": 0.9,
+          "reasoning": "The assistant perfectly adheres to the role of a travel planning assistant. In Turn 1, it acknowledges the user's request and proactively asks clarifying questions to narrow down destination possibilities, demonstrating helpfulness and a planning-oriented approach. In Turn 2, it continues to offer diverse and interesting travel suggestions based on the user's openness, further reinforcing its role as a guide. The language, tone, and suggestions are all highly appropriate for a travel planning assistant, and the role is maintained consistently across both turns.",
+          "executionTimeMs": 3679,
+          "timestamp": "2026-03-04T15:08:55.273Z",
+          "normalization": {
+            "normalizer": {
+              "type": "min-max",
+              "min": 0,
+              "max": 5,
+              "clip": true
+            }
+          }
+        },
+        "outcome": {
+          "verdict": "pass",
+          "policy": {
+            "kind": "number",
+            "type": "threshold",
+            "passAt": 3.5
+          },
+          "observed": {
+            "rawValue": 5,
+            "score": 1
+          }
+        }
+      },
+      "Knowledge Retention": {
+        "evalRef": "Knowledge Retention",
+        "measurement": {
+          "metricRef": "knowledgeRetention",
+          "score": 0.8,
+          "rawValue": 4,
+          "confidence": 0.9,
+          "reasoning": "The conversation is very short and lacks many of the parameters to track. The assistant did not need to ask for any information again, and there were no contradictions or inconsistencies. The user's first mention of 'fall' was not explicitly used by the assistant, which slightly lowered the score. However, given the limited input, the retention was good.",
+          "executionTimeMs": 2610,
+          "timestamp": "2026-03-04T15:08:54.205Z",
+          "normalization": {
+            "normalizer": {
+              "type": "min-max",
+              "min": 0,
+              "max": 5,
+              "clip": true
+            }
+          }
+        },
+        "outcome": {
+          "verdict": "pass",
+          "policy": {
+            "kind": "number",
+            "type": "threshold",
+            "passAt": 2.5
+          },
+          "observed": {
+            "rawValue": 4,
+            "score": 0.8
+          }
+        }
+      }
+    },
+    "scorers": {
+      "Overall Quality": {
+        "shape": "seriesByStepIndex",
+        "series": {
+          "byStepIndex": [
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.77
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.77,
+                  "score": 0.77
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.91
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.91,
+                  "score": 0.91
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "summaries": {
+      "byEval": {
+        "Answer Relevance": {
+          "eval": "Answer Relevance",
+          "kind": "singleTurn",
+          "count": 2,
+          "aggregations": {
+            "score": {
+              "Mean": 0.9,
+              "P50": 0.9,
+              "P75": 0.95,
+              "P90": 0.98
+            },
+            "raw": {
+              "Mean": 4.5,
+              "P50": 4.5,
+              "P75": 4.75,
+              "P90": 4.9
+            }
+          },
+          "verdictSummary": {
+            "passRate": 1,
+            "failRate": 0,
+            "unknownRate": 0,
+            "passCount": 2,
+            "failCount": 0,
+            "unknownCount": 0,
+            "totalCount": 2
+          }
+        },
+        "Completeness": {
+          "eval": "Completeness",
+          "kind": "singleTurn",
+          "count": 2,
+          "aggregations": {
+            "score": {
+              "Mean": 0.6000000000000001,
+              "P50": 0.6000000000000001,
+              "P75": 0.7000000000000001,
+              "P90": 0.76
+            },
+            "raw": {
+              "Mean": 3,
+              "P50": 3,
+              "P75": 3.5,
+              "P90": 3.8
+            }
+          },
+          "verdictSummary": {
+            "passRate": 1,
+            "failRate": 0,
+            "unknownRate": 0,
+            "passCount": 2,
+            "failCount": 0,
+            "unknownCount": 0,
+            "totalCount": 2
+          }
+        },
+        "Role Adherence": {
+          "eval": "Role Adherence",
+          "kind": "multiTurn",
+          "count": 1,
+          "aggregations": {
+            "score": {
+              "value": 1
+            },
+            "raw": {
+              "value": 5
+            }
+          },
+          "verdictSummary": {
+            "passRate": 1,
+            "failRate": 0,
+            "unknownRate": 0,
+            "passCount": 1,
+            "failCount": 0,
+            "unknownCount": 0,
+            "totalCount": 1
+          }
+        },
+        "Knowledge Retention": {
+          "eval": "Knowledge Retention",
+          "kind": "multiTurn",
+          "count": 1,
+          "aggregations": {
+            "score": {
+              "value": 0.8
+            },
+            "raw": {
+              "value": 4
+            }
+          },
+          "verdictSummary": {
+            "passRate": 1,
+            "failRate": 0,
+            "unknownRate": 0,
+            "passCount": 1,
+            "failCount": 0,
+            "unknownCount": 0,
+            "totalCount": 1
+          }
+        },
+        "Overall Quality": {
+          "eval": "Overall Quality",
+          "kind": "scorer",
+          "count": 2,
+          "aggregations": {
+            "score": {
+              "Mean": 0.8400000000000001,
+              "P50": 0.8400000000000001,
+              "P75": 0.875,
+              "P90": 0.896
+            }
+          },
+          "verdictSummary": {
+            "passRate": 1,
+            "failRate": 0,
+            "unknownRate": 0,
+            "passCount": 2,
+            "failCount": 0,
+            "unknownCount": 0,
+            "totalCount": 2
+          }
+        }
+      }
+    }
+  },
+  "metadata": {
+    "dataCount": 1,
+    "evalCount": 5
+  }
+}

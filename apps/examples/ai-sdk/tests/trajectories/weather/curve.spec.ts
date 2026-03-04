@@ -19,6 +19,7 @@ import { createAnswerRelevanceMetric, createCompletenessMetric } from '@tally-ev
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
 import { weatherAgent } from '../../../src/agents/weather';
 import { getTrajectoryTestSkipReason, runCase, saveTallyReportToStore } from '../../utils/harness';
+import { getSummaryScoreValue } from '../../utils/summary';
 import { weatherCurveTrajectory } from './definitions';
 
 const skipReason = getTrajectoryTestSkipReason('weather-curve');
@@ -100,11 +101,9 @@ describeWeatherCurve('Weather Agent - Curve Ball', () => {
     // For curve ball, we're more lenient - just check that agent handled it
     // The agent should still respond appropriately even if the request is ambiguous
     const overallQualitySummary = report.result.summaries?.byEval?.['Overall Quality'];
-    if (overallQualitySummary) {
-      const mean = (overallQualitySummary.aggregations?.score as any)?.mean;
-      if (typeof mean === 'number') {
-        expect(mean).toBeGreaterThan(0.4); // At least 0.4 average score
-      }
+    const mean = overallQualitySummary ? getSummaryScoreValue(overallQualitySummary) : undefined;
+    if (typeof mean === 'number') {
+      expect(mean).toBeGreaterThan(0.4); // At least 0.4 average score
     }
   });
 });

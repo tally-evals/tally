@@ -29,6 +29,7 @@ import {
   runCase,
   saveTallyReportToStore,
 } from '../../utils/harness';
+import { getSummaryScoreValue } from '../../utils/summary';
 import { travelPlannerGoldenTrajectory } from './definitions';
 import { createKnowledgeRetentionMetric } from './metrics';
 
@@ -243,7 +244,7 @@ describeTravelPlannerGolden('Travel Planner Agent - Golden Path', () => {
     }
 
     const overallQualitySummary = report.result.summaries?.byEval?.['Overall Quality'];
-    const mean = overallQualitySummary?.aggregations?.score.Mean;
+    const mean = overallQualitySummary ? getSummaryScoreValue(overallQualitySummary) : undefined;
     if (typeof mean === 'number') expect(mean).toBeGreaterThanOrEqual(0.6);
   }, 300000); // 5 minute timeout for trajectory execution
 });

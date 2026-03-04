@@ -22,6 +22,7 @@ import {
   runCase,
   saveTallyReportToStore,
 } from '../../utils/harness';
+import { getSummaryScoreValue } from '../../utils/summary';
 import { demandLetterGoldenTrajectory } from './definitions';
 
 const skipReason = getTrajectoryTestSkipReason('demand-letter-golden');
@@ -127,11 +128,12 @@ describeDemandLetterGolden('Demand Letter Agent - Golden Path', () => {
 
     // Debug output
     const overallQualitySummary = report.result.summaries?.byEval?.['Overall Quality'];
+    const overallQualityMean = overallQualitySummary
+      ? getSummaryScoreValue(overallQualitySummary)
+      : undefined;
     console.log('📊 Evaluation Results:');
     console.log(`   Steps evaluated: ${conversation.steps.length}`);
-    console.log(
-      `   Overall Quality mean: ${(overallQualitySummary?.aggregations?.score as any)?.mean}`
-    );
+    console.log(`   Overall Quality mean: ${overallQualityMean}`);
 
     expect(report).toBeDefined();
     expect(report.result.stepCount).toBeGreaterThan(0);
@@ -140,11 +142,8 @@ describeDemandLetterGolden('Demand Letter Agent - Golden Path', () => {
     // Check mean score
     // Note: demandLetter trajectory was recorded with agent-loop (3 steps)
     // so quality may be lower than a complete trajectory
-    if (overallQualitySummary) {
-      const mean = (overallQualitySummary.aggregations?.score as any)?.mean;
-      if (typeof mean === 'number') {
-        expect(mean).toBeGreaterThan(0.2);
-      }
+    if (typeof overallQualityMean === 'number') {
+      expect(overallQualityMean).toBeGreaterThan(0.2);
     }
   });
 });

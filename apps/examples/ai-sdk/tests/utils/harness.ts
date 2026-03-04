@@ -5,8 +5,8 @@
  * Uses RECORD_TRAJECTORIES environment variable to toggle between modes.
  */
 
-import { rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { rm } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { TallyStore, stepTracesToConversation } from '@tally-evals/core';
 import type { Conversation, ConversationStep } from '@tally-evals/core';

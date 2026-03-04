@@ -17,6 +17,7 @@ import { createAnswerRelevanceMetric, createCompletenessMetric } from '@tally-ev
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
 import { demandLetterAgent } from '../../../src/agents/demandLetter';
 import { getTrajectoryTestSkipReason, runCase, saveTallyReportToStore } from '../../utils/harness';
+import { getSummaryScoreValue } from '../../utils/summary';
 import { demandLetterCurveTrajectory } from './definitions';
 
 const skipReason = getTrajectoryTestSkipReason('demand-letter-curve');
@@ -93,11 +94,9 @@ describeDemandLetterCurve('Demand Letter Agent - Curve Ball', () => {
     expect(Object.keys(report.result.summaries?.byEval ?? {}).length).toBeGreaterThan(0);
 
     const overallQualitySummary = report.result.summaries?.byEval?.['Overall Quality'];
-    if (overallQualitySummary) {
-      const mean = (overallQualitySummary.aggregations?.score as any)?.mean;
-      if (typeof mean === 'number') {
-        expect(mean).toBeGreaterThan(0.4);
-      }
+    const mean = overallQualitySummary ? getSummaryScoreValue(overallQualitySummary) : undefined;
+    if (typeof mean === 'number') {
+      expect(mean).toBeGreaterThan(0.4);
     }
   });
 });
