@@ -1,0 +1,40 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  release:
+    permissions:
+      contents: write
+      pull-requests: write
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.head_ref }}
+          persist-credentials: true
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install Dependencies
+        run: bun install
+      - name: Build
+        run: bun run build
+      - name: Create Release PR or Publish Packages
+        uses: changesets/action@v1
+        id: changesets
+        with:
+          title: "Changeset release"
+          commit: "chore(changeset): release"
+          publish: bun run tag
+          createGithubReleases: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,7 +1,7 @@
-import type { ComponentProps, ReactNode } from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Button } from "../ui/button";
-import { cn } from "../../lib/utils";
+import type { ComponentProps, ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { cn } from '../../lib/utils';
+import { Button } from '../ui/button';
 
 type ConversationContextValue = {
   isAtBottom: boolean;
@@ -9,16 +9,14 @@ type ConversationContextValue = {
 };
 
 type ConversationCompoundProps = {
-  children?:
-    | ReactNode
-    | ((context: ConversationContextValue) => ReactNode);
-} & Omit<ComponentProps<"div">, "children">;
+  children?: ReactNode | ((context: ConversationContextValue) => ReactNode);
+} & Omit<ComponentProps<'div'>, 'children'>;
 
 function useRenderChildren(
-  children: ConversationCompoundProps["children"],
+  children: ConversationCompoundProps['children'],
   context: ConversationContextValue
 ) {
-  if (typeof children === "function") return children(context);
+  if (typeof children === 'function') return children(context);
   return children;
 }
 
@@ -29,7 +27,7 @@ export function Conversation({ children, className, ...props }: ConversationComp
   const scrollToBottom = useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
-    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
   }, []);
 
   useEffect(() => {
@@ -44,8 +42,8 @@ export function Conversation({ children, className, ...props }: ConversationComp
     };
 
     onScroll();
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onScroll);
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => el.removeEventListener('scroll', onScroll);
   }, []);
 
   // Auto-stick to bottom when new content arrives *if* user is already at bottom.
@@ -72,7 +70,7 @@ export function Conversation({ children, className, ...props }: ConversationComp
   );
 
   return (
-    <div className={cn("relative h-full min-h-0", className)} {...props}>
+    <div className={cn('relative h-full min-h-0', className)} {...props}>
       <div
         ref={containerRef}
         className="h-full min-h-0 overflow-y-auto overscroll-contain"
@@ -88,8 +86,8 @@ export function ConversationContent({ children, className, ...props }: Conversat
   // This component is mostly layout; it doesn't need access to the container ref.
   // We keep it to mirror the AI Elements API.
   return (
-    <div className={cn("flex flex-col gap-4 p-4", className)} {...props}>
-      {typeof children === "function"
+    <div className={cn('flex flex-col gap-4 p-4', className)} {...props}>
+      {typeof children === 'function'
         ? // No context here; keep parity but avoid leaking internals.
           children({ isAtBottom: true, scrollToBottom: () => {} })
         : children}
@@ -108,11 +106,11 @@ export function ConversationEmptyState({
   title?: string;
   description?: string;
   icon?: ReactNode;
-} & ComponentProps<"div">) {
+} & ComponentProps<'div'>) {
   return (
     <div
       className={cn(
-        "flex h-full min-h-[240px] flex-col items-center justify-center gap-2 text-center text-muted-foreground",
+        'flex h-full min-h-[240px] flex-col items-center justify-center gap-2 text-center text-muted-foreground',
         className
       )}
       {...props}
@@ -128,16 +126,16 @@ export function ConversationEmptyState({
 export function ConversationScrollButton({
   className,
   ...props
-}: Omit<ComponentProps<typeof Button>, "children" | "onClick">) {
+}: Omit<ComponentProps<typeof Button>, 'children' | 'onClick'>) {
   // Find the nearest conversation container and compute "at bottom" from scroll state.
   // This avoids having to thread context through every child.
   const [visible, setVisible] = useState(false);
   const containerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    const btn = document.querySelector("[data-conversation-scroll-button]");
+    const btn = document.querySelector('[data-conversation-scroll-button]');
     if (!btn) return;
-    const root = btn.closest("[data-conversation-container]") as HTMLElement | null;
+    const root = btn.closest('[data-conversation-container]') as HTMLElement | null;
     if (!root) return;
     containerRef.current = root;
 
@@ -147,14 +145,14 @@ export function ConversationScrollButton({
       setVisible(!atBottom);
     };
     onScroll();
-    root.addEventListener("scroll", onScroll, { passive: true });
-    return () => root.removeEventListener("scroll", onScroll);
+    root.addEventListener('scroll', onScroll, { passive: true });
+    return () => root.removeEventListener('scroll', onScroll);
   }, []);
 
   const onClick = () => {
     const root = containerRef.current;
     if (!root) return;
-    root.scrollTo({ top: root.scrollHeight, behavior: "smooth" });
+    root.scrollTo({ top: root.scrollHeight, behavior: 'smooth' });
   };
 
   if (!visible) return null;
@@ -165,7 +163,7 @@ export function ConversationScrollButton({
       size="sm"
       variant="secondary"
       onClick={onClick}
-      className={cn("absolute bottom-4 right-4 shadow", className)}
+      className={cn('absolute bottom-4 right-4 shadow', className)}
       data-conversation-scroll-button
       {...props}
     >
@@ -173,4 +171,3 @@ export function ConversationScrollButton({
     </Button>
   );
 }
-

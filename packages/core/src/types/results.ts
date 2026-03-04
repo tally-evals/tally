@@ -387,7 +387,7 @@ export type ExtractEvalAggregatorNames<TEval> = TEval extends {
     : never;
 
 /** Default numeric aggregator names */
-export type DefaultNumericAggregatorNames = 'Mean' | 'P50' | 'P95';
+export type DefaultNumericAggregatorNames = 'Mean' | 'P50' | 'P75' | 'P90';
 
 /** Default boolean raw aggregator names */
 export type DefaultBooleanAggregatorNames = 'TrueRate' | 'FalseRate';

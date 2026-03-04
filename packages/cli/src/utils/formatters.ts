@@ -17,11 +17,11 @@ function clamp01(value: number): number {
  */
 export function normalizeMetricValue(value: MetricScalar): number {
   if (typeof value === 'number') {
-    if (value >= 0 && value <= 5) {
-      return value / 5;
-    }
     if (value >= 0 && value <= 1) {
       return value;
+    }
+    if (value >= 0 && value <= 5) {
+      return value / 5;
     }
     return Math.max(0, Math.min(1, value));
   }

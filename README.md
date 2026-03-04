@@ -1,5 +1,10 @@
 <div align="center">
   <br/>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./assets/logo-dark.svg" />
+    <source media="(prefers-color-scheme: light)" srcset="./assets/logo-light.svg" />
+    <img src="./assets/logo-light.svg" alt="Tally Logo" width="64" height="67" />
+  </picture>
   <h1>Tally</h1>
   <p><b>Typesafe agent evaluations and simulated conversations</b></p>
   <p>
@@ -9,8 +14,10 @@
   <p>
     <a href="#getting-started">Quickstart</a> •
     <a href="#concepts">Concepts</a> •
-    <a href="./packages/tally">Package</a> •
-    <a href="./apps/examples/ai-sdk">AI SDK Examples</a>
+    <a href="./packages/tally">Tally</a> •
+    <a href="./packages/trajectories">Trajectories</a> •
+    <a href="./apps/examples/ai-sdk">AI SDK Examples</a> •
+    <a href="./apps/examples/mastra">Mastra Examples</a>
   </p>
 </div>
 
@@ -280,31 +287,6 @@ Verdict policies define pass/fail criteria:
 - `rangeVerdict(min, max)` - Pass if score is within range
 - `ordinalVerdict(categories)` - Pass if value matches allowed categories
 - `customVerdict(fn)` - Custom pass/fail logic function
-
-### Aggregators
-
-Aggregators compute summary statistics across evaluation results. They are type-safe and discriminated by `kind`:
-
-```typescript
-import {
-  // Custom aggregator definitions
-  defineNumericAggregator,
-  defineBooleanAggregator,
-  defineCategoricalAggregator,
-  // Prebuilt aggregators
-  createMeanAggregator,
-  createPercentileAggregator,
-  createThresholdAggregator,
-  createTrueRateAggregator,
-  createDistributionAggregator,
-  // Default aggregators by value type
-  getDefaultAggregators,
-} from '@tally-evals/tally'
-```
-
-- **Numeric**: `createMeanAggregator()`, `createPercentileAggregator()`, `createThresholdAggregator()`
-- **Boolean**: `createTrueRateAggregator()`, `createFalseRateAggregator()`
-- **Categorical**: `createDistributionAggregator()`, `createModeAggregator()`
 
 ### Report Structure
 

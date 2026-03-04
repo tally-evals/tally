@@ -2,8 +2,6 @@
  * Tally CLI - Main entry point
  */
 
-import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
 import { Command } from 'commander';
 import { render } from 'ink';
@@ -11,6 +9,7 @@ import React from 'react';
 import { BrowseView } from './components/BrowseView';
 import { ViewRouter } from './components/ViewRouter';
 import { loadConversationAndTallyReport, openStore } from './data/store';
+import { startViewerServer } from './viewer';
 
 const program = new Command();
 
@@ -109,30 +108,12 @@ program
         process.exit(1);
       }
 
-      // Resolve viewer package location (works in monorepo via workspace deps).
-      // Note: viewer can remain "private" for now; this is about local wiring.
-      const viewerPkgJsonUrl = import.meta.resolve('@tally-evals/viewer/package.json');
-      const viewerPkgJsonPath = fileURLToPath(viewerPkgJsonUrl);
-      const viewerDir = dirname(viewerPkgJsonPath);
-      const viewerPath = resolve(viewerDir, 'src/index.tsx');
+      // Start the embedded viewer server
+      await startViewerServer({ port, cwd: process.cwd() });
 
       console.log(chalk.green('✓ Starting Tally web viewer...'));
       console.log(chalk.gray(`  Local: ${chalk.cyan(`http://localhost:${port}`)}`));
       console.log(chalk.gray('\n  Press Ctrl+C to stop\n'));
-
-      // Spawn the viewer using bun
-      const proc = Bun.spawn(['bun', '--hot', viewerPath], {
-        // Important: run from the viewer package directory so Bun picks up
-        // packages/viewer/bunfig.toml (Tailwind plugin, etc).
-        cwd: viewerDir,
-        env: {
-          ...process.env,
-          PORT: String(port),
-          TALLY_CWD: process.cwd(),
-        },
-        stdout: 'inherit',
-        stderr: 'inherit',
-      });
 
       // Open browser if not disabled (after a short delay)
       if (options.open) {
@@ -148,10 +129,12 @@ program
         }, 1000);
       }
 
-      // Wait for the process
-      await proc.exited;
+      // Keep process alive until Ctrl+C
+      await new Promise(() => {});
     } catch (err) {
-      console.error(chalk.red(`✗ ${err instanceof Error ? err.message : 'Unknown error'}`));
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      console.error(chalk.red('✗ Cannot start web viewer'));
+      console.error(chalk.gray(msg));
       process.exit(1);
     }
       })

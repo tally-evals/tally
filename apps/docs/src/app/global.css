@@ -1,3 +1,38 @@
 @import 'tailwindcss';
 @import 'fumadocs-ui/css/neutral.css';
 @import 'fumadocs-ui/css/preset.css';
+
+/* Shiki code block styles */
+.shiki-wrapper pre {
+  @apply p-6 md:p-8 overflow-x-auto text-sm md:text-base lg:text-lg;
+  background-color: rgba(23, 23, 23, 0.8) !important;
+}
+
+.shiki-wrapper code {
+  @apply font-mono;
+}
+
+.shiki-wrapper .line {
+  @apply leading-relaxed;
+}
+
+/* Slideshow styles */
+.slide-enter {
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+.slide-enter-active {
+  opacity: 1;
+  transform: translateX(0);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.slide-exit {
+  opacity: 1;
+}
+
+.slide-exit-active {
+  opacity: 0;
+  transition: opacity 300ms;
+}

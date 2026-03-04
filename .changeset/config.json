@@ -1,0 +1,18 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
+  "changelog": ["@changesets/changelog-github", { "repo": "tally-evals/tally" }],
+  "commit": false,
+  "fixed": [
+    ["@tally-evals/core", "@tally-evals/tally", "@tally-evals/trajectories", "@tally-evals/cli"]
+  ],
+  "linked": [],
+  "access": "public",
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "ignore": [
+    "@tally-evals/examples-agent-kit",
+    "@tally-evals/examples-ai-sdk",
+    "@tally-evals/examples-mastra",
+    "docs"
+  ]
+}

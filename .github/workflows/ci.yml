@@ -1,0 +1,41 @@
+name: Build & Test
+
+on:
+  push:
+    branches:
+      - dev
+  pull_request:
+    branches-ignore:
+      - "changeset-release/main"
+      - "dev"
+    types:
+      - opened
+      - synchronize
+
+jobs:
+  build:
+    name: Build and Test
+    timeout-minutes: 15
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        node-version: [22, 24]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
+          ref: ${{ github.head_ref }}
+          persist-credentials: false
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Install dependencies
+        run: bun install
+      - name: Build
+        run: bun run build
+      - name: Lint
+        run: bun run lint
+      - name: Test
+        run: bun run test

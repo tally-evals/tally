@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
-import { Card, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
-import { MessageSquare, ArrowRight } from "lucide-react";
+import { ArrowRight, MessageSquare } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Card, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 
 interface ConversationSummary {
   id: string;
@@ -13,7 +13,7 @@ export function ConversationList() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/conversations")
+    fetch('/api/conversations')
       .then((res) => res.json())
       .then((data) => {
         setConversations(data);
@@ -62,11 +62,7 @@ export function ConversationList() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {conversations.map((conv) => (
-          <a
-            key={conv.id}
-            href={`#/conversations/${conv.id}`}
-            className="group block"
-          >
+          <a key={conv.id} href={`#/conversations/${conv.id}`} className="group block">
             <Card className="h-full transition-all hover:border-primary hover:shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
@@ -74,7 +70,7 @@ export function ConversationList() {
                   <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                 </CardTitle>
                 <CardDescription>
-                  {conv.runCount} evaluation {conv.runCount === 1 ? "run" : "runs"}
+                  {conv.runCount} evaluation {conv.runCount === 1 ? 'run' : 'runs'}
                 </CardDescription>
               </CardHeader>
             </Card>
