@@ -38,11 +38,11 @@ export const cashflowGoldenTrajectory: Trajectory = {
       },
       {
         id: 'step-4',
-        instruction: 'Add recurring expense: "I pay 45,000 rent every month."',
+        instruction: 'Add recurring expense: "I pay 45,000 rent every month on the 1st."',
       },
       {
         id: 'step-5',
-        instruction: 'Add another recurring expense: "I also pay 5,000 for internet monthly and 2,000 for a gym subscription monthly."',
+        instruction: 'Add another recurring expense: "I also pay 5,000 for internet monthly on the 10th and 2,000 for a gym subscription monthly on the 12th."',
       },
       {
         id: 'step-6',
@@ -55,27 +55,27 @@ export const cashflowGoldenTrajectory: Trajectory = {
       },
       {
         id: 'step-8',
-        instruction: 'Ask for a projection: "Can you show me my cashflow projection for the next 90 days with a safety buffer of 20,000?"',
+        instruction: 'Confirm the setup summary: "Yes, that all looks correct."',
         preconditions: [{ type: 'stepSatisfied', stepId: 'step-7' }],
       },
       {
         id: 'step-9',
-        instruction: 'Ask a what-if scenario: "What if I also had an emergency expense of 50,000 next month? Would I go into deficit?"',
+        instruction: 'Choose the projection flow: "More than one month."',
         preconditions: [{ type: 'stepSatisfied', stepId: 'step-8' }],
       },
       {
         id: 'step-10',
-        instruction: 'Update a recurring item: "Actually my rent increased to 50,000 per month."',
+        instruction: 'Request a concrete projection: "Project the next 3 months with a safety buffer of 20,000."',
         preconditions: [{ type: 'stepSatisfied', stepId: 'step-9' }],
       },
       {
         id: 'step-11',
-        instruction: 'Cancel a future cashflow: "The freelance payment has been cancelled, please remove it."',
+        instruction: 'Ask a what-if scenario: "What if I also had an emergency expense of 50,000 next month? Would I go into deficit?"',
         preconditions: [{ type: 'stepSatisfied', stepId: 'step-10' }],
       },
       {
         id: 'step-12',
-        instruction: 'Ask for a final updated projection after all changes.',
+        instruction: 'Ask for a final updated projection after the scenario: "Show me the updated 3-month projection and the lowest balance again."',
         preconditions: [{ type: 'stepSatisfied', stepId: 'step-11' }],
       },
     ],
@@ -138,7 +138,7 @@ export const cashflowCurveTrajectory: Trajectory = {
       },
       {
         id: 'step-8',
-        instruction: 'Request a projection even though setup is incomplete.',
+        instruction: 'Request a projection even though setup is incomplete: "Can you just project it now?"',
       },
       {
         id: 'step-9',
@@ -146,17 +146,18 @@ export const cashflowCurveTrajectory: Trajectory = {
       },
       {
         id: 'step-10',
-        instruction: 'Ask about a scenario: "What if I spend 100,000 on a car next week?"',
-        preconditions: [{ type: 'stepSatisfied', stepId: 'step-8' }],
+        instruction: 'Provide the missing date and confirm the summary: "Use the 12th of next month for the medical bill, and yes, the rest looks right."',
+        preconditions: [{ type: 'stepSatisfied', stepId: 'step-9' }],
       },
       {
         id: 'step-11',
-        instruction: 'Try to delete a recurring item without knowing its id: "Remove my gym subscription" (which was never added)',
+        instruction: 'Choose the projection flow: "More than one month."',
+        preconditions: [{ type: 'stepSatisfied', stepId: 'step-10' }],
       },
       {
         id: 'step-12',
-        instruction: 'Ask for a final projection and the lowest balance in that period.',
-        preconditions: [{ type: 'stepSatisfied', stepId: 'step-10' }],
+        instruction: 'Ask for a 2-month projection with a scenario: "Project the next 2 months. What if I spend 100,000 on a car next week, and what is the lowest balance in that period?"',
+        preconditions: [{ type: 'stepSatisfied', stepId: 'step-11' }],
       },
     ],
     start: 'step-1',
