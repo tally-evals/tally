@@ -14,8 +14,8 @@
  * ```
  */
 
-import { Experimental_Agent as Agent, stepCountIs } from 'ai';
 import { google } from '@ai-sdk/google';
+import { Experimental_Agent as Agent, stepCountIs } from 'ai';
 import { travelPlannerTools } from '../tools/travelPlanner';
 
 const DEFAULT_MODEL_ID = 'models/gemini-2.5-flash-lite';

@@ -58,9 +58,7 @@
         {
           "stepId": "step-1",
           "score": 1,
-          "reasons": [
-            "Initial start step selected at turn 0"
-          ]
+          "reasons": ["Initial start step selected at turn 0"]
         }
       ]
     }

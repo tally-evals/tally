@@ -1,21 +1,21 @@
 /**
  * Weather Agent (AI SDK Example)
- * 
+ *
  * An agent that helps users get weather information for locations.
  * Supports both current weather and forecasts.
- * 
+ *
  * @example
  * ```ts
  * import { weatherAgent } from '@tally-evals/examples-ai-sdk';
- * 
+ *
  * const result = await weatherAgent.generate({
  *   prompt: 'What is the weather in San Francisco?',
  * });
  * ```
  */
 
-import { Experimental_Agent as Agent, stepCountIs } from 'ai';
 import { google } from '@ai-sdk/google';
+import { Experimental_Agent as Agent, stepCountIs } from 'ai';
 import { weatherTools } from '../tools/weather';
 
 const DEFAULT_MODEL_ID = 'models/gemini-2.5-flash-lite';
@@ -49,9 +49,8 @@ Always be friendly and helpful in providing weather information.`;
  * Weather Agent instance with pre-configured system prompt and settings
  */
 export const weatherAgent = new Agent({
-	model: google(DEFAULT_MODEL_ID),
-	tools: weatherTools,
-	stopWhen: stepCountIs(DEFAULT_MAX_STEPS),
-	system: WEATHER_SYSTEM_PROMPT,
+  model: google(DEFAULT_MODEL_ID),
+  tools: weatherTools,
+  stopWhen: stepCountIs(DEFAULT_MAX_STEPS),
+  system: WEATHER_SYSTEM_PROMPT,
 });
-

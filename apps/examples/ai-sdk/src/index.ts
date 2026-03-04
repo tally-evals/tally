@@ -1,17 +1,17 @@
 /**
  * @tally/examples-ai-sdk
- * 
+ *
  * Example agents built with AI SDK for use with Tally evaluation framework.
- * 
+ *
  * @example
  * ```ts
  * import { travelPlannerAgent, demandLetterAgent } from '@tally-evals/examples-ai-sdk';
- * 
+ *
  * // Use travel planner agent
  * const result = await travelPlannerAgent.generate({
  *   prompt: 'I want to plan a trip to San Francisco',
  * });
- * 
+ *
  * // Use demand letter agent
  * const letterResult = await demandLetterAgent.generate({
  *   prompt: 'I need a demand letter',
@@ -31,16 +31,13 @@ export { weatherTools } from './tools/weather';
 
 // Export types from tools
 export type {
-	Flight,
-	Accommodation,
+  Flight,
+  Accommodation,
 } from './tools/travelPlanner';
 
 export type {
-	TemplateField,
-	DemandLetterData,
+  TemplateField,
+  DemandLetterData,
 } from './tools/demandLetter';
 
-export type {
-	WeatherData,
-} from './tools/weather';
-
+export type { WeatherData } from './tools/weather';

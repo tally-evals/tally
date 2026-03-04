@@ -35,6 +35,7 @@ import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
 import { describe, expect, it } from 'vitest';
 import { cashflowCopilotAgent } from '../../../src/mastra/agents/cashflow-copilot-agent';
 import { runCase, saveTallyReportToStore } from '../../utils/harness';
+import { getSummaryScoreValue } from '../../utils/summary';
 import { cashflowCurveTrajectory } from './definitions';
 
 describe('Cashflow Copilot Agent - Curve Ball', () => {
@@ -192,7 +193,7 @@ describe('Cashflow Copilot Agent - Curve Ball', () => {
     console.log('📊 Evaluation Results:');
     console.log(`   Steps evaluated: ${conversation.steps.length}`);
     console.log(
-      `   Overall Quality mean: ${(overallQualitySummary?.aggregations?.score as any)?.Mean}`
+      `   Overall Quality mean: ${overallQualitySummary ? getSummaryScoreValue(overallQualitySummary) : undefined}`
     );
 
     expect(report).toBeDefined();
@@ -201,7 +202,7 @@ describe('Cashflow Copilot Agent - Curve Ball', () => {
 
     // Check mean score (lower threshold for curveball)
     if (overallQualitySummary) {
-      const mean = (overallQualitySummary.aggregations?.score as any)?.Mean;
+      const mean = getSummaryScoreValue(overallQualitySummary);
       if (typeof mean === 'number') {
         expect(mean).toBeGreaterThan(0.15);
       }

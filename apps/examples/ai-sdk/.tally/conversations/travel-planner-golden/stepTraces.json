@@ -24,9 +24,7 @@
         {
           "stepId": "step-1",
           "score": 1,
-          "reasons": [
-            "Initial start step selected at turn 0"
-          ]
+          "reasons": ["Initial start step selected at turn 0"]
         }
       ]
     }
@@ -518,12 +516,7 @@
                     "address": "222 Arts District",
                     "pricePerNight": 180,
                     "rating": 4.3,
-                    "amenities": [
-                      "WiFi",
-                      "Restaurant",
-                      "Art Gallery",
-                      "Rooftop Bar"
-                    ],
+                    "amenities": ["WiFi", "Restaurant", "Art Gallery", "Rooftop Bar"],
                     "starRating": 3,
                     "policies": {
                       "cancellation": "free",
@@ -542,13 +535,7 @@
                     "address": "888 Business Park",
                     "pricePerNight": 95,
                     "rating": 4,
-                    "amenities": [
-                      "WiFi",
-                      "Kitchen",
-                      "Laundry",
-                      "Parking",
-                      "Workspace"
-                    ],
+                    "amenities": ["WiFi", "Kitchen", "Laundry", "Parking", "Workspace"],
                     "starRating": 3,
                     "policies": {
                       "cancellation": "moderate",
@@ -686,14 +673,8 @@
                     "location": "San Francisco",
                     "pricePerPerson": 65,
                     "rating": 4.7,
-                    "cuisines": [
-                      "Italian",
-                      "Mediterranean"
-                    ],
-                    "dietaryOptions": [
-                      "vegetarian",
-                      "gluten-free"
-                    ],
+                    "cuisines": ["Italian", "Mediterranean"],
+                    "dietaryOptions": ["vegetarian", "gluten-free"],
                     "ambiance": "romantic",
                     "dressCode": "smart casual",
                     "reservations": {
@@ -760,14 +741,8 @@
                     "location": "San Francisco",
                     "pricePerPerson": 65,
                     "rating": 4.7,
-                    "cuisines": [
-                      "Italian",
-                      "Mediterranean"
-                    ],
-                    "dietaryOptions": [
-                      "vegetarian",
-                      "gluten-free"
-                    ],
+                    "cuisines": ["Italian", "Mediterranean"],
+                    "dietaryOptions": ["vegetarian", "gluten-free"],
                     "ambiance": "romantic",
                     "dressCode": "smart casual",
                     "reservations": {
@@ -796,13 +771,8 @@
                     "location": "San Francisco",
                     "pricePerPerson": 55,
                     "rating": 4.4,
-                    "cuisines": [
-                      "French",
-                      "European"
-                    ],
-                    "dietaryOptions": [
-                      "vegetarian"
-                    ],
+                    "cuisines": ["French", "European"],
+                    "dietaryOptions": ["vegetarian"],
                     "ambiance": "romantic",
                     "dressCode": "smart casual",
                     "reservations": {
@@ -914,9 +884,7 @@
         {
           "stepId": "step-17",
           "score": 1,
-          "reasons": [
-            "Next eligible step with preconditions in graph order"
-          ]
+          "reasons": ["Next eligible step with preconditions in graph order"]
         }
       ]
     }
@@ -1375,9 +1343,7 @@
         {
           "stepId": "step-18",
           "score": 1,
-          "reasons": [
-            "Next eligible step with preconditions in graph order"
-          ]
+          "reasons": ["Next eligible step with preconditions in graph order"]
         }
       ]
     },

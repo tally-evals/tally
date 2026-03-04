@@ -8,12 +8,7 @@
  * It adds storage metadata and uses string-keyed defaults for JSON compatibility.
  */
 
-import type {
-  ConversationResult,
-  RunDefs,
-  RunId,
-  ConversationId,
-} from './results';
+import type { ConversationId, ConversationResult, RunDefs, RunId } from './results';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Re-export core result types for convenience
@@ -28,25 +23,20 @@ export type {
   ConversationId,
   Verdict,
   MetricScalarOrNull,
-
   // Normalization
   NormalizerSpecSnap,
   NormalizationInfo,
   MetricNormalizationSnap,
-
   // Verdict
   VerdictPolicyInfo,
-
   // Measurement & Outcome
   Measurement,
   EvalOutcome,
-
   // Result records
   StepEvalResult,
   SingleTurnEvalSeries,
   ConversationEvalResult,
   ConversationResult,
-
   // Type utilities
   ExtractEvalName,
   ExtractValueType,
@@ -56,12 +46,10 @@ export type {
   HasEvalsOfKind,
   ExtractVerdictPolicy,
   ExtractNormalizationContext,
-
   // Mapped results
   SingleTurnResults,
   MultiTurnResults,
   ScorerResults,
-
   // Aggregations
   AggregationValue,
   ExtractAggregatorNames,
@@ -72,12 +60,10 @@ export type {
   AggregationResultFor,
   ScoreAggregations,
   RawAggregations,
-
   // Summaries
   VerdictSummary,
   EvalSummary,
   Summaries,
-
   // Definition snapshots
   MetricDefSnap,
   EvalDefSnap,

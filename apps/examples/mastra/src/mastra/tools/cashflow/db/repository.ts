@@ -45,12 +45,14 @@ export async function getCashPosition(userId: string): Promise<CashPosition | nu
     .from(cashPositions)
     .where(eq(cashPositions.userId, userId))
     .limit(1);
-  if (rows.length === 0) return null;
-  const row: CashPositionRow = rows[0]!;
+  const [row] = rows;
+  if (!row) return null;
+
+  const cashPositionRow: CashPositionRow = row;
   return {
-    userId: row.userId,
-    currentBalance: row.currentBalance,
-    updatedAt: row.updatedAt,
+    userId: cashPositionRow.userId,
+    currentBalance: cashPositionRow.currentBalance,
+    updatedAt: cashPositionRow.updatedAt,
   };
 }
 

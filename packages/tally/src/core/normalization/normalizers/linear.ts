@@ -49,8 +49,7 @@ export function normalizeLinear(
       // Validate range without clipping
       if (normalized < 0 || normalized > 1) {
         throw new Error(
-          `Linear normalized value ${normalized} is out of [0, 1] range. ` +
-            `Consider enabling clip option or adjusting slope/intercept.`
+          `Linear normalized value ${normalized} is out of [0, 1] range. Consider enabling clip option or adjusting slope/intercept.`
         );
       }
     }

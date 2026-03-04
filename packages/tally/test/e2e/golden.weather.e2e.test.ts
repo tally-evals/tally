@@ -16,12 +16,7 @@ import {
   defineSingleTurnEval,
   thresholdVerdict,
 } from '../../src/evals';
-import {
-  createTally,
-  defineBaseMetric,
-  defineInput,
-  formatReportAsTables,
-} from '../_exports';
+import { createTally, defineBaseMetric, defineInput, formatReportAsTables } from '../_exports';
 import {
   createAnswerRelevanceMetric,
   createCompletenessMetric,
@@ -30,6 +25,34 @@ import {
   createTopicAdherenceMetric,
 } from '../_exports';
 import { createWeightedAverageScorer } from '../_exports';
+
+function getNumericAggregation(
+  aggregations: Record<string, number | Record<string, number>> | undefined,
+  key: string
+): number | undefined {
+  if (!aggregations) return undefined;
+
+  const candidates = [key, key.toLowerCase(), key.toUpperCase()];
+  if (key.toLowerCase() === 'mean') {
+    candidates.push('Mean');
+  }
+
+  for (const candidate of candidates) {
+    const value = aggregations[candidate];
+    if (typeof value === 'number') return value;
+  }
+
+  return undefined;
+}
+
+function getSummaryScoreValue(summary: {
+  aggregations?: { score: Record<string, number | Record<string, number>> };
+}): number | undefined {
+  return (
+    getNumericAggregation(summary.aggregations?.score, 'mean') ??
+    getNumericAggregation(summary.aggregations?.score, 'value')
+  );
+}
 
 const GOLDEN_FIXTURE_PATH = resolve(__dirname, '../_fixtures/conversations/weather/golden.jsonl');
 
@@ -160,7 +183,7 @@ describe.skipIf(!process.env.GOOGLE_GENERATIVE_AI_API_KEY)('E2E | Metrics | Gold
     expect(Object.keys(report.result.singleTurn).length).toBeGreaterThan(0);
     for (const series of Object.values(report.result.singleTurn)) {
       expect((series as { byStepIndex: unknown[] }).byStepIndex.length).toBe(
-        report.result.stepCount,
+        report.result.stepCount
       );
     }
 
@@ -183,7 +206,7 @@ describe.skipIf(!process.env.GOOGLE_GENERATIVE_AI_API_KEY)('E2E | Metrics | Gold
       const evalSummary = summaries[evalName];
       expect(evalSummary).toBeDefined();
       expect(evalSummary?.eval).toBe(evalName);
-      const mean = (evalSummary?.aggregations?.score as any)?.mean;
+      const mean = evalSummary ? getSummaryScoreValue(evalSummary) : undefined;
       if (typeof mean === 'number') {
         expect(mean).toBeGreaterThanOrEqual(0);
         expect(mean).toBeLessThanOrEqual(1);
@@ -215,7 +238,7 @@ describe.skipIf(!process.env.GOOGLE_GENERATIVE_AI_API_KEY)('E2E | Metrics | Gold
     // Verify quality thresholds are met for golden conversation
     // These are "golden" conversations, so they should meet quality thresholds
     const answerRelevanceSummary = summaries['Answer Relevance'];
-    const completenessSummary = summaries['Completeness'];
+    const completenessSummary = summaries.Completeness;
     const roleAdherenceSummary = summaries['Role Adherence'];
     const goalCompletionSummary = summaries['Goal Completion'];
     const topicAdherenceSummary = summaries['Topic Adherence'];
@@ -223,27 +246,29 @@ describe.skipIf(!process.env.GOOGLE_GENERATIVE_AI_API_KEY)('E2E | Metrics | Gold
 
     // Check that golden conversation meets quality thresholds
     // Thresholds adjusted based on actual observed scores
-    const arMean = (answerRelevanceSummary?.aggregations?.score as any)?.mean;
+    const arMean = answerRelevanceSummary
+      ? getSummaryScoreValue(answerRelevanceSummary)
+      : undefined;
     if (typeof arMean === 'number') {
       expect(arMean).toBeGreaterThanOrEqual(0.8);
     }
-    const cMean = (completenessSummary?.aggregations?.score as any)?.mean;
+    const cMean = completenessSummary ? getSummaryScoreValue(completenessSummary) : undefined;
     if (typeof cMean === 'number') {
       expect(cMean).toBeGreaterThanOrEqual(0.15);
     }
-    const raMean = (roleAdherenceSummary?.aggregations?.score as any)?.mean;
+    const raMean = roleAdherenceSummary ? getSummaryScoreValue(roleAdherenceSummary) : undefined;
     if (typeof raMean === 'number') {
       expect(raMean).toBeGreaterThanOrEqual(0.7);
     }
-    const gcMean = (goalCompletionSummary?.aggregations?.score as any)?.mean;
+    const gcMean = goalCompletionSummary ? getSummaryScoreValue(goalCompletionSummary) : undefined;
     if (typeof gcMean === 'number') {
       expect(gcMean).toBeGreaterThanOrEqual(0.7);
     }
-    const taMean = (topicAdherenceSummary?.aggregations?.score as any)?.mean;
+    const taMean = topicAdherenceSummary ? getSummaryScoreValue(topicAdherenceSummary) : undefined;
     if (typeof taMean === 'number') {
       expect(taMean).toBeGreaterThanOrEqual(0.6);
     }
-    const oqMean = (overallQualitySummary?.aggregations?.score as any)?.mean;
+    const oqMean = overallQualitySummary ? getSummaryScoreValue(overallQualitySummary) : undefined;
     if (typeof oqMean === 'number') {
       expect(oqMean).toBeGreaterThanOrEqual(0.7);
     }

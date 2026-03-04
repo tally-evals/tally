@@ -1,7 +1,14 @@
 import { ScrollBarBox } from '@byteland/ink-scroll-bar';
 import { useInput, useStdout } from 'ink';
 import { ControlledScrollView as ControlledScrollViewBase } from 'ink-scroll-view';
-import { type ComponentType, type ReactNode, useEffect, useState } from 'react';
+import {
+  type ComponentProps,
+  type ComponentType,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
 
 // Cast to work around React types version mismatch between ink-scroll-view and React 19
 const ControlledScrollView = ControlledScrollViewBase as ComponentType<{
@@ -28,6 +35,10 @@ interface ScrollableProps {
   onScroll?: (offset: number) => void;
   initialScrollOffset?: number;
 }
+
+type ScrollBarBoxLayoutProps = Partial<
+  Pick<ComponentProps<typeof ScrollBarBox>, 'height' | 'width' | 'borderStyle' | 'borderColor'>
+>;
 
 export const Scrollable: React.FC<ScrollableProps> = ({
   children,
@@ -66,18 +77,18 @@ export const Scrollable: React.FC<ScrollableProps> = ({
     handleScrollOffsetChange(0);
   };
 
-  const handleResize = () => {
+  const handleResize = useCallback(() => {
     if (contentHeight < viewportHeight) {
       setScrollOffset(0);
     }
-  };
+  }, [contentHeight, viewportHeight]);
 
   useEffect(() => {
     stdout?.on('resize', handleResize);
     return () => {
       stdout?.off('resize', handleResize);
     };
-  }, [stdout]);
+  }, [handleResize, stdout]);
 
   useInput((input, key) => {
     if (!focusable) return;
@@ -102,14 +113,12 @@ export const Scrollable: React.FC<ScrollableProps> = ({
     }
   });
 
-  const boxProps: any = {
-    height,
-    width,
-    // flexDirection: 'column' as const,
+  const boxProps: ScrollBarBoxLayoutProps = {
+    ...(height !== undefined ? { height } : {}),
+    ...(width !== undefined ? { width } : {}),
+    ...(borderStyle ? { borderStyle } : {}),
+    ...(borderColor ? { borderColor } : {}),
   };
-
-  if (borderStyle) boxProps.borderStyle = borderStyle;
-  if (borderColor) boxProps.borderColor = borderColor;
 
   return (
     <ScrollBarBox

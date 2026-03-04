@@ -37,6 +37,7 @@ import type { CoreMessage as ModelMessage } from 'ai';
 import { describe, expect, it } from 'vitest';
 import { cashflowCopilotAgent } from '../../../src/mastra/agents/cashflow-copilot-agent';
 import { assertToolCallSequence, runCase, saveTallyReportToStore } from '../../utils/harness';
+import { getSummaryScoreValue } from '../../utils/summary';
 import { cashflowGoldenTrajectory } from './definitions';
 
 describe('Cashflow Copilot Agent - Golden Path', () => {
@@ -228,7 +229,7 @@ describe('Cashflow Copilot Agent - Golden Path', () => {
     console.log('Evaluation Results:');
     console.log(`   Steps evaluated: ${conversation.steps.length}`);
     console.log(
-      `   Overall Quality mean: ${(overallQualitySummary?.aggregations?.score as any)?.Mean}`
+      `   Overall Quality mean: ${overallQualitySummary ? getSummaryScoreValue(overallQualitySummary) : undefined}`
     );
 
     expect(report).toBeDefined();
@@ -237,7 +238,7 @@ describe('Cashflow Copilot Agent - Golden Path', () => {
 
     // Check mean score
     if (overallQualitySummary) {
-      const mean = (overallQualitySummary.aggregations?.score as any)?.Mean;
+      const mean = getSummaryScoreValue(overallQualitySummary);
       if (typeof mean === 'number') {
         expect(mean).toBeGreaterThan(0.2);
       }

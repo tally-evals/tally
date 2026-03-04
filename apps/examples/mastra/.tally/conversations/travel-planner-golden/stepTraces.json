@@ -19,9 +19,7 @@
         {
           "stepId": "step-1",
           "score": 1,
-          "reasons": [
-            "Initial start step selected at turn 0"
-          ]
+          "reasons": ["Initial start step selected at turn 0"]
         }
       ]
     }
@@ -210,14 +208,7 @@
                   "address": "63516 Linnea Lock",
                   "pricePerNight": 141,
                   "rating": 3.3,
-                  "amenities": [
-                    "WiFi",
-                    "Bar",
-                    "Spa",
-                    "Pool",
-                    "Room Service",
-                    "Parking"
-                  ],
+                  "amenities": ["WiFi", "Bar", "Spa", "Pool", "Room Service", "Parking"],
                   "starRating": 3,
                   "policies": {
                     "cancellation": "moderate",
@@ -236,11 +227,7 @@
                   "address": "14146 E Pine Street",
                   "pricePerNight": 190,
                   "rating": 4,
-                  "amenities": [
-                    "Balcony",
-                    "Kitchen",
-                    "WiFi"
-                  ],
+                  "amenities": ["Balcony", "Kitchen", "WiFi"],
                   "starRating": 4,
                   "policies": {
                     "cancellation": "moderate",
@@ -259,13 +246,7 @@
                   "address": "37435 D'Amore Lodge",
                   "pricePerNight": 226,
                   "rating": 4.2,
-                  "amenities": [
-                    "Washer",
-                    "Dryer",
-                    "Parking",
-                    "Air Conditioning",
-                    "Balcony"
-                  ],
+                  "amenities": ["Washer", "Dryer", "Parking", "Air Conditioning", "Balcony"],
                   "starRating": 4,
                   "policies": {
                     "cancellation": "moderate",
@@ -314,14 +295,7 @@
                   "address": "40760 Raynor Villages",
                   "pricePerNight": 441,
                   "rating": 4.8,
-                  "amenities": [
-                    "Parking",
-                    "Spa",
-                    "Gym",
-                    "WiFi",
-                    "Restaurant",
-                    "Business Center"
-                  ],
+                  "amenities": ["Parking", "Spa", "Gym", "WiFi", "Restaurant", "Business Center"],
                   "starRating": 5,
                   "policies": {
                     "cancellation": "moderate",
@@ -350,9 +324,7 @@
         {
           "stepId": "step-2",
           "score": 0.9,
-          "reasons": [
-            "Directly answers the question about where the user will be flying from."
-          ]
+          "reasons": ["Directly answers the question about where the user will be flying from."]
         }
       ]
     }
@@ -472,12 +444,7 @@
                   "address": "41468 Amanda Circles",
                   "pricePerNight": 190,
                   "rating": 4,
-                  "amenities": [
-                    "WiFi",
-                    "Balcony",
-                    "Dryer",
-                    "Workspace"
-                  ],
+                  "amenities": ["WiFi", "Balcony", "Dryer", "Workspace"],
                   "starRating": 4,
                   "policies": {
                     "cancellation": "strict",
@@ -497,13 +464,7 @@
                   "address": "4430 Wilmer Loaf",
                   "pricePerNight": 215,
                   "rating": 4.3,
-                  "amenities": [
-                    "Parking",
-                    "Room Service",
-                    "Concierge",
-                    "Pool",
-                    "Spa"
-                  ],
+                  "amenities": ["Parking", "Room Service", "Concierge", "Pool", "Spa"],
                   "starRating": 3,
                   "policies": {
                     "cancellation": "free",
@@ -1482,9 +1443,7 @@
         {
           "stepId": "step-17",
           "score": 1,
-          "reasons": [
-            "Next eligible step with preconditions in graph order"
-          ]
+          "reasons": ["Next eligible step with preconditions in graph order"]
         }
       ]
     }
@@ -1544,9 +1503,7 @@
         {
           "stepId": "step-18",
           "score": 1,
-          "reasons": [
-            "Next eligible step with preconditions in graph order"
-          ]
+          "reasons": ["Next eligible step with preconditions in graph order"]
         }
       ]
     },

@@ -8,14 +8,14 @@
  * Supports both DatasetItem and ConversationStep containers.
  */
 
-import { defineSingleTurnLLM, defineBaseMetric } from '../../core/primitives';
-import { createMinMaxNormalizer } from '../../normalizers/factories';
 import type {
   NumericAggregatorDef,
   SingleTurnContainer,
   SingleTurnMetricDef,
 } from '@tally/core/types';
 import type { LanguageModel } from 'ai';
+import { defineBaseMetric, defineSingleTurnLLM } from '../../core/primitives';
+import { createMinMaxNormalizer } from '../../normalizers/factories';
 
 export interface AnswerRelevanceOptions {
   /**

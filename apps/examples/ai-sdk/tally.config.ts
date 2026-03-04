@@ -1,4 +1,4 @@
-import { defineConfig } from "@tally-evals/core";
+import { defineConfig } from '@tally-evals/core';
 
 export default defineConfig({
   defaults: {
@@ -17,8 +17,8 @@ export default defineConfig({
     timeout: 30000,
   },
   storage: {
-    backend: "local",
+    backend: 'local',
     autoCreate: true,
-    path: ".tally",
-  }
-})
+    path: '.tally',
+  },
+});

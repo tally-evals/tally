@@ -44,8 +44,7 @@ export const travelPlannerGoldenTrajectory: Trajectory = {
       },
       {
         id: 'step-6',
-        instruction:
-          'Review flight options and express preference from given options',
+        instruction: 'Review flight options and express preference from given options',
       },
       {
         id: 'step-7',
@@ -53,8 +52,7 @@ export const travelPlannerGoldenTrajectory: Trajectory = {
       },
       {
         id: 'step-8',
-        instruction:
-          'Provide check-in date and duration (June 15th for 5 nights)',
+        instruction: 'Provide check-in date and duration (June 15th for 5 nights)',
       },
       {
         id: 'step-9',
@@ -94,8 +92,7 @@ export const travelPlannerGoldenTrajectory: Trajectory = {
       },
       {
         id: 'step-15',
-        instruction:
-          'Request help finding a restaurant to dine at in San Francisco',
+        instruction: 'Request help finding a restaurant to dine at in San Francisco',
       },
       {
         id: 'step-16',
@@ -153,8 +150,7 @@ export const travelPlannerCurveTrajectory: Trajectory = {
     steps: [
       {
         id: 'step-1',
-        instruction:
-          "Express interest in planning a trip but don't specify destination",
+        instruction: "Express interest in planning a trip but don't specify destination",
       },
       {
         id: 'step-2',
@@ -166,8 +162,7 @@ export const travelPlannerCurveTrajectory: Trajectory = {
       },
       {
         id: 'step-4',
-        instruction:
-          'Provide conflicting information (e.g., round trip but no return date)',
+        instruction: 'Provide conflicting information (e.g., round trip but no return date)',
       },
       {
         id: 'step-5',

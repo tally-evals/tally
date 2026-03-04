@@ -2,21 +2,18 @@
  * Terminal UI for viewing trajectory data with step traces and tool calls
  */
 
-import type { StepTrace, TrajectoryMeta, TallyStore } from '@tally-evals/core';
-import { Box, Text, useInput, useStdout } from 'ink';
-import { ScrollList, type ScrollListRef } from './shared/TypedScrollList';
+import type { StepTrace, TallyStore, TrajectoryMeta } from '@tally-evals/core';
 import Table from 'cli-table3';
+import { Box, Text, useInput, useStdout } from 'ink';
 import type React from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { colors } from '../utils/colors';
-import {
-  extractTextFromMessage,
-  extractTextFromMessages,
-} from '../utils/formatters';
+import { extractTextFromMessage, extractTextFromMessages } from '../utils/formatters';
+import { BreadCrumbs } from './shared/BreadCrumbs';
 import { KeyboardHelp } from './shared/KeyboardHelp';
 import { Scrollable } from './shared/Scrollable';
 import { ToolCallList } from './shared/ToolCallList';
-import { BreadCrumbs } from './shared/BreadCrumbs';
+import { ScrollList, type ScrollListRef } from './shared/TypedScrollList';
 
 interface TrajectoryViewProps {
   store: TallyStore;
@@ -58,8 +55,7 @@ export function TrajectoryView({
   const terminalWidth = stdout?.columns - 4;
 
   const viewportHeight = metrics.viewport ?? 0;
-  const canScrollWithinStep =
-    isCurrentStepExpanded && currentStepHeight > viewportHeight * 0.8;
+  const canScrollWithinStep = isCurrentStepExpanded && currentStepHeight > viewportHeight * 0.8;
 
   useEffect(() => {
     const loadData = async () => {
@@ -78,9 +74,7 @@ export function TrajectoryView({
           setSteps(stepsData);
         }
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : 'Failed to load trajectory data',
-        );
+        setError(err instanceof Error ? err.message : 'Failed to load trajectory data');
       } finally {
         setLoading(false);
       }
@@ -113,11 +107,7 @@ export function TrajectoryView({
         }
         setIntraStepScroll(0);
         setIsCurrentStepExpanded(false);
-      } else if (
-        !focusedIntraStep &&
-        canScrollWithinStep &&
-        intraStepScroll === 0
-      ) {
+      } else if (!focusedIntraStep && canScrollWithinStep && intraStepScroll === 0) {
         setSelectedIndex((prev) => Math.max(0, prev - 1));
         setIntraStepScroll(0);
         setFocusedIntraStep(false);
@@ -212,19 +202,10 @@ export function TrajectoryView({
   useEffect(() => {
     if (isCurrentStepExpanded && canScrollWithinStep && !focusedIntraStep) {
       setFocusedIntraStep(true);
-    } else if (
-      isCurrentStepExpanded &&
-      !canScrollWithinStep &&
-      focusedIntraStep
-    ) {
+    } else if (isCurrentStepExpanded && !canScrollWithinStep && focusedIntraStep) {
       setFocusedIntraStep(false);
     }
-  }, [
-    isCurrentStepExpanded,
-    currentStepHeight,
-    metrics.viewport,
-    focusedIntraStep,
-  ]);
+  }, [canScrollWithinStep, focusedIntraStep, isCurrentStepExpanded]);
 
   if (loading) {
     return (
@@ -276,10 +257,7 @@ export function TrajectoryView({
           if (typedPart.type === 'tool-call') {
             const toolCallId = typedPart.toolCallId;
             const toolName = typedPart.toolName;
-            if (
-              typeof toolCallId === 'string' &&
-              typeof toolName === 'string'
-            ) {
+            if (typeof toolCallId === 'string' && typeof toolName === 'string') {
               if (!toolCallsMap.has(toolCallId)) {
                 toolCallsMap.set(toolCallId, {
                   toolCallId,
@@ -302,24 +280,17 @@ export function TrajectoryView({
           const typedPart = part as unknown as Record<string, unknown>;
           if (typedPart.type === 'tool-result') {
             const toolCallId = typedPart.toolCallId;
-            if (
-              typeof toolCallId === 'string' &&
-              toolCallsMap.has(toolCallId)
-            ) {
-              const toolCall = toolCallsMap.get(toolCallId)!;
+            const toolCall =
+              typeof toolCallId === 'string' ? toolCallsMap.get(toolCallId) : undefined;
+            if (toolCallId && toolCall) {
               const outputWrapper = typedPart.output;
               if (outputWrapper && typeof outputWrapper === 'object') {
-                const outType = (
-                  outputWrapper as unknown as Record<string, unknown>
-                ).type;
-                const outValue = (
-                  outputWrapper as unknown as Record<string, unknown>
-                ).value;
+                const outType = (outputWrapper as unknown as Record<string, unknown>).type;
+                const outValue = (outputWrapper as unknown as Record<string, unknown>).value;
                 if (outType === 'json') {
                   toolCall.output = outValue;
                 } else if (outType === 'text') {
-                  toolCall.output =
-                    typeof outValue === 'string' ? outValue : String(outValue);
+                  toolCall.output = typeof outValue === 'string' ? outValue : String(outValue);
                 } else if (outValue !== undefined) {
                   toolCall.output = outValue;
                 } else {
@@ -352,11 +323,7 @@ export function TrajectoryView({
       lines += toolCalls.length + 1;
     }
 
-    if (
-      step.selection &&
-      step.selection.candidates &&
-      step.selection.candidates.length > 0
-    ) {
+    if (step.selection?.candidates && step.selection.candidates.length > 0) {
       lines += 2; // Selection Details header
       lines += 1; // Method line
       lines += 3; // Table header + separator
@@ -384,8 +351,7 @@ export function TrajectoryView({
     lines += Math.ceil((meta.goal?.length ?? 0) / terminalWidth) + 2;
     if (meta.persona) {
       lines += Math.ceil((meta.persona.name?.length ?? 0) / terminalWidth) + 2;
-      lines +=
-        Math.ceil((meta.persona.description.length ?? 0) / terminalWidth) + 2;
+      lines += Math.ceil((meta.persona.description.length ?? 0) / terminalWidth) + 2;
     }
     return lines;
   };
@@ -394,20 +360,14 @@ export function TrajectoryView({
     step: StepTrace,
     userText: string,
     agentText: string,
-    toolCalls: UIToolCall[],
+    toolCalls: UIToolCall[]
   ) => {
     let selectionTable = '';
-    if (
-      step.selection &&
-      step.selection.candidates &&
-      step.selection.candidates.length > 0
-    ) {
+    if (step.selection?.candidates && step.selection.candidates.length > 0) {
       const table = new Table({
-        head: [
-          colors.bold('Step ID'),
-          colors.bold('Score'),
-          colors.bold('Reasons'),
-        ].map((h) => colors.info(h)),
+        head: [colors.bold('Step ID'), colors.bold('Score'), colors.bold('Reasons')].map((h) =>
+          colors.info(h)
+        ),
         style: {
           head: [],
           border: ['grey'],
@@ -419,9 +379,7 @@ export function TrajectoryView({
 
       for (const candidate of step.selection.candidates) {
         const reasons =
-          candidate.reasons && candidate.reasons.length > 0
-            ? candidate.reasons.join(' | ')
-            : '-';
+          candidate.reasons && candidate.reasons.length > 0 ? candidate.reasons.join(' | ') : '-';
         table.push([candidate.stepId, candidate.score.toFixed(2), reasons]);
       }
 
@@ -467,9 +425,7 @@ export function TrajectoryView({
           <Box flexDirection="column" paddingX={1}>
             <Text>
               {colors.bold(
-                `${
-                  step.selection.method === 'none' ? '' : 'Step Candidates | '
-                }Selection Method: `,
+                `${step.selection.method === 'none' ? '' : 'Step Candidates | '}Selection Method: `
               )}
               {colors.info(step.selection.method)}
             </Text>
@@ -487,8 +443,7 @@ export function TrajectoryView({
               Trajectory End
             </Text>
             <Text color="white">
-              Reason: {step.end.reason} | Completed:{' '}
-              {step.end.completed ? 'Yes' : 'No'}
+              Reason: {step.end.reason} | Completed: {step.end.completed ? 'Yes' : 'No'}
             </Text>
             {step.end.summary && (
               <Text color="yellow" wrap="wrap">
@@ -526,11 +481,7 @@ export function TrajectoryView({
           paddingX={1}
           paddingY={0}
         >
-          <Text
-            color={isSelected ? 'cyanBright' : 'blueBright'}
-            bold={isSelected}
-            wrap="truncate"
-          >
+          <Text color={isSelected ? 'cyanBright' : 'blueBright'} bold={isSelected} wrap="truncate">
             {isSelected ? '▶ ' : '  '}
             Turn {stepIndex + 1} | {step.selection?.method ?? '—'}
             {step.stepId ? ` | ${step.stepId}` : ''}
@@ -590,9 +541,7 @@ export function TrajectoryView({
       <Box paddingX={1} flexDirection="column" marginBottom={1} flexShrink={0}>
         <Text>
           {colors.bold('Metadata:')}{' '}
-          {colors.muted(
-            `Created: ${new Date(meta.createdAt).toLocaleString()}`,
-          )}
+          {colors.muted(`Created: ${new Date(meta.createdAt).toLocaleString()}`)}
           {meta.maxTurns ? colors.muted(` | Max Turns: ${meta.maxTurns}`) : ''}
         </Text>
         {meta.persona && (

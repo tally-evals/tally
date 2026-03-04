@@ -7,11 +7,17 @@
 
 import { describe, expect, it } from 'bun:test';
 import {
-  defineMultiTurnCode,
-  defineSingleTurnCode,
+  booleanVerdict,
+  defineMultiTurnEval,
+  defineSingleTurnEval,
+  thresholdVerdict,
+} from '../../../src/evals';
+import {
+  type ConversationStep,
   createTally,
   defineBaseMetric,
-  type ConversationStep,
+  defineMultiTurnCode,
+  defineSingleTurnCode,
 } from '../../_exports';
 import {
   createIdentityNormalizer,
@@ -19,18 +25,12 @@ import {
   createPercentileAggregator,
   createThresholdAggregator,
 } from '../../_exports';
-import {
-  defineSingleTurnEval,
-  defineMultiTurnEval,
-  thresholdVerdict,
-  booleanVerdict,
-} from '../../../src/evals';
 import { conversationExampleA, conversationExampleB } from '../../_fixtures/conversation.examples';
 
 /** Helper to extract assistant content from a ConversationStep */
 function getAssistantContent(step: ConversationStep): string {
   const assistant = step.output?.find(
-    (o) => o.role === 'assistant' && typeof o.content === 'string',
+    (o) => o.role === 'assistant' && typeof o.content === 'string'
   );
   return (assistant?.content as string) ?? '';
 }
@@ -72,7 +72,7 @@ describe('Integration | Conversation | Aggregation', () => {
 
       // Check aggregations in summary
       const summaries = report.result.summaries?.byEval ?? {};
-      const responsivenessSummary = summaries['Responsiveness'];
+      const responsivenessSummary = summaries.Responsiveness;
 
       expect(responsivenessSummary).toBeDefined();
       expect(responsivenessSummary?.aggregations?.score?.Mean).toBeDefined();
@@ -119,7 +119,7 @@ describe('Integration | Conversation | Aggregation', () => {
       expect(report).toBeDefined();
 
       const summaries = report.result.summaries?.byEval ?? {};
-      const qualitySummary = summaries['Quality'];
+      const qualitySummary = summaries.Quality;
 
       expect(qualitySummary).toBeDefined();
       expect(qualitySummary?.aggregations?.score?.P50).toBeDefined();
@@ -168,7 +168,7 @@ describe('Integration | Conversation | Aggregation', () => {
       expect(report).toBeDefined();
 
       const summaries = report.result.summaries?.byEval ?? {};
-      const thresholdSummary = summaries['ThresholdTest'];
+      const thresholdSummary = summaries.ThresholdTest;
 
       expect(thresholdSummary).toBeDefined();
       // Threshold aggregator creates `Threshold >= {threshold}` key
@@ -214,12 +214,16 @@ describe('Integration | Conversation | Aggregation', () => {
       expect(report).toBeDefined();
 
       const summaries = report.result.summaries?.byEval ?? {};
-      const passTestSummary = summaries['PassTest'];
+      const passTestSummary = summaries.PassTest;
 
       expect(passTestSummary).toBeDefined();
       expect(passTestSummary?.verdictSummary).toBeDefined();
 
-      const verdictSummary = passTestSummary?.verdictSummary!;
+      const verdictSummary = passTestSummary?.verdictSummary;
+      expect(verdictSummary).toBeDefined();
+      if (!verdictSummary) {
+        throw new Error('Expected verdict summary to be defined');
+      }
       expect(verdictSummary.totalCount).toBe(3);
       expect(verdictSummary.passCount).toBe(2);
       expect(verdictSummary.failCount).toBe(1);
@@ -258,13 +262,13 @@ describe('Integration | Conversation | Aggregation', () => {
 
       expect(report).toBeDefined();
 
-      const multiTurn = report.result.multiTurn['ConversationQuality'];
+      const multiTurn = report.result.multiTurn.ConversationQuality;
       expect(multiTurn).toBeDefined();
       expect(multiTurn.measurement.score).toBe(0.85);
       expect(multiTurn.outcome?.verdict).toBe('pass');
 
       const summaries = report.result.summaries?.byEval ?? {};
-      const qualitySummary = summaries['ConversationQuality'];
+      const qualitySummary = summaries.ConversationQuality;
       expect(qualitySummary).toBeDefined();
       expect(qualitySummary?.verdictSummary?.passCount).toBe(1);
     });
@@ -309,7 +313,7 @@ describe('Integration | Conversation | Aggregation', () => {
       expect(report).toBeDefined();
 
       const summaries = report.result.summaries?.byEval ?? {};
-      const multiAggSummary = summaries['MultiAgg'];
+      const multiAggSummary = summaries.MultiAgg;
 
       expect(multiAggSummary).toBeDefined();
       expect(multiAggSummary?.aggregations?.score).toBeDefined();
@@ -365,7 +369,7 @@ describe('Integration | Conversation | Aggregation', () => {
       expect(report.result.stepCount).toBe(3);
 
       const summaries = report.result.summaries?.byEval ?? {};
-      const stepQualitySummary = summaries['StepQuality'];
+      const stepQualitySummary = summaries.StepQuality;
 
       expect(stepQualitySummary).toBeDefined();
       expect(stepQualitySummary?.aggregations?.score?.Mean).toBeDefined();

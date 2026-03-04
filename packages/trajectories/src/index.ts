@@ -1,30 +1,30 @@
 /**
  * @tally/trajectories
- * 
+ *
  * A framework-agnostic trajectory generation package for building multi-turn conversation trajectories.
  */
 
 // Core types
 export type {
-	Trajectory,
-	Persona,
-	StepTrace,
-	TrajectoryResult,
-	TrajectoryStopReason,
-	AgentHandle,
+  Trajectory,
+  Persona,
+  StepTrace,
+  TrajectoryResult,
+  TrajectoryStopReason,
+  AgentHandle,
 } from './core/types.js';
 
 // Step types
 export type {
-	StepId,
-	StepDefinition,
-	StepGraph,
-	Precondition,
-	PreconditionContext,
-	StepStatus,
-	StepRuntimeState,
-	StepsSnapshot,
-	SatisfactionContext,
+  StepId,
+  StepDefinition,
+  StepGraph,
+  Precondition,
+  PreconditionContext,
+  StepStatus,
+  StepRuntimeState,
+  StepsSnapshot,
+  SatisfactionContext,
 } from './core/steps/types.js';
 
 // Storage
@@ -53,4 +53,3 @@ export { logStep, logTrajectoryStart, logTrajectoryEnd } from './utils/logger.js
 
 // Output helpers
 export { toJSONL, toConversation, summarize } from './utils/output.js';
-

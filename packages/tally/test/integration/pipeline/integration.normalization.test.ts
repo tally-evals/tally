@@ -5,21 +5,21 @@
  */
 
 import { describe, expect, it } from 'bun:test';
+import { defineScorerEval, defineSingleTurnEval } from '../../../src/evals';
 import {
-  createMinMaxNormalizer,
-  createThresholdNormalizer,
-  createLinearNormalizer,
-  createOrdinalMapNormalizer,
-  createIdentityNormalizer,
-  defineBaseMetric,
-  defineSingleTurnCode,
-  createWeightedAverageScorer,
-  defineInput,
-  createTally,
   type Conversation,
   type ConversationStep,
+  createIdentityNormalizer,
+  createLinearNormalizer,
+  createMinMaxNormalizer,
+  createOrdinalMapNormalizer,
+  createTally,
+  createThresholdNormalizer,
+  createWeightedAverageScorer,
+  defineBaseMetric,
+  defineInput,
+  defineSingleTurnCode,
 } from '../../_exports';
-import { defineSingleTurnEval, defineScorerEval } from '../../../src/evals';
 import type { DatasetItem } from '../../_exports';
 
 /**
@@ -65,7 +65,7 @@ describe('Integration | Pipeline | Normalization', () => {
       const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => ({
-          value: parseFloat(getStepCompletion(step as ConversationStep)),
+          value: Number.parseFloat(getStepCompletion(step as ConversationStep)),
         }),
         compute: ({ data }) => (data as { value: number }).value,
         normalization: {
@@ -96,11 +96,11 @@ describe('Integration | Pipeline | Normalization', () => {
 
       // Test data with values in 0-100 range
       const items: DatasetItem[] = [
-        { id: '1', prompt: 'test', completion: '0' },    // → 0.0
-        { id: '2', prompt: 'test', completion: '50' },   // → 0.5
-        { id: '3', prompt: 'test', completion: '100' },  // → 1.0
-        { id: '4', prompt: 'test', completion: '25' },   // → 0.25
-        { id: '5', prompt: 'test', completion: '75' },   // → 0.75
+        { id: '1', prompt: 'test', completion: '0' }, // → 0.0
+        { id: '2', prompt: 'test', completion: '50' }, // → 0.5
+        { id: '3', prompt: 'test', completion: '100' }, // → 1.0
+        { id: '4', prompt: 'test', completion: '25' }, // → 0.25
+        { id: '5', prompt: 'test', completion: '75' }, // → 0.75
       ];
 
       const tally = createTally({
@@ -132,7 +132,7 @@ describe('Integration | Pipeline | Normalization', () => {
       const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => ({
-          value: parseFloat(getStepCompletion(step as ConversationStep)),
+          value: Number.parseFloat(getStepCompletion(step as ConversationStep)),
         }),
         compute: ({ data }) => (data as { value: number }).value,
         normalization: {
@@ -162,9 +162,9 @@ describe('Integration | Pipeline | Normalization', () => {
       });
 
       const items: DatasetItem[] = [
-        { id: '1', prompt: 'test', completion: '0' },     // low latency → high score (1.0)
-        { id: '2', prompt: 'test', completion: '1000' },  // high latency → low score (0.0)
-        { id: '3', prompt: 'test', completion: '500' },   // mid latency → mid score (0.5)
+        { id: '1', prompt: 'test', completion: '0' }, // low latency → high score (1.0)
+        { id: '2', prompt: 'test', completion: '1000' }, // high latency → low score (0.0)
+        { id: '3', prompt: 'test', completion: '500' }, // mid latency → mid score (0.5)
       ];
 
       const tally = createTally({
@@ -175,9 +175,9 @@ describe('Integration | Pipeline | Normalization', () => {
       const report = await tally.run();
       const series = report.result.singleTurn.latencyEval;
 
-      expect(series.byStepIndex[0]?.measurement.score).toBe(1.0);  // 0 latency → 1.0 score
-      expect(series.byStepIndex[1]?.measurement.score).toBe(0.0);  // 1000 latency → 0.0 score
-      expect(series.byStepIndex[2]?.measurement.score).toBe(0.5);  // 500 latency → 0.5 score
+      expect(series.byStepIndex[0]?.measurement.score).toBe(1.0); // 0 latency → 1.0 score
+      expect(series.byStepIndex[1]?.measurement.score).toBe(0.0); // 1000 latency → 0.0 score
+      expect(series.byStepIndex[2]?.measurement.score).toBe(0.5); // 500 latency → 0.5 score
     });
   });
 
@@ -191,7 +191,7 @@ describe('Integration | Pipeline | Normalization', () => {
       const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => ({
-          value: parseFloat(getStepCompletion(step as ConversationStep)),
+          value: Number.parseFloat(getStepCompletion(step as ConversationStep)),
         }),
         compute: ({ data }) => (data as { value: number }).value,
         normalization: {
@@ -221,9 +221,9 @@ describe('Integration | Pipeline | Normalization', () => {
       });
 
       const items: DatasetItem[] = [
-        { id: '1', prompt: 'test', completion: '0.5' },  // below → 0
-        { id: '2', prompt: 'test', completion: '0.7' },  // at threshold → 1
-        { id: '3', prompt: 'test', completion: '0.9' },  // above → 1
+        { id: '1', prompt: 'test', completion: '0.5' }, // below → 0
+        { id: '2', prompt: 'test', completion: '0.7' }, // at threshold → 1
+        { id: '3', prompt: 'test', completion: '0.9' }, // above → 1
         { id: '4', prompt: 'test', completion: '0.69' }, // just below → 0
       ];
 
@@ -250,7 +250,7 @@ describe('Integration | Pipeline | Normalization', () => {
       const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => ({
-          value: parseFloat(getStepCompletion(step as ConversationStep)),
+          value: Number.parseFloat(getStepCompletion(step as ConversationStep)),
         }),
         compute: ({ data }) => (data as { value: number }).value,
         normalization: {
@@ -280,8 +280,8 @@ describe('Integration | Pipeline | Normalization', () => {
       });
 
       const items: DatasetItem[] = [
-        { id: '1', prompt: 'test', completion: '0.3' },  // below → 0.2
-        { id: '2', prompt: 'test', completion: '0.7' },  // above → 0.8
+        { id: '1', prompt: 'test', completion: '0.3' }, // below → 0.2
+        { id: '2', prompt: 'test', completion: '0.7' }, // above → 0.8
       ];
 
       const tally = createTally({
@@ -307,7 +307,7 @@ describe('Integration | Pipeline | Normalization', () => {
       const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => ({
-          value: parseFloat(getStepCompletion(step as ConversationStep)),
+          value: Number.parseFloat(getStepCompletion(step as ConversationStep)),
         }),
         compute: ({ data }) => (data as { value: number }).value,
         normalization: {
@@ -431,7 +431,7 @@ describe('Integration | Pipeline | Normalization', () => {
       const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => ({
-          value: parseFloat(getStepCompletion(step as ConversationStep)),
+          value: Number.parseFloat(getStepCompletion(step as ConversationStep)),
         }),
         compute: ({ data }) => (data as { value: number }).value,
         normalization: {

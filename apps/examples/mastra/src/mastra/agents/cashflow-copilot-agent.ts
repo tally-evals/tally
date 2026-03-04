@@ -1,4 +1,4 @@
-import { Agent } from '@mastra/core';
+import { Agent } from '@mastra/core/agent';
 import { LibSQLStore } from '@mastra/libsql';
 import { Memory } from '@mastra/memory';
 import { updateCashPositionTool } from '../tools/cashflow/cash-position';
@@ -171,10 +171,10 @@ export const cashflowCopilotAgent = new Agent({
   instructions: CASHFLOW_COPILOT_SYSTEM_PROMPT,
   model: 'google/gemini-2.5-flash-lite',
   tools: {
-    updateCashPosition: updateCashPositionTool as any,
-    createRecurring: createRecurringTool as any,
-    createFutureCashflow: createFutureTool as any,
-    runProjection: runProjectionTool as any,
+    updateCashPosition: updateCashPositionTool,
+    createRecurring: createRecurringTool,
+    createFutureCashflow: createFutureTool,
+    runProjection: runProjectionTool,
   },
   defaultGenerateOptions: {
     maxSteps: 40,

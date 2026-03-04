@@ -5,18 +5,8 @@
  * Scorers weight and combine normalized metric scores.
  */
 
-import type {
-  MetricScalar,
-  Score,
-  MetricDef,
-  MetricContainer,
-  BaseMetricDef,
-} from './metrics';
-import type {
-  NormalizationContextFor,
-  NormalizerSpec,
-  NormalizeToScore,
-} from './normalization';
+import type { BaseMetricDef, MetricContainer, MetricDef, MetricScalar, Score } from './metrics';
+import type { NormalizationContextFor, NormalizeToScore, NormalizerSpec } from './normalization';
 
 // ============================================================================
 // Scorer Input Types
@@ -57,9 +47,7 @@ export interface ScorerInput<
    * Must be compatible with the metric's value type.
    */
   normalizerOverride?: TMetric extends MetricDef<infer TMetricValue, MetricContainer>
-    ?
-        | NormalizerSpec<TMetricValue, TNormContext>
-        | NormalizeToScore<TMetricValue, TNormContext>
+    ? NormalizerSpec<TMetricValue, TNormContext> | NormalizeToScore<TMetricValue, TNormContext>
     : never;
   /** Whether this input is required @default true */
   required?: boolean;
@@ -97,9 +85,7 @@ export type InputScores<TInputs extends readonly ScorerInput[]> = {
  * @see {@link ScorerInput}
  * @see {@link defineScorer}
  */
-export interface Scorer<
-  TInputs extends readonly ScorerInput[] = readonly ScorerInput[],
-> {
+export interface Scorer<TInputs extends readonly ScorerInput[] = readonly ScorerInput[]> {
   /** Unique scorer name */
   name: string;
   /** Human-readable description */

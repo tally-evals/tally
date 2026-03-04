@@ -3,8 +3,8 @@
  * Serves pre-built static assets and provides TallyStore API routes.
  */
 
-import { TallyStore } from '@tally-evals/core';
 import { resolve } from 'node:path';
+import { TallyStore } from '@tally-evals/core';
 
 const CONTENT_TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',

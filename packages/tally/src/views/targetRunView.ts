@@ -1,17 +1,17 @@
 import type {
-  TallyRunArtifact,
-  TargetRunView,
+  ConversationEvalResult,
+  ConversationResults,
+  Eval,
+  EvalDefSnap,
+  MetricDefSnap,
+  RunDefs,
+  ScorerDefSnap,
+  StepEvalResult,
   StepResults,
   StepResultsWithIndex,
-  ConversationResults,
   SummaryResults,
-  RunDefs,
-  MetricDefSnap,
-  EvalDefSnap,
-  ScorerDefSnap,
-  Eval,
-  StepEvalResult,
-  ConversationEvalResult,
+  TallyRunArtifact,
+  TargetRunView,
 } from '@tally-evals/core';
 
 /**
@@ -20,9 +20,7 @@ import type {
  *
  * @typeParam TEvals - Tuple of eval definitions for type-safe access.
  */
-export class TargetRunViewImpl<TEvals extends readonly Eval[]>
-  implements TargetRunView<TEvals>
-{
+export class TargetRunViewImpl<TEvals extends readonly Eval[]> implements TargetRunView<TEvals> {
   constructor(private readonly artifact: TallyRunArtifact) {}
 
   get stepCount(): number {
@@ -37,17 +35,13 @@ export class TargetRunViewImpl<TEvals extends readonly Eval[]>
     const result: Record<string, StepEvalResult> = {};
 
     // Single-turn evals
-    for (const [evalName, series] of Object.entries(
-      this.artifact.result.singleTurn ?? {}
-    )) {
+    for (const [evalName, series] of Object.entries(this.artifact.result.singleTurn ?? {})) {
       const stepResult = series.byStepIndex?.[index];
       if (stepResult) result[evalName] = stepResult;
     }
 
     // Scorers with step-indexed shape
-    for (const [evalName, scorer] of Object.entries(
-      this.artifact.result.scorers ?? {}
-    )) {
+    for (const [evalName, scorer] of Object.entries(this.artifact.result.scorers ?? {})) {
       if (scorer.shape === 'seriesByStepIndex') {
         const stepResult = scorer.series?.byStepIndex?.[index];
         if (stepResult) result[evalName] = stepResult;
@@ -67,16 +61,12 @@ export class TargetRunViewImpl<TEvals extends readonly Eval[]>
     const result: Record<string, ConversationEvalResult> = {};
 
     // Multi-turn evals
-    for (const [evalName, convResult] of Object.entries(
-      this.artifact.result.multiTurn ?? {}
-    )) {
+    for (const [evalName, convResult] of Object.entries(this.artifact.result.multiTurn ?? {})) {
       result[evalName] = convResult;
     }
 
     // Scorers with scalar shape
-    for (const [evalName, scorer] of Object.entries(
-      this.artifact.result.scorers ?? {}
-    )) {
+    for (const [evalName, scorer] of Object.entries(this.artifact.result.scorers ?? {})) {
       if (scorer.shape === 'scalar') {
         result[evalName] = scorer.result;
       }

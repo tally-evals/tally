@@ -2,20 +2,18 @@
  * Travel Planner Agent - Curve Ball Test
  */
 
-import { describe, it, expect } from 'bun:test';
-import { travelPlannerAgent } from '../../../src/agents/travelPlanner';
-import { travelPlannerCurveTrajectory } from './definitions';
-import { runCase, saveTallyReportToStore } from '../../utils/harness';
+import { describe, expect, it } from 'bun:test';
+import { google } from '@ai-sdk/google';
 import {
   createTally,
-  runAllTargets,
   defineBaseMetric,
   defineInput,
-  defineSingleTurnEval,
   defineMultiTurnEval,
   defineScorerEval,
-  thresholdVerdict,
+  defineSingleTurnEval,
   formatReportAsTables,
+  runAllTargets,
+  thresholdVerdict,
 } from '@tally-evals/tally';
 import {
   createAnswerRelevanceMetric,
@@ -23,7 +21,9 @@ import {
   createRoleAdherenceMetric,
 } from '@tally-evals/tally/metrics';
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
-import { google } from '@ai-sdk/google';
+import { travelPlannerAgent } from '../../../src/agents/travelPlanner';
+import { runCase, saveTallyReportToStore } from '../../utils/harness';
+import { travelPlannerCurveTrajectory } from './definitions';
 import { createKnowledgeRetentionMetric } from './metrics';
 
 describe('Travel Planner Agent - Curve Ball', () => {
@@ -117,7 +117,10 @@ describe('Travel Planner Agent - Curve Ball', () => {
     });
 
     const report = await tally.run();
-    await saveTallyReportToStore({ conversationId: 'travel-planner-curve', report: report.toArtifact() });
+    await saveTallyReportToStore({
+      conversationId: 'travel-planner-curve',
+      report: report.toArtifact(),
+    });
 
     formatReportAsTables(report.toArtifact(), conversation);
 

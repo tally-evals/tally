@@ -18,9 +18,7 @@
   },
   "stepGraph": {
     "start": "step-1",
-    "terminals": [
-      "step-18"
-    ],
+    "terminals": ["step-18"],
     "steps": [
       {
         "id": "step-1",

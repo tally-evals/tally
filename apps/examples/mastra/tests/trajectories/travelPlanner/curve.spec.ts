@@ -2,20 +2,17 @@
  * Travel Planner Agent - Curve Ball Test
  */
 
-import { describe, it, expect } from 'vitest';
-import { travelPlannerAgent } from '../../../src/mastra/agents/travel-planner-agent';
-import { travelPlannerCurveTrajectory } from './definitions';
-import { runCase, saveTallyReportToStore } from '../../utils/harness';
+import { google } from '@ai-sdk/google';
 import {
   createTally,
-  runAllTargets,
   defineBaseMetric,
   defineInput,
-  defineSingleTurnEval,
   defineMultiTurnEval,
   defineScorerEval,
-  thresholdVerdict,
+  defineSingleTurnEval,
   formatReportAsTables,
+  runAllTargets,
+  thresholdVerdict,
 } from '@tally-evals/tally';
 import {
   createAnswerRelevanceMetric,
@@ -23,7 +20,11 @@ import {
   createRoleAdherenceMetric,
 } from '@tally-evals/tally/metrics';
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
-import { google } from '@ai-sdk/google';
+import { describe, expect, it } from 'vitest';
+import { travelPlannerAgent } from '../../../src/mastra/agents/travel-planner-agent';
+import { runCase, saveTallyReportToStore } from '../../utils/harness';
+import { getSummaryScoreValue } from '../../utils/summary';
+import { travelPlannerCurveTrajectory } from './definitions';
 import { createKnowledgeRetentionMetric } from './metrics';
 
 describe('Travel Planner Agent - Curve Ball', () => {
@@ -116,27 +117,32 @@ describe('Travel Planner Agent - Curve Ball', () => {
       context: runAllTargets(),
     });
 
-		const report = await tally.run();
-		await saveTallyReportToStore({ conversationId: 'demand-letter-golden', report: report.toArtifact() });
+    const report = await tally.run();
+    await saveTallyReportToStore({
+      conversationId: 'demand-letter-golden',
+      report: report.toArtifact(),
+    });
 
     formatReportAsTables(report.toArtifact(), conversation);
 
-		// Debug output
-		const overallQualitySummary = report.result.summaries?.byEval?.['Overall Quality'];
-		console.log('📊 Evaluation Results:');
-		console.log(`   Steps evaluated: ${conversation.steps.length}`);
-		console.log(`   Overall Quality mean: ${(overallQualitySummary?.aggregations?.score as any)?.Mean}`);
+    // Debug output
+    const overallQualitySummary = report.result.summaries?.byEval?.['Overall Quality'];
+    console.log('📊 Evaluation Results:');
+    console.log(`   Steps evaluated: ${conversation.steps.length}`);
+    console.log(
+      `   Overall Quality mean: ${overallQualitySummary ? getSummaryScoreValue(overallQualitySummary) : undefined}`
+    );
 
-		expect(report).toBeDefined();
-		expect(report.result.stepCount).toBeGreaterThan(0);
-		expect(Object.keys(report.result.summaries?.byEval ?? {}).length).toBeGreaterThan(0);
+    expect(report).toBeDefined();
+    expect(report.result.stepCount).toBeGreaterThan(0);
+    expect(Object.keys(report.result.summaries?.byEval ?? {}).length).toBeGreaterThan(0);
 
-		// Check mean score
-		if (overallQualitySummary) {
-			const mean = (overallQualitySummary.aggregations?.score as any)?.Mean;
-			if (typeof mean === 'number') {
-				expect(mean).toBeGreaterThan(0.2);
-			}
-		}
+    // Check mean score
+    if (overallQualitySummary) {
+      const mean = getSummaryScoreValue(overallQualitySummary);
+      if (typeof mean === 'number') {
+        expect(mean).toBeGreaterThan(0.2);
+      }
+    }
   });
 });

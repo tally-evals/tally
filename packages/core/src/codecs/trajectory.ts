@@ -58,7 +58,14 @@ const StepSelectionSchema = z.object({
 
 const StepTraceEndSchema = z.object({
   isFinal: z.literal(true),
-  reason: z.enum(['goal-reached', 'max-turns', 'policy-violation', 'agent-loop', 'no-step-match', 'error']),
+  reason: z.enum([
+    'goal-reached',
+    'max-turns',
+    'policy-violation',
+    'agent-loop',
+    'no-step-match',
+    'error',
+  ]),
   completed: z.boolean(),
   summary: z.string().optional(),
 });
@@ -123,4 +130,3 @@ export function decodeStepTraces(content: string): StepTrace[] {
     } as StepTrace;
   });
 }
-

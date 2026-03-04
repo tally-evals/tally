@@ -22,8 +22,8 @@ function requireTty(commandName: string): void {
     console.error(
       chalk.gray(
         'This command requires an interactive TTY (stdin/stdout).\n' +
-          'Tip: run it from a real terminal (not via a piped/redirected process), or use `tally dev server` for the web viewer.',
-      ),
+          'Tip: run it from a real terminal (not via a piped/redirected process), or use `tally dev server` for the web viewer.'
+      )
     );
     process.exit(1);
   }
@@ -85,58 +85,57 @@ program
       .option('-p, --port <port>', 'Port to listen on', '4321')
       .option('--no-open', 'Do not open browser automatically')
       .action(async (options: { port: string; open: boolean }) => {
-    try {
-      const port = Number.parseInt(options.port, 10);
-      if (Number.isNaN(port) || port < 1 || port > 65535) {
-        console.error(chalk.red('✗ Invalid port number'));
-        process.exit(1);
-      }
+        try {
+          const port = Number.parseInt(options.port, 10);
+          if (Number.isNaN(port) || port < 1 || port > 65535) {
+            console.error(chalk.red('✗ Invalid port number'));
+            process.exit(1);
+          }
 
-      // Verify we have a tally project
-      try {
-        await openStore();
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Unknown error';
-        console.error(chalk.red('✗ Cannot start web viewer'));
-        console.error(chalk.gray(msg));
-        console.error(
-          chalk.gray(
-            `\nHint: run \`tally dev server\` from a directory that contains a \`.tally/\` folder (or a \`tally.config.ts\`).\n` +
-              `      Current directory: ${process.cwd()}`
-          )
-        );
-        process.exit(1);
-      }
+          // Verify we have a tally project
+          try {
+            await openStore();
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : 'Unknown error';
+            console.error(chalk.red('✗ Cannot start web viewer'));
+            console.error(chalk.gray(msg));
+            console.error(
+              chalk.gray(
+                `\nHint: run \`tally dev server\` from a directory that contains a \`.tally/\` folder (or a \`tally.config.ts\`).\n      Current directory: ${process.cwd()}`
+              )
+            );
+            process.exit(1);
+          }
 
-      // Start the embedded viewer server
-      await startViewerServer({ port, cwd: process.cwd() });
+          // Start the embedded viewer server
+          await startViewerServer({ port, cwd: process.cwd() });
 
-      console.log(chalk.green('✓ Starting Tally web viewer...'));
-      console.log(chalk.gray(`  Local: ${chalk.cyan(`http://localhost:${port}`)}`));
-      console.log(chalk.gray('\n  Press Ctrl+C to stop\n'));
+          console.log(chalk.green('✓ Starting Tally web viewer...'));
+          console.log(chalk.gray(`  Local: ${chalk.cyan(`http://localhost:${port}`)}`));
+          console.log(chalk.gray('\n  Press Ctrl+C to stop\n'));
 
-      // Open browser if not disabled (after a short delay)
-      if (options.open) {
-        setTimeout(() => {
-          const url = `http://localhost:${port}`;
-          const openCmd =
-            process.platform === 'darwin'
-              ? 'open'
-              : process.platform === 'win32'
-                ? 'start'
-                : 'xdg-open';
-          Bun.spawn([openCmd, url], { stdout: 'ignore', stderr: 'ignore' });
-        }, 1000);
-      }
+          // Open browser if not disabled (after a short delay)
+          if (options.open) {
+            setTimeout(() => {
+              const url = `http://localhost:${port}`;
+              const openCmd =
+                process.platform === 'darwin'
+                  ? 'open'
+                  : process.platform === 'win32'
+                    ? 'start'
+                    : 'xdg-open';
+              Bun.spawn([openCmd, url], { stdout: 'ignore', stderr: 'ignore' });
+            }, 1000);
+          }
 
-      // Keep process alive until Ctrl+C
-      await new Promise(() => {});
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Unknown error';
-      console.error(chalk.red('✗ Cannot start web viewer'));
-      console.error(chalk.gray(msg));
-      process.exit(1);
-    }
+          // Keep process alive until Ctrl+C
+          await new Promise(() => {});
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'Unknown error';
+          console.error(chalk.red('✗ Cannot start web viewer'));
+          console.error(chalk.gray(msg));
+          process.exit(1);
+        }
       })
   );
 

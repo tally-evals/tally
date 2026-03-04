@@ -1,9 +1,9 @@
 import { Agent } from '@mastra/core/agent';
-import { searchAccommodationsTool } from '../tools/travel-planner/accommodations';
-import { searchFlightsTool } from '../tools/travel-planner/flights';
-import { searchDiningTool } from '../tools/travel-planner/dining';
-import { searchVehiclesTool } from '../tools/travel-planner/vehicles';
 import { weatherTool } from '~/tools/weather-tool';
+import { searchAccommodationsTool } from '../tools/travel-planner/accommodations';
+import { searchDiningTool } from '../tools/travel-planner/dining';
+import { searchFlightsTool } from '../tools/travel-planner/flights';
+import { searchVehiclesTool } from '../tools/travel-planner/vehicles';
 
 const DEFAULT_MODEL_ID = 'google/gemini-2.5-flash-lite';
 const DEFAULT_MAX_STEPS = 20;
@@ -51,25 +51,25 @@ IMPORTANT: Wait for explicit user requests before searching for accommodations, 
 
 IMPORTANT: You do not have the capability to book flights, accommodations, restaurants, or vehicles. You can only provide information about these services to help the user plan their trip. Booking is outside your scope.
 
-Always be friendly, helpful, and efficient in gathering information.`
+Always be friendly, helpful, and efficient in gathering information.`;
 
 export const travelPlannerAgent = new Agent({
-   name: 'Travel Planner Agent',
-   instructions: TRAVEL_PLANNER_SYSTEM_PROMPT,
-   model: DEFAULT_MODEL_ID,
-   tools: {
-      searchAccommodationsTool,
-      searchFlightsTool,
-      searchDiningTool,
-      searchVehiclesTool,
-      getWeather: weatherTool
-   },
-   defaultGenerateOptions: {
-      maxSteps: DEFAULT_MAX_STEPS,
-   },
-   //   memory: new Memory({
-   //     storage: new LibSQLStore({
-   //       url: 'file:../mastra.db', // path is relative to the .mastra/output directory
-   //     }),
-   //   }),
+  name: 'Travel Planner Agent',
+  instructions: TRAVEL_PLANNER_SYSTEM_PROMPT,
+  model: DEFAULT_MODEL_ID,
+  tools: {
+    searchAccommodationsTool,
+    searchFlightsTool,
+    searchDiningTool,
+    searchVehiclesTool,
+    getWeather: weatherTool,
+  },
+  defaultGenerateOptions: {
+    maxSteps: DEFAULT_MAX_STEPS,
+  },
+  //   memory: new Memory({
+  //     storage: new LibSQLStore({
+  //       url: 'file:../mastra.db', // path is relative to the .mastra/output directory
+  //     }),
+  //   }),
 });

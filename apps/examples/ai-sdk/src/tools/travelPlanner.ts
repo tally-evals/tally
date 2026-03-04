@@ -113,19 +113,47 @@ export const travelPlannerTools = {
       origin: z.string().describe('Departure city and airport code (e.g., "San Francisco, SFO")'),
       destination: z.string().describe('Arrival city and airport code (e.g., "New York, JFK")'),
       departureDate: z.string().describe('Departure date in YYYY-MM-DD format'),
-      returnDate: z.string().optional().describe('Return date in YYYY-MM-DD format (for round trip)'),
+      returnDate: z
+        .string()
+        .optional()
+        .describe('Return date in YYYY-MM-DD format (for round trip)'),
       passengers: z.number().default(1).describe('Number of passengers'),
-      class: z.enum(["Economy", "Business", "First"]).default("Economy").describe('Flight cabin class'),
+      class: z
+        .enum(['Economy', 'Business', 'First'])
+        .default('Economy')
+        .describe('Flight cabin class'),
       maxPrice: z.number().optional().describe('Maximum price per passenger'),
-      maxStops: z.number().min(0).max(2).optional().describe('Maximum number of stops (0 = direct flight)'),
+      maxStops: z
+        .number()
+        .min(0)
+        .max(2)
+        .optional()
+        .describe('Maximum number of stops (0 = direct flight)'),
       airlines: z.array(z.string()).optional().describe('Preferred airlines'),
-      departureTimeRange: z.object({
-        earliest: z.string().optional().describe('Earliest departure time (HH:mm)'),
-        latest: z.string().optional().describe('Latest departure time (HH:mm)')
-      }).optional(),
-      sortBy: z.enum(['price', 'duration', 'departureTime', 'arrivalTime']).default('price').describe('Sort results by')
+      departureTimeRange: z
+        .object({
+          earliest: z.string().optional().describe('Earliest departure time (HH:mm)'),
+          latest: z.string().optional().describe('Latest departure time (HH:mm)'),
+        })
+        .optional(),
+      sortBy: z
+        .enum(['price', 'duration', 'departureTime', 'arrivalTime'])
+        .default('price')
+        .describe('Sort results by'),
     }),
-    execute: async ({ origin, destination, departureDate, returnDate, passengers = 1, class: flightClass, maxPrice, maxStops, airlines, departureTimeRange, sortBy }) => {
+    execute: async ({
+      origin,
+      destination,
+      departureDate,
+      returnDate,
+      passengers = 1,
+      class: flightClass,
+      maxPrice,
+      maxStops,
+      airlines,
+      departureTimeRange,
+      sortBy,
+    }) => {
       // Validate required fields
       const missingFields: string[] = [];
       if (!origin || origin.trim() === '') missingFields.push('origin');
@@ -137,12 +165,14 @@ export const travelPlannerTools = {
           error: true,
           message: `Missing required fields: ${missingFields.join(', ')}`,
           missingFields,
-          suggestion: `Please ask the user for: ${missingFields.map(f => {
-            if (f === 'origin') return 'departure city and airport';
-            if (f === 'destination') return 'destination city and airport';
-            if (f === 'departureDate') return 'departure date';
-            return f;
-          }).join(', ')}`,
+          suggestion: `Please ask the user for: ${missingFields
+            .map((f) => {
+              if (f === 'origin') return 'departure city and airport';
+              if (f === 'destination') return 'destination city and airport';
+              if (f === 'departureDate') return 'departure date';
+              return f;
+            })
+            .join(', ')}`,
         };
       }
 
@@ -247,31 +277,31 @@ export const travelPlannerTools = {
           duration: '7h 30m',
           stops: 0,
           aircraft: 'Embraer E190',
-        }
+        },
       ];
 
-      let flights = mockFlights.map(flight => ({
+      let flights = mockFlights.map((flight) => ({
         ...flight,
-        price: flight.price * passengers
+        price: flight.price * passengers,
       }));
 
       // Apply filters
       if (maxPrice) {
-        flights = flights.filter(f => f.price <= maxPrice);
+        flights = flights.filter((f) => f.price <= maxPrice);
       }
 
       if (maxStops !== undefined) {
-        flights = flights.filter(f => f.stops <= maxStops);
+        flights = flights.filter((f) => f.stops <= maxStops);
       }
 
       if (airlines && airlines.length > 0) {
-        flights = flights.filter(f => airlines.some(airline =>
-          f.airline.toLowerCase().includes(airline.toLowerCase())
-        ));
+        flights = flights.filter((f) =>
+          airlines.some((airline) => f.airline.toLowerCase().includes(airline.toLowerCase()))
+        );
       }
 
       if (departureTimeRange) {
-        flights = flights.filter(f => {
+        flights = flights.filter((f) => {
           const departTime = f.departure.time;
           if (departureTimeRange.earliest && departTime < departureTimeRange.earliest) return false;
           if (departureTimeRange.latest && departTime > departureTimeRange.latest) return false;
@@ -285,7 +315,7 @@ export const travelPlannerTools = {
           case 'price':
             return a.price - b.price;
           case 'duration':
-            return parseInt(a.duration) - parseInt(b.duration);
+            return Number.parseInt(a.duration) - Number.parseInt(b.duration);
           case 'departureTime':
             return a.departure.time.localeCompare(b.departure.time);
           case 'arrivalTime':
@@ -296,7 +326,7 @@ export const travelPlannerTools = {
       });
 
       if (returnDate) {
-        const returnFlights = flights.map(flight => ({
+        const returnFlights = flights.map((flight) => ({
           ...flight,
           id: `RET_${flight.id}`,
           flightNumber: `RET-${flight.flightNumber}`,
@@ -304,22 +334,34 @@ export const travelPlannerTools = {
             ...flight.departure,
             airport: destination.split(',')[0] || destination,
             airportCode: destination.split(',')[1]?.trim() || 'JFK',
-            time: flight.departure.time === '08:00' ? '10:00' :
-              flight.departure.time === '10:15' ? '11:30' :
-                flight.departure.time === '06:30' ? '08:45' :
-                  flight.departure.time === '14:00' ? '16:15' : '12:00',
+            time:
+              flight.departure.time === '08:00'
+                ? '10:00'
+                : flight.departure.time === '10:15'
+                  ? '11:30'
+                  : flight.departure.time === '06:30'
+                    ? '08:45'
+                    : flight.departure.time === '14:00'
+                      ? '16:15'
+                      : '12:00',
             date: returnDate,
           },
           arrival: {
             ...flight.arrival,
             airport: origin.split(',')[0] || origin,
             airportCode: origin.split(',')[1]?.trim() || 'SFO',
-            time: flight.arrival.time === '14:30' ? '16:30' :
-              flight.arrival.time === '13:45' ? '15:45' :
-                flight.arrival.time === '15:15' ? '18:15' :
-                  flight.arrival.time === '20:15' ? '22:15' : '14:00',
+            time:
+              flight.arrival.time === '14:30'
+                ? '16:30'
+                : flight.arrival.time === '13:45'
+                  ? '15:45'
+                  : flight.arrival.time === '15:15'
+                    ? '18:15'
+                    : flight.arrival.time === '20:15'
+                      ? '22:15'
+                      : '14:00',
             date: returnDate,
-          }
+          },
         }));
         flights = [...flights, ...returnFlights];
       }
@@ -338,16 +380,40 @@ export const travelPlannerTools = {
       location: z.string().describe('City or location name'),
       checkIn: z.string().describe('Check-in date in YYYY-MM-DD format'),
       checkOut: z.string().describe('Check-out date in YYYY-MM-DD format'),
-      type: z.enum(['hotel', 'apartment', 'hostel', 'resort', 'villa']).optional().describe('Preferred accommodation type'),
+      type: z
+        .enum(['hotel', 'apartment', 'hostel', 'resort', 'villa'])
+        .optional()
+        .describe('Preferred accommodation type'),
       minRating: z.number().min(1).max(5).optional().describe('Minimum rating (1-5)'),
       maxPricePerNight: z.number().optional().describe('Maximum price per night'),
       amenities: z.array(z.string()).optional().describe('Required amenities'),
       starRating: z.number().min(1).max(5).optional().describe('Minimum star rating'),
-      distanceFromCityCenter: z.number().optional().describe('Maximum distance from city center in miles'),
-      cancellationPolicy: z.enum(['free', 'moderate', 'strict']).optional().describe('Preferred cancellation policy'),
-      sortBy: z.enum(['price', 'rating', 'distance', 'reviewCount']).default('rating').describe('Sort results by')
+      distanceFromCityCenter: z
+        .number()
+        .optional()
+        .describe('Maximum distance from city center in miles'),
+      cancellationPolicy: z
+        .enum(['free', 'moderate', 'strict'])
+        .optional()
+        .describe('Preferred cancellation policy'),
+      sortBy: z
+        .enum(['price', 'rating', 'distance', 'reviewCount'])
+        .default('rating')
+        .describe('Sort results by'),
     }),
-    execute: async ({ location, checkIn, checkOut, type, minRating, maxPricePerNight, amenities, starRating, distanceFromCityCenter, cancellationPolicy, sortBy }) => {
+    execute: async ({
+      location,
+      checkIn,
+      checkOut,
+      type,
+      minRating,
+      maxPricePerNight,
+      amenities,
+      starRating,
+      distanceFromCityCenter,
+      cancellationPolicy,
+      sortBy,
+    }) => {
       // Validate required fields
       const missingFields: string[] = [];
       if (!location || location.trim() === '') missingFields.push('location');
@@ -359,12 +425,14 @@ export const travelPlannerTools = {
           error: true,
           message: `Missing required fields: ${missingFields.join(', ')}`,
           missingFields,
-          suggestion: `Please ask the user for: ${missingFields.map(f => {
-            if (f === 'location') return 'destination location';
-            if (f === 'checkIn') return 'check-in date';
-            if (f === 'checkOut') return 'check-out date';
-            return f;
-          }).join(', ')}`,
+          suggestion: `Please ask the user for: ${missingFields
+            .map((f) => {
+              if (f === 'location') return 'destination location';
+              if (f === 'checkIn') return 'check-in date';
+              if (f === 'checkOut') return 'check-out date';
+              return f;
+            })
+            .join(', ')}`,
         };
       }
 
@@ -383,7 +451,7 @@ export const travelPlannerTools = {
           policies: {
             cancellation: 'free',
             pets: false,
-            smoking: false
+            smoking: false,
           },
           distance: { cityCenter: 0.2, airport: 15 },
         },
@@ -400,13 +468,13 @@ export const travelPlannerTools = {
           policies: {
             cancellation: 'moderate',
             pets: true,
-            smoking: false
+            smoking: false,
           },
           distance: { cityCenter: 1.5 },
         },
         {
           id: 'ACC003',
-          name: 'Traveler\'s Hostel',
+          name: "Traveler's Hostel",
           type: 'hostel',
           location,
           address: '789 Backpacker Lane',
@@ -417,7 +485,7 @@ export const travelPlannerTools = {
           policies: {
             cancellation: 'free',
             pets: false,
-            smoking: false
+            smoking: false,
           },
           distance: { cityCenter: 0.8 },
         },
@@ -429,12 +497,21 @@ export const travelPlannerTools = {
           address: '321 Beach Boulevard',
           pricePerNight: 450,
           rating: 4.8,
-          amenities: ['WiFi', 'Pool', 'Gym', 'Restaurant', 'Spa', 'Beach Access', 'Water Sports', 'Golf'],
+          amenities: [
+            'WiFi',
+            'Pool',
+            'Gym',
+            'Restaurant',
+            'Spa',
+            'Beach Access',
+            'Water Sports',
+            'Golf',
+          ],
           starRating: 5,
           policies: {
             cancellation: 'moderate',
             pets: true,
-            smoking: false
+            smoking: false,
           },
           distance: { cityCenter: 5, airport: 8 },
         },
@@ -451,7 +528,7 @@ export const travelPlannerTools = {
           policies: {
             cancellation: 'strict',
             pets: true,
-            smoking: false
+            smoking: false,
           },
           distance: { cityCenter: 8, airport: 20 },
         },
@@ -468,7 +545,7 @@ export const travelPlannerTools = {
           policies: {
             cancellation: 'free',
             pets: false,
-            smoking: false
+            smoking: false,
           },
           distance: { cityCenter: 0.5 },
         },
@@ -485,10 +562,10 @@ export const travelPlannerTools = {
           policies: {
             cancellation: 'moderate',
             pets: true,
-            smoking: false
+            smoking: false,
           },
           distance: { cityCenter: 3, airport: 5 },
-        }
+        },
       ];
 
       // Apply filters
@@ -499,33 +576,33 @@ export const travelPlannerTools = {
       }
 
       if (minRating) {
-        filtered = filtered.filter(acc => acc.rating >= minRating);
+        filtered = filtered.filter((acc) => acc.rating >= minRating);
       }
 
       if (maxPricePerNight) {
-        filtered = filtered.filter(acc => acc.pricePerNight <= maxPricePerNight);
+        filtered = filtered.filter((acc) => acc.pricePerNight <= maxPricePerNight);
       }
 
       if (amenities && amenities.length > 0) {
-        filtered = filtered.filter(acc =>
-          amenities.every(amenity =>
-            acc.amenities.some(a => a.toLowerCase().includes(amenity.toLowerCase()))
+        filtered = filtered.filter((acc) =>
+          amenities.every((amenity) =>
+            acc.amenities.some((a) => a.toLowerCase().includes(amenity.toLowerCase()))
           )
         );
       }
 
       if (starRating) {
-        filtered = filtered.filter(acc => acc.starRating >= starRating);
+        filtered = filtered.filter((acc) => acc.starRating >= starRating);
       }
 
       if (distanceFromCityCenter) {
-        filtered = filtered.filter(acc =>
-          acc.distance?.cityCenter && acc.distance.cityCenter <= distanceFromCityCenter
+        filtered = filtered.filter(
+          (acc) => acc.distance?.cityCenter && acc.distance.cityCenter <= distanceFromCityCenter
         );
       }
 
       if (cancellationPolicy) {
-        filtered = filtered.filter(acc => acc.policies.cancellation === cancellationPolicy);
+        filtered = filtered.filter((acc) => acc.policies.cancellation === cancellationPolicy);
       }
 
       // Sort results
@@ -545,7 +622,9 @@ export const travelPlannerTools = {
       // Calculate total nights
       const checkInDate = new Date(checkIn);
       const checkOutDate = new Date(checkOut);
-      const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
+      const nights = Math.ceil(
+        (checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
 
       return {
         accommodations: filtered,
@@ -560,18 +639,72 @@ export const travelPlannerTools = {
     description: 'Search for dining options at a location with advanced filtering',
     inputSchema: z.object({
       location: z.string().describe('City or location name'),
-      cuisine: z.enum(['Italian', 'French', 'Mediterranean', 'Asian', 'American', 'Mexican', 'Indian', 'Japanese', 'Thai', 'Chinese', 'Spanish', 'Greek']).optional().describe('Primary cuisine type'),
-      type: z.enum(['restaurant', 'cafe', 'bar', 'bistro', 'food truck', 'fine dining']).optional().describe('Type of dining establishment'),
+      cuisine: z
+        .enum([
+          'Italian',
+          'French',
+          'Mediterranean',
+          'Asian',
+          'American',
+          'Mexican',
+          'Indian',
+          'Japanese',
+          'Thai',
+          'Chinese',
+          'Spanish',
+          'Greek',
+        ])
+        .optional()
+        .describe('Primary cuisine type'),
+      type: z
+        .enum(['restaurant', 'cafe', 'bar', 'bistro', 'food truck', 'fine dining'])
+        .optional()
+        .describe('Type of dining establishment'),
       guests: z.number().min(1).default(1).describe('Number of guests'),
       minRating: z.number().min(1).max(5).optional().describe('Minimum rating (1-5)'),
       maxPricePerPerson: z.number().optional().describe('Maximum price per person'),
-      dietaryOptions: z.array(z.string()).optional().describe('Required dietary options (vegetarian, vegan, gluten-free, etc.)'),
-      ambiance: z.enum(['casual', 'formal', 'romantic', 'family-friendly', 'trendy', 'traditional', 'outdoor']).optional().describe('Preferred ambiance'),
-      distanceFromCityCenter: z.number().optional().describe('Maximum distance from city center in miles'),
-      reservationsRequired: z.boolean().optional().describe('Only show places that accept reservations'),
-      sortBy: z.enum(['rating', 'price', 'distance', 'reviewCount']).default('rating').describe('Sort results by')
+      dietaryOptions: z
+        .array(z.string())
+        .optional()
+        .describe('Required dietary options (vegetarian, vegan, gluten-free, etc.)'),
+      ambiance: z
+        .enum([
+          'casual',
+          'formal',
+          'romantic',
+          'family-friendly',
+          'trendy',
+          'traditional',
+          'outdoor',
+        ])
+        .optional()
+        .describe('Preferred ambiance'),
+      distanceFromCityCenter: z
+        .number()
+        .optional()
+        .describe('Maximum distance from city center in miles'),
+      reservationsRequired: z
+        .boolean()
+        .optional()
+        .describe('Only show places that accept reservations'),
+      sortBy: z
+        .enum(['rating', 'price', 'distance', 'reviewCount'])
+        .default('rating')
+        .describe('Sort results by'),
     }),
-    execute: async ({ location, cuisine, type, guests = 1, minRating, maxPricePerPerson, dietaryOptions, ambiance, distanceFromCityCenter, reservationsRequired, sortBy }) => {
+    execute: async ({
+      location,
+      cuisine,
+      type,
+      guests = 1,
+      minRating,
+      maxPricePerPerson,
+      dietaryOptions,
+      ambiance,
+      distanceFromCityCenter,
+      reservationsRequired,
+      sortBy,
+    }) => {
       // Validate required fields
       const missingFields: string[] = [];
       if (!location || location.trim() === '') missingFields.push('location');
@@ -598,7 +731,7 @@ export const travelPlannerTools = {
           reservations: {
             required: true,
             accepted: true,
-            averageWaitTime: '15-20 min'
+            averageWaitTime: '15-20 min',
           },
           hours: {
             monday: '11:30-22:00',
@@ -607,7 +740,7 @@ export const travelPlannerTools = {
             thursday: '11:30-22:00',
             friday: '11:30-23:00',
             saturday: '12:00-23:00',
-            sunday: '12:00-21:00'
+            sunday: '12:00-21:00',
           },
           distance: { cityCenter: 0.5 },
           priceRange: '$$$',
@@ -626,7 +759,7 @@ export const travelPlannerTools = {
           reservations: {
             required: false,
             accepted: false,
-            averageWaitTime: '5-10 min'
+            averageWaitTime: '5-10 min',
           },
           hours: {
             monday: '06:30-20:00',
@@ -635,7 +768,7 @@ export const travelPlannerTools = {
             thursday: '06:30-20:00',
             friday: '06:30-22:00',
             saturday: '07:00-22:00',
-            sunday: '07:00-18:00'
+            sunday: '07:00-18:00',
           },
           distance: { cityCenter: 0.2 },
           priceRange: '$',
@@ -654,7 +787,7 @@ export const travelPlannerTools = {
           reservations: {
             required: false,
             accepted: true,
-            averageWaitTime: '20-30 min'
+            averageWaitTime: '20-30 min',
           },
           hours: {
             monday: '16:00-02:00',
@@ -663,7 +796,7 @@ export const travelPlannerTools = {
             thursday: '16:00-02:00',
             friday: '16:00-03:00',
             saturday: '16:00-03:00',
-            sunday: '16:00-01:00'
+            sunday: '16:00-01:00',
           },
           distance: { cityCenter: 0.1 },
           priceRange: '$$',
@@ -682,7 +815,7 @@ export const travelPlannerTools = {
           reservations: {
             required: true,
             accepted: true,
-            averageWaitTime: '10-15 min'
+            averageWaitTime: '10-15 min',
           },
           hours: {
             monday: '11:30-14:30, 17:00-22:00',
@@ -691,7 +824,7 @@ export const travelPlannerTools = {
             thursday: '11:30-14:30, 17:00-22:00',
             friday: '11:30-14:30, 17:00-22:30',
             saturday: '12:00-22:30',
-            sunday: '12:00-21:00'
+            sunday: '12:00-21:00',
           },
           distance: { cityCenter: 2.0 },
           priceRange: '$$$',
@@ -710,7 +843,7 @@ export const travelPlannerTools = {
           reservations: {
             required: true,
             accepted: true,
-            averageWaitTime: '15-20 min'
+            averageWaitTime: '15-20 min',
           },
           hours: {
             monday: '11:30-22:00',
@@ -719,7 +852,7 @@ export const travelPlannerTools = {
             thursday: '11:30-22:00',
             friday: '11:30-23:00',
             saturday: '12:00-23:00',
-            sunday: '12:00-21:00'
+            sunday: '12:00-21:00',
           },
           distance: { cityCenter: 0.8 },
           priceRange: '$$',
@@ -738,7 +871,7 @@ export const travelPlannerTools = {
           reservations: {
             required: false,
             accepted: false,
-            averageWaitTime: '10-15 min'
+            averageWaitTime: '10-15 min',
           },
           hours: {
             monday: '11:00-15:00',
@@ -747,7 +880,7 @@ export const travelPlannerTools = {
             thursday: '11:00-15:00',
             friday: '11:00-15:00, 18:00-22:00',
             saturday: '12:00-22:00',
-            sunday: '12:00-20:00'
+            sunday: '12:00-20:00',
           },
           distance: { cityCenter: 1.2 },
           priceRange: '$',
@@ -766,14 +899,14 @@ export const travelPlannerTools = {
           reservations: {
             required: true,
             accepted: true,
-            averageWaitTime: '30-45 min'
+            averageWaitTime: '30-45 min',
           },
           hours: {
             wednesday: '18:00-22:00',
             thursday: '18:00-22:00',
             friday: '18:00-22:00',
             saturday: '18:00-22:00',
-            sunday: '18:00-22:00'
+            sunday: '18:00-22:00',
           },
           distance: { cityCenter: 3.5 },
           priceRange: '$$$$',
@@ -792,7 +925,7 @@ export const travelPlannerTools = {
           reservations: {
             required: false,
             accepted: true,
-            averageWaitTime: '15-25 min'
+            averageWaitTime: '15-25 min',
           },
           hours: {
             monday: '11:00-14:30, 17:00-22:00',
@@ -801,52 +934,52 @@ export const travelPlannerTools = {
             thursday: '11:00-14:30, 17:00-22:00',
             friday: '11:00-14:30, 17:00-22:30',
             saturday: '12:00-22:30',
-            sunday: '12:00-21:00'
+            sunday: '12:00-21:00',
           },
           distance: { cityCenter: 1.8 },
           priceRange: '$$',
-        }
+        },
       ];
 
       // Apply filters
       let filtered = diningSpots;
 
       if (cuisine) {
-        filtered = filtered.filter(d => d.cuisines.includes(cuisine));
+        filtered = filtered.filter((d) => d.cuisines.includes(cuisine));
       }
 
       if (type) {
-        filtered = filtered.filter(d => d.type === type);
+        filtered = filtered.filter((d) => d.type === type);
       }
 
       if (minRating) {
-        filtered = filtered.filter(d => d.rating >= minRating);
+        filtered = filtered.filter((d) => d.rating >= minRating);
       }
 
       if (maxPricePerPerson) {
-        filtered = filtered.filter(d => d.pricePerPerson <= maxPricePerPerson);
+        filtered = filtered.filter((d) => d.pricePerPerson <= maxPricePerPerson);
       }
 
       if (dietaryOptions && dietaryOptions.length > 0) {
-        filtered = filtered.filter(d =>
-          dietaryOptions.every(option =>
-            d.dietaryOptions.some(dopt => dopt.toLowerCase().includes(option.toLowerCase()))
+        filtered = filtered.filter((d) =>
+          dietaryOptions.every((option) =>
+            d.dietaryOptions.some((dopt) => dopt.toLowerCase().includes(option.toLowerCase()))
           )
         );
       }
 
       if (ambiance) {
-        filtered = filtered.filter(d => d.ambiance === ambiance);
+        filtered = filtered.filter((d) => d.ambiance === ambiance);
       }
 
       if (distanceFromCityCenter) {
-        filtered = filtered.filter(d =>
-          d.distance?.cityCenter && d.distance.cityCenter <= distanceFromCityCenter
+        filtered = filtered.filter(
+          (d) => d.distance?.cityCenter && d.distance.cityCenter <= distanceFromCityCenter
         );
       }
 
       if (reservationsRequired) {
-        filtered = filtered.filter(d => d.reservations.accepted);
+        filtered = filtered.filter((d) => d.reservations.accepted);
       }
 
       // Sort results
@@ -869,7 +1002,7 @@ export const travelPlannerTools = {
         guests: guests || 1,
         message: `Found ${filtered.length} dining option(s) in ${location}`,
       };
-    }
+    },
   }),
 
   searchVehicles: tool({
@@ -878,18 +1011,44 @@ export const travelPlannerTools = {
       location: z.string().describe('City or rental location'),
       startDate: z.string().describe('Pick-up date in YYYY-MM-DD format'),
       endDate: z.string().describe('Drop-off date in YYYY-MM-DD format'),
-      type: z.enum(['sedan', 'suv', 'van', 'sports car', 'luxury', 'compact', 'convertible', 'truck']).optional().describe('Vehicle type'),
+      type: z
+        .enum(['sedan', 'suv', 'van', 'sports car', 'luxury', 'compact', 'convertible', 'truck'])
+        .optional()
+        .describe('Vehicle type'),
       make: z.string().optional().describe('Vehicle make (e.g., Toyota, BMW, Tesla)'),
       capacity: z.number().min(1).max(9).optional().describe('Minimum passenger capacity'),
-      fuelType: z.enum(['gasoline', 'diesel', 'electric', 'hybrid']).optional().describe('Preferred fuel type'),
+      fuelType: z
+        .enum(['gasoline', 'diesel', 'electric', 'hybrid'])
+        .optional()
+        .describe('Preferred fuel type'),
       transmission: z.enum(['automatic', 'manual']).optional().describe('Transmission preference'),
       maxPricePerDay: z.number().optional().describe('Maximum price per day'),
       minRating: z.number().min(1).max(5).optional().describe('Minimum rating (1-5)'),
       features: z.array(z.string()).optional().describe('Required features (GPS, Bluetooth, etc.)'),
-      insuranceIncluded: z.boolean().optional().describe('Only show vehicles with included insurance'),
-      sortBy: z.enum(['price', 'rating', 'capacity', 'year']).default('price').describe('Sort results by')
+      insuranceIncluded: z
+        .boolean()
+        .optional()
+        .describe('Only show vehicles with included insurance'),
+      sortBy: z
+        .enum(['price', 'rating', 'capacity', 'year'])
+        .default('price')
+        .describe('Sort results by'),
     }),
-    execute: async ({ location, startDate, endDate, type, make, capacity, fuelType, transmission, maxPricePerDay, minRating, features, insuranceIncluded, sortBy }) => {
+    execute: async ({
+      location,
+      startDate,
+      endDate,
+      type,
+      make,
+      capacity,
+      fuelType,
+      transmission,
+      maxPricePerDay,
+      minRating,
+      features,
+      insuranceIncluded,
+      sortBy,
+    }) => {
       // Validate required fields
       const missingFields: string[] = [];
       if (!location || location.trim() === '') missingFields.push('location');
@@ -901,12 +1060,14 @@ export const travelPlannerTools = {
           error: true,
           message: `Missing required fields: ${missingFields.join(', ')}`,
           missingFields,
-          suggestion: `Please ask the user for: ${missingFields.map(f => {
-            if (f === 'location') return 'rental location';
-            if (f === 'startDate') return 'pick-up date';
-            if (f === 'endDate') return 'drop-off date';
-            return f;
-          }).join(', ')}`,
+          suggestion: `Please ask the user for: ${missingFields
+            .map((f) => {
+              if (f === 'location') return 'rental location';
+              if (f === 'startDate') return 'pick-up date';
+              if (f === 'endDate') return 'drop-off date';
+              return f;
+            })
+            .join(', ')}`,
         };
       }
 
@@ -943,11 +1104,11 @@ export const travelPlannerTools = {
             horsepower: 208,
             mpg: '52 city / 53 highway',
             acceleration: '0-60 in 8.2 sec',
-            topSpeed: '125 mph'
+            topSpeed: '125 mph',
           },
           insurance: {
             included: true,
-            coverageType: 'Basic liability and collision'
+            coverageType: 'Basic liability and collision',
           },
         },
         {
@@ -963,17 +1124,24 @@ export const travelPlannerTools = {
           color: 'White',
           pricePerDay: 120,
           rating: 4.8,
-          features: ['GPS', 'Bluetooth', 'Autopilot', 'Premium Audio', 'Full Self-Driving', 'Heated Seats'],
+          features: [
+            'GPS',
+            'Bluetooth',
+            'Autopilot',
+            'Premium Audio',
+            'Full Self-Driving',
+            'Heated Seats',
+          ],
           specifications: {
             engine: 'Electric Motor',
             horsepower: 283,
             mpg: '132 MPGe',
             acceleration: '0-60 in 3.1 sec',
-            topSpeed: '140 mph'
+            topSpeed: '140 mph',
           },
           insurance: {
             included: true,
-            coverageType: 'Comprehensive coverage'
+            coverageType: 'Comprehensive coverage',
           },
         },
         {
@@ -989,18 +1157,25 @@ export const travelPlannerTools = {
           color: 'Black',
           pricePerDay: 150,
           rating: 4.7,
-          features: ['GPS', 'Bluetooth', 'Leather Seats', 'Panoramic Sunroof', 'Heated Seats', 'Premium Sound'],
+          features: [
+            'GPS',
+            'Bluetooth',
+            'Leather Seats',
+            'Panoramic Sunroof',
+            'Heated Seats',
+            'Premium Sound',
+          ],
           specifications: {
             engine: '3.0L Turbocharged 6-Cylinder',
             horsepower: 335,
             mpg: '21 city / 26 highway',
             acceleration: '0-60 in 5.3 sec',
-            topSpeed: '130 mph'
+            topSpeed: '130 mph',
           },
           insurance: {
             included: false,
             dailyRate: 25,
-            coverageType: 'Optional comprehensive coverage'
+            coverageType: 'Optional comprehensive coverage',
           },
         },
         {
@@ -1016,17 +1191,24 @@ export const travelPlannerTools = {
           color: 'Blue',
           pricePerDay: 55,
           rating: 4.5,
-          features: ['GPS', 'Bluetooth', 'All-Wheel Drive', 'Apple CarPlay', 'Android Auto', 'Backup Camera'],
+          features: [
+            'GPS',
+            'Bluetooth',
+            'All-Wheel Drive',
+            'Apple CarPlay',
+            'Android Auto',
+            'Backup Camera',
+          ],
           specifications: {
             engine: '1.5L Turbocharged 4-Cylinder',
             horsepower: 190,
             mpg: '28 city / 34 highway',
             acceleration: '0-60 in 9.0 sec',
-            topSpeed: '115 mph'
+            topSpeed: '115 mph',
           },
           insurance: {
             included: true,
-            coverageType: 'Basic liability and collision'
+            coverageType: 'Basic liability and collision',
           },
         },
         {
@@ -1042,18 +1224,25 @@ export const travelPlannerTools = {
           color: 'Red',
           pricePerDay: 95,
           rating: 4.4,
-          features: ['GPS', 'Bluetooth', 'Leather Seats', 'Premium Audio', 'Sport Mode', 'Convertible Top'],
+          features: [
+            'GPS',
+            'Bluetooth',
+            'Leather Seats',
+            'Premium Audio',
+            'Sport Mode',
+            'Convertible Top',
+          ],
           specifications: {
             engine: '5.0L V8',
             horsepower: 450,
             mpg: '15 city / 24 highway',
             acceleration: '0-60 in 4.2 sec',
-            topSpeed: '155 mph'
+            topSpeed: '155 mph',
           },
           insurance: {
             included: false,
             dailyRate: 30,
-            coverageType: 'Optional comprehensive coverage'
+            coverageType: 'Optional comprehensive coverage',
           },
         },
         {
@@ -1075,11 +1264,11 @@ export const travelPlannerTools = {
             horsepower: 355,
             mpg: '16 city / 22 highway',
             acceleration: '0-60 in 7.2 sec',
-            topSpeed: '98 mph'
+            topSpeed: '98 mph',
           },
           insurance: {
             included: true,
-            coverageType: 'Basic liability and collision'
+            coverageType: 'Basic liability and collision',
           },
         },
         {
@@ -1101,11 +1290,11 @@ export const travelPlannerTools = {
             horsepower: 149,
             mpg: '29 city / 39 highway',
             acceleration: '0-60 in 9.5 sec',
-            topSpeed: '110 mph'
+            topSpeed: '110 mph',
           },
           insurance: {
             included: true,
-            coverageType: 'Basic liability and collision'
+            coverageType: 'Basic liability and collision',
           },
         },
         {
@@ -1121,64 +1310,69 @@ export const travelPlannerTools = {
           color: 'Black',
           pricePerDay: 250,
           rating: 4.9,
-          features: ['GPS', 'Bluetooth', 'Massage Seats', 'Burmester Audio', 'Night Vision', 'Executive Rear Seats'],
+          features: [
+            'GPS',
+            'Bluetooth',
+            'Massage Seats',
+            'Burmester Audio',
+            'Night Vision',
+            'Executive Rear Seats',
+          ],
           specifications: {
             engine: '3.0L Turbocharged 6-Cylinder',
             horsepower: 429,
             mpg: '20 city / 29 highway',
             acceleration: '0-60 in 4.9 sec',
-            topSpeed: '130 mph'
+            topSpeed: '130 mph',
           },
           insurance: {
             included: true,
-            coverageType: 'Premium comprehensive coverage'
+            coverageType: 'Premium comprehensive coverage',
           },
-        }
+        },
       ];
 
       // Apply filters
       let filtered = vehicles;
 
       if (type) {
-        filtered = filtered.filter(v => v.type === type);
+        filtered = filtered.filter((v) => v.type === type);
       }
 
       if (make) {
-        filtered = filtered.filter(v =>
-          v.make.toLowerCase().includes(make.toLowerCase())
-        );
+        filtered = filtered.filter((v) => v.make.toLowerCase().includes(make.toLowerCase()));
       }
 
       if (capacity) {
-        filtered = filtered.filter(v => v.capacity >= capacity);
+        filtered = filtered.filter((v) => v.capacity >= capacity);
       }
 
       if (fuelType) {
-        filtered = filtered.filter(v => v.fuelType === fuelType);
+        filtered = filtered.filter((v) => v.fuelType === fuelType);
       }
 
       if (transmission) {
-        filtered = filtered.filter(v => v.transmission === transmission);
+        filtered = filtered.filter((v) => v.transmission === transmission);
       }
 
       if (maxPricePerDay) {
-        filtered = filtered.filter(v => v.pricePerDay <= maxPricePerDay);
+        filtered = filtered.filter((v) => v.pricePerDay <= maxPricePerDay);
       }
 
       if (minRating) {
-        filtered = filtered.filter(v => v.rating >= minRating);
+        filtered = filtered.filter((v) => v.rating >= minRating);
       }
 
       if (features && features.length > 0) {
-        filtered = filtered.filter(v =>
-          features.every(feature =>
-            v.features.some(f => f.toLowerCase().includes(feature.toLowerCase()))
+        filtered = filtered.filter((v) =>
+          features.every((feature) =>
+            v.features.some((f) => f.toLowerCase().includes(feature.toLowerCase()))
           )
         );
       }
 
       if (insuranceIncluded !== undefined) {
-        filtered = filtered.filter(v => v.insurance.included === insuranceIncluded);
+        filtered = filtered.filter((v) => v.insurance.included === insuranceIncluded);
       }
 
       // Sort results
@@ -1198,8 +1392,9 @@ export const travelPlannerTools = {
       });
 
       // Calculate total cost for each vehicle
-      const vehiclesWithTotal = filtered.map(vehicle => {
-        const totalCost = (vehicle.pricePerDay * days) +
+      const vehiclesWithTotal = filtered.map((vehicle) => {
+        const totalCost =
+          vehicle.pricePerDay * days +
           (vehicle.insurance.included ? 0 : (vehicle.insurance.dailyRate || 0) * days);
         return {
           ...vehicle,
@@ -1207,8 +1402,10 @@ export const travelPlannerTools = {
           totalCost: totalCost,
           breakdown: {
             vehicleCost: vehicle.pricePerDay * days,
-            insuranceCost: vehicle.insurance.included ? 0 : (vehicle.insurance.dailyRate || 0) * days
-          }
+            insuranceCost: vehicle.insurance.included
+              ? 0
+              : (vehicle.insurance.dailyRate || 0) * days,
+          },
         };
       });
 
@@ -1239,11 +1436,13 @@ export const travelPlannerTools = {
           error: true,
           message: `Missing required fields: ${missingFields.join(', ')}`,
           missingFields,
-          suggestion: `Please ask the user for: ${missingFields.map(f => {
-            if (f === 'location') return 'destination location';
-            if (f === 'date') return 'date for the weather forecast';
-            return f;
-          }).join(', ')}`,
+          suggestion: `Please ask the user for: ${missingFields
+            .map((f) => {
+              if (f === 'location') return 'destination location';
+              if (f === 'date') return 'date for the weather forecast';
+              return f;
+            })
+            .join(', ')}`,
         };
       }
 

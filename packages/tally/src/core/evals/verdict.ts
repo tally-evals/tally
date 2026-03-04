@@ -28,9 +28,8 @@ export function computeVerdict(
     if (policy.type === 'threshold') {
       if (typeof rawValue !== 'number') {
         throw new Error('Raw value must be a number with threshold verdict policy');
-      } else {
-        return rawValue >= policy.passAt ? 'pass' : 'fail';
       }
+      return rawValue >= policy.passAt ? 'pass' : 'fail';
     }
     if (policy.type === 'range') {
       const min = policy.min ?? 0;
@@ -38,9 +37,8 @@ export function computeVerdict(
 
       if (typeof rawValue !== 'number') {
         throw new Error('Raw value must be a number with range verdict policy');
-      } else {
-        return rawValue >= min && rawValue <= max ? 'pass' : 'fail';
       }
+      return rawValue >= min && rawValue <= max ? 'pass' : 'fail';
     }
   }
 

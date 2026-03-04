@@ -22,9 +22,7 @@
       }
     }
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "publishConfig": {
     "access": "public",
     "provenance": true,
@@ -43,14 +41,7 @@
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down"
   },
-  "keywords": [
-    "tally",
-    "evaluation",
-    "llm",
-    "ai",
-    "core",
-    "types"
-  ],
+  "keywords": ["tally", "evaluation", "llm", "ai", "core", "types"],
   "author": "",
   "license": "MIT",
   "dependencies": {
