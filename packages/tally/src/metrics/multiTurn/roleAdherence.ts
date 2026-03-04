@@ -8,10 +8,10 @@
  * Works with Conversation containers only.
  */
 
+import { defineMultiTurnLLM, defineBaseMetric } from '../../core/primitives';
+import { createMinMaxNormalizer } from '../../normalizers/factories';
 import type { Conversation, MultiTurnContainer, MultiTurnMetricDef } from '@tally/core/types';
 import type { LanguageModel } from 'ai';
-import { defineBaseMetric, defineMultiTurnLLM } from '../../core/primitives';
-import { createMinMaxNormalizer } from '../../normalizers/factories';
 import { extractTextFromMessage, extractTextFromMessages } from '../common/utils';
 
 export interface RoleAdherenceOptions {

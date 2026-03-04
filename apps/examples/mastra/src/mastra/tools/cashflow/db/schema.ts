@@ -1,5 +1,5 @@
+import { sqliteTable, real, text } from 'drizzle-orm/sqlite-core';
 import type { InferInsertModel, InferSelectModel } from 'drizzle-orm';
-import { real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 // -----------------------------
 // Domain Models (new spec)

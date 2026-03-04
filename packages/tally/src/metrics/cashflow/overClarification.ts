@@ -11,7 +11,11 @@
  * whether clarification should NOT be requested.
  */
 
-import type { SingleTargetFor, SingleTurnContainer, SingleTurnMetricDef } from '@tally/core/types';
+import type {
+  SingleTurnContainer,
+  SingleTurnMetricDef,
+  SingleTargetFor,
+} from '@tally/core/types';
 import type { LanguageModel } from 'ai';
 import { defineBaseMetric, defineSingleTurnLLM } from '../../core/primitives';
 import { createMinMaxNormalizer } from '../../normalizers/factories';

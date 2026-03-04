@@ -17,9 +17,9 @@ import {
   sanitizeText,
   truncateText,
 } from '../utils/formatters';
-import { BreadCrumbs } from './shared/BreadCrumbs.js';
 import { KeyboardHelp } from './shared/KeyboardHelp';
 import { ToolCallList } from './shared/ToolCallList.jsx';
+import { BreadCrumbs } from './shared/BreadCrumbs.js';
 
 /**
  * Safely get a numeric aggregation value from an Aggregations object
@@ -27,7 +27,7 @@ import { ToolCallList } from './shared/ToolCallList.jsx';
  */
 function getNumericAggregation(
   aggregations: Record<string, number | Record<string, number>> | undefined,
-  key: string
+  key: string,
 ): number | undefined {
   if (!aggregations) return undefined;
 
@@ -84,7 +84,9 @@ export function CompareView({
       setScrollPosition(Math.max(0, scrollPosition - 1));
     }
     if (key.downArrow || key.rightArrow) {
-      setScrollPosition(Math.min(conversation.steps.length - 1, scrollPosition + 1));
+      setScrollPosition(
+        Math.min(conversation.steps.length - 1, scrollPosition + 1),
+      );
     }
   });
 
@@ -98,7 +100,10 @@ export function CompareView({
 
   // Collect all eval names from both views' step results
   const evalNames = Array.from(
-    new Set([...Object.keys(leftStepResults), ...Object.keys(rightStepResults)])
+    new Set([
+      ...Object.keys(leftStepResults),
+      ...Object.keys(rightStepResults),
+    ]),
   ).sort();
 
   const currentStep = conversation.steps[scrollPosition];
@@ -106,8 +111,14 @@ export function CompareView({
     return <Text>{colors.error('No step at current position')}</Text>;
   }
 
-  const inputText = truncateText(sanitizeText(extractTextFromMessage(currentStep.input)), 60);
-  const outputText = truncateText(sanitizeText(extractTextFromMessages(currentStep.output)), 60);
+  const inputText = truncateText(
+    sanitizeText(extractTextFromMessage(currentStep.input)),
+    60,
+  );
+  const outputText = truncateText(
+    sanitizeText(extractTextFromMessages(currentStep.output)),
+    60,
+  );
   const toolCalls = extractToolCallsFromMessages(currentStep.output);
 
   const table = new Table({
@@ -132,8 +143,10 @@ export function CompareView({
     const leftScoreNum = leftStep?.measurement.score;
     const rightScoreNum = rightStep?.measurement.score;
 
-    const leftScore = leftScoreNum !== undefined ? formatScore(leftScoreNum) : colors.muted('-');
-    const rightScore = rightScoreNum !== undefined ? formatScore(rightScoreNum) : colors.muted('-');
+    const leftScore =
+      leftScoreNum !== undefined ? formatScore(leftScoreNum) : colors.muted('-');
+    const rightScore =
+      rightScoreNum !== undefined ? formatScore(rightScoreNum) : colors.muted('-');
 
     let deltaText = colors.muted('-');
     if (typeof leftScoreNum === 'number' && typeof rightScoreNum === 'number') {
@@ -161,7 +174,11 @@ export function CompareView({
       />
 
       <Box paddingTop={1} paddingX={1}>
-        <Text>{colors.muted(`(Turn ${scrollPosition + 1}/${conversation.steps.length})`)}</Text>
+        <Text>
+          {colors.muted(
+            `(Turn ${scrollPosition + 1}/${conversation.steps.length})`,
+          )}
+        </Text>
       </Box>
 
       <Box marginBottom={1} borderStyle="round" borderColor="gray" paddingX={1}>
@@ -232,12 +249,7 @@ export function CompareView({
             const rightMeanValue = getNumericAggregation(rightAggs, 'mean');
 
             if (leftMeanValue === undefined || rightMeanValue === undefined) {
-              summaryTable.push([
-                evalName,
-                colors.muted('-'),
-                colors.muted('-'),
-                colors.muted('-'),
-              ]);
+              summaryTable.push([evalName, colors.muted('-'), colors.muted('-'), colors.muted('-')]);
               continue;
             }
 

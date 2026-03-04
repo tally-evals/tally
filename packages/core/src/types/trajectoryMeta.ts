@@ -46,3 +46,4 @@ export interface TrajectoryMetaV1 {
 }
 
 export type TrajectoryMeta = TrajectoryMetaV1;
+

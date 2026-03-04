@@ -1,4 +1,4 @@
-import type { ConversationResult, Eval, TallyRunArtifact, TallyRunReport } from '@tally-evals/core';
+import type { Eval, TallyRunArtifact, TallyRunReport, ConversationResult } from '@tally-evals/core';
 import { createTargetRunView } from '../views/targetRunView';
 
 /**
@@ -10,7 +10,7 @@ import { createTargetRunView } from '../views/targetRunView';
  */
 export function createTallyRunReport<TEvals extends readonly Eval[] = readonly Eval[]>(
   artifact: TallyRunArtifact,
-  _evals?: TEvals // For type inference only
+  _evals?: TEvals, // For type inference only
 ): TallyRunReport<TEvals> {
   return {
     runId: artifact.runId,

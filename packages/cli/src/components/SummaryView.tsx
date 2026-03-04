@@ -18,7 +18,7 @@ import { colorByRate01, formatRate01 } from 'src/utils/formatters';
  */
 function getNumericAggregation(
   aggregations: Record<string, number | Record<string, number>> | undefined,
-  key: string
+  key: string,
 ): number | undefined {
   if (!aggregations) return undefined;
 
@@ -80,7 +80,9 @@ function formatDualValue(args: {
   // Terminal can't actually render smaller text; use muted grey as the
   // "secondary" (smaller-feeling) line.
   const scoreLine =
-    args.score !== undefined ? colors.muted(formatScoreNumber(args.score)) : colors.muted('-');
+    args.score !== undefined
+      ? colors.muted(formatScoreNumber(args.score))
+      : colors.muted('-');
   return `${rawLine}\n${scoreLine}`;
 }
 
@@ -118,7 +120,8 @@ export function SummaryView({ report }: SummaryViewProps): React.ReactElement {
 
     // For single-turn/scorer we expect Mean/Pxx keys; for multi-turn we expect `value`.
     const scoreMeanOrValue =
-      getNumericAggregation(scoreAggs, 'mean') ?? getNumericAggregation(scoreAggs, 'value');
+      getNumericAggregation(scoreAggs, 'mean') ??
+      getNumericAggregation(scoreAggs, 'value');
     const rawMeanOrValue =
       getNumericAggregation(rawAggs, 'mean') ?? getNumericAggregation(rawAggs, 'value');
 

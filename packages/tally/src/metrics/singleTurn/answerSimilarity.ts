@@ -7,6 +7,8 @@
  * Supports both DatasetItem and ConversationStep containers.
  */
 
+import { defineSingleTurnCode, defineBaseMetric } from '../../core/primitives';
+import { createIdentityNormalizer } from '../../normalizers/factories';
 import type {
   NumericAggregatorDef,
   SingleTurnContainer,
@@ -14,8 +16,6 @@ import type {
 } from '@tally/core/types';
 import { extractWords } from '@tally/utils/text';
 import type { EmbeddingModel } from 'ai';
-import { defineBaseMetric, defineSingleTurnCode } from '../../core/primitives';
-import { createIdentityNormalizer } from '../../normalizers/factories';
 
 export interface AnswerSimilarityOptions {
   /**

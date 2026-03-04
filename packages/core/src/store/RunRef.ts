@@ -1,6 +1,6 @@
+import type { TallyRunArtifact } from '../types/runArtifact';
 import { decodeRunArtifact, encodeRunArtifact } from '../codecs/runArtifact';
 import type { IStorage } from '../storage/storage.interface';
-import type { TallyRunArtifact } from '../types/runArtifact';
 import type { TrajectoryRunMeta } from '../types/runs';
 import type { RunType } from './types';
 
@@ -10,9 +10,11 @@ export class RunRef {
     private readonly storage: IStorage,
     public readonly path: string,
     public readonly id: string,
-    public readonly type: RunType
+    public readonly type: RunType,
   ) {
-    this.timestamp = id.split('-')[1] ? new Date(Number.parseInt(id.split('-')[1]!)) : undefined;
+    this.timestamp = id.split('-')[1]
+      ? new Date(parseInt(id.split('-')[1]!))
+      : undefined;
   }
 
   async load(): Promise<TallyRunArtifact | TrajectoryRunMeta> {

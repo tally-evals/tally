@@ -72,6 +72,7 @@ export type {
   MultiTurnContainer,
   MetricContainer,
   SingleTargetFor,
+
   // LLM types
   LanguageModelLike,
   ModelProvider,
@@ -79,6 +80,7 @@ export type {
   PromptTemplate,
   LLMMetricFields,
   CodeMetricFields,
+
   // Metric definition types
   BaseMetricDef,
   SingleTurnMetricDef,
@@ -89,6 +91,7 @@ export type {
   MetricDefFor,
   AnyMetricDefFor,
   Metric,
+
   // Aggregator types
   NumericAggregatorDef,
   BooleanAggregatorDef,
@@ -112,10 +115,12 @@ export type {
   // Run policy types
   SingleTurnRunPolicy,
   EvaluationContext,
+
   // Verdict types
   VerdictPolicyFor,
   VerdictPolicy,
   AutoNormalizer,
+
   // Eval types
   SingleTurnEval,
   MultiTurnEval,
@@ -136,20 +141,25 @@ export type {
   ConversationId,
   Verdict,
   MetricScalarOrNull,
+
   // Normalization info
   NormalizerSpecSnap,
   NormalizationInfo,
   MetricNormalizationSnap,
+
   // Verdict policy
   VerdictPolicyInfo,
+
   // Measurement & Outcome
   Measurement,
   EvalOutcome,
+
   // Result records
   StepEvalResult,
   SingleTurnEvalSeries,
   ConversationEvalResult,
   ConversationResult,
+
   // Type extraction utilities
   ExtractEvalName,
   ExtractValueType,
@@ -159,15 +169,18 @@ export type {
   HasEvalsOfKind,
   ExtractVerdictPolicy,
   ExtractNormalizationContext,
+
   // Mapped result types
   SingleTurnResults,
   MultiTurnResults,
   ScorerResults,
+
   // View result types
   StepResults,
   StepResultsWithIndex,
   ConversationResults,
   SummaryResults,
+
   // Aggregations
   AggregationValue,
   ExtractAggregatorNames,
@@ -178,10 +191,12 @@ export type {
   AggregationResultFor,
   ScoreAggregations,
   RawAggregations,
+
   // Summaries
   VerdictSummary,
   EvalSummary,
   Summaries,
+
   // Definition snapshots
   MetricDefSnap,
   EvalDefSnap,

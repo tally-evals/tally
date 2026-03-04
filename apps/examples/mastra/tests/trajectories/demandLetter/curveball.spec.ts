@@ -2,18 +2,20 @@
  * Demand Letter Agent - Curve Ball Test
  */
 
-import { describe, expect, it } from 'bun:test';
-import { google } from '@ai-sdk/google';
+import { describe, it, expect } from 'bun:test';
+import { demandLetterAgent } from '../../../src/mastra/agents/demand-letter-agent';
+import { demandLetterCurveTrajectory } from './definitions';
+import { runCase, assertToolCallSequence, saveTallyReportToStore } from '../../utils/harness';
 import {
   createTally,
+  runAllTargets,
   defineBaseMetric,
   defineInput,
+  defineSingleTurnEval,
   defineMultiTurnEval,
   defineScorerEval,
-  defineSingleTurnEval,
-  formatReportAsTables,
-  runAllTargets,
   thresholdVerdict,
+  formatReportAsTables,
 } from '@tally-evals/tally';
 import {
   createAnswerRelevanceMetric,
@@ -21,9 +23,7 @@ import {
   createRoleAdherenceMetric,
 } from '@tally-evals/tally/metrics';
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
-import { demandLetterAgent } from '../../../src/mastra/agents/demand-letter-agent';
-import { assertToolCallSequence, runCase, saveTallyReportToStore } from '../../utils/harness';
-import { demandLetterCurveTrajectory } from './definitions';
+import { google } from '@ai-sdk/google';
 import { createKnowledgeRetentionMetric } from './metrics';
 
 describe('Demand Letter Agent - Curve Ball', () => {
@@ -48,10 +48,13 @@ describe('Demand Letter Agent - Curve Ball', () => {
             msg.role === 'assistant' &&
             (Array.isArray(msg.content)
               ? msg.content.some(
-                  (p: unknown) =>
-                    typeof p === 'object' && p !== null && 'type' in p && p.type === 'tool-call'
-                )
-              : false)
+                (p: unknown) =>
+                  typeof p === 'object' &&
+                  p !== null &&
+                  'type' in p &&
+                  p.type === 'tool-call',
+              )
+              : false),
         );
         if (hasToolCalls) {
           throw error;
@@ -62,7 +65,7 @@ describe('Demand Letter Agent - Curve Ball', () => {
     const model = google('models/gemini-2.5-flash-lite');
 
     // Create metrics for demand letter evaluation
-
+    
     // Answer Relevance: Agent should answer user questions appropriately
     const answerRelevance = createAnswerRelevanceMetric({
       provider: model,
@@ -139,7 +142,7 @@ describe('Demand Letter Agent - Curve Ball', () => {
     const overallQualityEval = defineScorerEval({
       name: 'Overall Quality',
       scorer: qualityScorer,
-      verdict: thresholdVerdict(0.6),
+      verdict: thresholdVerdict(0.6), 
     });
 
     const tally = createTally({
@@ -155,10 +158,7 @@ describe('Demand Letter Agent - Curve Ball', () => {
     });
 
     const report = await tally.run();
-    await saveTallyReportToStore({
-      conversationId: 'demand-letter-curve',
-      report: report.toArtifact(),
-    });
+    await saveTallyReportToStore({ conversationId: 'demand-letter-curve', report: report.toArtifact() });
 
     formatReportAsTables(report.toArtifact(), conversation);
 

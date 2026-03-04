@@ -64,7 +64,9 @@ export interface EvalMetadataEntry {
   sourceMetrics: string[] | undefined;
 }
 
-export function buildFromEvals(evals: readonly Eval[]): {
+export function buildFromEvals(
+  evals: readonly Eval[]
+): {
   internalEvaluators: InternalEvaluator<MetricContainer>[];
   evalMetadata: Map<string, EvalMetadataEntry>;
 } {
@@ -244,9 +246,11 @@ function buildMultiTurnEval(
  * Build internal evaluator from scorer eval
  * Uses the scorer as-is
  */
-function buildScorerEval(definition: ScorerEval<string>): InternalEvaluator<MetricContainer> {
+function buildScorerEval(
+  definition: ScorerEval<string>
+): InternalEvaluator<MetricContainer> {
   const inputMetrics = (definition.scorer.inputs as readonly { metric: unknown }[]).map(
-    (input) => input.metric
+    (input) => input.metric,
   );
 
   const result: InternalEvaluator<MetricContainer> = {

@@ -84,7 +84,9 @@ export function TurnByTurnView({
       setScrollPosition((prev) => Math.max(0, prev - 1));
     }
     if (isRight) {
-      setScrollPosition((prev) => Math.min(conversation.steps.length - 1, prev + 1));
+      setScrollPosition((prev) =>
+        Math.min(conversation.steps.length - 1, prev + 1),
+      );
     }
   });
 
@@ -105,7 +107,9 @@ export function TurnByTurnView({
         ...(stepRes.measurement.rawValue !== undefined
           ? { rawValue: stepRes.measurement.rawValue as any }
           : {}),
-        ...(stepRes.outcome?.verdict !== undefined ? { verdict: stepRes.outcome.verdict } : {}),
+        ...(stepRes.outcome?.verdict !== undefined
+          ? { verdict: stepRes.outcome.verdict }
+          : {}),
         ...(stepRes.measurement.reasoning !== undefined
           ? { reasoning: stepRes.measurement.reasoning }
           : {}),
@@ -126,7 +130,9 @@ export function TurnByTurnView({
       return {
         name: evalName,
         ...(evalDef?.verdict ? { passAt: formatPassAt(evalDef.verdict) } : {}),
-        ...(res.measurement.score !== undefined ? { score: Number(res.measurement.score) } : {}),
+        ...(res.measurement.score !== undefined
+          ? { score: Number(res.measurement.score) }
+          : {}),
         ...(res.measurement.rawValue !== undefined
           ? { rawValue: res.measurement.rawValue as any }
           : {}),
@@ -135,7 +141,7 @@ export function TurnByTurnView({
           ? { reasoning: res.measurement.reasoning }
           : {}),
       };
-    }
+    },
   );
 
   return (
@@ -143,7 +149,9 @@ export function TurnByTurnView({
       <Box paddingX={1}>
         <Text>
           {colors.bold(`Conversation: ${conversation.id}`)}{' '}
-          {colors.muted(`(Turn ${scrollPosition + 1}/${conversation.steps.length})`)}
+          {colors.muted(
+            `(Turn ${scrollPosition + 1}/${conversation.steps.length})`,
+          )}
         </Text>
       </Box>
 
@@ -161,7 +169,10 @@ export function TurnByTurnView({
               <Text>{colors.bold('Multi-turn Metrics')}</Text>
             </Box>
             <Box>
-              <MetricsTable metrics={multiTurnRows} maxReasoningLength={expanded ? 100 : 40} />
+              <MetricsTable
+                metrics={multiTurnRows}
+                maxReasoningLength={expanded ? 100 : 40}
+              />
             </Box>
           </Box>
         )}

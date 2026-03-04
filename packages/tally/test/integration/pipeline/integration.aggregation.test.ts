@@ -6,26 +6,21 @@
 
 import { describe, expect, it } from 'bun:test';
 import {
-  booleanVerdict,
-  defineScorerEval,
-  defineSingleTurnEval,
-  thresholdVerdict,
-} from '../../../src/evals';
-import {
-  type Conversation,
-  type ConversationStep,
-  createIdentityNormalizer,
   createMeanAggregator,
-  createMinMaxNormalizer,
   createPercentileAggregator,
-  createTally,
   createThresholdAggregator,
   createTrueRateAggregator,
-  createWeightedAverageScorer,
+  createMinMaxNormalizer,
+  createIdentityNormalizer,
   defineBaseMetric,
-  defineInput,
   defineSingleTurnCode,
+  createWeightedAverageScorer,
+  defineInput,
+  createTally,
+  type Conversation,
+  type ConversationStep,
 } from '../../_exports';
+import { defineSingleTurnEval, defineScorerEval, thresholdVerdict, booleanVerdict } from '../../../src/evals';
 import type { DatasetItem, VerdictPolicyFor } from '../../_exports';
 
 /**
@@ -70,7 +65,7 @@ describe('Integration | Pipeline | Aggregation', () => {
       const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => ({
-          value: Number.parseFloat(getStepCompletion(step as ConversationStep)),
+          value: parseFloat(getStepCompletion(step as ConversationStep)),
         }),
         compute: ({ data }) => (data as { value: number }).value,
         normalization: {
@@ -131,7 +126,7 @@ describe('Integration | Pipeline | Aggregation', () => {
       const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => ({
-          value: Number.parseFloat(getStepCompletion(step as ConversationStep)),
+          value: parseFloat(getStepCompletion(step as ConversationStep)),
         }),
         compute: ({ data }) => (data as { value: number }).value,
         normalization: {
@@ -182,8 +177,8 @@ describe('Integration | Pipeline | Aggregation', () => {
 
       expect(summary).toBeDefined();
       expect(summary?.aggregations.score.Mean).toBeCloseTo(0.55, 2);
-      expect(summary?.aggregations.score.P50).toBeCloseTo(0.55, 2); // Median
-      expect(summary?.aggregations.score.P95).toBeDefined(); // Should exist
+      expect(summary?.aggregations.score.P50).toBeCloseTo(0.55, 2);  // Median
+      expect(summary?.aggregations.score.P95).toBeDefined();  // Should exist
     });
 
     it('computes threshold pass rate aggregation', async () => {
@@ -195,13 +190,16 @@ describe('Integration | Pipeline | Aggregation', () => {
       const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => ({
-          value: Number.parseFloat(getStepCompletion(step as ConversationStep)),
+          value: parseFloat(getStepCompletion(step as ConversationStep)),
         }),
         compute: ({ data }) => (data as { value: number }).value,
         normalization: {
           normalizer: createIdentityNormalizer(),
         },
-        aggregators: [createMeanAggregator(), createThresholdAggregator({ threshold: 0.7 })],
+        aggregators: [
+          createMeanAggregator(),
+          createThresholdAggregator({ threshold: 0.7 }),
+        ],
       });
 
       const outputMetric = defineBaseMetric({
@@ -227,11 +225,11 @@ describe('Integration | Pipeline | Aggregation', () => {
 
       // 3 out of 5 values >= 0.7
       const items: DatasetItem[] = [
-        { id: '1', prompt: 'test', completion: '0.5' }, // below
-        { id: '2', prompt: 'test', completion: '0.7' }, // at threshold
-        { id: '3', prompt: 'test', completion: '0.8' }, // above
-        { id: '4', prompt: 'test', completion: '0.6' }, // below
-        { id: '5', prompt: 'test', completion: '0.9' }, // above
+        { id: '1', prompt: 'test', completion: '0.5' },  // below
+        { id: '2', prompt: 'test', completion: '0.7' },  // at threshold
+        { id: '3', prompt: 'test', completion: '0.8' },  // above
+        { id: '4', prompt: 'test', completion: '0.6' },  // below
+        { id: '5', prompt: 'test', completion: '0.9' },  // above
       ];
 
       const tally = createTally({
@@ -243,7 +241,7 @@ describe('Integration | Pipeline | Aggregation', () => {
       const summary = report.result.summaries?.byEval.qualityEval;
 
       expect(summary).toBeDefined();
-      expect(summary?.aggregations.score['Threshold >= 0.7']).toBe(0.6); // 3/5 = 0.6
+      expect(summary?.aggregations.score['Threshold >= 0.7']).toBe(0.6);  // 3/5 = 0.6
     });
   });
 
@@ -312,7 +310,7 @@ describe('Integration | Pipeline | Aggregation', () => {
       const trueRateValue =
         summary?.aggregations?.raw?.TrueRate ?? summary?.aggregations?.score?.TrueRate;
       if (trueRateValue !== undefined) {
-        expect(trueRateValue).toBe(0.8); // 4/5
+        expect(trueRateValue).toBe(0.8);  // 4/5
       }
     });
   });
@@ -327,7 +325,7 @@ describe('Integration | Pipeline | Aggregation', () => {
       const metric = defineSingleTurnCode({
         base,
         preProcessor: (step) => ({
-          value: Number.parseFloat(getStepCompletion(step as ConversationStep)),
+          value: parseFloat(getStepCompletion(step as ConversationStep)),
         }),
         compute: ({ data }) => (data as { value: number }).value,
         normalization: {
@@ -361,11 +359,11 @@ describe('Integration | Pipeline | Aggregation', () => {
 
       // 3 pass, 2 fail
       const items: DatasetItem[] = [
-        { id: '1', prompt: 'test', completion: '0.3' }, // fail
-        { id: '2', prompt: 'test', completion: '0.6' }, // pass
-        { id: '3', prompt: 'test', completion: '0.8' }, // pass
-        { id: '4', prompt: 'test', completion: '0.4' }, // fail
-        { id: '5', prompt: 'test', completion: '0.7' }, // pass
+        { id: '1', prompt: 'test', completion: '0.3' },  // fail
+        { id: '2', prompt: 'test', completion: '0.6' },  // pass
+        { id: '3', prompt: 'test', completion: '0.8' },  // pass
+        { id: '4', prompt: 'test', completion: '0.4' },  // fail
+        { id: '5', prompt: 'test', completion: '0.7' },  // pass
       ];
 
       const tally = createTally({
@@ -427,10 +425,10 @@ describe('Integration | Pipeline | Aggregation', () => {
       });
 
       const items: DatasetItem[] = [
-        { id: '1', prompt: 'test', completion: 'yes' }, // true → pass
-        { id: '2', prompt: 'test', completion: 'no' }, // false → fail
-        { id: '3', prompt: 'test', completion: 'yes' }, // true → pass
-        { id: '4', prompt: 'test', completion: 'yes' }, // true → pass
+        { id: '1', prompt: 'test', completion: 'yes' },  // true → pass
+        { id: '2', prompt: 'test', completion: 'no' },   // false → fail
+        { id: '3', prompt: 'test', completion: 'yes' },  // true → pass
+        { id: '4', prompt: 'test', completion: 'yes' },  // true → pass
       ];
 
       const tally = createTally({
@@ -459,7 +457,7 @@ describe('Integration | Pipeline | Aggregation', () => {
       const scoreMetric = defineSingleTurnCode({
         base: scoreBase,
         preProcessor: (step) => ({
-          value: Number.parseFloat(getStepCompletion(step as ConversationStep).split(',')[0]),
+          value: parseFloat(getStepCompletion(step as ConversationStep).split(',')[0]),
         }),
         compute: ({ data }) => (data as { value: number }).value,
         normalization: { normalizer: createIdentityNormalizer() },
@@ -532,8 +530,8 @@ describe('Integration | Pipeline | Aggregation', () => {
       // Check score eval
       const scoreSummary = report.result.summaries?.byEval.scoreEval;
       expect(scoreSummary).toBeDefined();
-      expect(scoreSummary?.aggregations.score.Mean).toBeCloseTo(0.6, 10); // (0.8+0.5+0.7+0.4)/4
-      expect(scoreSummary?.verdictSummary?.passCount).toBe(2); // 0.8, 0.7 >= 0.6
+      expect(scoreSummary?.aggregations.score.Mean).toBeCloseTo(0.6, 10);  // (0.8+0.5+0.7+0.4)/4
+      expect(scoreSummary?.verdictSummary?.passCount).toBe(2);  // 0.8, 0.7 >= 0.6
 
       // Check valid eval
       const validSummary = report.result.summaries?.byEval.validEval;
@@ -542,9 +540,9 @@ describe('Integration | Pipeline | Aggregation', () => {
       const validTrueRateValue =
         validSummary?.aggregations?.raw?.TrueRate ?? validSummary?.aggregations?.score?.TrueRate;
       if (validTrueRateValue !== undefined) {
-        expect(validTrueRateValue).toBe(0.75); // 3/4
+        expect(validTrueRateValue).toBe(0.75);  // 3/4
       }
-      expect(validSummary?.verdictSummary?.passCount).toBe(3); // true count
+      expect(validSummary?.verdictSummary?.passCount).toBe(3);  // true count
     });
   });
 });

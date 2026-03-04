@@ -8,10 +8,11 @@ import type { StepTrace } from '../core/types.js';
  * the canonical execution state, and "message history" is just a view.
  */
 export function stepTracesToMessages(stepTraces: readonly StepTrace[]): ModelMessage[] {
-  const history: ModelMessage[] = [];
-  for (const trace of stepTraces) {
-    history.push(trace.userMessage);
-    history.push(...trace.agentMessages);
-  }
-  return history;
+	const history: ModelMessage[] = [];
+	for (const trace of stepTraces) {
+		history.push(trace.userMessage);
+		history.push(...trace.agentMessages);
+	}
+	return history;
 }
+

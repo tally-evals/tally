@@ -8,7 +8,12 @@
 import { z } from 'zod';
 import type { TallyRunArtifact } from '../types/runArtifact';
 
-const MetricScalarOrNullSchema = z.union([z.number(), z.boolean(), z.string(), z.null()]);
+const MetricScalarOrNullSchema = z.union([
+  z.number(),
+  z.boolean(),
+  z.string(),
+  z.null(),
+]);
 
 const MeasurementSchema = z
   .object({
@@ -305,3 +310,4 @@ export function encodeRunArtifact(artifact: TallyRunArtifact): string {
   const parsed = TallyRunArtifactSchema.parse(artifact);
   return JSON.stringify(parsed, null, 2);
 }
+

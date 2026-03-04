@@ -7,15 +7,15 @@
 
 import type { Eval } from './evaluators';
 import type {
-  ConversationResults,
-  EvalDefSnap,
-  ExtractEvalName,
-  MetricDefSnap,
-  RunDefs,
-  ScorerDefSnap,
   StepResults,
   StepResultsWithIndex,
+  ConversationResults,
   SummaryResults,
+  ExtractEvalName,
+  RunDefs,
+  MetricDefSnap,
+  EvalDefSnap,
+  ScorerDefSnap,
 } from './results';
 
 /**
@@ -89,5 +89,7 @@ export interface TargetRunView<TEvals extends readonly Eval[] = readonly Eval[]>
    * Get metric definition for an eval.
    * Shorthand for: metric(eval(evalName)?.metric)
    */
-  metricForEval<K extends ExtractEvalName<TEvals[number]>>(evalName: K): MetricDefSnap | undefined;
+  metricForEval<K extends ExtractEvalName<TEvals[number]>>(
+    evalName: K
+  ): MetricDefSnap | undefined;
 }

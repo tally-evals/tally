@@ -1,7 +1,7 @@
 import { ScrollBarBox } from '@byteland/ink-scroll-bar';
 import { useInput, useStdout } from 'ink';
 import { ControlledScrollView as ControlledScrollViewBase } from 'ink-scroll-view';
-import { type ComponentType, type ReactNode, useCallback, useEffect, useState } from 'react';
+import { type ComponentType, type ReactNode, useEffect, useState } from 'react';
 
 // Cast to work around React types version mismatch between ink-scroll-view and React 19
 const ControlledScrollView = ControlledScrollViewBase as ComponentType<{
@@ -66,18 +66,18 @@ export const Scrollable: React.FC<ScrollableProps> = ({
     handleScrollOffsetChange(0);
   };
 
-  const handleResize = useCallback(() => {
+  const handleResize = () => {
     if (contentHeight < viewportHeight) {
       setScrollOffset(0);
     }
-  }, [contentHeight, viewportHeight]);
+  };
 
   useEffect(() => {
     stdout?.on('resize', handleResize);
     return () => {
       stdout?.off('resize', handleResize);
     };
-  }, [stdout, handleResize]);
+  }, [stdout]);
 
   useInput((input, key) => {
     if (!focusable) return;
