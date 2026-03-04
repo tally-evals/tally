@@ -1,6 +1,6 @@
 /**
  * Cashflow Copilot Agent - Golden Path Test
- * 
+ *
  * This test is used to evaluate the cashflow copilot agent's ability to manage cashflow successfully.
  * It is a golden path scenario where the user provides complete information and the agent should handle it gracefully.
  * It is also used to evaluate the agent's ability to ask for the right missing information and not ask for information already provided.
@@ -10,34 +10,34 @@
  * It is also used to evaluate the agent's ability to handle the user's language.
  */
 
-import { describe, it, expect } from 'vitest';
-import { cashflowCopilotAgent } from '../../../src/mastra/agents/cashflow-copilot-agent';
-import { cashflowGoldenTrajectory } from './definitions';
-import { runCase, assertToolCallSequence, saveTallyReportToStore } from '../../utils/harness';
-import type { CoreMessage as ModelMessage } from 'ai';
+import { google } from '@ai-sdk/google';
 import {
   createTally,
-  runAllTargets,
   defineBaseMetric,
   defineInput,
-  defineSingleTurnEval,
   defineMultiTurnEval,
   defineScorerEval,
-  thresholdVerdict,
+  defineSingleTurnEval,
   formatReportAsTables,
+  runAllTargets,
+  thresholdVerdict,
 } from '@tally-evals/tally';
 import {
-  createAnswerRelevanceMetric,
-  createCompletenessMetric,
-  createRoleAdherenceMetric,
   createAffordabilityDecisionMetric,
-  createClarificationPrecisionMetric,
-  createOverClarificationMetric,
+  createAnswerRelevanceMetric,
   createBufferConsiderationMetric,
+  createClarificationPrecisionMetric,
+  createCompletenessMetric,
   createImpactReportingMetric,
+  createOverClarificationMetric,
+  createRoleAdherenceMetric,
 } from '@tally-evals/tally/metrics';
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
-import { google } from '@ai-sdk/google';
+import type { CoreMessage as ModelMessage } from 'ai';
+import { describe, expect, it } from 'vitest';
+import { cashflowCopilotAgent } from '../../../src/mastra/agents/cashflow-copilot-agent';
+import { assertToolCallSequence, runCase, saveTallyReportToStore } from '../../utils/harness';
+import { cashflowGoldenTrajectory } from './definitions';
 
 describe('Cashflow Copilot Agent - Golden Path', () => {
   it('should manage cashflow successfully', async () => {
@@ -63,12 +63,9 @@ describe('Cashflow Copilot Agent - Golden Path', () => {
             (Array.isArray(msg.content)
               ? msg.content.some(
                   (p: unknown) =>
-                    typeof p === 'object' &&
-                    p !== null &&
-                    'type' in p &&
-                    p.type === 'tool-call',
+                    typeof p === 'object' && p !== null && 'type' in p && p.type === 'tool-call'
                 )
-              : false),
+              : false)
         );
         if (hasToolCalls) {
           throw error;
@@ -231,7 +228,7 @@ describe('Cashflow Copilot Agent - Golden Path', () => {
     console.log('Evaluation Results:');
     console.log(`   Steps evaluated: ${conversation.steps.length}`);
     console.log(
-      `   Overall Quality mean: ${(overallQualitySummary?.aggregations?.score as any)?.Mean}`,
+      `   Overall Quality mean: ${(overallQualitySummary?.aggregations?.score as any)?.Mean}`
     );
 
     expect(report).toBeDefined();
@@ -247,4 +244,3 @@ describe('Cashflow Copilot Agent - Golden Path', () => {
     }
   }, 300000);
 });
-

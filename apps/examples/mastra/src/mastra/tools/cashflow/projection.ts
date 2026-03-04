@@ -1,5 +1,5 @@
-import { type RecurringCashflow } from './db/schema';
-import { getCashPosition, listRecurringCashflows, listFutureCashflows } from './db/repository';
+import { getCashPosition, listFutureCashflows, listRecurringCashflows } from './db/repository';
+import type { RecurringCashflow } from './db/schema';
 
 // -----------------------------
 // Types
@@ -58,12 +58,11 @@ export interface ProjectionResult {
 // Helpers
 // -----------------------------
 
-// convert the date string to a Date object 
+// convert the date string to a Date object
 const toDate = (s: string): Date => new Date(`${s}T00:00:00Z`);
 // slice the date string to the format YYYY-MM-DD
 const formatDate = (d: Date): string => d.toISOString().slice(0, 10);
 const formatMonth = (d: Date): string => d.toISOString().slice(0, 7);
-
 
 // Projection is simulated day-by-day, so we need to generate a list of dates between the start and end date.
 function* eachDay(start: Date, end: Date): Generator<Date> {
@@ -75,8 +74,7 @@ function* eachDay(start: Date, end: Date): Generator<Date> {
 }
 // Calculate the number of days between two dates. This is used to determine if a recurring cashflow occurs on a given date.
 // Used for weekly, biweekly, monthly, and yearly recurring cashflows. (takes the time differnce in milliseconds and converts it to days)
-const diffDays = (a: Date, b: Date): number =>
-  Math.floor((b.getTime() - a.getTime()) / 86_400_000);
+const diffDays = (a: Date, b: Date): number => Math.floor((b.getTime() - a.getTime()) / 86_400_000);
 
 function occursOnDate(cf: RecurringCashflow, date: Date): boolean {
   if (cf.status !== 'active') return false;
@@ -86,9 +84,12 @@ function occursOnDate(cf: RecurringCashflow, date: Date): boolean {
 
   const diff = diffDays(start, date);
   switch (cf.frequency) {
-    case 'daily':    return true;
-    case 'weekly':   return diff % 7 === 0;
-    case 'biweekly': return diff % 14 === 0;
+    case 'daily':
+      return true;
+    case 'weekly':
+      return diff % 7 === 0;
+    case 'biweekly':
+      return diff % 14 === 0;
     case 'semimonthly': {
       const day = date.getUTCDate();
       const startDay = start.getUTCDate();
@@ -97,11 +98,16 @@ function occursOnDate(cf: RecurringCashflow, date: Date): boolean {
         const lastDay = new Date(date.getUTCFullYear(), date.getUTCMonth() + 1, 0).getDate();
         return day === 15 || day === lastDay;
       }
-      return day === startDay || day === (startDay + 15) % 30 || (startDay > 15 && day === startDay - 15);
+      return (
+        day === startDay || day === (startDay + 15) % 30 || (startDay > 15 && day === startDay - 15)
+      );
     }
-    case 'monthly':  return date.getUTCDate() === start.getUTCDate();
-    case 'yearly':   return date.getUTCDate() === start.getUTCDate() && date.getUTCMonth() === start.getUTCMonth();
-    default:         return false;
+    case 'monthly':
+      return date.getUTCDate() === start.getUTCDate();
+    case 'yearly':
+      return date.getUTCDate() === start.getUTCDate() && date.getUTCMonth() === start.getUTCMonth();
+    default:
+      return false;
   }
 }
 
@@ -114,7 +120,6 @@ const groupByDate = <T extends { date: string }>(items: T[]): Map<string, T[]> =
     return map;
   }, new Map<string, T[]>());
 
-
 // sums the amounts of a list of items by type. This is used to calculate the total income and expense for a given date.
 const sumAmounts = (items: { type: string; amount: number }[], incomeKey: string) =>
   items.reduce(
@@ -123,9 +128,8 @@ const sumAmounts = (items: { type: string; amount: number }[], incomeKey: string
       else acc.expense += item.amount;
       return acc;
     },
-    { income: 0, expense: 0 },
+    { income: 0, expense: 0 }
   );
-
 
 const riskLevel = (balance: number, safetyBuffer?: number): ProjectionPoint['riskLevel'] => {
   if (balance < 0) return 'deficit';
@@ -140,7 +144,7 @@ const riskLevel = (balance: number, safetyBuffer?: number): ProjectionPoint['ris
 export async function runProjection(request: ProjectionRequest): Promise<ProjectionResult> {
   const { userId, startDate, endDate, safetyBuffer, scenarioAdjustments = [] } = request;
 
-  //loads all data concurrently 
+  //loads all data concurrently
   const [cashPosition, recurring, future] = await Promise.all([
     getCashPosition(userId),
     listRecurringCashflows({ userId }),
@@ -185,7 +189,10 @@ export async function runProjection(request: ProjectionRequest): Promise<Project
       };
     }
 
-    const fromRecurring = sumAmounts(recurring.filter((cf) => occursOnDate(cf, date)), 'income');
+    const fromRecurring = sumAmounts(
+      recurring.filter((cf) => occursOnDate(cf, date)),
+      'income'
+    );
     const fromFuture = sumAmounts(futureByDate.get(dateStr) ?? [], 'income');
     const fromAdjustments = sumAmounts(adjustmentsByDate.get(dateStr) ?? [], 'add_income');
 
@@ -200,10 +207,10 @@ export async function runProjection(request: ProjectionRequest): Promise<Project
     balance += income - expense;
     currentMonthSummary.endingBalance = balance;
 
-    if (balance < lowestBalance){
-        lowestBalance = balance; 
-        lowestBalanceDate = dateStr; 
-      }
+    if (balance < lowestBalance) {
+      lowestBalance = balance;
+      lowestBalanceDate = dateStr;
+    }
     if (balance < currentMonthSummary.lowestBalance) {
       currentMonthSummary.lowestBalance = balance;
       currentMonthSummary.lowestBalanceDate = dateStr;
@@ -230,7 +237,7 @@ export async function runProjection(request: ProjectionRequest): Promise<Project
       currentMonthSummary.totalIncome - currentMonthSummary.totalExpense;
     monthlySummaries.push(currentMonthSummary);
   }
-/*
+  /*
 time line is an array of objects like this: { date: '2026-01-01', balance: 1000, income: 1000, expense: 0 }
 findIndex returns the index of the first item where balance < 0.
 

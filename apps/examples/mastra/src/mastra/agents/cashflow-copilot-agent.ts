@@ -1,13 +1,9 @@
 import { Agent } from '@mastra/core';
-import { Memory } from '@mastra/memory';
 import { LibSQLStore } from '@mastra/libsql';
+import { Memory } from '@mastra/memory';
 import { updateCashPositionTool } from '../tools/cashflow/cash-position';
-import {
-  createRecurringTool,
-} from '../tools/cashflow/recurring';
-import {
-  createFutureTool,
-} from '../tools/cashflow/future';
+import { createFutureTool } from '../tools/cashflow/future';
+import { createRecurringTool } from '../tools/cashflow/recurring';
 import { runProjectionTool } from '../tools/cashflow/run-projection';
 
 const CASHFLOW_COPILOT_SYSTEM_PROMPT = `You are the "Personal Cashflow Projection Tool".
