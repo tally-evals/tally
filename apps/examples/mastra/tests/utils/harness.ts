@@ -6,6 +6,8 @@
  */
 
 import { rm } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';
 import type { Agent } from '@mastra/core/agent';
 import type { ModelMessage } from '@tally-evals/core';
@@ -21,6 +23,50 @@ config({ path: join(pkgRoot, '.env.local') });
 config({ path: join(pkgRoot, '.env') });
 
 const RECORD_MODE = process.env.RECORD_TRAJECTORIES === '1';
+const SHOULD_RUN_LOCAL_LIVE_EXAMPLES =
+  process.env.CI === 'true' || process.env.EXAMPLE_LIVE_TESTS === '1';
+const require = createRequire(import.meta.url);
+
+export const isRecordMode = RECORD_MODE;
+export const hasGoogleApiKey = Boolean(process.env.GOOGLE_GENERATIVE_AI_API_KEY);
+
+export function hasStoredConversation(conversationId: string): boolean {
+  const conversationDir = resolve(pkgRoot, '.tally', 'conversations', conversationId);
+  return (
+    existsSync(resolve(conversationDir, 'conversation.jsonl')) ||
+    existsSync(resolve(conversationDir, 'stepTraces.json'))
+  );
+}
+
+export function getTrajectoryTestSkipReason(conversationId: string): string | null {
+  if (!SHOULD_RUN_LOCAL_LIVE_EXAMPLES) {
+    return 'Example trajectory evals are skipped outside CI by default. Set EXAMPLE_LIVE_TESTS=1 to run them locally.';
+  }
+
+  if (RECORD_MODE && !hasGoogleApiKey) {
+    return 'RECORD_TRAJECTORIES=1 requires GOOGLE_GENERATIVE_AI_API_KEY.';
+  }
+
+  if (!RECORD_MODE && !hasStoredConversation(conversationId)) {
+    return `No stored conversation found for '${conversationId}'. Run with RECORD_TRAJECTORIES=1 to record it.`;
+  }
+
+  if (!hasGoogleApiKey) {
+    return 'GOOGLE_GENERATIVE_AI_API_KEY is required for the live evaluation metrics used by this test.';
+  }
+
+  return null;
+}
+
+export function getCashflowStorageSkipReason(): string | null {
+  try {
+    require('better-sqlite3');
+    return null;
+  } catch (error) {
+    const message = error instanceof Error ? error.message.split('\n')[0] : String(error);
+    return `Cashflow tests require a Bun-compatible better-sqlite3 build. ${message}`;
+  }
+}
 
 /**
  * Options for running a test case

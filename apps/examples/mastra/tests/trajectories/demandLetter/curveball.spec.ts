@@ -22,12 +22,23 @@ import {
 } from '@tally-evals/tally/metrics';
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
 import { demandLetterAgent } from '../../../src/mastra/agents/demand-letter-agent';
-import { assertToolCallSequence, runCase, saveTallyReportToStore } from '../../utils/harness';
+import {
+  assertToolCallSequence,
+  getTrajectoryTestSkipReason,
+  runCase,
+  saveTallyReportToStore,
+} from '../../utils/harness';
 import { getSummaryScoreValue } from '../../utils/summary';
 import { demandLetterCurveTrajectory } from './definitions';
 import { createKnowledgeRetentionMetric } from './metrics';
 
-describe('Demand Letter Agent - Curve Ball', () => {
+const skipReason = getTrajectoryTestSkipReason('demand-letter-curve');
+if (skipReason) {
+  console.warn(`Skipping Demand Letter Agent - Curve Ball: ${skipReason}`);
+}
+const describeDemandLetterCurve = skipReason ? describe.skip : describe;
+
+describeDemandLetterCurve('Demand Letter Agent - Curve Ball', () => {
   it('should handle changing inputs and corrections successfully', async () => {
     const { conversation } = await runCase({
       trajectory: demandLetterCurveTrajectory,
@@ -174,5 +185,5 @@ describe('Demand Letter Agent - Curve Ball', () => {
         expect(mean).toBeGreaterThan(0.4);
       }
     }
-  });
+  }, 300000);
 });

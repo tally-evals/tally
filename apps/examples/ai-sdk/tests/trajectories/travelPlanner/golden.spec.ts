@@ -23,11 +23,22 @@ import {
 } from '@tally-evals/tally/metrics';
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
 import { travelPlannerAgent } from '../../../src/agents/travelPlanner';
-import { assertToolCallSequence, runCase, saveTallyReportToStore } from '../../utils/harness';
+import {
+  assertToolCallSequence,
+  getTrajectoryTestSkipReason,
+  runCase,
+  saveTallyReportToStore,
+} from '../../utils/harness';
 import { travelPlannerGoldenTrajectory } from './definitions';
 import { createKnowledgeRetentionMetric } from './metrics';
 
-describe('Travel Planner Agent - Golden Path', () => {
+const skipReason = getTrajectoryTestSkipReason('travel-planner-golden');
+if (skipReason) {
+  console.warn(`Skipping Travel Planner Agent - Golden Path: ${skipReason}`);
+}
+const describeTravelPlannerGolden = skipReason ? describe.skip : describe;
+
+describeTravelPlannerGolden('Travel Planner Agent - Golden Path', () => {
   it('should plan trip successfully', async () => {
     const { conversation, mode } = await runCase({
       trajectory: travelPlannerGoldenTrajectory,

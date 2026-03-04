@@ -18,10 +18,16 @@ import {
 import { createAnswerRelevanceMetric, createCompletenessMetric } from '@tally-evals/tally/metrics';
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
 import { weatherAgent } from '../../../src/agents/weather';
-import { runCase, saveTallyReportToStore } from '../../utils/harness';
+import { getTrajectoryTestSkipReason, runCase, saveTallyReportToStore } from '../../utils/harness';
 import { weatherGoldenTrajectory } from './definitions';
 
-describe('Weather Agent - Golden Path', () => {
+const skipReason = getTrajectoryTestSkipReason('weather-golden');
+if (skipReason) {
+  console.warn(`Skipping Weather Agent - Golden Path: ${skipReason}`);
+}
+const describeWeatherGolden = skipReason ? describe.skip : describe;
+
+describeWeatherGolden('Weather Agent - Golden Path', () => {
   it('should handle weather queries successfully', async () => {
     // Run trajectory (record or playback)
     const { conversation, mode } = await runCase({

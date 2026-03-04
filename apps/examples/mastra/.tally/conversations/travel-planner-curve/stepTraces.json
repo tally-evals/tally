@@ -1,0 +1,62 @@
+[
+  {
+    "turnIndex": 0,
+    "userMessage": {
+      "role": "user",
+      "content": "I need some help planning a trip. I'm not sure where to go yet, but I'm thinking sometime in the fall."
+    },
+    "agentMessages": [
+      {
+        "role": "assistant",
+        "content": "Fall is a wonderful time to travel! To help you find the perfect destination, could you tell me what kind of experience you're looking for? Are you interested in a beach getaway, a bustling city exploration, a relaxing mountain retreat, or something else?"
+      }
+    ],
+    "timestamp": "2026-03-04T14:40:31.323Z",
+    "stepId": "step-1",
+    "selection": {
+      "method": "start",
+      "candidates": [
+        {
+          "stepId": "step-1",
+          "score": 1,
+          "reasons": [
+            "Initial start step selected at turn 0"
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "turnIndex": 1,
+    "userMessage": {
+      "role": "user",
+      "content": "Hmm, I'm not really sure what kind of experience I'm looking for. Maybe something... different? I'm open to ideas."
+    },
+    "agentMessages": [
+      {
+        "role": "assistant",
+        "content": "Let's explore some unique options! How about a trip to see the Northern Lights in Iceland, explore the ancient ruins of Machu Picchu in Peru, or perhaps a cultural immersion in Kyoto, Japan? Do any of those spark your interest, or would you like to hear a few more diverse ideas?"
+      }
+    ],
+    "timestamp": "2026-03-04T14:40:40.897Z",
+    "stepId": "step-1",
+    "selection": {
+      "method": "llm-ranked",
+      "candidates": [
+        {
+          "stepId": "step-1",
+          "score": 0.7,
+          "reasons": [
+            "The user has expressed interest in planning a trip but has not yet provided specific details about their preferences or destination. The assistant's question directly probes for these preferences to narrow down the destination."
+          ]
+        }
+      ]
+    },
+    "end": {
+      "isFinal": true,
+      "reason": "agent-loop",
+      "completed": false,
+      "summary": "Agent loop detected: same step \"step-1\" selected 3 consecutive times"
+    }
+  }
+]

@@ -33,13 +33,26 @@ import {
 } from '@tally-evals/tally/metrics';
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
 import { describe, expect, it } from 'vitest';
-import { cashflowCopilotAgent } from '../../../src/mastra/agents/cashflow-copilot-agent';
-import { runCase, saveTallyReportToStore } from '../../utils/harness';
+import {
+  getCashflowStorageSkipReason,
+  getTrajectoryTestSkipReason,
+  runCase,
+  saveTallyReportToStore,
+} from '../../utils/harness';
 import { getSummaryScoreValue } from '../../utils/summary';
 import { cashflowCurveTrajectory } from './definitions';
 
-describe('Cashflow Copilot Agent - Curve Ball', () => {
+const skipReason = getTrajectoryTestSkipReason('cashflow-curve') ?? getCashflowStorageSkipReason();
+if (skipReason) {
+  console.warn(`Skipping Cashflow Copilot Agent - Curve Ball: ${skipReason}`);
+}
+const describeCashflowCurve = skipReason ? describe.skip : describe;
+
+describeCashflowCurve('Cashflow Copilot Agent - Curve Ball', () => {
   it('should handle ambiguous requests and incomplete information', async () => {
+    const { cashflowCopilotAgent } = await import(
+      '../../../src/mastra/agents/cashflow-copilot-agent'
+    );
     const { conversation, mode } = await runCase({
       trajectory: cashflowCurveTrajectory,
       agent: cashflowCopilotAgent,

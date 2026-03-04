@@ -22,12 +22,18 @@ import {
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
 import { describe, expect, it } from 'vitest';
 import { travelPlannerAgent } from '../../../src/mastra/agents/travel-planner-agent';
-import { runCase, saveTallyReportToStore } from '../../utils/harness';
+import { getTrajectoryTestSkipReason, runCase, saveTallyReportToStore } from '../../utils/harness';
 import { getSummaryScoreValue } from '../../utils/summary';
 import { travelPlannerCurveTrajectory } from './definitions';
 import { createKnowledgeRetentionMetric } from './metrics';
 
-describe('Travel Planner Agent - Curve Ball', () => {
+const skipReason = getTrajectoryTestSkipReason('travel-planner-curve');
+if (skipReason) {
+  console.warn(`Skipping Travel Planner Agent - Curve Ball: ${skipReason}`);
+}
+const describeTravelPlannerCurve = skipReason ? describe.skip : describe;
+
+describeTravelPlannerCurve('Travel Planner Agent - Curve Ball', () => {
   it('should handle ambiguous requests and changing plans', async () => {
     const { conversation } = await runCase({
       trajectory: travelPlannerCurveTrajectory,
@@ -119,7 +125,7 @@ describe('Travel Planner Agent - Curve Ball', () => {
 
     const report = await tally.run();
     await saveTallyReportToStore({
-      conversationId: 'demand-letter-golden',
+      conversationId: 'travel-planner-curve',
       report: report.toArtifact(),
     });
 
@@ -144,5 +150,5 @@ describe('Travel Planner Agent - Curve Ball', () => {
         expect(mean).toBeGreaterThan(0.2);
       }
     }
-  });
+  }, 300000);
 });

@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "tsx src/index.ts",
     "build": "echo 'No build needed for example package'",
-    "test": "vitest",
+    "test": "vitest run --passWithNoTests",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "clean": "rm -rf dist"

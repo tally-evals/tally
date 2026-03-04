@@ -35,13 +35,28 @@ import {
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
 import type { CoreMessage as ModelMessage } from 'ai';
 import { describe, expect, it } from 'vitest';
-import { cashflowCopilotAgent } from '../../../src/mastra/agents/cashflow-copilot-agent';
-import { assertToolCallSequence, runCase, saveTallyReportToStore } from '../../utils/harness';
+import {
+  assertToolCallSequence,
+  getCashflowStorageSkipReason,
+  getTrajectoryTestSkipReason,
+  runCase,
+  saveTallyReportToStore,
+} from '../../utils/harness';
 import { getSummaryScoreValue } from '../../utils/summary';
 import { cashflowGoldenTrajectory } from './definitions';
 
-describe('Cashflow Copilot Agent - Golden Path', () => {
+const skipReason =
+  getTrajectoryTestSkipReason('cashflow-golden') ?? getCashflowStorageSkipReason();
+if (skipReason) {
+  console.warn(`Skipping Cashflow Copilot Agent - Golden Path: ${skipReason}`);
+}
+const describeCashflowGolden = skipReason ? describe.skip : describe;
+
+describeCashflowGolden('Cashflow Copilot Agent - Golden Path', () => {
   it('should manage cashflow successfully', async () => {
+    const { cashflowCopilotAgent } = await import(
+      '../../../src/mastra/agents/cashflow-copilot-agent'
+    );
     const { conversation, mode } = await runCase({
       trajectory: cashflowGoldenTrajectory,
       agent: cashflowCopilotAgent,

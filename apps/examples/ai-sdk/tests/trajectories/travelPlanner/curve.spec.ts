@@ -22,11 +22,17 @@ import {
 } from '@tally-evals/tally/metrics';
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
 import { travelPlannerAgent } from '../../../src/agents/travelPlanner';
-import { runCase, saveTallyReportToStore } from '../../utils/harness';
+import { getTrajectoryTestSkipReason, runCase, saveTallyReportToStore } from '../../utils/harness';
 import { travelPlannerCurveTrajectory } from './definitions';
 import { createKnowledgeRetentionMetric } from './metrics';
 
-describe('Travel Planner Agent - Curve Ball', () => {
+const skipReason = getTrajectoryTestSkipReason('travel-planner-curve');
+if (skipReason) {
+  console.warn(`Skipping Travel Planner Agent - Curve Ball: ${skipReason}`);
+}
+const describeTravelPlannerCurve = skipReason ? describe.skip : describe;
+
+describeTravelPlannerCurve('Travel Planner Agent - Curve Ball', () => {
   it('should handle ambiguous requests and changing plans', async () => {
     const { conversation } = await runCase({
       trajectory: travelPlannerCurveTrajectory,

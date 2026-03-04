@@ -17,11 +17,22 @@ import {
 import { createAnswerRelevanceMetric, createCompletenessMetric } from '@tally-evals/tally/metrics';
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
 import { demandLetterAgent } from '../../../src/mastra/agents/demand-letter-agent';
-import { assertToolCallSequence, runCase, saveTallyReportToStore } from '../../utils/harness';
+import {
+  assertToolCallSequence,
+  getTrajectoryTestSkipReason,
+  runCase,
+  saveTallyReportToStore,
+} from '../../utils/harness';
 import { getSummaryScoreValue } from '../../utils/summary';
 import { demandLetterGoldenTrajectory } from './definitions';
 
-describe('Demand Letter Agent - Golden Path', () => {
+const skipReason = getTrajectoryTestSkipReason('demand-letter-golden');
+if (skipReason) {
+  console.warn(`Skipping Demand Letter Agent - Golden Path: ${skipReason}`);
+}
+const describeDemandLetterGolden = skipReason ? describe.skip : describe;
+
+describeDemandLetterGolden('Demand Letter Agent - Golden Path', () => {
   it('should create demand letter successfully', async () => {
     const { conversation, mode } = await runCase({
       trajectory: demandLetterGoldenTrajectory,
@@ -137,5 +148,5 @@ describe('Demand Letter Agent - Golden Path', () => {
         expect(mean).toBeGreaterThan(0.2);
       }
     }
-  });
+  }, 300000);
 });

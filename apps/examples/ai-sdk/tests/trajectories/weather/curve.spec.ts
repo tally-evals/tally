@@ -18,10 +18,16 @@ import {
 import { createAnswerRelevanceMetric, createCompletenessMetric } from '@tally-evals/tally/metrics';
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
 import { weatherAgent } from '../../../src/agents/weather';
-import { runCase, saveTallyReportToStore } from '../../utils/harness';
+import { getTrajectoryTestSkipReason, runCase, saveTallyReportToStore } from '../../utils/harness';
 import { weatherCurveTrajectory } from './definitions';
 
-describe('Weather Agent - Curve Ball', () => {
+const skipReason = getTrajectoryTestSkipReason('weather-curve');
+if (skipReason) {
+  console.warn(`Skipping Weather Agent - Curve Ball: ${skipReason}`);
+}
+const describeWeatherCurve = skipReason ? describe.skip : describe;
+
+describeWeatherCurve('Weather Agent - Curve Ball', () => {
   it('should handle ambiguous and incomplete requests gracefully', async () => {
     // Run trajectory (record or playback)
     const { conversation } = await runCase({

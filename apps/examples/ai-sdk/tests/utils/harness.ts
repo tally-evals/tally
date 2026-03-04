@@ -6,6 +6,7 @@
  */
 
 import { rm } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { TallyStore, stepTracesToConversation } from '@tally-evals/core';
 import type { Conversation, ConversationStep } from '@tally-evals/core';
@@ -21,6 +22,33 @@ const APP_ROOT = resolve(__dirname, '..', '..');
 config({ path: resolve(APP_ROOT, '.env.local') });
 
 const RECORD_MODE = process.env.RECORD_TRAJECTORIES === '1';
+
+export const isRecordMode = RECORD_MODE;
+export const hasGoogleApiKey = Boolean(process.env.GOOGLE_GENERATIVE_AI_API_KEY);
+
+export function hasStoredConversation(conversationId: string): boolean {
+  const conversationDir = resolve(APP_ROOT, '.tally', 'conversations', conversationId);
+  return (
+    existsSync(resolve(conversationDir, 'conversation.jsonl')) ||
+    existsSync(resolve(conversationDir, 'stepTraces.json'))
+  );
+}
+
+export function getTrajectoryTestSkipReason(conversationId: string): string | null {
+  if (RECORD_MODE && !hasGoogleApiKey) {
+    return 'RECORD_TRAJECTORIES=1 requires GOOGLE_GENERATIVE_AI_API_KEY.';
+  }
+
+  if (!RECORD_MODE && !hasStoredConversation(conversationId)) {
+    return `No stored conversation found for '${conversationId}'. Run with RECORD_TRAJECTORIES=1 to record it.`;
+  }
+
+  if (!hasGoogleApiKey) {
+    return 'GOOGLE_GENERATIVE_AI_API_KEY is required for the live evaluation metrics used by this test.';
+  }
+
+  return null;
+}
 
 /**
  * Options for running a test case
