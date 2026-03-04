@@ -110,3 +110,7 @@ Thumbs.db
 # Turbo
 .turbo
 
+# SQLite database files
+cashflow.db
+mastra.db
+
