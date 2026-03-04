@@ -19,9 +19,7 @@
       "import": "./dist/index.js"
     }
   },
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "publishConfig": {
     "access": "public",
     "provenance": true,
@@ -38,13 +36,7 @@
     "lint:fix": "biome check --write .",
     "clean": "rm -rf dist"
   },
-  "keywords": [
-    "tally",
-    "evaluation",
-    "llm",
-    "ai",
-    "cli"
-  ],
+  "keywords": ["tally", "evaluation", "llm", "ai", "cli"],
   "author": "",
   "license": "MIT",
   "dependencies": {
