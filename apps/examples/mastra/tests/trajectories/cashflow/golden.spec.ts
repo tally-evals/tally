@@ -45,8 +45,7 @@ import {
 import { getSummaryScoreValue } from '../../utils/summary';
 import { cashflowGoldenTrajectory } from './definitions';
 
-const skipReason =
-  getTrajectoryTestSkipReason('cashflow-golden') ?? getCashflowStorageSkipReason();
+const skipReason = getTrajectoryTestSkipReason('cashflow-golden') ?? getCashflowStorageSkipReason();
 if (skipReason) {
   console.warn(`Skipping Cashflow Copilot Agent - Golden Path: ${skipReason}`);
 }

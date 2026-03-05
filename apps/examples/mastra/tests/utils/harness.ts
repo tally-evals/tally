@@ -5,8 +5,8 @@
  * Uses RECORD_TRAJECTORIES environment variable to toggle between modes.
  */
 
-import { rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { rm } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';
 import type { Agent } from '@mastra/core/agent';
