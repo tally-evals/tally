@@ -7,10 +7,10 @@ export const getTemplateFieldsTool = createTool({
   description: 'Get the list of required fields for creating a demand letter',
   inputSchema: getTemplateFieldsParamsSchema,
   execute: async () => {
-    // We could filter by demandType from context.demandType if needed,
+    // We could filter by demandType from context.demandType if needed, 
     // but the original implementation just returned all fields regardless of input.
     // The input schema mentions optional demandType.
-
+    
     return {
       fields: DEMAND_LETTER_FIELDS,
       message: `Found ${DEMAND_LETTER_FIELDS.length} required fields for demand letter creation`,

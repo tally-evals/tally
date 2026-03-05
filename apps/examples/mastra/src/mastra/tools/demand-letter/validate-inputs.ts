@@ -22,16 +22,13 @@ export const validateInputsTool = createTool({
     if (field.type === 'number' && typeof value === 'string') {
       const cleanValue = value.replace(/[^0-9.-]+/g, '');
       const parsed = Number(cleanValue);
-      if (!Number.isNaN(parsed) && cleanValue !== '') {
+      if (!isNaN(parsed) && cleanValue !== '') {
         valueToCheck = parsed;
       }
     }
 
     const errors: string[] = [];
-    if (
-      field.required &&
-      (valueToCheck === null || valueToCheck === undefined || valueToCheck === '')
-    ) {
+    if (field.required && (valueToCheck === null || valueToCheck === undefined || valueToCheck === '')) {
       errors.push(`${field.label} is required`);
     }
     if (field.type === 'number' && typeof valueToCheck !== 'number') {
@@ -54,8 +51,7 @@ export const validateInputsTool = createTool({
     return {
       valid: errors.length === 0,
       errors: errors.length > 0 ? errors : undefined,
-      message:
-        errors.length === 0 ? `${field.label} is valid` : `Validation failed: ${errors.join(', ')}`,
+      message: errors.length === 0 ? `${field.label} is valid` : `Validation failed: ${errors.join(', ')}`,
     };
   },
 });

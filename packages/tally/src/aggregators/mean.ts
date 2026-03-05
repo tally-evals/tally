@@ -32,9 +32,7 @@ export interface MeanAggregatorOptions {
  * // typeof meanAggregator.name is 'Mean'
  * ```
  */
-export function createMeanAggregator(
-  options?: MeanAggregatorOptions
-): NumericAggregatorDef<'Mean'> {
+export function createMeanAggregator(options?: MeanAggregatorOptions): NumericAggregatorDef<'Mean'> {
   return {
     kind: 'numeric',
     name: 'Mean',

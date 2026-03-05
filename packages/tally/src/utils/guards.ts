@@ -2,8 +2,8 @@
 // Type Guards using ts-pattern
 // ============================================================================
 
-import type { Conversation, DatasetItem } from '@tally-evals/core';
-import { P, match } from 'ts-pattern';
+import { Conversation, DatasetItem } from '@tally-evals/core';
+import { match, P } from 'ts-pattern';
 
 /**
  * Type-safe container matching using ts-pattern
@@ -15,7 +15,7 @@ export const isConversation = (value: unknown): value is Conversation =>
         id: P.string,
         steps: P.array(P.any),
       },
-      () => true
+      () => true,
     )
     .otherwise(() => false);
 
@@ -27,6 +27,6 @@ export const isDatasetItem = (value: unknown): value is DatasetItem =>
         prompt: P.string,
         completion: P.string,
       },
-      () => true
+      () => true,
     )
     .otherwise(() => false);

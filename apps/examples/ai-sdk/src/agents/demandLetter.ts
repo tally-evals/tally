@@ -1,20 +1,20 @@
 /**
  * Demand Letter Agent (AI SDK Example)
- *
+ * 
  * An agent that helps users create demand letters through an onboarding flow.
- *
+ * 
  * @example
  * ```ts
  * import { demandLetterAgent } from '@tally-evals/examples-ai-sdk';
- *
+ * 
  * const result = await demandLetterAgent.generate({
  *   prompt: 'I need to create a demand letter',
  * });
  * ```
  */
 
-import { google } from '@ai-sdk/google';
 import { Experimental_Agent as Agent, stepCountIs } from 'ai';
+import { google } from '@ai-sdk/google';
 import { demandLetterTools } from '../tools/demandLetter';
 
 const DEFAULT_MODEL_ID = 'models/gemini-2.5-flash-lite';
@@ -35,8 +35,9 @@ Always ensure all required fields are collected before generating the final dema
  * Demand Letter Agent instance with pre-configured system prompt and settings
  */
 export const demandLetterAgent = new Agent({
-  model: google(DEFAULT_MODEL_ID),
-  tools: demandLetterTools,
-  stopWhen: stepCountIs(DEFAULT_MAX_STEPS),
-  system: DEMAND_LETTER_SYSTEM_PROMPT,
+	model: google(DEFAULT_MODEL_ID),
+	tools: demandLetterTools,
+	stopWhen: stepCountIs(DEFAULT_MAX_STEPS),
+	system: DEMAND_LETTER_SYSTEM_PROMPT,
 });
+

@@ -21,3 +21,5 @@ export const weatherForecastSchema = z.object({
 
 export type GetWeatherForecastParams = z.infer<typeof getWeatherForecastParamsSchema>;
 export type WeatherForecast = z.infer<typeof weatherForecastSchema>;
+
+

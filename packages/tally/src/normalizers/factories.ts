@@ -9,10 +9,10 @@ import type {
   MetricDef,
   MetricScalar,
   NormalizationContextFor,
-  NormalizeToScore,
-  NormalizerSpec,
   NumericNormalizationContext,
   OrdinalNormalizationContext,
+  NormalizeToScore,
+  NormalizerSpec,
   Score,
 } from '../core/types';
 

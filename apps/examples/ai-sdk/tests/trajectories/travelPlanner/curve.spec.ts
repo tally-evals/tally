@@ -2,18 +2,20 @@
  * Travel Planner Agent - Curve Ball Test
  */
 
-import { describe, expect, it } from 'bun:test';
-import { google } from '@ai-sdk/google';
+import { describe, it, expect } from 'bun:test';
+import { travelPlannerAgent } from '../../../src/agents/travelPlanner';
+import { travelPlannerCurveTrajectory } from './definitions';
+import { runCase, saveTallyReportToStore } from '../../utils/harness';
 import {
   createTally,
+  runAllTargets,
   defineBaseMetric,
   defineInput,
+  defineSingleTurnEval,
   defineMultiTurnEval,
   defineScorerEval,
-  defineSingleTurnEval,
-  formatReportAsTables,
-  runAllTargets,
   thresholdVerdict,
+  formatReportAsTables,
 } from '@tally-evals/tally';
 import {
   createAnswerRelevanceMetric,
@@ -21,19 +23,10 @@ import {
   createRoleAdherenceMetric,
 } from '@tally-evals/tally/metrics';
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
-import { travelPlannerAgent } from '../../../src/agents/travelPlanner';
-import { getTrajectoryTestSkipReason, runCase, saveTallyReportToStore } from '../../utils/harness';
-import { getSummaryScoreValue } from '../../utils/summary';
-import { travelPlannerCurveTrajectory } from './definitions';
+import { google } from '@ai-sdk/google';
 import { createKnowledgeRetentionMetric } from './metrics';
 
-const skipReason = getTrajectoryTestSkipReason('travel-planner-curve');
-if (skipReason) {
-  console.warn(`Skipping Travel Planner Agent - Curve Ball: ${skipReason}`);
-}
-const describeTravelPlannerCurve = skipReason ? describe.skip : describe;
-
-describeTravelPlannerCurve('Travel Planner Agent - Curve Ball', () => {
+describe('Travel Planner Agent - Curve Ball', () => {
   it('should handle ambiguous requests and changing plans', async () => {
     const { conversation } = await runCase({
       trajectory: travelPlannerCurveTrajectory,
@@ -124,10 +117,7 @@ describeTravelPlannerCurve('Travel Planner Agent - Curve Ball', () => {
     });
 
     const report = await tally.run();
-    await saveTallyReportToStore({
-      conversationId: 'travel-planner-curve',
-      report: report.toArtifact(),
-    });
+    await saveTallyReportToStore({ conversationId: 'travel-planner-curve', report: report.toArtifact() });
 
     formatReportAsTables(report.toArtifact(), conversation);
 
@@ -136,9 +126,11 @@ describeTravelPlannerCurve('Travel Planner Agent - Curve Ball', () => {
     expect(Object.keys(report.result.summaries?.byEval ?? {}).length).toBeGreaterThan(0);
 
     const overallQualitySummary = report.result.summaries?.byEval?.['Overall Quality'];
-    const mean = overallQualitySummary ? getSummaryScoreValue(overallQualitySummary) : undefined;
-    if (typeof mean === 'number') {
-      expect(mean).toBeGreaterThan(0.4);
+    if (overallQualitySummary) {
+      const mean = (overallQualitySummary.aggregations?.score as any)?.Mean;
+      if (typeof mean === 'number') {
+        expect(mean).toBeGreaterThan(0.4);
+      }
     }
   });
 });

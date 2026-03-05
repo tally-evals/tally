@@ -4,7 +4,11 @@
 
 import type { ModelMessage } from './messages';
 
-export type StepSelectionMethod = 'start' | 'preconditions-ordered' | 'llm-ranked' | 'none';
+export type StepSelectionMethod =
+  | 'start'
+  | 'preconditions-ordered'
+  | 'llm-ranked'
+  | 'none';
 
 export interface StepSelectionCandidate {
   stepId: string;

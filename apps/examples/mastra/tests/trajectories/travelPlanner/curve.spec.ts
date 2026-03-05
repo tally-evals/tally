@@ -2,17 +2,20 @@
  * Travel Planner Agent - Curve Ball Test
  */
 
-import { google } from '@ai-sdk/google';
+import { describe, it, expect } from 'vitest';
+import { travelPlannerAgent } from '../../../src/mastra/agents/travel-planner-agent';
+import { travelPlannerCurveTrajectory } from './definitions';
+import { runCase, saveTallyReportToStore } from '../../utils/harness';
 import {
   createTally,
+  runAllTargets,
   defineBaseMetric,
   defineInput,
+  defineSingleTurnEval,
   defineMultiTurnEval,
   defineScorerEval,
-  defineSingleTurnEval,
-  formatReportAsTables,
-  runAllTargets,
   thresholdVerdict,
+  formatReportAsTables,
 } from '@tally-evals/tally';
 import {
   createAnswerRelevanceMetric,
@@ -20,20 +23,10 @@ import {
   createRoleAdherenceMetric,
 } from '@tally-evals/tally/metrics';
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
-import { describe, expect, it } from 'vitest';
-import { travelPlannerAgent } from '../../../src/mastra/agents/travel-planner-agent';
-import { getTrajectoryTestSkipReason, runCase, saveTallyReportToStore } from '../../utils/harness';
-import { getSummaryScoreValue } from '../../utils/summary';
-import { travelPlannerCurveTrajectory } from './definitions';
+import { google } from '@ai-sdk/google';
 import { createKnowledgeRetentionMetric } from './metrics';
 
-const skipReason = getTrajectoryTestSkipReason('travel-planner-curve');
-if (skipReason) {
-  console.warn(`Skipping Travel Planner Agent - Curve Ball: ${skipReason}`);
-}
-const describeTravelPlannerCurve = skipReason ? describe.skip : describe;
-
-describeTravelPlannerCurve('Travel Planner Agent - Curve Ball', () => {
+describe('Travel Planner Agent - Curve Ball', () => {
   it('should handle ambiguous requests and changing plans', async () => {
     const { conversation } = await runCase({
       trajectory: travelPlannerCurveTrajectory,
@@ -123,32 +116,27 @@ describeTravelPlannerCurve('Travel Planner Agent - Curve Ball', () => {
       context: runAllTargets(),
     });
 
-    const report = await tally.run();
-    await saveTallyReportToStore({
-      conversationId: 'travel-planner-curve',
-      report: report.toArtifact(),
-    });
+		const report = await tally.run();
+		await saveTallyReportToStore({ conversationId: 'demand-letter-golden', report: report.toArtifact() });
 
     formatReportAsTables(report.toArtifact(), conversation);
 
-    // Debug output
-    const overallQualitySummary = report.result.summaries?.byEval?.['Overall Quality'];
-    console.log('📊 Evaluation Results:');
-    console.log(`   Steps evaluated: ${conversation.steps.length}`);
-    console.log(
-      `   Overall Quality mean: ${overallQualitySummary ? getSummaryScoreValue(overallQualitySummary) : undefined}`
-    );
+		// Debug output
+		const overallQualitySummary = report.result.summaries?.byEval?.['Overall Quality'];
+		console.log('📊 Evaluation Results:');
+		console.log(`   Steps evaluated: ${conversation.steps.length}`);
+		console.log(`   Overall Quality mean: ${(overallQualitySummary?.aggregations?.score as any)?.Mean}`);
 
-    expect(report).toBeDefined();
-    expect(report.result.stepCount).toBeGreaterThan(0);
-    expect(Object.keys(report.result.summaries?.byEval ?? {}).length).toBeGreaterThan(0);
+		expect(report).toBeDefined();
+		expect(report.result.stepCount).toBeGreaterThan(0);
+		expect(Object.keys(report.result.summaries?.byEval ?? {}).length).toBeGreaterThan(0);
 
-    // Check mean score
-    if (overallQualitySummary) {
-      const mean = getSummaryScoreValue(overallQualitySummary);
-      if (typeof mean === 'number') {
-        expect(mean).toBeGreaterThan(0.2);
-      }
-    }
-  }, 300000);
+		// Check mean score
+		if (overallQualitySummary) {
+			const mean = (overallQualitySummary.aggregations?.score as any)?.Mean;
+			if (typeof mean === 'number') {
+				expect(mean).toBeGreaterThan(0.2);
+			}
+		}
+  });
 });

@@ -5,13 +5,13 @@
  */
 
 import { describe, expect, it } from 'bun:test';
-import type { MetricScalar, Score } from '@tally-evals/core';
-import {
-  calculateDistribution,
-  calculateVerdictPassRate,
-  calculateVerdictSummary,
-} from '../../src/core/evals/aggregations';
 import { computeVerdict } from '../../src/core/evals/verdict';
+import {
+  calculateVerdictSummary,
+  calculateVerdictPassRate,
+  calculateDistribution,
+} from '../../src/core/evals/aggregations';
+import type { Score } from '@tally-evals/core';
 
 describe('Unit | Verdict', () => {
   describe('computeVerdict', () => {
@@ -161,7 +161,7 @@ describe('Unit | Verdict', () => {
       });
 
       it('can return unknown from custom function', () => {
-        const result = computeVerdict(0.5 as Score, null as unknown as MetricScalar, {
+        const result = computeVerdict(0.5 as Score, null as any, {
           kind: 'custom',
           verdict: (_score, rawValue) => (rawValue === null ? 'unknown' : 'pass'),
         });
@@ -222,9 +222,9 @@ describe('Unit | Verdict', () => {
     });
 
     it('throws on empty scores array', () => {
-      expect(() => calculateVerdictSummary([], { kind: 'none' })).toThrow(
-        /Cannot calculate verdict summary for empty/
-      );
+      expect(() =>
+        calculateVerdictSummary([], { kind: 'none' })
+      ).toThrow(/Cannot calculate verdict summary for empty/);
     });
 
     it('treats missing rawValues as unknown', () => {

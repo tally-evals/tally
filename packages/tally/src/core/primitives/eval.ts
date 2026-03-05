@@ -6,22 +6,22 @@
  */
 
 import type {
+  EvaluationContext,
+  MetricDef,
+  MetricScalar,
+  MultiTurnContainer,
+  MultiTurnMetricDef,
+  SingleTurnContainer,
+  SingleTurnMetricDef,
+  Scorer,
+} from '../types';
+import type {
   AutoNormalizer,
   MultiTurnEval,
   ScorerEval,
   SingleTurnEval,
   VerdictPolicyFor,
 } from '../evals/types';
-import type {
-  EvaluationContext,
-  MetricDef,
-  MetricScalar,
-  MultiTurnContainer,
-  MultiTurnMetricDef,
-  Scorer,
-  SingleTurnContainer,
-  SingleTurnMetricDef,
-} from '../types';
 
 /**
  * Creates a single-turn eval with type inference.
@@ -46,9 +46,15 @@ import type {
 export function defineSingleTurnEval<
   const TName extends string,
   TContainer extends SingleTurnContainer,
-  TMetric extends SingleTurnMetricDef<MetricScalar, TContainer>,
+  // biome-ignore lint/suspicious/noExplicitAny: Required for metric type inference
+  TMetric extends SingleTurnMetricDef<any, TContainer>,
   // Infer raw value type from the provided metric, mirroring defineInput pattern
-  TMetricValue extends MetricScalar = TMetric extends SingleTurnMetricDef<infer T, TContainer>
+  // biome-ignore lint/suspicious/noExplicitAny: Required for metric type inference
+  TMetricValue extends MetricScalar = TMetric extends SingleTurnMetricDef<
+    infer T,
+    // biome-ignore lint/suspicious/noExplicitAny: Required for metric type inference
+    any
+  >
     ? T
     : MetricScalar,
 >(args: {
@@ -63,11 +69,15 @@ export function defineSingleTurnEval<
   return {
     kind: 'singleTurn',
     name: args.name,
-    ...(args.description !== undefined ? { description: args.description } : {}),
+    ...(args.description !== undefined
+      ? { description: args.description }
+      : {}),
     // Cast to MetricDef to avoid generic variance issues (pattern mirrors defineInput)
     metric: args.metric as unknown as MetricDef<TMetricValue, TContainer>,
     ...(args.verdict !== undefined ? { verdict: args.verdict } : {}),
-    ...(args.autoNormalize !== undefined ? { autoNormalize: args.autoNormalize } : {}),
+    ...(args.autoNormalize !== undefined
+      ? { autoNormalize: args.autoNormalize }
+      : {}),
     ...(args.context !== undefined ? { context: args.context } : {}),
     ...(args.metadata !== undefined ? { metadata: args.metadata } : {}),
   };
@@ -96,9 +106,15 @@ export function defineSingleTurnEval<
 export function defineMultiTurnEval<
   const TName extends string,
   TContainer extends MultiTurnContainer,
-  TMetric extends MultiTurnMetricDef<MetricScalar, TContainer>,
+  // biome-ignore lint/suspicious/noExplicitAny: Required for metric type inference
+  TMetric extends MultiTurnMetricDef<any, TContainer>,
   // Infer raw value type from the provided metric, mirroring defineInput pattern
-  TMetricValue extends MetricScalar = TMetric extends MultiTurnMetricDef<infer T, TContainer>
+  // biome-ignore lint/suspicious/noExplicitAny: Required for metric type inference
+  TMetricValue extends MetricScalar = TMetric extends MultiTurnMetricDef<
+    infer T,
+    // biome-ignore lint/suspicious/noExplicitAny: Required for metric type inference
+    any
+  >
     ? T
     : MetricScalar,
 >(args: {
@@ -113,11 +129,15 @@ export function defineMultiTurnEval<
   return {
     kind: 'multiTurn',
     name: args.name,
-    ...(args.description !== undefined ? { description: args.description } : {}),
+    ...(args.description !== undefined
+      ? { description: args.description }
+      : {}),
     // Cast to MetricDef to avoid generic variance issues (pattern mirrors defineInput)
     metric: args.metric as unknown as MetricDef<TMetricValue, TContainer>,
     ...(args.verdict !== undefined ? { verdict: args.verdict } : {}),
-    ...(args.autoNormalize !== undefined ? { autoNormalize: args.autoNormalize } : {}),
+    ...(args.autoNormalize !== undefined
+      ? { autoNormalize: args.autoNormalize }
+      : {}),
     ...(args.context !== undefined ? { context: args.context } : {}),
     ...(args.metadata !== undefined ? { metadata: args.metadata } : {}),
   };
@@ -151,7 +171,9 @@ export function defineScorerEval<const TName extends string>(args: {
   return {
     kind: 'scorer',
     name: args.name,
-    ...(args.description !== undefined ? { description: args.description } : {}),
+    ...(args.description !== undefined
+      ? { description: args.description }
+      : {}),
     scorer: args.scorer,
     ...(args.verdict !== undefined ? { verdict: args.verdict } : {}),
     ...(args.context !== undefined ? { context: args.context } : {}),

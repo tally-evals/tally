@@ -37,7 +37,11 @@ export async function openStore(): Promise<TallyStore> {
 
   if (!project.found) {
     throw new Error(
-      `No tally project found in ${cwd}\n\nTo get started:\n  1. Create a ${TALLY_DIR}/ directory, or\n  2. Add a tally.config.ts file\n\nSee: https://tally-evals.dev/docs/getting-started`
+      `No tally project found in ${cwd}\n\n` +
+        `To get started:\n` +
+        `  1. Create a ${TALLY_DIR}/ directory, or\n` +
+        `  2. Add a tally.config.ts file\n\n` +
+        `See: https://tally-evals.dev/docs/getting-started`
     );
   }
 

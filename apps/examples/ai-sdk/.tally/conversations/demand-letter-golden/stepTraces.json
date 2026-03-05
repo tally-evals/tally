@@ -24,7 +24,9 @@
         {
           "stepId": "step-1",
           "score": 1,
-          "reasons": ["Initial start step selected at turn 0"]
+          "reasons": [
+            "Initial start step selected at turn 0"
+          ]
         }
       ]
     }
@@ -134,7 +136,11 @@
                     "type": "select",
                     "required": true,
                     "description": "Demand type",
-                    "options": ["payment", "action", "cease-and-desist"]
+                    "options": [
+                      "payment",
+                      "action",
+                      "cease-and-desist"
+                    ]
                   }
                 ],
                 "message": "Found 9 required fields for demand letter creation"

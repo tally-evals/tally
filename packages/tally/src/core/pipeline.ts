@@ -29,7 +29,6 @@ import {
   type SingleTurnRunPolicy,
   toScore,
 } from '@tally/core/types';
-import { isConversation, isDatasetItem } from '@tally/utils/guards';
 import { P, match } from 'ts-pattern';
 import type { EvalMetadataEntry, InternalEvaluator } from './evals/builder';
 import { computeVerdict } from './evals/verdict';
@@ -46,7 +45,11 @@ import type { RunMultiTurnOptions } from './execution/runMultiTurn';
 import { runSingleTurnMetrics } from './execution/runSingleTurn';
 import type { RunSingleTurnOptions } from './execution/runSingleTurn';
 import { applyNormalization } from './normalization/apply';
-import { createCalibrationCache, resolveCalibration } from './normalization/context';
+import {
+  createCalibrationCache,
+  resolveCalibration,
+} from './normalization/context';
+import { isConversation, isDatasetItem } from '@tally/utils/guards';
 
 // ============================================================================
 // Types
@@ -58,7 +61,10 @@ import { createCalibrationCache, resolveCalibration } from './normalization/cont
 export interface PipelineState {
   readonly rawMetrics: ReadonlyMap<string, readonly Metric<MetricScalar>[]>;
   readonly calibrations: ReadonlyMap<string, unknown>;
-  readonly normalizedScores: ReadonlyMap<string, ReadonlyMap<string, readonly Score[]>>;
+  readonly normalizedScores: ReadonlyMap<
+    string,
+    ReadonlyMap<string, readonly Score[]>
+  >;
   readonly derivedScores: ReadonlyMap<
     string,
     ReadonlyMap<
@@ -72,7 +78,10 @@ export interface PipelineState {
       }>
     >
   >;
-  readonly verdicts: ReadonlyMap<string, ReadonlyMap<string, readonly PipelineVerdict[]>>;
+  readonly verdicts: ReadonlyMap<
+    string,
+    ReadonlyMap<string, readonly PipelineVerdict[]>
+  >;
   readonly evalSummaries: ReadonlyMap<string, PipelineEvalSummary>;
 }
 
@@ -97,7 +106,10 @@ export interface PipelineVerdict {
   rawValue?: MetricScalar;
 }
 
-export type PipelineAggregations = Record<string, number | Record<string, number>>;
+export type PipelineAggregations = Record<
+  string,
+  number | Record<string, number>
+>;
 
 export interface PipelineVerdictSummary {
   passRate: Score;
@@ -123,8 +135,14 @@ export interface PipelineEvalSummary {
  */
 export interface PipelineResult {
   readonly rawMetrics: ReadonlyMap<string, readonly Metric<MetricScalar>[]>;
-  readonly derivedScores: ReadonlyMap<string, ReadonlyMap<string, DerivedScoreEntry>>;
-  readonly verdicts: ReadonlyMap<string, ReadonlyMap<string, readonly PipelineVerdict[]>>;
+  readonly derivedScores: ReadonlyMap<
+    string,
+    ReadonlyMap<string, DerivedScoreEntry>
+  >;
+  readonly verdicts: ReadonlyMap<
+    string,
+    ReadonlyMap<string, readonly PipelineVerdict[]>
+  >;
   readonly evalSummaries: ReadonlyMap<string, PipelineEvalSummary>;
 }
 // ============================================================================
@@ -134,7 +152,10 @@ export interface PipelineResult {
 /**
  * Get target ID from container
  */
-const getTargetId = (container: DatasetItem | Conversation, index: number): string =>
+const getTargetId = (
+  container: DatasetItem | Conversation,
+  index: number,
+): string =>
   match(container)
     .with({ id: P.string }, (c) => c.id)
     .otherwise(() => `target-${index}`);
@@ -143,7 +164,7 @@ const getTargetId = (container: DatasetItem | Conversation, index: number): stri
  * Get unique metrics from evaluators
  */
 const getUniqueMetrics = <TContainer extends DatasetItem | Conversation>(
-  internalEvaluators: readonly InternalEvaluator<TContainer>[]
+  internalEvaluators: readonly InternalEvaluator<TContainer>[],
 ): readonly {
   metricName: string;
   metricDef: MetricDef<MetricScalar, TContainer>;
@@ -155,10 +176,13 @@ const getUniqueMetrics = <TContainer extends DatasetItem | Conversation>(
         (seen, metric) =>
           seen.has(metric.name)
             ? seen
-            : seen.set(metric.name, metric as unknown as MetricDef<MetricScalar, TContainer>),
-        new Map<string, MetricDef<MetricScalar, TContainer>>()
+            : seen.set(
+                metric.name,
+                metric as unknown as MetricDef<MetricScalar, TContainer>,
+              ),
+        new Map<string, MetricDef<MetricScalar, TContainer>>(),
       ),
-    ([metricName, metricDef]) => ({ metricName, metricDef })
+    ([metricName, metricDef]) => ({ metricName, metricDef }),
   );
 
 /**
@@ -166,7 +190,7 @@ const getUniqueMetrics = <TContainer extends DatasetItem | Conversation>(
  */
 const selectTargets = <TContainer extends DatasetItem | Conversation>(
   container: TContainer,
-  policy: SingleTurnRunPolicy | undefined
+  policy: SingleTurnRunPolicy | undefined,
 ): readonly SingleTargetFor<TContainer>[] => {
   const effectivePolicy: SingleTurnRunPolicy = policy ?? { run: 'all' };
 
@@ -187,7 +211,9 @@ const selectTargets = <TContainer extends DatasetItem | Conversation>(
  */
 const buildExecutorOptions = (options?: PipelineOptions): ExecutorOptions => ({
   ...(options?.cache !== undefined ? { cache: options.cache } : {}),
-  ...(options?.llmOptions !== undefined ? { llmOptions: options.llmOptions } : {}),
+  ...(options?.llmOptions !== undefined
+    ? { llmOptions: options.llmOptions }
+    : {}),
 });
 
 /**
@@ -198,7 +224,7 @@ const extractRawValues = (
   outputMetricName: string,
   expectedLength: number,
   rawMetricsMap: ReadonlyMap<string, readonly Metric<MetricScalar>[]>,
-  sourceMetrics?: readonly string[]
+  sourceMetrics?: readonly string[],
 ): readonly MetricScalar[] => {
   const rawMetrics = rawMetricsMap.get(targetId) ?? [];
 
@@ -235,7 +261,7 @@ const extractRawValues = (
 const phaseMeasure = async <TContainer extends DatasetItem | Conversation>(
   data: readonly TContainer[],
   internalEvaluators: readonly InternalEvaluator<TContainer>[],
-  options?: PipelineOptions
+  options?: PipelineOptions,
 ): Promise<ReadonlyMap<string, readonly Metric<MetricScalar>[]>> => {
   const executorOptions = buildExecutorOptions(options);
 
@@ -247,7 +273,9 @@ const phaseMeasure = async <TContainer extends DatasetItem | Conversation>(
       const metrics = (
         await Promise.all(
           internalEvaluators
-            .flatMap(({ metrics, context }) => metrics.map((metricDef) => ({ metricDef, context })))
+            .flatMap(({ metrics, context }) =>
+              metrics.map((metricDef) => ({ metricDef, context })),
+            )
             .map(async ({ metricDef, context }) => {
               if (seenMetrics.has(metricDef.name)) return [];
               seenMetrics.add(metricDef.name);
@@ -259,7 +287,7 @@ const phaseMeasure = async <TContainer extends DatasetItem | Conversation>(
                   return runSingleTurnMetrics(
                     metricDef as MetricDef<MetricScalar, SingleTurnContainer>,
                     targets as unknown as SingleTargetFor<SingleTurnContainer>[],
-                    executorOptions satisfies RunSingleTurnOptions
+                    executorOptions satisfies RunSingleTurnOptions,
                   );
                 })
                 .with('multi', async () => {
@@ -269,19 +297,21 @@ const phaseMeasure = async <TContainer extends DatasetItem | Conversation>(
                     container,
                     {
                       ...executorOptions,
-                      ...(options?.metadata !== undefined ? { runMetadata: options.metadata } : {}),
-                    } satisfies RunMultiTurnOptions
+                      ...(options?.metadata !== undefined
+                        ? { runMetadata: options.metadata }
+                        : {}),
+                    } satisfies RunMultiTurnOptions,
                   );
                 })
                 .otherwise(() => {
                   throw new Error(`Invalid metric scope: ${metricDef.scope}`);
                 });
-            })
+            }),
         )
       ).flat();
 
       return [targetId, metrics] as const;
-    })
+    }),
   );
 
   return new Map(entries);
@@ -291,10 +321,12 @@ const phaseMeasure = async <TContainer extends DatasetItem | Conversation>(
 // Phase 2: Resolve Calibration
 // ============================================================================
 
-const phaseResolveCalibration = async <TContainer extends DatasetItem | Conversation>(
+const phaseResolveCalibration = async <
+  TContainer extends DatasetItem | Conversation,
+>(
   data: readonly TContainer[],
   internalEvaluators: readonly InternalEvaluator<TContainer>[],
-  rawMetrics: ReadonlyMap<string, readonly Metric<MetricScalar>[]>
+  rawMetrics: ReadonlyMap<string, readonly Metric<MetricScalar>[]>,
 ): Promise<ReadonlyMap<string, unknown>> => {
   const uniqueMetrics = getUniqueMetrics(internalEvaluators);
   const cache = createCalibrationCache();
@@ -311,11 +343,11 @@ const phaseResolveCalibration = async <TContainer extends DatasetItem | Conversa
         data,
         rawValues,
         metricName,
-        cache
+        cache,
       );
 
       return [metricName, calibration] as const;
-    })
+    }),
   );
 
   return new Map(entries);
@@ -327,29 +359,34 @@ const phaseResolveCalibration = async <TContainer extends DatasetItem | Conversa
 
 const phaseNormalize = (
   rawMetrics: ReadonlyMap<string, readonly Metric<MetricScalar>[]>,
-  calibrations: ReadonlyMap<string, unknown>
+  calibrations: ReadonlyMap<string, unknown>,
 ): ReadonlyMap<string, ReadonlyMap<string, readonly Score[]>> =>
   new Map(
     Array.from(rawMetrics.entries()).map(([targetId, metrics]) => {
       const scoresByMetric = metrics.reduce((acc, metric) => {
         const calibration = calibrations.get(metric.metricDef.name);
         if (!calibration) {
-          throw new Error(`Missing calibration for metric: ${metric.metricDef.name}`);
+          throw new Error(
+            `Missing calibration for metric: ${metric.metricDef.name}`,
+          );
         }
 
         const score = applyNormalization(
           metric.value,
           metric.metricDef.normalization?.normalizer ?? { type: 'identity' },
           calibration as NormalizationContextFor<typeof metric.value>,
-          metric.metricDef as MetricDef<MetricScalar, MetricContainer>
+          metric.metricDef as MetricDef<MetricScalar, MetricContainer>,
         );
 
         const existing = acc.get(metric.metricDef.name) ?? [];
         return acc.set(metric.metricDef.name, [...existing, score]);
       }, new Map<string, Score[]>());
 
-      return [targetId, scoresByMetric as ReadonlyMap<string, readonly Score[]>] as const;
-    })
+      return [
+        targetId,
+        scoresByMetric as ReadonlyMap<string, readonly Score[]>,
+      ] as const;
+    }),
   );
 
 // ============================================================================
@@ -376,85 +413,89 @@ const buildInputScoresForIndex = (
   index: number,
   fallbackScore: Score | undefined,
   scorerName: string,
-  targetId: string
+  targetId: string,
 ): Record<string, Score> =>
-  inputs.reduce(
-    (acc, input) => {
-      const arr = targetScores.get(input.metric.name);
-      const score = arr?.at(index) ?? arr?.at(-1) ?? fallbackScore;
+  inputs.reduce((acc, input) => {
+    const arr = targetScores.get(input.metric.name);
+    const score = arr?.at(index) ?? arr?.at(-1) ?? fallbackScore;
 
-      if (score !== undefined) {
-        acc[input.metric.name] = score;
-        return acc;
-      }
-      if (input.required !== false) {
-        throw new Error(
-          `Required metric "${input.metric.name}" missing for scorer "${scorerName}" on target "${targetId}"`
-        );
-      }
-      return acc;
-    },
-    {} as Record<string, Score>
-  );
+    if (score !== undefined) {
+      return { ...acc, [input.metric.name]: score };
+    }
+    if (input.required !== false) {
+      throw new Error(
+        `Required metric "${input.metric.name}" missing for scorer "${scorerName}" on target "${targetId}"`,
+      );
+    }
+    return acc;
+  }, {} as Record<string, Score>);
 
 const phaseScore = <TContainer extends DatasetItem | Conversation>(
   internalEvaluators: readonly InternalEvaluator<TContainer>[],
   evalMetadata: ReadonlyMap<string, EvalMetadataEntry>,
   normalizedScores: ReadonlyMap<string, ReadonlyMap<string, readonly Score[]>>,
-  rawMetrics: ReadonlyMap<string, readonly Metric<MetricScalar>[]>
+  rawMetrics: ReadonlyMap<string, readonly Metric<MetricScalar>[]>,
 ): ReadonlyMap<string, ReadonlyMap<string, DerivedScoreEntry>> =>
   internalEvaluators.reduce((resultMap, { scorer, evalName }) => {
-    for (const [targetId, targetScores] of normalizedScores.entries()) {
-      // The scorer inputs are runtime values; ensure we keep them typed locally for TS inference.
-      const inputs = scorer.inputs as readonly {
-        metric: MetricDef<MetricScalar, MetricContainer>;
-        required?: boolean;
-        normalizerOverride?: unknown;
-        weight: number;
-      }[];
+    Array.from(normalizedScores.entries()).forEach(
+      ([targetId, targetScores]) => {
+        // The scorer inputs are runtime values; ensure we keep them typed locally for TS inference.
+        const inputs = scorer.inputs as readonly {
+          metric: MetricDef<MetricScalar, MetricContainer>;
+          required?: boolean;
+          normalizerOverride?: unknown;
+          weight: number;
+        }[];
 
-      const maxLen = Math.max(
-        ...inputs.map((input) => targetScores.get(input.metric.name)?.length ?? 0)
-      );
-
-      const derivedScores: Score[] = Array.from({ length: maxLen }, (_, i) => {
-        const inputScores = buildInputScoresForIndex(
-          inputs,
-          targetScores,
-          i,
-          scorer.fallbackScore,
-          scorer.name,
-          targetId
+        const maxLen = Math.max(
+          ...inputs.map((input) => targetScores.get(input.metric.name)?.length ?? 0),
         );
 
-        if (!scorer.combineScores) {
-          throw new Error(`Scorer "${scorer.name}" missing combineScores function`);
-        }
+        const derivedScores: Score[] = Array.from(
+          { length: maxLen },
+          (_, i) => {
+            const inputScores = buildInputScoresForIndex(
+              inputs,
+              targetScores,
+              i,
+              scorer.fallbackScore,
+              scorer.name,
+              targetId,
+            );
 
-        return scorer.combineScores(inputScores);
-      });
+            if (!scorer.combineScores) {
+              throw new Error(
+                `Scorer "${scorer.name}" missing combineScores function`,
+              );
+            }
 
-      const metadata = evalMetadata.get(evalName);
-      const sourceMetrics = metadata?.sourceMetrics;
+            return scorer.combineScores(inputScores);
+          },
+        );
 
-      const rawValues = extractRawValues(
-        targetId,
-        scorer.output.name,
-        derivedScores.length,
-        rawMetrics,
-        sourceMetrics
-      );
+        const metadata = evalMetadata.get(evalName);
+        const sourceMetrics = metadata?.sourceMetrics;
 
-      const existing = resultMap.get(targetId) ?? new Map<string, DerivedScoreEntry>();
-      existing.set(scorer.name, {
-        scores: derivedScores,
-        rawValues,
-        outputMetric: scorer.output,
-        inputMetrics: inputs.map((input) => input.metric),
-        evalName,
-      });
-      resultMap.set(targetId, existing);
-    }
+        const rawValues = extractRawValues(
+          targetId,
+          scorer.output.name,
+          derivedScores.length,
+          rawMetrics,
+          sourceMetrics,
+        );
+
+        const existing =
+          resultMap.get(targetId) ?? new Map<string, DerivedScoreEntry>();
+        existing.set(scorer.name, {
+          scores: derivedScores,
+          rawValues,
+          outputMetric: scorer.output,
+          inputMetrics: inputs.map((input) => input.metric),
+          evalName,
+        });
+        resultMap.set(targetId, existing);
+      },
+    );
 
     return resultMap;
   }, new Map<string, Map<string, DerivedScoreEntry>>()) as ReadonlyMap<
@@ -472,7 +513,7 @@ const phaseScore = <TContainer extends DatasetItem | Conversation>(
 const buildVerdict = (
   score: Score,
   rawValue: MetricScalar,
-  verdictPolicy: NonNullable<EvalMetadataEntry['verdictPolicy']>
+  verdictPolicy: NonNullable<EvalMetadataEntry['verdictPolicy']>,
 ): PipelineVerdict => ({
   verdict: computeVerdict(score, rawValue, verdictPolicy),
   score,
@@ -481,7 +522,7 @@ const buildVerdict = (
 
 const phaseComputeVerdicts = (
   evalMetadata: ReadonlyMap<string, EvalMetadataEntry>,
-  derivedScores: ReadonlyMap<string, ReadonlyMap<string, DerivedScoreEntry>>
+  derivedScores: ReadonlyMap<string, ReadonlyMap<string, DerivedScoreEntry>>,
 ): ReadonlyMap<string, ReadonlyMap<string, readonly PipelineVerdict[]>> =>
   new Map(
     Array.from(derivedScores.entries())
@@ -491,24 +532,33 @@ const phaseComputeVerdicts = (
             if (!evalName) return [];
 
             const metadata = evalMetadata.get(evalName);
-            const verdictPolicy = metadata?.verdictPolicy;
-            if (!verdictPolicy || verdictPolicy.kind === 'none') return [];
+            if (
+              !metadata?.verdictPolicy ||
+              metadata.verdictPolicy.kind === 'none'
+            )
+              return [];
 
             const verdicts: PipelineVerdict[] = scores
               .map((score, i): PipelineVerdict | null =>
                 score !== undefined
-                  ? buildVerdict(score, rawValues[i] ?? score, verdictPolicy)
-                  : null
+                  ? buildVerdict(
+                      score,
+                      rawValues[i] ?? score,
+                      metadata.verdictPolicy!,
+                    )
+                  : null,
               )
               .filter((v): v is PipelineVerdict => v !== null);
 
             return verdicts.length > 0 ? ([[evalName, verdicts]] as const) : [];
-          }
+          },
         );
 
-        return verdictEntries.length > 0 ? ([targetId, new Map(verdictEntries)] as const) : null;
+        return verdictEntries.length > 0
+          ? ([targetId, new Map(verdictEntries)] as const)
+          : null;
       })
-      .filter((entry): entry is NonNullable<typeof entry> => entry !== null)
+      .filter((entry): entry is NonNullable<typeof entry> => entry !== null),
   );
 
 // ============================================================================
@@ -519,10 +569,10 @@ const phaseComputeVerdicts = (
  * Extract aggregators from metrics as AggregatorDef array
  */
 const extractAggregators = (
-  inputMetrics: readonly MetricDef<MetricScalar, MetricContainer>[]
+  inputMetrics: readonly MetricDef<MetricScalar, MetricContainer>[],
 ): AggregatorDef[] =>
   inputMetrics.flatMap((m) =>
-    'aggregators' in m ? (m.aggregators as unknown as AggregatorDef[]) : []
+    'aggregators' in m ? (m.aggregators as unknown as AggregatorDef[]) : [],
   );
 
 /**
@@ -531,20 +581,34 @@ const extractAggregators = (
 const calculateScoreAggregations = (
   scores: readonly Score[],
   evalKind: 'singleTurn' | 'multiTurn' | 'scorer',
-  inputMetrics: readonly MetricDef<MetricScalar, MetricContainer>[]
+  inputMetrics: readonly MetricDef<MetricScalar, MetricContainer>[],
 ): PipelineAggregations =>
   match(evalKind)
     .with('singleTurn', () => {
       const entries = extractAggregators(inputMetrics)
         .filter((a): a is NumericAggregatorDef => a.kind === 'numeric')
-        .map((a) => [a.name, a.aggregate(scores as readonly number[])] as [string, number]);
+        .map(
+          (a) =>
+            [a.name, a.aggregate(scores as readonly number[])] as [
+              string,
+              number,
+            ],
+        );
       return Object.fromEntries(entries);
     })
-    .with('multiTurn', () => (scores.length === 1 ? { value: scores[0] as number } : {}))
+    .with('multiTurn', () =>
+      scores.length === 1 ? { value: scores[0] as number } : {},
+    )
     .with('scorer', () => {
       const entries = resolveCommonAggregators(inputMetrics)
         .filter((a): a is NumericAggregatorDef => a.kind === 'numeric')
-        .map((a) => [a.name, a.aggregate(scores as readonly number[])] as [string, number]);
+        .map(
+          (a) =>
+            [a.name, a.aggregate(scores as readonly number[])] as [
+              string,
+              number,
+            ],
+        );
       return Object.fromEntries(entries);
     })
     .exhaustive();
@@ -556,7 +620,7 @@ const calculateRawValueAggregations = (
   rawValues: readonly MetricScalar[],
   valueType: 'number' | 'boolean' | 'string' | 'ordinal',
   evalKind: 'singleTurn' | 'multiTurn' | 'scorer',
-  inputMetrics: readonly MetricDef<MetricScalar, MetricContainer>[]
+  inputMetrics: readonly MetricDef<MetricScalar, MetricContainer>[],
 ): PipelineAggregations => {
   // Multi-turn evals produce a single scalar per conversation.
   // Treat them as scalar and store the raw scalar for summary display.
@@ -578,28 +642,42 @@ const calculateRawValueAggregations = (
       Object.fromEntries(
         allAggregators
           .filter((a): a is NumericAggregatorDef => a.kind === 'numeric')
-          .map((a) => [a.name, a.aggregate(rawValues as readonly number[])] as [string, number])
-      )
+          .map(
+            (a) =>
+              [a.name, a.aggregate(rawValues as readonly number[])] as [
+                string,
+                number,
+              ],
+          ),
+      ),
     )
     .with('boolean', () =>
       Object.fromEntries(
         allAggregators
           .filter((a): a is BooleanAggregatorDef => a.kind === 'boolean')
-          .map((a) => [a.name, a.aggregate(rawValues as readonly boolean[])] as [string, number])
-      )
+          .map(
+            (a) =>
+              [a.name, a.aggregate(rawValues as readonly boolean[])] as [
+                string,
+                number,
+              ],
+          ),
+      ),
     )
     .with(P.union('string', 'ordinal'), () =>
       Object.fromEntries(
         allAggregators
-          .filter((a): a is CategoricalAggregatorDef => a.kind === 'categorical')
+          .filter(
+            (a): a is CategoricalAggregatorDef => a.kind === 'categorical',
+          )
           .map(
             (a) =>
               [a.name, a.aggregate(rawValues as readonly string[])] as [
                 string,
                 Record<string, number>,
-              ]
-          )
-      )
+              ],
+          ),
+      ),
     )
     .exhaustive();
 };
@@ -609,28 +687,31 @@ const calculateRawValueAggregations = (
  * Returns AggregatorDef[] for simplified type handling
  */
 const resolveCommonAggregators = (
-  inputMetrics: readonly MetricDef<MetricScalar, MetricContainer>[]
+  inputMetrics: readonly MetricDef<MetricScalar, MetricContainer>[],
 ): AggregatorDef[] => {
   const metricsWithAggregators = inputMetrics.filter((m) => 'aggregators' in m);
 
   const aggregatorCounts = inputMetrics
     .filter(
       (
-        m
+        m,
       ): m is MetricDef<MetricScalar, MetricContainer> & {
         aggregators: AggregatorDef[];
-      } => 'aggregators' in m
+      } => 'aggregators' in m,
     )
     .flatMap((m) => m.aggregators)
-    .reduce<Map<string, { count: number; aggregator: AggregatorDef }>>((acc, agg) => {
-      const existing = acc.get(agg.name);
-      return existing
-        ? acc.set(agg.name, {
-            count: existing.count + 1,
-            aggregator: existing.aggregator,
-          })
-        : acc.set(agg.name, { count: 1, aggregator: agg });
-    }, new Map<string, { count: number; aggregator: AggregatorDef }>());
+    .reduce<Map<string, { count: number; aggregator: AggregatorDef }>>(
+      (acc, agg) => {
+        const existing = acc.get(agg.name);
+        return existing
+          ? acc.set(agg.name, {
+              count: existing.count + 1,
+              aggregator: existing.aggregator,
+            })
+          : acc.set(agg.name, { count: 1, aggregator: agg });
+      },
+      new Map<string, { count: number; aggregator: AggregatorDef }>(),
+    );
 
   return Array.from(aggregatorCounts.values())
     .filter((entry) => entry.count === metricsWithAggregators.length)
@@ -642,7 +723,7 @@ const resolveCommonAggregators = (
  */
 const countVerdict = (
   verdict: 'pass' | 'fail' | 'unknown',
-  acc: { pass: number; fail: number; unknown: number }
+  acc: { pass: number; fail: number; unknown: number },
 ): { pass: number; fail: number; unknown: number } =>
   match(verdict)
     .with('pass', () => ({ ...acc, pass: acc.pass + 1 }))
@@ -655,8 +736,11 @@ const countVerdict = (
  */
 const calculateVerdictSummaryFromVerdicts = (
   evalName: string,
-  verdictsMap: ReadonlyMap<string, ReadonlyMap<string, readonly PipelineVerdict[]>>,
-  totalCount: number
+  verdictsMap: ReadonlyMap<
+    string,
+    ReadonlyMap<string, readonly PipelineVerdict[]>
+  >,
+  totalCount: number,
 ): PipelineVerdictSummary | undefined => {
   const counts = Array.from(verdictsMap.values())
     .flatMap((targetVerdicts) => targetVerdicts.get(evalName) ?? [])
@@ -696,28 +780,29 @@ type CollectedScoresEntry = {
  * Collect scores by eval name from derived scores
  */
 const collectScoresByEval = (
-  derivedScores: ReadonlyMap<string, ReadonlyMap<string, DerivedScoreEntry>>
+  derivedScores: ReadonlyMap<string, ReadonlyMap<string, DerivedScoreEntry>>,
 ): Map<string, CollectedScoresEntry> =>
   Array.from(derivedScores.values())
     .flatMap((scorerMap) => Array.from(scorerMap.values()))
-    .filter(
-      (entry): entry is DerivedScoreEntry & { evalName: string } => entry.evalName !== undefined
-    )
-    .reduce((acc, { scores, rawValues, outputMetric, evalName, inputMetrics }) => {
-      const existing = acc.get(evalName);
-      return existing
-        ? acc.set(evalName, {
-            ...existing,
-            scores: [...existing.scores, ...scores],
-            rawValues: [...existing.rawValues, ...rawValues],
-          })
-        : acc.set(evalName, {
-            scores: [...scores],
-            rawValues: [...rawValues],
-            outputMetric,
-            inputMetrics,
-          });
-    }, new Map<string, CollectedScoresEntry>());
+    .filter((entry) => entry.evalName !== undefined)
+    .reduce(
+      (acc, { scores, rawValues, outputMetric, evalName, inputMetrics }) => {
+        const existing = acc.get(evalName!);
+        return existing
+          ? acc.set(evalName!, {
+              ...existing,
+              scores: [...existing.scores, ...scores],
+              rawValues: [...existing.rawValues, ...rawValues],
+            })
+          : acc.set(evalName!, {
+              scores: [...scores],
+              rawValues: [...rawValues],
+              outputMetric,
+              inputMetrics,
+            });
+      },
+      new Map<string, CollectedScoresEntry>(),
+    );
 
 /**
  * Build eval summary from collected scores
@@ -726,24 +811,29 @@ const buildEvalSummary = (
   evalName: string,
   entry: CollectedScoresEntry,
   metadata: EvalMetadataEntry,
-  verdicts: ReadonlyMap<string, ReadonlyMap<string, readonly PipelineVerdict[]>>
+  verdicts: ReadonlyMap<
+    string,
+    ReadonlyMap<string, readonly PipelineVerdict[]>
+  >,
 ): PipelineEvalSummary => {
   const { scores, rawValues, outputMetric, inputMetrics } = entry;
 
-  const scoreAggregations = calculateScoreAggregations(scores, metadata.evalKind, inputMetrics);
+  const scoreAggregations = calculateScoreAggregations(
+    scores,
+    metadata.evalKind,
+    inputMetrics,
+  );
 
   const validRawValues = rawValues.filter((v) => v !== undefined);
   const rawValueAggregations =
     validRawValues.length > 0 && metadata.evalKind !== 'scorer'
       ? calculateRawValueAggregations(
           validRawValues,
-          (outputMetric?.valueType ?? inputMetrics[0]?.valueType ?? 'number') as
-            | 'number'
-            | 'boolean'
-            | 'string'
-            | 'ordinal',
+          (outputMetric?.valueType ??
+            inputMetrics[0]?.valueType ??
+            'number') as 'number' | 'boolean' | 'string' | 'ordinal',
           metadata.evalKind,
-          inputMetrics
+          inputMetrics,
         )
       : undefined;
 
@@ -756,7 +846,9 @@ const buildEvalSummary = (
     evalKind: metadata.evalKind,
     aggregations: {
       score: scoreAggregations,
-      ...(rawValueAggregations ? { raw: rawValueAggregations as PipelineAggregations } : {}),
+      ...(rawValueAggregations
+        ? { raw: rawValueAggregations as PipelineAggregations }
+        : {}),
     },
     ...(verdictSummary ? { verdictSummary } : {}),
   };
@@ -768,7 +860,10 @@ const buildEvalSummary = (
 const phaseAggregate = (
   evalMetadata: ReadonlyMap<string, EvalMetadataEntry>,
   derivedScores: ReadonlyMap<string, ReadonlyMap<string, DerivedScoreEntry>>,
-  verdicts: ReadonlyMap<string, ReadonlyMap<string, readonly PipelineVerdict[]>>
+  verdicts: ReadonlyMap<
+    string,
+    ReadonlyMap<string, readonly PipelineVerdict[]>
+  >,
 ): {
   evalSummaries: ReadonlyMap<string, PipelineEvalSummary>;
 } => {
@@ -799,29 +894,44 @@ const phaseAggregate = (
 /**
  * Execute the full evaluation pipeline
  */
-export async function executePipeline<TContainer extends DatasetItem | Conversation>(
+export async function executePipeline<
+  TContainer extends DatasetItem | Conversation,
+>(
   data: readonly TContainer[],
   internalEvaluators: readonly InternalEvaluator<TContainer>[],
   evalMetadata: Map<string, EvalMetadataEntry>,
-  options?: PipelineOptions
+  options?: PipelineOptions,
 ): Promise<PipelineResult> {
   // Phase 1: Measure
   const rawMetrics = await phaseMeasure(data, internalEvaluators, options);
 
   // Phase 2: Resolve Calibration
-  const calibrations = await phaseResolveCalibration(data, internalEvaluators, rawMetrics);
+  const calibrations = await phaseResolveCalibration(
+    data,
+    internalEvaluators,
+    rawMetrics,
+  );
 
   // Phase 3: Normalize
   const normalizedScores = phaseNormalize(rawMetrics, calibrations);
 
   // Phase 4: Score
-  const derivedScores = phaseScore(internalEvaluators, evalMetadata, normalizedScores, rawMetrics);
+  const derivedScores = phaseScore(
+    internalEvaluators,
+    evalMetadata,
+    normalizedScores,
+    rawMetrics,
+  );
 
   // Phase 5: Compute Verdicts
   const verdicts = phaseComputeVerdicts(evalMetadata, derivedScores);
 
   // Phase 6: Aggregate
-  const { evalSummaries } = phaseAggregate(evalMetadata, derivedScores, verdicts);
+  const { evalSummaries } = phaseAggregate(
+    evalMetadata,
+    derivedScores,
+    verdicts,
+  );
 
   return {
     rawMetrics,

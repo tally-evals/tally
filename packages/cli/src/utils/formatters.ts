@@ -2,7 +2,7 @@
  * Formatter utilities for metrics and text
  */
 
-import type { VerdictPolicyInfo } from '@tally-evals/core';
+import { VerdictPolicyInfo } from '@tally-evals/core';
 import { score, verdict } from './colors';
 
 export type MetricScalar = number | boolean | string;
@@ -73,7 +73,9 @@ export function formatScore(value: number): string {
 /**
  * Format a verdict as colored icon
  */
-export function formatVerdict(verdictValue: 'pass' | 'fail' | 'unknown' | undefined): string {
+export function formatVerdict(
+  verdictValue: 'pass' | 'fail' | 'unknown' | undefined,
+): string {
   if (verdictValue === 'pass') {
     return verdict.pass();
   }
@@ -102,7 +104,9 @@ export function formatPassAt(policy: VerdictPolicyInfo): string {
   if (kind === 'number') {
     const type = p.type;
     if (type === 'threshold') {
-      return typeof p.passAt === 'number' ? `≥ ${p.passAt}` : '-';
+      return typeof p.passAt === 'number'
+        ? `≥ ${p.passAt}`
+        : '-';
     }
     if (type === 'range') {
       const min = typeof p.min === 'number' ? p.min : undefined;
@@ -179,7 +183,7 @@ export function formatConversationText(input: string, output: string): string {
  * Extract tool calls from a single message
  */
 export function extractToolCallsFromMessage(
-  message: unknown
+  message: unknown,
 ): { toolName: string; toolCallId: string; output?: unknown }[] {
   const toolCalls: {
     toolName: string;
@@ -205,7 +209,8 @@ export function extractToolCallsFromMessage(
                 output: undefined,
               });
             }
-          } else if (part.type === 'tool-result') {
+          }
+          else if (part.type === 'tool-result') {
             const toolResultPart = part as {
               toolName?: string;
               toolCallId?: string;
@@ -232,22 +237,19 @@ export function extractToolCallsFromMessage(
  * Extract tool calls from multiple messages
  */
 export function extractToolCallsFromMessages(
-  messages: readonly unknown[]
+  messages: readonly unknown[],
 ): { toolName: string; toolCallId: string; output?: unknown }[] {
-  const allToolCalls = new Map<
-    string,
-    {
-      toolName: string;
-      toolCallId: string;
-      output?: unknown;
-    }
-  >();
-
+  const allToolCalls = new Map<string, {
+    toolName: string;
+    toolCallId: string;
+    output?: unknown;
+  }>();
+  
   for (const message of messages) {
     const toolCalls = extractToolCallsFromMessage(message);
     for (const tc of toolCalls) {
       const existing = allToolCalls.get(tc.toolCallId);
-
+      
       allToolCalls.set(tc.toolCallId, {
         toolName: existing?.toolName || tc.toolName,
         toolCallId: tc.toolCallId,

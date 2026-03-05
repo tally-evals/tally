@@ -12,7 +12,7 @@ export function makeMockLanguageModelReturningObject(jsonString: string) {
 }
 
 export function makeMockLanguageModelStreamingChunks(
-  _chunks: Array<{ type: string; [k: string]: unknown }>
+  chunks: Array<{ type: string; [k: string]: unknown }>
 ) {
   // Placeholder for future streaming cases if needed
   return new MockLanguageModelV2({

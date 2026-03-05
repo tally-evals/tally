@@ -72,7 +72,9 @@
       }
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "publishConfig": {
     "access": "public",
     "provenance": true,
@@ -87,7 +89,14 @@
     "lint:fix": "biome check --write .",
     "clean": "rm -rf dist"
   },
-  "keywords": ["evaluation", "llm", "ai", "testing", "metrics", "datasets"],
+  "keywords": [
+    "evaluation",
+    "llm",
+    "ai",
+    "testing",
+    "metrics",
+    "datasets"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {

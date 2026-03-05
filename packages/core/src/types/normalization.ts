@@ -103,7 +103,10 @@ export interface MetricInfo {
 export type NormalizeToScore<
   TMetricValue extends MetricScalar = number,
   TNormContext = NormalizationContextFor<TMetricValue>,
-> = (value: TMetricValue, args: { context: TNormContext; metric: MetricInfo }) => Score;
+> = (
+  value: TMetricValue,
+  args: { context: TNormContext; metric: MetricInfo },
+) => Score;
 
 /**
  * Built-in normalizer specification.

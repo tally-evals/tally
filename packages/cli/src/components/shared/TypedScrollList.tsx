@@ -11,7 +11,7 @@ import {
   type ScrollListProps,
   type ScrollListRef,
 } from 'ink-scroll-list';
-import type { ForwardRefExoticComponent, ReactNode, RefAttributes } from 'react';
+import type { ForwardRefExoticComponent, RefAttributes, ReactNode } from 'react';
 import { forwardRef } from 'react';
 
 /**
@@ -20,15 +20,16 @@ import { forwardRef } from 'react';
  * This is a pass-through wrapper that casts the ink-scroll-list component
  * to be compatible with React 19's stricter JSX element types.
  */
-export const ScrollList = forwardRef<ScrollListRef, ScrollListProps>((props, ref) => {
-  // Cast to work around React 19 type incompatibility
-  const TypedScrollList = InkScrollList as unknown as ForwardRefExoticComponent<
-    ScrollListProps & RefAttributes<ScrollListRef>
-  > &
-    ((props: ScrollListProps & { ref?: React.Ref<ScrollListRef> }) => ReactNode);
+export const ScrollList = forwardRef<ScrollListRef, ScrollListProps>(
+  (props, ref) => {
+    // Cast to work around React 19 type incompatibility
+    const TypedScrollList = InkScrollList as unknown as ForwardRefExoticComponent<
+      ScrollListProps & RefAttributes<ScrollListRef>
+    > & { (props: ScrollListProps & { ref?: React.Ref<ScrollListRef> }): ReactNode };
 
-  return <TypedScrollList ref={ref} {...props} />;
-});
+    return <TypedScrollList ref={ref} {...props} />;
+  },
+);
 
 ScrollList.displayName = 'ScrollList';
 

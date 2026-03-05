@@ -5,17 +5,11 @@
  */
 
 import { describe, expect, it } from 'bun:test';
-import {
-  createDistributionAggregator,
-  createModeAggregator,
-} from '../../src/aggregators/distribution';
 import { createMeanAggregator } from '../../src/aggregators/mean';
 import { createPercentileAggregator } from '../../src/aggregators/percentile';
 import { createThresholdAggregator } from '../../src/aggregators/threshold';
-import {
-  createFalseRateAggregator,
-  createTrueRateAggregator,
-} from '../../src/aggregators/trueRate';
+import { createTrueRateAggregator, createFalseRateAggregator } from '../../src/aggregators/trueRate';
+import { createDistributionAggregator, createModeAggregator } from '../../src/aggregators/distribution';
 
 describe('Unit | Aggregators', () => {
   describe('createMeanAggregator', () => {
@@ -103,15 +97,11 @@ describe('Unit | Aggregators', () => {
     });
 
     it('throws on invalid percentile < 0', () => {
-      expect(() => createPercentileAggregator({ percentile: -1 })).toThrow(
-        /must be in \[0, 100\] range/
-      );
+      expect(() => createPercentileAggregator({ percentile: -1 })).toThrow(/must be in \[0, 100\] range/);
     });
 
     it('throws on invalid percentile > 100', () => {
-      expect(() => createPercentileAggregator({ percentile: 101 })).toThrow(
-        /must be in \[0, 100\] range/
-      );
+      expect(() => createPercentileAggregator({ percentile: 101 })).toThrow(/must be in \[0, 100\] range/);
     });
   });
 
@@ -153,12 +143,8 @@ describe('Unit | Aggregators', () => {
     });
 
     it('throws on invalid threshold', () => {
-      expect(() => createThresholdAggregator({ threshold: 1.5 })).toThrow(
-        /must be in \[0, 1\] range/
-      );
-      expect(() => createThresholdAggregator({ threshold: -0.1 })).toThrow(
-        /must be in \[0, 1\] range/
-      );
+      expect(() => createThresholdAggregator({ threshold: 1.5 })).toThrow(/must be in \[0, 1\] range/);
+      expect(() => createThresholdAggregator({ threshold: -0.1 })).toThrow(/must be in \[0, 1\] range/);
     });
   });
 

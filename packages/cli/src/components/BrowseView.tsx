@@ -5,21 +5,26 @@
 import type { ConversationRef, RunRef, TallyStore } from '@tally-evals/core';
 import type { Conversation, TallyRunArtifact } from '@tally-evals/core';
 import { Box, Text, useInput, useStdout } from 'ink';
+import { ScrollList, type ScrollListRef } from './shared/TypedScrollList';
 import type React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { colors } from '../utils/colors';
 import { CompareView } from './CompareView';
 import { TrajectoryView } from './TrajectoryView';
 import { ViewRouter } from './ViewRouter';
-import { BreadCrumbs } from './shared/BreadCrumbs';
 import { KeyboardHelp } from './shared/KeyboardHelp';
-import { ScrollList, type ScrollListRef } from './shared/TypedScrollList';
+import { BreadCrumbs } from './shared/BreadCrumbs';
 
 interface BrowseViewProps {
   store: TallyStore;
 }
 
-type BrowseScreen = 'conversations' | 'runs' | 'view' | 'compare' | 'trajectory';
+type BrowseScreen =
+  | 'conversations'
+  | 'runs'
+  | 'view'
+  | 'compare'
+  | 'trajectory';
 
 export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
   const [screen, setScreen] = useState<BrowseScreen>('conversations');
@@ -27,11 +32,14 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [selectedConversation, setSelectedConversation] = useState<ConversationRef | null>(null);
+  const [selectedConversation, setSelectedConversation] =
+    useState<ConversationRef | null>(null);
   const [selectedRuns, setSelectedRuns] = useState<RunRef[]>([]);
   const [availableRuns, setAvailableRuns] = useState<RunRef[]>([]);
   const [runCounts, setRunCounts] = useState<Map<string, number>>(new Map());
-  const [hasTrajectory, setHasTrajectory] = useState<Map<string, boolean>>(new Map());
+  const [hasTrajectory, setHasTrajectory] = useState<Map<string, boolean>>(
+    new Map(),
+  );
 
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [report, setReport] = useState<TallyRunArtifact | null>(null);
@@ -45,7 +53,7 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
 
   const { stdout } = useStdout();
   const conversationListRef = useRef<ScrollListRef>(null);
-  const runsListRef = useRef<ScrollListRef>(null);
+  const runsListRef = useRef<any>(null);
 
   useEffect(() => {
     const loadConversations = async () => {
@@ -55,7 +63,9 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
         const convRefs = await store.listConversations();
         setConversations(convRefs);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load conversations');
+        setError(
+          err instanceof Error ? err.message : 'Failed to load conversations',
+        );
       } finally {
         setLoading(false);
       }
@@ -77,7 +87,7 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
           } catch {
             return [conv.id, 0] as const;
           }
-        })
+        }),
       );
 
       if (cancelled) return;
@@ -93,7 +103,7 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
           } catch {
             return [conv.id, false] as const;
           }
-        })
+        }),
       );
 
       if (cancelled) return;
@@ -127,13 +137,18 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
   }, [selectedConversation]);
 
   useEffect(() => {
-    if (screen === 'view' && selectedConversation && selectedRuns.length === 1) {
+    if (
+      screen === 'view' &&
+      selectedConversation &&
+      selectedRuns.length === 1
+    ) {
       const loadData = async () => {
         try {
           setLoading(true);
           setError(null);
           const convData = await selectedConversation.load();
-          const reportData = (await selectedRuns[0]?.load()) as TallyRunArtifact;
+          const reportData =
+            (await selectedRuns[0]?.load()) as TallyRunArtifact;
           setConversation(convData);
           setReport(reportData);
         } catch (err) {
@@ -147,7 +162,11 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
   }, [screen, selectedConversation, selectedRuns]);
 
   useEffect(() => {
-    if (screen === 'compare' && selectedConversation && selectedRuns.length === 2) {
+    if (
+      screen === 'compare' &&
+      selectedConversation &&
+      selectedRuns.length === 2
+    ) {
       const loadData = async () => {
         try {
           setLoading(true);
@@ -201,7 +220,9 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
       if (key.upArrow) {
         setSelectedConversationIndex((prev) => Math.max(0, prev - 1));
       } else if (key.downArrow) {
-        setSelectedConversationIndex((prev) => Math.min(conversations.length - 1, prev + 1));
+        setSelectedConversationIndex((prev) =>
+          Math.min(conversations.length - 1, prev + 1),
+        );
       } else if (input === '\r' || input === '\n') {
         const conversation = conversations[selectedConversationIndex];
         if (conversation) {
@@ -252,7 +273,9 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
           });
           const runs = Array.from(selectedRunIds)
             .map((runId) =>
-              availableRuns.find((r) => (r.id ?? `run-${availableRuns.indexOf(r)}`) === runId)
+              availableRuns.find(
+                (r) => (r.id ?? `run-${availableRuns.indexOf(r)}`) === runId,
+              ),
             )
             .filter((run): run is RunRef => run !== undefined);
 
@@ -321,7 +344,10 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
             {conversations.map((conv, index) => {
               const cached = runCounts.get(conv.id);
               const runCount =
-                cached ?? (conv.id === selectedConversation?.id ? availableRuns.length : 0);
+                cached ??
+                (conv.id === selectedConversation?.id
+                  ? availableRuns.length
+                  : 0);
               const isFocused = selectedConversationIndex === index;
               const prefix = isFocused ? colors.info('▶ ') : '  ';
               const label = isFocused ? colors.info(`${conv.id}`) : conv.id;
@@ -380,8 +406,12 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
         <BreadCrumbs breadcrumbs={[selectedConversation.id]} />
         {hasTrajectoryData && (
           <Box flexDirection="column" marginY={1}>
-            <Text color={selectedIndex === 0 ? 'cyan' : 'white'} bold={selectedIndex === 0}>
-              {selectedIndex === 0 ? colors.info('▶ ') : '  '}📹 Trajectory
+            <Text
+              color={selectedIndex === 0 ? 'cyan' : 'white'}
+              bold={selectedIndex === 0}
+            >
+              {selectedIndex === 0 ? colors.info('▶ ') : '  '}
+              📹 Trajectory
             </Text>
           </Box>
         )}
@@ -397,7 +427,11 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
             ref={runsListRef}
             height={runsListHeight}
             width="100%"
-            selectedIndex={selectedIndex >= trajectoryOffset ? selectedIndex - trajectoryOffset : 0}
+            selectedIndex={
+              selectedIndex >= trajectoryOffset
+                ? selectedIndex - trajectoryOffset
+                : 0
+            }
           >
             {sortedRuns.map((run, index) => {
               const runId = run.id ?? `run-${index}`;
@@ -407,15 +441,21 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
               const prefix = isFocused ? colors.info('▶ ') : '  ';
               const label = isFocused
                 ? `${colors.info(run.id ?? 'unknown')} ${
-                    run.timestamp ? colors.info(new Date(run.timestamp).toLocaleString()) : ''
+                    run.timestamp
+                      ? colors.info(new Date(run.timestamp).toLocaleString())
+                      : ''
                   }`
                 : isSelected
-                  ? `${colors.success(run.id ?? 'unknown')} ${
-                      run.timestamp ? colors.info(new Date(run.timestamp).toLocaleString()) : ''
-                    }`
-                  : `${run.id ?? 'unknown'} ${
-                      run.timestamp ? colors.info(new Date(run.timestamp).toLocaleString()) : ''
-                    }`;
+                ? `${colors.success(run.id ?? 'unknown')} ${
+                    run.timestamp
+                      ? colors.info(new Date(run.timestamp).toLocaleString())
+                      : ''
+                  }`
+                : `${run.id ?? 'unknown'} ${
+                    run.timestamp
+                      ? colors.info(new Date(run.timestamp).toLocaleString())
+                      : ''
+                  }`;
               return (
                 <Text key={run.id ?? `run-${index}`}>
                   {prefix}
@@ -430,12 +470,16 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
           shortcuts={[
             {
               key: '↑↓',
-              description: hasTrajectoryData ? 'Navigate (Trajectory/Runs)' : 'Navigate runs',
+              description: hasTrajectoryData
+                ? 'Navigate (Trajectory/Runs)'
+                : 'Navigate runs',
             },
             { key: 'Space', description: 'Select run' },
             {
               key: 't',
-              description: sortRunsAscending ? 'Sort descending' : 'Sort ascending',
+              description: sortRunsAscending
+                ? 'Sort descending'
+                : 'Sort ascending',
             },
             ...(selectedRunIds.size <= 2
               ? [
@@ -506,7 +550,11 @@ export function BrowseView({ store }: BrowseViewProps): React.ReactElement {
     );
   }
 
-  if (screen === 'compare' && selectedConversation && selectedRuns.length === 2) {
+  if (
+    screen === 'compare' &&
+    selectedConversation &&
+    selectedRuns.length === 2
+  ) {
     if (loading) {
       return (
         <Box flexDirection="column" padding={1}>

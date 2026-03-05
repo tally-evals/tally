@@ -5,12 +5,12 @@
  */
 
 import { describe, expect, it } from 'bun:test';
-import { normalizeIdentity } from '../../src/core/normalization/normalizers/identity';
-import { normalizeLinear } from '../../src/core/normalization/normalizers/linear';
 import { normalizeMinMax } from '../../src/core/normalization/normalizers/minMax';
-import { normalizeOrdinalMap } from '../../src/core/normalization/normalizers/ordinalMap';
-import { normalizeThreshold } from '../../src/core/normalization/normalizers/threshold';
 import { normalizeZScore } from '../../src/core/normalization/normalizers/zScore';
+import { normalizeThreshold } from '../../src/core/normalization/normalizers/threshold';
+import { normalizeLinear } from '../../src/core/normalization/normalizers/linear';
+import { normalizeOrdinalMap } from '../../src/core/normalization/normalizers/ordinalMap';
+import { normalizeIdentity } from '../../src/core/normalization/normalizers/identity';
 
 describe('Unit | Normalizers', () => {
   describe('normalizeMinMax', () => {
@@ -51,11 +51,7 @@ describe('Unit | Normalizers', () => {
     });
 
     it('inverts score when direction=lower', () => {
-      const result = normalizeMinMax(
-        25,
-        { type: 'min-max', min: 0, max: 100, direction: 'lower' },
-        {}
-      );
+      const result = normalizeMinMax(25, { type: 'min-max', min: 0, max: 100, direction: 'lower' }, {});
       expect(result).toBe(0.75); // 1 - 0.25 = 0.75
     });
 
@@ -92,11 +88,7 @@ describe('Unit | Normalizers', () => {
 
     it('inverts score when direction=lower', () => {
       const higher = normalizeZScore(60, { type: 'z-score', mean: 50, stdDev: 10 }, {});
-      const lower = normalizeZScore(
-        60,
-        { type: 'z-score', mean: 50, stdDev: 10, direction: 'lower' },
-        {}
-      );
+      const lower = normalizeZScore(60, { type: 'z-score', mean: 50, stdDev: 10, direction: 'lower' }, {});
       expect(lower).toBeCloseTo(1 - higher, 10);
     });
 
@@ -110,9 +102,7 @@ describe('Unit | Normalizers', () => {
     });
 
     it('throws when mean/stdDev not provided', () => {
-      expect(() => normalizeZScore(50, { type: 'z-score' }, {})).toThrow(
-        /requires mean and stdDev/
-      );
+      expect(() => normalizeZScore(50, { type: 'z-score' }, {})).toThrow(/requires mean and stdDev/);
     });
   });
 
@@ -133,11 +123,7 @@ describe('Unit | Normalizers', () => {
     });
 
     it('uses custom above/below scores', () => {
-      const result = normalizeThreshold(
-        0.3,
-        { type: 'threshold', threshold: 0.5, above: 0.9, below: 0.1 },
-        {}
-      );
+      const result = normalizeThreshold(0.3, { type: 'threshold', threshold: 0.5, above: 0.9, below: 0.1 }, {});
       expect(result).toBe(0.1);
     });
 
@@ -147,9 +133,7 @@ describe('Unit | Normalizers', () => {
     });
 
     it('throws when threshold not provided', () => {
-      expect(() => normalizeThreshold(0.5, { type: 'threshold' }, {})).toThrow(
-        /requires threshold/
-      );
+      expect(() => normalizeThreshold(0.5, { type: 'threshold' }, {})).toThrow(/requires threshold/);
     });
 
     it('throws when above/below scores out of range', () => {
@@ -168,21 +152,13 @@ describe('Unit | Normalizers', () => {
 
     it('clips to custom range', () => {
       // normalized = 2 * 0.8 + 0.5 = 2.1, clipped to [0, 1] = 1
-      const result = normalizeLinear(
-        0.8,
-        { type: 'linear', slope: 2, intercept: 0.5, clip: [0, 1] },
-        {}
-      );
+      const result = normalizeLinear(0.8, { type: 'linear', slope: 2, intercept: 0.5, clip: [0, 1] }, {});
       expect(result).toBe(1);
     });
 
     it('inverts when direction=lower', () => {
       // normalized = 0.5 * 0.8 + 0.1 = 0.5, inverted = 0.5
-      const result = normalizeLinear(
-        0.8,
-        { type: 'linear', slope: 0.5, intercept: 0.1, direction: 'lower' },
-        {}
-      );
+      const result = normalizeLinear(0.8, { type: 'linear', slope: 0.5, intercept: 0.1, direction: 'lower' }, {});
       expect(result).toBe(0.5); // 1 - 0.5 = 0.5
     });
 
@@ -193,13 +169,7 @@ describe('Unit | Normalizers', () => {
     });
 
     it('throws when slope/intercept not provided', () => {
-      expect(() =>
-        normalizeLinear(
-          0.5,
-          { type: 'linear' } as unknown as Parameters<typeof normalizeLinear>[1],
-          {}
-        )
-      ).toThrow(/requires slope and intercept/);
+      expect(() => normalizeLinear(0.5, { type: 'linear' } as any, {})).toThrow(/requires slope and intercept/);
     });
   });
 
@@ -228,9 +198,7 @@ describe('Unit | Normalizers', () => {
     });
 
     it('throws when map not provided', () => {
-      expect(() => normalizeOrdinalMap('good', { type: 'ordinal-map' }, {})).toThrow(
-        /requires map/
-      );
+      expect(() => normalizeOrdinalMap('good', { type: 'ordinal-map' }, {})).toThrow(/requires map/);
     });
 
     it('throws when mapped value out of range', () => {

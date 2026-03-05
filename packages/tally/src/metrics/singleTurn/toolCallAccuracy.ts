@@ -8,6 +8,8 @@
  * Supports both DatasetItem and ConversationStep containers.
  */
 
+import { defineSingleTurnCode, defineBaseMetric } from '../../core/primitives';
+import { createIdentityNormalizer } from '../../normalizers/factories';
 import type {
   ConversationStep,
   DatasetItem,
@@ -17,8 +19,6 @@ import type {
 } from '@tally/core/types';
 import type { ModelMessage } from 'ai';
 import type { z } from 'zod';
-import { defineBaseMetric, defineSingleTurnCode } from '../../core/primitives';
-import { createIdentityNormalizer } from '../../normalizers/factories';
 import {
   type ExtractedToolCall,
   extractToolCalls,

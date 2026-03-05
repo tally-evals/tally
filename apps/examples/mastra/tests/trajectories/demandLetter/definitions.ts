@@ -17,7 +17,7 @@ export const demandLetterGoldenTrajectory: Trajectory = {
     guardrails: [
       'Provide accurate information clearly',
       'Be professional but firm about the debt',
-      "Follow the agent's lead on what information to provide next",
+      'Follow the agent\'s lead on what information to provide next',
     ],
   },
   steps: {
@@ -32,13 +32,11 @@ export const demandLetterGoldenTrajectory: Trajectory = {
       },
       {
         id: 'step-3',
-        instruction:
-          'Provide your details: Name "Alex Dev", Address "123 Coder Lane, Tech City, CA 94000".',
+        instruction: 'Provide your details: Name "Alex Dev", Address "123 Coder Lane, Tech City, CA 94000".',
       },
       {
         id: 'step-4',
-        instruction:
-          'Provide recipient details: Name "TechStart Inc.", Address "456 Venture Blvd, Startup Valley, CA 94001".',
+        instruction: 'Provide recipient details: Name "TechStart Inc.", Address "456 Venture Blvd, Startup Valley, CA 94001".',
       },
       {
         id: 'step-5',
@@ -50,8 +48,7 @@ export const demandLetterGoldenTrajectory: Trajectory = {
       },
       {
         id: 'step-7',
-        instruction:
-          'Provide description: "Unpaid invoice #1023 for website redesign and implementation services completed on December 20, 2025."',
+        instruction: 'Provide description: "Unpaid invoice #1023 for website redesign and implementation services completed on December 20, 2025."',
       },
       {
         id: 'step-8',
@@ -83,8 +80,7 @@ export const demandLetterCurveTrajectory: Trajectory = {
   goal: 'Create a demand letter where the user corrects details mid-conversation',
   persona: {
     name: 'Correcting Client',
-    description:
-      'You are a client who realizes they provided incorrect details and corrects them when asked. You are cooperative but made some mistakes initially.',
+    description: 'You are a client who realizes they provided incorrect details and corrects them when asked. You are cooperative but made some mistakes initially.',
     guardrails: [],
   },
   steps: {
@@ -95,8 +91,7 @@ export const demandLetterCurveTrajectory: Trajectory = {
       },
       {
         id: 'step-2',
-        instruction:
-          'When asked for details, correct the name: "Actually, wait, it is his company, Doe Logistics LLC."',
+        instruction: 'When asked for details, correct the name: "Actually, wait, it is his company, Doe Logistics LLC."',
       },
       {
         id: 'step-3',
@@ -108,8 +103,7 @@ export const demandLetterCurveTrajectory: Trajectory = {
       },
       {
         id: 'step-5',
-        instruction:
-          'When asked for amount validation or next steps, correct the amount: "Checking my records, the invoice is actually for $1,200, not $1000."',
+        instruction: 'When asked for amount validation or next steps, correct the amount: "Checking my records, the invoice is actually for $1,200, not $1000."',
       },
       {
         id: 'step-6',

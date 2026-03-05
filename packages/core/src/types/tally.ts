@@ -4,8 +4,8 @@
  * The main evaluation container that orchestrates the entire evaluation flow.
  */
 
-import type { Eval, EvaluationContext } from './evaluators';
 import type { MetricContainer } from './metrics';
+import type { Eval, EvaluationContext } from './evaluators';
 import type { TallyRunReport } from './runReport';
 
 /**

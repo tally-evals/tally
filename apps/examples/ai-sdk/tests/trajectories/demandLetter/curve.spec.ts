@@ -2,101 +2,97 @@
  * Demand Letter Agent - Curve Ball Test
  */
 
-import { describe, expect, it } from 'bun:test';
-import { google } from '@ai-sdk/google';
-import {
-  createTally,
-  defineBaseMetric,
-  defineInput,
-  defineScorerEval,
-  defineSingleTurnEval,
-  runAllTargets,
-  thresholdVerdict,
-} from '@tally-evals/tally';
-import { createAnswerRelevanceMetric, createCompletenessMetric } from '@tally-evals/tally/metrics';
-import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
+import { describe, it, expect } from 'bun:test';
 import { demandLetterAgent } from '../../../src/agents/demandLetter';
-import { getTrajectoryTestSkipReason, runCase, saveTallyReportToStore } from '../../utils/harness';
-import { getSummaryScoreValue } from '../../utils/summary';
 import { demandLetterCurveTrajectory } from './definitions';
+import { runCase, saveTallyReportToStore } from '../../utils/harness';
+import {
+	createTally,
+	runAllTargets,
+	defineBaseMetric,
+	defineInput,
+	defineSingleTurnEval,
+	defineScorerEval,
+	thresholdVerdict,
+} from '@tally-evals/tally';
+import {
+	createAnswerRelevanceMetric,
+	createCompletenessMetric,
+} from '@tally-evals/tally/metrics';
+import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
+import { google } from '@ai-sdk/google';
 
-const skipReason = getTrajectoryTestSkipReason('demand-letter-curve');
-if (skipReason) {
-  console.warn(`Skipping Demand Letter Agent - Curve Ball: ${skipReason}`);
-}
-const describeDemandLetterCurve = skipReason ? describe.skip : describe;
+describe('Demand Letter Agent - Curve Ball', () => {
+	it('should handle incomplete information and changing requirements', async () => {
+		const { conversation } = await runCase({
+			trajectory: demandLetterCurveTrajectory,
+			agent: demandLetterAgent,
+			conversationId: 'demand-letter-curve',
+		});
 
-describeDemandLetterCurve('Demand Letter Agent - Curve Ball', () => {
-  it('should handle incomplete information and changing requirements', async () => {
-    const { conversation } = await runCase({
-      trajectory: demandLetterCurveTrajectory,
-      agent: demandLetterAgent,
-      conversationId: 'demand-letter-curve',
-    });
+		expect(conversation.steps.length).toBeGreaterThan(0);
 
-    expect(conversation.steps.length).toBeGreaterThan(0);
+		const model = google('models/gemini-2.5-flash-lite');
 
-    const model = google('models/gemini-2.5-flash-lite');
+		const answerRelevance = createAnswerRelevanceMetric({
+			provider: model,
+		});
 
-    const answerRelevance = createAnswerRelevanceMetric({
-      provider: model,
-    });
+		const completeness = createCompletenessMetric({
+			provider: model,
+		});
 
-    const completeness = createCompletenessMetric({
-      provider: model,
-    });
+		const overallQuality = defineBaseMetric<number>({
+			name: 'overallQuality',
+			valueType: 'number',
+		});
 
-    const overallQuality = defineBaseMetric<number>({
-      name: 'overallQuality',
-      valueType: 'number',
-    });
+		const qualityScorer = createWeightedAverageScorer({
+			name: 'OverallQuality',
+			output: overallQuality,
+			inputs: [
+				defineInput({ metric: answerRelevance, weight: 0.5 }),
+				defineInput({ metric: completeness, weight: 0.5 }),
+			],
+		});
 
-    const qualityScorer = createWeightedAverageScorer({
-      name: 'OverallQuality',
-      output: overallQuality,
-      inputs: [
-        defineInput({ metric: answerRelevance, weight: 0.5 }),
-        defineInput({ metric: completeness, weight: 0.5 }),
-      ],
-    });
+		// Create evals
+		const answerRelevanceEval = defineSingleTurnEval({
+			name: 'Answer Relevance',
+			metric: answerRelevance,
+		});
 
-    // Create evals
-    const answerRelevanceEval = defineSingleTurnEval({
-      name: 'Answer Relevance',
-      metric: answerRelevance,
-    });
+		const completenessEval = defineSingleTurnEval({
+			name: 'Completeness',
+			metric: completeness,
+		});
 
-    const completenessEval = defineSingleTurnEval({
-      name: 'Completeness',
-      metric: completeness,
-    });
+		const overallQualityEval = defineScorerEval({
+			name: 'Overall Quality',
+			scorer: qualityScorer,
+			verdict: thresholdVerdict(0.5),
+		});
 
-    const overallQualityEval = defineScorerEval({
-      name: 'Overall Quality',
-      scorer: qualityScorer,
-      verdict: thresholdVerdict(0.5),
-    });
+		const tally = createTally({
+			data: [conversation],
+			evals: [answerRelevanceEval, completenessEval, overallQualityEval],
+			context: runAllTargets(),
+		});
 
-    const tally = createTally({
-      data: [conversation],
-      evals: [answerRelevanceEval, completenessEval, overallQualityEval],
-      context: runAllTargets(),
-    });
+		const report = await tally.run();
+		await saveTallyReportToStore({ conversationId: 'demand-letter-curve', report: report.toArtifact() });
 
-    const report = await tally.run();
-    await saveTallyReportToStore({
-      conversationId: 'demand-letter-curve',
-      report: report.toArtifact(),
-    });
+		expect(report).toBeDefined();
+		expect(report.result.stepCount).toBeGreaterThan(0);
+		expect(Object.keys(report.result.summaries?.byEval ?? {}).length).toBeGreaterThan(0);
 
-    expect(report).toBeDefined();
-    expect(report.result.stepCount).toBeGreaterThan(0);
-    expect(Object.keys(report.result.summaries?.byEval ?? {}).length).toBeGreaterThan(0);
-
-    const overallQualitySummary = report.result.summaries?.byEval?.['Overall Quality'];
-    const mean = overallQualitySummary ? getSummaryScoreValue(overallQualitySummary) : undefined;
-    if (typeof mean === 'number') {
-      expect(mean).toBeGreaterThan(0.4);
-    }
-  });
+		const overallQualitySummary = report.result.summaries?.byEval?.['Overall Quality'];
+		if (overallQualitySummary) {
+			const mean = (overallQualitySummary.aggregations?.score as any)?.mean;
+			if (typeof mean === 'number') {
+				expect(mean).toBeGreaterThan(0.4);
+			}
+		}
+	});
 });
+

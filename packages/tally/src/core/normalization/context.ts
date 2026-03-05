@@ -8,7 +8,11 @@
  * calibration between different datasets within the same process.
  */
 
-import type { MetricNormalization, MetricScalar, NormalizationContextFor } from '@tally/core/types';
+import type {
+  MetricNormalization,
+  MetricScalar,
+  NormalizationContextFor,
+} from '@tally/core/types';
 
 export type CalibrationCache = Map<string, unknown>;
 

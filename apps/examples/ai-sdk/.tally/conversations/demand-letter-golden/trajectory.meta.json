@@ -15,7 +15,9 @@
   "maxTurns": 10,
   "stepGraph": {
     "start": "step-1",
-    "terminals": ["step-3"],
+    "terminals": [
+      "step-3"
+    ],
     "steps": [
       {
         "id": "step-1",

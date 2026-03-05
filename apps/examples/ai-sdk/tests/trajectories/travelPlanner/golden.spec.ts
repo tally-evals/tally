@@ -2,44 +2,36 @@
  * Travel Planner Agent - Golden Path Test
  */
 
-import { describe, expect, it } from 'bun:test';
-import { google } from '@ai-sdk/google';
+import { describe, it, expect } from 'bun:test';
+import { travelPlannerAgent } from '../../../src/agents/travelPlanner';
+import { travelPlannerGoldenTrajectory } from './definitions';
+import {
+  runCase,
+  assertToolCallSequence,
+  saveTallyReportToStore,
+} from '../../utils/harness';
 import {
   createTally,
+  runAllTargets,
   defineBaseMetric,
   defineInput,
+  defineSingleTurnEval,
   defineMultiTurnEval,
   defineScorerEval,
-  defineSingleTurnEval,
-  formatReportAsTables,
-  runAllTargets,
   thresholdVerdict,
+  formatReportAsTables,
 } from '@tally-evals/tally';
-import { createPercentileAggregator } from '@tally-evals/tally/aggregators';
 import {
   createAnswerRelevanceMetric,
   createCompletenessMetric,
   createRoleAdherenceMetric,
 } from '@tally-evals/tally/metrics';
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
-import { travelPlannerAgent } from '../../../src/agents/travelPlanner';
-import {
-  assertToolCallSequence,
-  getTrajectoryTestSkipReason,
-  runCase,
-  saveTallyReportToStore,
-} from '../../utils/harness';
-import { getSummaryScoreValue } from '../../utils/summary';
-import { travelPlannerGoldenTrajectory } from './definitions';
+import { google } from '@ai-sdk/google';
 import { createKnowledgeRetentionMetric } from './metrics';
+import { createPercentileAggregator } from '@tally-evals/tally/aggregators';
 
-const skipReason = getTrajectoryTestSkipReason('travel-planner-golden');
-if (skipReason) {
-  console.warn(`Skipping Travel Planner Agent - Golden Path: ${skipReason}`);
-}
-const describeTravelPlannerGolden = skipReason ? describe.skip : describe;
-
-describeTravelPlannerGolden('Travel Planner Agent - Golden Path', () => {
+describe('Travel Planner Agent - Golden Path', () => {
   it('should plan trip successfully', async () => {
     const { conversation, mode } = await runCase({
       trajectory: travelPlannerGoldenTrajectory,
@@ -59,7 +51,11 @@ describeTravelPlannerGolden('Travel Planner Agent - Golden Path', () => {
         // Some steps might not have tool calls at all
         const hasToolCalls = step.output.some((msg: unknown) => {
           if (!msg || typeof msg !== 'object') return false;
-          if (!('role' in msg) || (msg as { role?: unknown }).role !== 'assistant') return false;
+          if (
+            !('role' in msg) ||
+            (msg as { role?: unknown }).role !== 'assistant'
+          )
+            return false;
           const content = (msg as { content?: unknown }).content;
           if (!Array.isArray(content)) return false;
           return content.some(
@@ -67,7 +63,7 @@ describeTravelPlannerGolden('Travel Planner Agent - Golden Path', () => {
               typeof p === 'object' &&
               p !== null &&
               'type' in p &&
-              (p as { type?: unknown }).type === 'tool-call'
+              (p as { type?: unknown }).type === 'tool-call',
           );
         });
         if (hasToolCalls) {
@@ -194,19 +190,19 @@ describeTravelPlannerGolden('Travel Planner Agent - Golden Path', () => {
 
     expect(report).toBeDefined();
     expect(report.result.stepCount).toBeGreaterThan(0);
-    expect(Object.keys(report.result.summaries?.byEval ?? {}).length).toBeGreaterThan(0);
+    expect(
+      Object.keys(report.result.summaries?.byEval ?? {}).length,
+    ).toBeGreaterThan(0);
 
     // Format and display report as tables
     formatReportAsTables(report.toArtifact(), conversation);
 
     // Using the new type-safe view API
     const view = report.view();
-
+    
     // Access summary via view (type-safe with autocomplete)
     const answerRelevanceSummary = view.summary()?.['Answer Relevance'];
-    console.log(
-      `Answer Relevance P90: ${JSON.stringify(answerRelevanceSummary?.aggregations?.score.P90)}`
-    );
+    console.log(`Answer Relevance P90: ${JSON.stringify(answerRelevanceSummary?.aggregations?.score.P90)}`);
 
     // Iterate steps using the generator
     for (const step of view.steps()) {
@@ -243,8 +239,9 @@ describeTravelPlannerGolden('Travel Planner Agent - Golden Path', () => {
       if (typeof s === 'number') expect(s).toBeGreaterThanOrEqual(0.6);
     }
 
-    const overallQualitySummary = report.result.summaries?.byEval?.['Overall Quality'];
-    const mean = overallQualitySummary ? getSummaryScoreValue(overallQualitySummary) : undefined;
+    const overallQualitySummary =
+      report.result.summaries?.byEval?.['Overall Quality'];
+    const mean = overallQualitySummary?.aggregations?.score.Mean;
     if (typeof mean === 'number') expect(mean).toBeGreaterThanOrEqual(0.6);
   }, 300000); // 5 minute timeout for trajectory execution
 });

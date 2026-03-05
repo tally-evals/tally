@@ -6,7 +6,6 @@
  */
 
 import type {
-  BaseMetricDef,
   InputScores,
   MetricContainer,
   MetricDef,
@@ -19,6 +18,7 @@ import type {
   Scorer,
   ScorerInput,
   SingleTurnMetricDef,
+  BaseMetricDef,
 } from '../types';
 
 /**
