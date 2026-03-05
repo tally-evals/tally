@@ -14,9 +14,12 @@
   "packageManager": "bun@1.2.22",
   "scripts": {
     "build": "turbo run build",
+    "build:cashflow": "bun run --filter @tally-evals/examples-mastra build && bun run --filter @tally-evals/tally build",
     "dev": "turbo run dev",
     "test": "turbo run test",
     "lint": "turbo run lint",
+    "lint:cashflow": "biome check --config-path packages/biome-config/biome.json apps/examples/mastra/src/mastra/agents/cashflow-copilot-agent.ts apps/examples/mastra/src/mastra/index.ts apps/examples/mastra/src/mastra/tools/cashflow apps/examples/mastra/tests/trajectories/cashflow apps/examples/mastra/tests/utils/harness.ts packages/tally/src/metrics/cashflow packages/tally/src/metrics/index.ts",
+    "check:cashflow": "bun run lint:cashflow && bun run --filter @tally-evals/tally build",
     "clean": "turbo run clean",
     "changeset": "changeset",
     "version-packages": "changeset version",

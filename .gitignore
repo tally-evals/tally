@@ -89,11 +89,14 @@ temp/
 # Editor directories and files
 .vscode/*
 !.vscode/settings.json
-!.vscode/extensions.json
 .idea/
 *.swp
 *.swo
 *~
+
+# Tally conversation logs (Cashflow only)
+apps/examples/mastra/.tally/conversations/cashflow-curve/
+apps/examples/mastra/.tally/conversations/cashflow-golden/
 
 # OS generated files
 .DS_Store
@@ -106,3 +109,8 @@ Thumbs.db
 
 # Turbo
 .turbo
+
+# SQLite database files
+cashflow.db
+mastra.db
+
