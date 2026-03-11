@@ -13,6 +13,42 @@ import { Agent } from '@mastra/core/agent';
 
 type GenerateTextInput = Parameters<typeof generateText>[0];
 
+function normalizeContentToModelShape(
+	content: unknown
+): string | readonly unknown[] | unknown {
+	if (!Array.isArray(content)) {
+		return content;
+	}
+
+	// If content is text-only parts (`[{ type: 'text', text: '...' }]`),
+	// normalize to a plain string to match ModelMessage text shape.
+	const isTextOnlyParts = content.every(
+		(part) =>
+			typeof part === 'object' &&
+			part !== null &&
+			'type' in part &&
+			(part as { type?: unknown }).type === 'text' &&
+			'text' in part
+	);
+	if (isTextOnlyParts) {
+		return content
+			.map((part) => String((part as { text?: unknown }).text ?? ''))
+			.join('');
+	}
+
+	return content;
+}
+
+function normalizeModelMessages(messages: readonly ModelMessage[]): ModelMessage[] {
+	return messages.map((message) => {
+		const normalizedContent = normalizeContentToModelShape(message.content);
+		return {
+			...message,
+			content: normalizedContent as ModelMessage['content'],
+		};
+	});
+}
+
 /**
  * Wrapper for AI SDK Experimental_Agent or generateText
  * 
@@ -52,12 +88,7 @@ export function withAISdkAgent(
 		const agent = agentOrConfig as { generate: (input: Prompt) => Promise<{ response: { messages: ModelMessage[] } }> };
 		return {
 			async respond(agentMemoryMessages: readonly ModelMessage[]) {
-				let modelMessages: readonly ModelMessage[] = agentMemoryMessages;
-				try {
-					modelMessages = convertToModelMessages(agentMemoryMessages as unknown as never) as unknown as ModelMessage[];
-				} catch {
-					// If conversion fails, fall back to the provided messages.
-				}
+				const modelMessages = normalizeModelMessages(agentMemoryMessages);
 
 				// Use Prompt.messages for multi-turn support
 				const promptInput = buildPromptFromMessages({
@@ -70,12 +101,12 @@ export function withAISdkAgent(
 				const rawOut = result.response.messages as unknown as Array<{ role?: unknown; content?: unknown }>;
 				const hasPartsContent = rawOut.some((m) => Array.isArray(m?.content));
 
-				let outMessages: ModelMessage[] = result.response.messages;
+				let outMessages: ModelMessage[] = normalizeModelMessages(result.response.messages);
 				if (hasPartsContent) {
 					try {
 						const converted = convertToModelMessages(result.response.messages as unknown as never) as unknown as ModelMessage[];
 						if (Array.isArray(converted) && converted.length > 0) {
-							outMessages = converted;
+							outMessages = normalizeModelMessages(converted);
 						}
 					} catch {
 						// keep original

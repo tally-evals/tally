@@ -23,13 +23,8 @@ import {
   thresholdVerdict,
 } from '@tally-evals/tally';
 import {
-  createAffordabilityDecisionMetric,
   createAnswerRelevanceMetric,
-  createBufferConsiderationMetric,
-  createClarificationPrecisionMetric,
   createCompletenessMetric,
-  createImpactReportingMetric,
-  createOverClarificationMetric,
   createRoleAdherenceMetric,
 } from '@tally-evals/tally/metrics';
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
@@ -37,15 +32,21 @@ import type { CoreMessage as ModelMessage } from 'ai';
 import { describe, expect, it } from 'vitest';
 import {
   assertToolCallSequence,
-  getCashflowStorageSkipReason,
   getTrajectoryTestSkipReason,
   runCase,
   saveTallyReportToStore,
 } from '../../utils/harness';
 import { getSummaryScoreValue } from '../../utils/summary';
 import { cashflowGoldenTrajectory } from './definitions';
+import {
+  createAffordabilityDecisionMetric,
+  createBufferConsiderationMetric,
+  createClarificationPrecisionMetric,
+  createImpactReportingMetric,
+  createOverClarificationMetric,
+} from './metrics';
 
-const skipReason = getTrajectoryTestSkipReason('cashflow-golden') ?? getCashflowStorageSkipReason();
+const skipReason = getTrajectoryTestSkipReason('cashflow-golden');
 if (skipReason) {
   console.warn(`Skipping Cashflow Copilot Agent - Golden Path: ${skipReason}`);
 }

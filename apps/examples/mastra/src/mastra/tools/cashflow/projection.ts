@@ -1,22 +1,17 @@
-import { getCashPosition, listFutureCashflows, listRecurringCashflows } from './db/repository';
-import type { RecurringCashflow } from './db/schema';
+import type { CashPosition, FutureCashflow, RecurringCashflow, ScenarioAdjustment } from '~/schemas/cashflow';
 
 // -----------------------------
 // Types
 // -----------------------------
-
-export interface ScenarioAdjustment {
-  type: 'add_income' | 'add_expense';
-  amount: number;
-  date: string;
-  description?: string | undefined;
-}
 
 // defines input for a projection run
 export interface ProjectionRequest {
   userId: string;
   startDate: string;
   endDate: string;
+  cashPosition?: CashPosition | undefined;
+  recurringCashflows?: Record<string, RecurringCashflow> | undefined;
+  futureCashflows?: Record<string, FutureCashflow> | undefined;
   safetyBuffer?: number | undefined;
   scenarioAdjustments?: ScenarioAdjustment[] | undefined;
 }
@@ -142,14 +137,19 @@ const riskLevel = (balance: number, safetyBuffer?: number): ProjectionPoint['ris
 // -----------------------------
 
 export async function runProjection(request: ProjectionRequest): Promise<ProjectionResult> {
-  const { userId, startDate, endDate, safetyBuffer, scenarioAdjustments = [] } = request;
+  const {
+    userId,
+    startDate,
+    endDate,
+    cashPosition,
+    recurringCashflows = {},
+    futureCashflows = {},
+    safetyBuffer,
+    scenarioAdjustments = [],
+  } = request;
 
-  //loads all data concurrently
-  const [cashPosition, recurring, future] = await Promise.all([
-    getCashPosition(userId),
-    listRecurringCashflows({ userId }),
-    listFutureCashflows({ userId }),
-  ]);
+  const recurring = Object.values(recurringCashflows).filter((cf) => cf.userId === userId);
+  const future = Object.values(futureCashflows).filter((cf) => cf.userId === userId);
 
   const futureByDate = groupByDate(future.filter((f) => f.status === 'planned'));
   const adjustmentsByDate = groupByDate(scenarioAdjustments);

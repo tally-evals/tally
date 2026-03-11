@@ -47,6 +47,25 @@ const result = await demandLetterAgent.generate({
 });
 ```
 
+### Cashflow Agent
+
+An agent that helps users set up cashflow data and run projections with optional what-if adjustments.
+
+**Features:**
+- Pre-configured system prompt for cashflow planning
+- Tool usage: `updateCashPosition`, `createRecurring`, `createFutureCashflow`, `runProjection`
+- Multi-turn setup and projection flow
+- Default max steps: 30
+
+**Example Usage:**
+```ts
+import { cashflowAgent } from '@tally/examples-ai-sdk';
+
+const result = await cashflowAgent.generate({
+  prompt: 'Help me set up my cashflow and run a 3-month projection',
+});
+```
+
 ## Installation
 
 ```bash
@@ -81,16 +100,19 @@ bun run lint
 
 - `travelPlannerAgent` - Pre-configured travel planner agent instance
 - `demandLetterAgent` - Pre-configured demand letter agent instance
+- `cashflowAgent` - Pre-configured cashflow planning agent instance
 
 ### Tools
 
 - `travelPlannerTools` - Flight, accommodation, and weather search tools
 - `demandLetterTools` - Template fields, validation, and preview tools
+- `cashflowTools` - Cash position, recurring/future entries, and projection tools
 
 ### Types
 
 - `Flight`, `Accommodation` - Types from travel planner tools
 - `TemplateField`, `DemandLetterData` - Types from demand letter tools
+- `CashPosition`, `RecurringCashflow`, `FutureCashflow`, `ProjectionResult` - Types from cashflow tools
 
 ## Integration with Tally
 

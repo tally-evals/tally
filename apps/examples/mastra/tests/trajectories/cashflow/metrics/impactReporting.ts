@@ -1,24 +1,13 @@
 /**
  * Impact Reporting Completeness Metric
- *
- * An LLM-based single-turn metric that measures whether the assistant reports
- * key impact metrics when presenting what-if scenario results.
- *
- * Evaluates if the response includes quantified impact measures like savings,
- * balance changes, risk reduction, etc.
- *
- * Supports DatasetItem with metadata containing expected metrics to report.
  */
 
-import type { DatasetItem, SingleTurnMetricDef } from '@tally/core/types';
+import type { DatasetItem, SingleTurnMetricDef } from '@tally-evals/tally';
+import { defineBaseMetric, defineSingleTurnLLM } from '@tally-evals/tally';
+import { extractInputOutput } from '@tally-evals/tally/metrics';
+import { createIdentityNormalizer } from '@tally-evals/tally/normalization';
 import type { LanguageModel } from 'ai';
-import { defineBaseMetric, defineSingleTurnLLM } from '../../core/primitives';
-import { createIdentityNormalizer } from '../../normalizers/factories';
-import { extractInputOutput } from '../common/utils';
 
-/**
- * Impact analysis data
- */
 export interface ImpactAnalysis {
   monthlySavings?: number;
   minBalanceChange?: number;
@@ -27,55 +16,18 @@ export interface ImpactAnalysis {
   [key: string]: number | undefined;
 }
 
-/**
- * Metadata structure for impact reporting evaluation
- */
 export interface ImpactReportingMetadata {
-  /**
-   * Baseline analysis metrics
-   */
   baselineAnalysis?: ImpactAnalysis;
-  /**
-   * Scenario analysis metrics
-   */
   scenarioAnalysis?: ImpactAnalysis;
-  /**
-   * Expected metrics that should be reported
-   */
   expectedMetrics: string[];
-  /**
-   * Scenario query/description
-   */
   scenarioQuery?: string;
 }
 
 export interface ImpactReportingOptions {
-  /**
-   * LLM provider for evaluation
-   */
   provider: LanguageModel;
-  /**
-   * Require quantified values or just metric mentions
-   * @default 'quantified'
-   */
   reportingLevel?: 'quantified' | 'mentioned';
 }
 
-/**
- * Create an impact reporting completeness metric
- *
- * Measures whether the assistant reports key impact metrics when presenting
- * what-if scenario results.
- *
- * Scoring (0-1 scale):
- * - 1.0: Reports all expected metrics with quantified values
- * - Proportional: Based on fraction of expected metrics reported
- * - Bonus: Clear, well-formatted presentation of impacts
- * - 0.0: Reports none of the expected metrics
- *
- * @param options - Configuration options
- * @returns A single-turn metric definition for impact reporting completeness
- */
 export function createImpactReportingMetric(
   options: ImpactReportingOptions
 ): SingleTurnMetricDef<number, DatasetItem> {
@@ -96,8 +48,6 @@ export function createImpactReportingMetric(
     provider,
     preProcessor: async (selected: DatasetItem) => {
       const { input, output } = extractInputOutput(selected);
-
-      // Extract metadata
       const metadata = selected.metadata as ImpactReportingMetadata | undefined;
 
       const baselineAnalysis = metadata?.baselineAnalysis ?? {};

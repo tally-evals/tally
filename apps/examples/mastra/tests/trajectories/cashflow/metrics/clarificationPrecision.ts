@@ -1,70 +1,24 @@
 /**
  * Clarification Request Precision Metric
- *
- * An LLM-based single-turn metric that measures whether the assistant correctly
- * identifies ambiguous inputs and asks clarifying questions instead of making
- * wrong assumptions.
- *
- * Evaluates if the assistant asks for clarification when information is truly
- * ambiguous or missing, versus making assumptions that could be incorrect.
- *
- * Supports ConversationStep and DatasetItem containers with metadata indicating
- * whether clarification should be requested.
  */
 
-import type { SingleTargetFor, SingleTurnContainer, SingleTurnMetricDef } from '@tally/core/types';
+import type { SingleTargetFor, SingleTurnContainer, SingleTurnMetricDef } from '@tally-evals/tally';
+import { defineBaseMetric, defineSingleTurnLLM } from '@tally-evals/tally';
+import { extractInputOutput } from '@tally-evals/tally/metrics';
+import { createMinMaxNormalizer } from '@tally-evals/tally/normalization';
 import type { LanguageModel } from 'ai';
-import { defineBaseMetric, defineSingleTurnLLM } from '../../core/primitives';
-import { createMinMaxNormalizer } from '../../normalizers/factories';
-import { extractInputOutput } from '../common/utils';
 
-/**
- * Metadata structure for clarification precision evaluation
- */
 export interface ClarificationPrecisionMetadata {
-  /**
-   * Whether the assistant should ask for clarification
-   */
   shouldClarify: boolean;
-  /**
-   * Topics/information that are ambiguous or missing
-   */
   ambiguousTopics?: string[];
-  /**
-   * Type of ambiguity (e.g., 'missing_required_fields', 'unclear_value', 'multiple_interpretations')
-   */
   ambiguityType?: string;
 }
 
 export interface ClarificationPrecisionOptions {
-  /**
-   * LLM provider for evaluation
-   */
   provider: LanguageModel;
-  /**
-   * Penalize false positives (asking when not needed) more heavily
-   * @default true
-   */
   penalizeFalsePositives?: boolean;
 }
 
-/**
- * Create a clarification request precision metric
- *
- * Measures whether the assistant correctly identifies ambiguous inputs and asks
- * for clarification instead of making assumptions.
- *
- * Scoring (0-5 scale, normalized to 0-1):
- * - 5: Correctly identifies need for clarification and asks appropriate questions
- * - 4: Identifies ambiguity but question could be more specific
- * - 3: Partially identifies ambiguity
- * - 2: Incorrect classification (asks when not needed OR doesn't ask when needed)
- * - 1: Makes wrong assumptions without questioning
- * - 0: Completely fails to handle ambiguity appropriately
- *
- * @param options - Configuration options
- * @returns A single-turn metric definition for clarification request precision
- */
 export function createClarificationPrecisionMetric<
   TContainer extends SingleTurnContainer = SingleTurnContainer,
 >(options: ClarificationPrecisionOptions): SingleTurnMetricDef<number, TContainer> {
@@ -86,9 +40,7 @@ export function createClarificationPrecisionMetric<
     preProcessor: async (selected: SingleTargetFor<TContainer>) => {
       const { input, output } = extractInputOutput(selected);
 
-      // Extract metadata
       let metadata: ClarificationPrecisionMetadata | undefined;
-
       if ('metadata' in selected && selected.metadata) {
         metadata = selected.metadata as unknown as ClarificationPrecisionMetadata;
       }

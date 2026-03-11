@@ -1,67 +1,23 @@
 /**
  * Over-Clarification Rate Metric
- *
- * An LLM-based single-turn metric that measures whether the assistant asks
- * unnecessary clarifying questions when sufficient information is already provided.
- *
- * Evaluates if the assistant wastes time asking for information that was already
- * clearly stated in the user's input.
- *
- * Supports ConversationStep and DatasetItem containers with metadata indicating
- * whether clarification should NOT be requested.
  */
 
-import type { SingleTargetFor, SingleTurnContainer, SingleTurnMetricDef } from '@tally/core/types';
+import type { SingleTargetFor, SingleTurnContainer, SingleTurnMetricDef } from '@tally-evals/tally';
+import { defineBaseMetric, defineSingleTurnLLM } from '@tally-evals/tally';
+import { extractInputOutput } from '@tally-evals/tally/metrics';
+import { createMinMaxNormalizer } from '@tally-evals/tally/normalization';
 import type { LanguageModel } from 'ai';
-import { defineBaseMetric, defineSingleTurnLLM } from '../../core/primitives';
-import { createMinMaxNormalizer } from '../../normalizers/factories';
-import { extractInputOutput } from '../common/utils';
 
-/**
- * Metadata structure for over-clarification evaluation
- */
 export interface OverClarificationMetadata {
-  /**
-   * Whether clarification should NOT be needed (sufficient info provided)
-   */
   shouldNotClarify?: boolean;
-  /**
-   * Information that is already sufficiently provided in the input
-   */
   sufficientInformation?: string[];
 }
 
 export interface OverClarificationOptions {
-  /**
-   * LLM provider for evaluation
-   */
   provider: LanguageModel;
-  /**
-   * Threshold for what constitutes over-clarification
-   * @default 'any_unnecessary_question'
-   */
   threshold?: 'any_unnecessary_question' | 'multiple_unnecessary_questions';
 }
 
-/**
- * Create an over-clarification rate metric
- *
- * Measures whether the assistant asks unnecessary questions when sufficient
- * information is already provided.
- *
- * Scoring (0-5 scale, normalized to 0-1):
- * - 5: Proceeds efficiently with provided information, no unnecessary questions
- * - 4: Minor unnecessary clarification but mostly efficient
- * - 3: Some unnecessary questions but also uses provided information
- * - 2: Multiple unnecessary questions about clearly stated information
- * - 1: Asks for almost all information that was already provided
- * - 0: Completely ignores provided information and asks everything again
- *
- * Note: Higher score is better (less over-clarification)
- *
- * @param options - Configuration options
- * @returns A single-turn metric definition for over-clarification rate
- */
 export function createOverClarificationMetric<
   TContainer extends SingleTurnContainer = SingleTurnContainer,
 >(options: OverClarificationOptions): SingleTurnMetricDef<number, TContainer> {
@@ -83,9 +39,7 @@ export function createOverClarificationMetric<
     preProcessor: async (selected: SingleTargetFor<TContainer>) => {
       const { input, output } = extractInputOutput(selected);
 
-      // Extract metadata
       let metadata: OverClarificationMetadata | undefined;
-
       if ('metadata' in selected && selected.metadata) {
         metadata = selected.metadata as unknown as OverClarificationMetadata;
       }

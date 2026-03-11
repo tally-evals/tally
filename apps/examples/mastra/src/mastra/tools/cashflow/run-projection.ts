@@ -1,39 +1,23 @@
 import { createTool } from '@mastra/core/tools';
-import { z } from 'zod';
 import { runProjection } from './projection';
-
-const ScenarioAdjustmentSchema = z.object({
-  type: z.enum(['add_income', 'add_expense']),
-  amount: z.number().positive(),
-  date: z.string().describe('ISO date YYYY-MM-DD'),
-  description: z.string().optional(),
-});
+import { runProjectionParamsSchema } from '~/schemas/cashflow';
 
 export const runProjectionTool = createTool({
   id: 'run-projection',
   description:
     'Run a cashflow projection simulation for a user between two dates. ' +
-    'Applies all active recurring cashflows, planned future cashflows, and optional scenario adjustments. ' +
+    'Applies the provided cash position, recurring cashflows, future cashflows, and optional scenario adjustments. ' +
     'Returns a day-by-day timeline plus month-by-month summaries with balances, income, expenses, and risk levels, ' +
     'plus overall summary: lowest balance, deficit dates, and runway days.',
-  inputSchema: z.object({
-    userId: z.string().describe('The user id to run the projection for'),
-    startDate: z.string().describe('ISO date YYYY-MM-DD — start of simulation'),
-    endDate: z.string().describe('ISO date YYYY-MM-DD — end of simulation'),
-    safetyBuffer: z
-      .number()
-      .optional()
-      .describe('Minimum balance threshold. Days below this are marked "tight".'),
-    scenarioAdjustments: z
-      .array(ScenarioAdjustmentSchema)
-      .optional()
-      .describe('What-if temporary changes (e.g. add a travel expense, simulate a bonus)'),
-  }),
+  inputSchema: runProjectionParamsSchema,
   execute: async ({ context }) => {
     const result = await runProjection({
       userId: context.userId,
       startDate: context.startDate,
       endDate: context.endDate,
+      cashPosition: context.cashPosition,
+      recurringCashflows: context.recurringCashflows,
+      futureCashflows: context.futureCashflows,
       safetyBuffer: context.safetyBuffer,
       scenarioAdjustments: context.scenarioAdjustments,
     });

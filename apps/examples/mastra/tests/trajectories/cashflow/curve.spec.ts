@@ -24,25 +24,26 @@ import {
 } from '@tally-evals/tally';
 import {
   createAnswerRelevanceMetric,
-  createBufferConsiderationMetric,
-  createClarificationPrecisionMetric,
   createCompletenessMetric,
-  createImpactReportingMetric,
-  createOverClarificationMetric,
   createRoleAdherenceMetric,
 } from '@tally-evals/tally/metrics';
 import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
 import { describe, expect, it } from 'vitest';
 import {
-  getCashflowStorageSkipReason,
   getTrajectoryTestSkipReason,
   runCase,
   saveTallyReportToStore,
 } from '../../utils/harness';
 import { getSummaryScoreValue } from '../../utils/summary';
 import { cashflowCurveTrajectory } from './definitions';
+import {
+  createBufferConsiderationMetric,
+  createClarificationPrecisionMetric,
+  createImpactReportingMetric,
+  createOverClarificationMetric,
+} from './metrics';
 
-const skipReason = getTrajectoryTestSkipReason('cashflow-curve') ?? getCashflowStorageSkipReason();
+const skipReason = getTrajectoryTestSkipReason('cashflow-curve');
 if (skipReason) {
   console.warn(`Skipping Cashflow Copilot Agent - Curve Ball: ${skipReason}`);
 }

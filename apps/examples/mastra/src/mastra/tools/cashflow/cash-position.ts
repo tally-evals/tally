@@ -1,20 +1,16 @@
 import { createTool } from '@mastra/core/tools';
-import { z } from 'zod';
-import { upsertCashPosition } from './db/repository';
+import { updateCashPositionParamsSchema } from '~/schemas/cashflow';
 
 export const updateCashPositionTool = createTool({
   id: 'update-cash-position',
   description: "Set or update the user's current cash balance.",
-  inputSchema: z.object({
-    userId: z.string().describe('The user id'),
-    currentBalance: z.number().describe('The current balance amount'),
-  }),
+  inputSchema: updateCashPositionParamsSchema,
   execute: async ({ context }) => {
-    const position = await upsertCashPosition({
+    const position = {
       userId: context.userId,
       currentBalance: context.currentBalance,
       updatedAt: new Date().toISOString(),
-    });
+    };
     return { success: true, position };
   },
 });

@@ -1,96 +1,37 @@
 /**
  * Affordability Decision Accuracy Metric
- *
- * An LLM-based single-turn metric that measures whether the assistant correctly
- * determines if a purchase or expense is affordable based on the cashflow state.
- *
- * Evaluates the correctness of yes/no/conditional affordability decisions,
- * considering balance, safety buffer, and upcoming commitments.
- *
- * Supports DatasetItem with metadata containing cashflow state and expected decision.
  */
 
-import type { DatasetItem, SingleTurnMetricDef } from '@tally/core/types';
+import type { DatasetItem, SingleTurnMetricDef } from '@tally-evals/tally';
+import { defineBaseMetric, defineSingleTurnLLM } from '@tally-evals/tally';
+import { extractInputOutput } from '@tally-evals/tally/metrics';
+import { createMinMaxNormalizer } from '@tally-evals/tally/normalization';
 import type { LanguageModel } from 'ai';
-import { defineBaseMetric, defineSingleTurnLLM } from '../../core/primitives';
-import { createMinMaxNormalizer } from '../../normalizers/factories';
-import { extractInputOutput } from '../common/utils';
 
-/**
- * Affordability decision types
- */
 export type AffordabilityDecision = 'yes' | 'no' | 'conditional_yes' | 'conditional_no';
 
-/**
- * Metadata structure for affordability decision evaluation
- */
 export interface AffordabilityDecisionMetadata {
-  /**
-   * Expected decision (ground truth)
-   */
   expectedDecision: AffordabilityDecision;
-  /**
-   * Current balance
-   */
   currentBalance?: number;
-  /**
-   * Safety buffer amount
-   */
   safetyBuffer?: number;
-  /**
-   * Projected minimum balance after the expense
-   */
   projectedMinBalance?: number;
-  /**
-   * Upcoming commitments/bills (name and amount)
-   */
   upcomingCommitments?: Array<{
     name: string;
     amount: number;
     date?: string;
   }>;
-  /**
-   * Requested expense amount
-   */
   requestedAmount?: number;
-  /**
-   * Expected reasoning for the decision
-   */
   expectedReasoning?: string[];
 }
 
 export interface AffordabilityDecisionOptions {
-  /**
-   * LLM provider for evaluation
-   */
   provider: LanguageModel;
-  /**
-   * Weight for decision correctness vs reasoning quality
-   * @default { decision: 0.7, reasoning: 0.3 }
-   */
   weights?: {
     decision: number;
     reasoning: number;
   };
 }
 
-/**
- * Create an affordability decision accuracy metric
- *
- * Measures whether the assistant correctly determines affordability.
- * Evaluates both the decision (yes/no/conditional) and the reasoning provided.
- *
- * Scoring (0-5 scale, normalized to 0-1):
- * - 5: Correct decision with comprehensive reasoning (buffer, commitments, etc.)
- * - 4: Correct decision with good reasoning but minor omissions
- * - 3: Correct decision but reasoning lacks important factors
- * - 2: Partially correct (e.g., yes vs conditional_yes mismatch)
- * - 1: Incorrect decision but shows some understanding
- * - 0: Completely incorrect decision
- *
- * @param options - Configuration options
- * @returns A single-turn metric definition for affordability decision accuracy
- */
 export function createAffordabilityDecisionMetric(
   options: AffordabilityDecisionOptions
 ): SingleTurnMetricDef<number, DatasetItem> {
@@ -111,7 +52,6 @@ export function createAffordabilityDecisionMetric(
     preProcessor: async (selected) => {
       const { input, output } = extractInputOutput(selected);
 
-      // Extract metadata
       const metadata = selected.metadata as AffordabilityDecisionMetadata | undefined;
 
       const expectedDecision = metadata?.expectedDecision ?? 'unknown';

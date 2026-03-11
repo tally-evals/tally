@@ -1,80 +1,30 @@
 /**
  * Buffer/Commitment Consideration Metric
- *
- * An LLM-based single-turn metric that measures whether the assistant mentions
- * and considers safety buffer and upcoming commitments when answering affordability
- * questions.
- *
- * Evaluates the quality of explanation and whether important factors (buffer,
- * upcoming bills) are explicitly mentioned when relevant.
- *
- * Supports DatasetItem with metadata indicating which factors should be mentioned.
  */
 
-import type { DatasetItem, SingleTurnMetricDef } from '@tally/core/types';
+import type { DatasetItem, SingleTurnMetricDef } from '@tally-evals/tally';
+import { defineBaseMetric, defineSingleTurnLLM } from '@tally-evals/tally';
+import { extractInputOutput } from '@tally-evals/tally/metrics';
+import { createIdentityNormalizer } from '@tally-evals/tally/normalization';
 import type { LanguageModel } from 'ai';
-import { defineBaseMetric, defineSingleTurnLLM } from '../../core/primitives';
-import { createIdentityNormalizer } from '../../normalizers/factories';
-import { extractInputOutput } from '../common/utils';
 
-/**
- * Metadata structure for buffer/commitment consideration evaluation
- */
 export interface BufferConsiderationMetadata {
-  /**
-   * Whether the assistant should mention the safety buffer
-   */
   shouldMentionBuffer: boolean;
-  /**
-   * Whether the assistant should mention upcoming bills/commitments
-   */
   shouldMentionUpcomingBills: boolean;
-  /**
-   * Current safety buffer amount
-   */
   safetyBuffer?: number;
-  /**
-   * Upcoming commitments
-   */
   upcomingCommitments?: Array<{
     name: string;
     amount: number;
     date?: string;
   }>;
-  /**
-   * Additional context factors that should be mentioned
-   */
   additionalFactors?: string[];
 }
 
 export interface BufferConsiderationOptions {
-  /**
-   * LLM provider for evaluation
-   */
   provider: LanguageModel;
-  /**
-   * Require explicit mention or just implicit consideration
-   * @default 'explicit'
-   */
   mentionType?: 'explicit' | 'implicit';
 }
 
-/**
- * Create a buffer/commitment consideration metric
- *
- * Measures whether the assistant mentions and considers safety buffer and
- * upcoming commitments when evaluating affordability.
- *
- * Scoring (0-1 scale):
- * - 1.0: Mentions all relevant factors (buffer, upcoming bills) explicitly
- * - 0.75-0.99: Mentions most relevant factors
- * - 0.5-0.74: Mentions some factors but misses important ones
- * - 0.25-0.49: Minimal consideration of factors
- * - 0.0: Does not mention or consider any relevant factors
- *
- * @param options - Configuration options
- * @returns A single-turn metric definition for buffer/commitment consideration
- */
 export function createBufferConsiderationMetric(
   options: BufferConsiderationOptions
 ): SingleTurnMetricDef<number, DatasetItem> {
@@ -96,7 +46,6 @@ export function createBufferConsiderationMetric(
     preProcessor: async (selected: DatasetItem) => {
       const { input, output } = extractInputOutput(selected);
 
-      // Extract metadata
       const metadata = selected.metadata as BufferConsiderationMetadata | undefined;
 
       const shouldMentionBuffer = metadata?.shouldMentionBuffer ?? false;

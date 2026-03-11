@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "trajectoryId": "cashflow-golden",
+  "createdAt": "2026-03-06T15:56:51.627Z",
+  "goal": "Set up cashflow data and run a clean projection successfully",
+  "persona": {
+    "name": "Organized Planner",
+    "description": "You want to set up your cashflow profile carefully and then ask for projections and a simple what-if.",
+    "guardrails": [
+      "Provide complete financial details when asked",
+      "Confirm summaries when accurate",
+      "Ask one follow-up scenario after baseline projection"
+    ]
+  },
+  "maxTurns": 20,
+  "loopDetection": {
+    "maxConsecutiveSameStep": 5
+  },
+  "stepGraph": {
+    "start": "step-1",
+    "terminals": [
+      "step-7"
+    ],
+    "steps": [
+      {
+        "id": "step-1",
+        "instruction": "Say you want to set up cashflow tracking with user id \"cashflow-user\"."
+      },
+      {
+        "id": "step-2",
+        "instruction": "Provide current balance: 150000."
+      },
+      {
+        "id": "step-3",
+        "instruction": "Provide recurring income: salary 120000 monthly starting 2026-03-05."
+      },
+      {
+        "id": "step-4",
+        "instruction": "Provide recurring expenses: rent 45000 monthly from 2026-03-01 and internet 5000 monthly from 2026-03-10."
+      },
+      {
+        "id": "step-5",
+        "instruction": "Provide one-time future expense: vacation 30000 on 2026-04-20."
+      },
+      {
+        "id": "step-6",
+        "instruction": "Request projection from 2026-03-01 to 2026-05-31 with safety buffer 20000."
+      },
+      {
+        "id": "step-7",
+        "instruction": "Ask what-if: add an emergency expense of 50000 on 2026-04-15 and compare impact."
+      }
+    ]
+  }
+}
