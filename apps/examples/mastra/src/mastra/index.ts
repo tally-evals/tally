@@ -1,17 +1,16 @@
-
 import { Mastra } from '@mastra/core/mastra';
-import { PinoLogger } from '@mastra/loggers';
 import { LibSQLStore } from '@mastra/libsql';
-import { weatherWorkflow } from '~/workflows/weather-workflow';
-import { weatherAgent } from '~/agents/weather-agent';
+import { PinoLogger } from '@mastra/loggers';
+import { cashflowCopilotAgent } from '~/agents/cashflow-copilot-agent';
 import { travelPlannerAgent } from '~/agents/travel-planner-agent';
+import { weatherAgent } from '~/agents/weather-agent';
+import { weatherWorkflow } from '~/workflows/weather-workflow';
 
 export const mastra = new Mastra({
   workflows: { weatherWorkflow },
-  agents: { weatherAgent, travelPlannerAgent },
+  agents: { weatherAgent, travelPlannerAgent, cashflowCopilotAgent },
   storage: new LibSQLStore({
-    // stores observability, scores, ... into memory storage, if it needs to persist, change to file:../mastra.db
-    url: ":memory:",
+    url: ':memory:',
   }),
   logger: new PinoLogger({
     name: 'Mastra',

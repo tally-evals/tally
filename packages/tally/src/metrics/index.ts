@@ -12,6 +12,7 @@ export { createToolCallAccuracyMetric } from './singleTurn/toolCallAccuracy';
 export { createRoleAdherenceMetric } from './multiTurn/roleAdherence';
 export { createGoalCompletionMetric } from './multiTurn/goalCompletion';
 export { createTopicAdherenceMetric } from './multiTurn/topicAdherence';
+export { createToolCallAccuracyMultiTurnMetric } from './multiTurn/toolCallAccuracyMultiTurn';
 
 // Metric utilities
 export {
