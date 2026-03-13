@@ -1,7 +1,5 @@
 /**
- * Cashflow Copilot Metrics
- *
- * Metrics currently used by cashflow trajectory specs.
+ * Cashflow Agent Metrics
  */
 
 export {

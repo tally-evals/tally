@@ -23,6 +23,11 @@ import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
 import { cashflowAgent } from '../../../src/agents/cashflow';
 import { assertToolCallSequence, runCase, saveTallyReportToStore } from '../../utils/harness';
 import { cashflowGoldenTrajectory } from './definitions';
+import {
+  createAffordabilityDecisionMetric,
+  createClarificationPrecisionMetric,
+  createOverClarificationMetric,
+} from './metrics';
 
 describe('Cashflow Agent - Golden Path', () => {
   it('should set up and project cashflow successfully', async () => {
@@ -63,14 +68,22 @@ describe('Cashflow Agent - Golden Path', () => {
       return;
     }
 
-    const model = google('models/gemini-2.5-flash-lite');
+    const model = google('models/gemini-3.1-flash-lite-preview');
     const answerRelevance = createAnswerRelevanceMetric({ provider: model });
     const completeness = createCompletenessMetric({ provider: model });
     const roleAdherence = createRoleAdherenceMetric({
       expectedRole: 'cashflow planning assistant',
       provider: model,
     });
-
+    const affordabilityDecision = createAffordabilityDecisionMetric({
+      provider: model,
+    });
+    const clarificationPrecision = createClarificationPrecisionMetric({
+      provider: model,
+    });
+    const overClarification = createOverClarificationMetric({
+      provider: model,
+    });
     const overallQuality = defineBaseMetric<number>({
       name: 'overallQuality',
       valueType: 'number',
@@ -80,9 +93,12 @@ describe('Cashflow Agent - Golden Path', () => {
       name: 'OverallQuality',
       output: overallQuality,
       inputs: [
-        defineInput({ metric: answerRelevance, weight: 0.4 }),
-        defineInput({ metric: completeness, weight: 0.25 }),
-        defineInput({ metric: roleAdherence, weight: 0.35 }),
+        defineInput({ metric: answerRelevance, weight: 0.2 }),
+        defineInput({ metric: roleAdherence, weight: 0.15 }),
+        defineInput({ metric: affordabilityDecision, weight: 0.2 }),
+        defineInput({ metric: clarificationPrecision, weight: 0.1 }),
+        defineInput({ metric: overClarification, weight: 0.1 }),
+        defineInput({ metric: completeness, weight: 0.05 }),
       ],
     });
 
@@ -104,6 +120,24 @@ describe('Cashflow Agent - Golden Path', () => {
       verdict: thresholdVerdict(3),
     });
 
+    const affordabilityDecisionEval = defineSingleTurnEval({
+      name: 'Affordability Decision',
+      metric: affordabilityDecision,
+      verdict: thresholdVerdict(3.5),
+    });
+
+    const clarificationPrecisionEval = defineSingleTurnEval({
+      name: 'Clarification Precision',
+      metric: clarificationPrecision,
+      verdict: thresholdVerdict(3.5),
+    });
+
+    const overClarificationEval = defineSingleTurnEval({
+      name: 'Over Clarification',
+      metric: overClarification,
+      verdict: thresholdVerdict(3.5),
+    });
+
     const overallQualityEval = defineScorerEval({
       name: 'Overall Quality',
       scorer: qualityScorer,
@@ -112,7 +146,15 @@ describe('Cashflow Agent - Golden Path', () => {
 
     const tally = createTally({
       data: [conversation],
-      evals: [answerRelevanceEval, completenessEval, roleAdherenceEval, overallQualityEval],
+      evals: [
+        answerRelevanceEval,
+        completenessEval,
+        roleAdherenceEval,
+        affordabilityDecisionEval,
+        clarificationPrecisionEval,
+        overClarificationEval,
+        overallQualityEval,
+      ],
       context: runAllTargets(),
     });
 

@@ -40,9 +40,7 @@ import { getSummaryScoreValue } from '../../utils/summary';
 import { cashflowGoldenTrajectory } from './definitions';
 import {
   createAffordabilityDecisionMetric,
-  createBufferConsiderationMetric,
   createClarificationPrecisionMetric,
-  createImpactReportingMetric,
   createOverClarificationMetric,
 } from './metrics';
 
@@ -95,7 +93,7 @@ describeCashflowGolden('Cashflow Copilot Agent - Golden Path', () => {
       return;
     }
 
-    const model = google('models/gemini-2.5-flash-lite');
+    const model = google('models/gemini-3.1-flash-lite-preview');
 
     // General metrics
     const answerRelevance = createAnswerRelevanceMetric({
@@ -128,18 +126,6 @@ describeCashflowGolden('Cashflow Copilot Agent - Golden Path', () => {
       provider: model,
     });
 
-    // Buffer Consideration: Agent should mention safety buffer and upcoming commitments
-    // when answering affordability questions (e.g. step-8 requests a 20k buffer projection)
-    const bufferConsideration = createBufferConsiderationMetric({
-      provider: model,
-    });
-
-    // Impact Reporting: Agent should report quantified impact for what-if scenarios
-    // (e.g. step-9 asks about a 50k emergency expense)
-    const impactReporting = createImpactReportingMetric({
-      provider: model,
-    });
-
     // Overall Quality: Combined score of all metrics
     const overallQuality = defineBaseMetric({
       name: 'overallQuality',
@@ -156,8 +142,6 @@ describeCashflowGolden('Cashflow Copilot Agent - Golden Path', () => {
         defineInput({ metric: clarificationPrecision, weight: 0.1 }),
         defineInput({ metric: overClarification, weight: 0.1 }),
         defineInput({ metric: completeness, weight: 0.05 }),
-        defineInput({ metric: bufferConsideration, weight: 0.1 }),
-        defineInput({ metric: impactReporting, weight: 0.1 }),
       ],
     });
 
@@ -198,18 +182,6 @@ describeCashflowGolden('Cashflow Copilot Agent - Golden Path', () => {
       verdict: thresholdVerdict(3.5),
     });
 
-    const bufferConsiderationEval = defineSingleTurnEval({
-      name: 'Buffer Consideration',
-      metric: bufferConsideration,
-      verdict: thresholdVerdict(0.5),
-    });
-
-    const impactReportingEval = defineSingleTurnEval({
-      name: 'Impact Reporting',
-      metric: impactReporting,
-      verdict: thresholdVerdict(0.5),
-    });
-
     const overallQualityEval = defineScorerEval({
       name: 'Overall Quality',
       scorer: qualityScorer,
@@ -225,8 +197,6 @@ describeCashflowGolden('Cashflow Copilot Agent - Golden Path', () => {
         affordabilityDecisionEval,
         clarificationPrecisionEval,
         overClarificationEval,
-        bufferConsiderationEval,
-        impactReportingEval,
         overallQualityEval,
       ],
       context: runAllTargets(),

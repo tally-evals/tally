@@ -94,7 +94,7 @@ export const cashflowGoldenTrajectory: Trajectory = {
   loopDetection: {
     maxConsecutiveSameStep: 5,
   },
-  userModel: google('models/gemini-2.5-flash-lite'),
+  userModel: google('models/gemini-3.1-flash-lite-preview'),
 };
 
 /**
@@ -179,5 +179,5 @@ export const cashflowCurveTrajectory: Trajectory = {
     terminals: ['step-12'],
   },
   maxTurns: 25,
-  userModel: google('models/gemini-2.5-flash-lite'),
+  userModel: google('models/gemini-3.1-flash-lite-preview'),
 };

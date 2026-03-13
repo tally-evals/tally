@@ -23,6 +23,10 @@ import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
 import { cashflowAgent } from '../../../src/agents/cashflow';
 import { runCase, saveTallyReportToStore } from '../../utils/harness';
 import { cashflowCurveTrajectory } from './definitions';
+import {
+  createClarificationPrecisionMetric,
+  createOverClarificationMetric,
+} from './metrics';
 
 describe('Cashflow Agent - Curve Ball', () => {
   it('should handle incomplete and changing cashflow details', async () => {
@@ -35,14 +39,19 @@ describe('Cashflow Agent - Curve Ball', () => {
 
     expect(conversation.steps.length).toBeGreaterThan(0);
 
-    const model = google('models/gemini-2.5-flash-lite');
+    const model = google('models/gemini-3.1-flash-lite-preview');
     const answerRelevance = createAnswerRelevanceMetric({ provider: model });
     const completeness = createCompletenessMetric({ provider: model });
     const roleAdherence = createRoleAdherenceMetric({
       expectedRole: 'cashflow planning assistant',
       provider: model,
     });
-
+    const clarificationPrecision = createClarificationPrecisionMetric({
+      provider: model,
+    });
+    const overClarification = createOverClarificationMetric({
+      provider: model,
+    });
     const overallQuality = defineBaseMetric<number>({
       name: 'overallQuality',
       valueType: 'number',
@@ -52,9 +61,10 @@ describe('Cashflow Agent - Curve Ball', () => {
       name: 'OverallQuality',
       output: overallQuality,
       inputs: [
-        defineInput({ metric: answerRelevance, weight: 0.35 }),
-        defineInput({ metric: completeness, weight: 0.3 }),
-        defineInput({ metric: roleAdherence, weight: 0.35 }),
+        defineInput({ metric: answerRelevance, weight: 0.2 }),
+        defineInput({ metric: roleAdherence, weight: 0.2 }),
+        defineInput({ metric: clarificationPrecision, weight: 0.2 }),
+        defineInput({ metric: overClarification, weight: 0.2 }),
       ],
     });
 
@@ -76,6 +86,18 @@ describe('Cashflow Agent - Curve Ball', () => {
       verdict: thresholdVerdict(2.8),
     });
 
+    const clarificationPrecisionEval = defineSingleTurnEval({
+      name: 'Clarification Precision',
+      metric: clarificationPrecision,
+      verdict: thresholdVerdict(3),
+    });
+
+    const overClarificationEval = defineSingleTurnEval({
+      name: 'Over Clarification',
+      metric: overClarification,
+      verdict: thresholdVerdict(3),
+    });
+
     const overallQualityEval = defineScorerEval({
       name: 'Overall Quality',
       scorer: qualityScorer,
@@ -84,7 +106,14 @@ describe('Cashflow Agent - Curve Ball', () => {
 
     const tally = createTally({
       data: [conversation],
-      evals: [answerRelevanceEval, completenessEval, roleAdherenceEval, overallQualityEval],
+      evals: [
+        answerRelevanceEval,
+        completenessEval,
+        roleAdherenceEval,
+        clarificationPrecisionEval,
+        overClarificationEval,
+        overallQualityEval,
+      ],
       context: runAllTargets(),
     });
 

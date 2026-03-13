@@ -58,7 +58,7 @@ export const cashflowGoldenTrajectory: Trajectory = {
     maxConsecutiveSameStep: 5,
   },
   conversationId: 'cashflow-golden',
-  userModel: google('models/gemini-2.5-flash-lite'),
+  userModel: google('models/gemini-3.1-flash-lite-preview'),
 };
 
 export const cashflowCurveTrajectory: Trajectory = {
@@ -108,5 +108,5 @@ export const cashflowCurveTrajectory: Trajectory = {
     maxConsecutiveSameStep: 5,
   },
   conversationId: 'cashflow-curve',
-  userModel: google('models/gemini-2.5-flash-lite'),
+  userModel: google('models/gemini-3.1-flash-lite-preview'),
 };

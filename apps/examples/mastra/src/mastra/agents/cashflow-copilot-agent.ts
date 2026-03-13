@@ -190,7 +190,7 @@ Today's date is: ${new Date().toISOString().split('T')[0]}
 export const cashflowCopilotAgent = new Agent({
   name: 'Personal Cashflow Projection Tool',
   instructions: CASHFLOW_COPILOT_SYSTEM_PROMPT,
-  model: 'google/gemini-2.5-flash-lite',
+  model: 'google/gemini-3.1-flash-lite-preview',
   tools: {
     updateCashPosition: updateCashPositionTool,
     createRecurring: createRecurringTool,
@@ -199,6 +199,13 @@ export const cashflowCopilotAgent = new Agent({
   },
   defaultGenerateOptions: {
     maxSteps: 40,
+    providerOptions: {
+      google: {
+        thinkingConfig: {
+          thinkingLevel: 'high',
+        },
+      },
+    },
   },
   memory: new Memory({
     storage: new LibSQLStore({

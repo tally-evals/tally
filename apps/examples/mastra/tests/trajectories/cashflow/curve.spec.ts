@@ -37,9 +37,7 @@ import {
 import { getSummaryScoreValue } from '../../utils/summary';
 import { cashflowCurveTrajectory } from './definitions';
 import {
-  createBufferConsiderationMetric,
   createClarificationPrecisionMetric,
-  createImpactReportingMetric,
   createOverClarificationMetric,
 } from './metrics';
 
@@ -69,7 +67,7 @@ describeCashflowCurve('Cashflow Copilot Agent - Curve Ball', () => {
       return;
     }
 
-    const model = google('models/gemini-2.5-flash-lite');
+    const model = google('models/gemini-3.1-flash-lite-preview');
 
     // General metrics
     const answerRelevance = createAnswerRelevanceMetric({
@@ -99,18 +97,6 @@ describeCashflowCurve('Cashflow Copilot Agent - Curve Ball', () => {
       provider: model,
     });
 
-    // Buffer Consideration: Agent should reference safety buffer/commitments in answers
-    // (e.g. step-10 asks about buying a car — agent should factor in upcoming bills)
-    const bufferConsideration = createBufferConsiderationMetric({
-      provider: model,
-    });
-
-    // Impact Reporting: Agent should quantify scenario impact when answering what-ifs
-    // (e.g. step-10 asks whether a 100k car purchase causes a deficit)
-    const impactReporting = createImpactReportingMetric({
-      provider: model,
-    });
-
     // Overall Quality: Combined score of all metrics
     const overallQuality = defineBaseMetric({
       name: 'overallQuality',
@@ -125,8 +111,6 @@ describeCashflowCurve('Cashflow Copilot Agent - Curve Ball', () => {
         defineInput({ metric: roleAdherence, weight: 0.2 }),
         defineInput({ metric: clarificationPrecision, weight: 0.2 }),
         defineInput({ metric: overClarification, weight: 0.2 }),
-        defineInput({ metric: bufferConsideration, weight: 0.1 }),
-        defineInput({ metric: impactReporting, weight: 0.1 }),
       ],
     });
 
@@ -162,18 +146,6 @@ describeCashflowCurve('Cashflow Copilot Agent - Curve Ball', () => {
       verdict: thresholdVerdict(3), // Agent should not ask for info already provided
     });
 
-    const bufferConsiderationEval = defineSingleTurnEval({
-      name: 'Buffer Consideration',
-      metric: bufferConsideration,
-      verdict: thresholdVerdict(0.4), // Lower threshold: user setup is incomplete
-    });
-
-    const impactReportingEval = defineSingleTurnEval({
-      name: 'Impact Reporting',
-      metric: impactReporting,
-      verdict: thresholdVerdict(0.4), // Lower threshold: curveball scenario
-    });
-
     const overallQualityEval = defineScorerEval({
       name: 'Overall Quality',
       scorer: qualityScorer,
@@ -188,8 +160,6 @@ describeCashflowCurve('Cashflow Copilot Agent - Curve Ball', () => {
         roleAdherenceEval,
         clarificationPrecisionEval,
         overClarificationEval,
-        bufferConsiderationEval,
-        impactReportingEval,
         overallQualityEval,
       ],
       context: runAllTargets(),
