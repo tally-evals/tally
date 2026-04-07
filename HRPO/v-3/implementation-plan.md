@@ -204,7 +204,7 @@ Stop when either:
 If there are no clear failures but the threshold is not reached, use low-scoring conversations as the mutation input instead of treating it as an error.
 
 ## Minimal Stored Artifacts
-v2 should store only what it needs:
+v3 should store only what it needs:
 
 ### Session manifest
 Stores:
@@ -239,8 +239,8 @@ Keep the implementation small.
 - `accept` - computes aggregate score and applies guardrails
 
 
-## v2 Non-Goals
-Do not add these in v2:
+## v3 Non-Goals
+Do not add these in v3:
 
 - multiple candidates per iteration
 - dynamic trajectory regeneration during a session
@@ -260,7 +260,7 @@ Do not add these in v2:
 7. Add loop control for threshold, max iterations, and replay.
 
 ## Bottom Line
-v2 should keep the architecture opinionated and easy to explain:
+v3 should keep the architecture opinionated and easy to explain:
 
 - one session
 - one fixed trajectory set
