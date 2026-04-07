@@ -1,7 +1,6 @@
 # HRPO v2 Implementation Plan
 
 ## Goal
-Build a simple HRPO loop for this repo without inventing a second evaluation system.
 
 The system should:
 
@@ -34,7 +33,6 @@ This is the comparison boundary for v2.
 - `TallyRunArtifact` remains the canonical evaluation record.
 - Any flattened optimizer rows are derived views, not the primary stored schema.
 
-This keeps v2 technically correct without adding extra data complexity.
 
 ### 3. Evaluation granularity
 Each trajectory execution produces one or more runs (conversations).
@@ -63,9 +61,13 @@ For v2, keep this explicit:
 `candidate_score = mean(OverallQuality for all completed conversations)`
 
 ### 5. Role of other evals
-- Other evals are not the primary objective.
-- They are used for diagnostics and simple non-regression guardrails.
-- They should not create a second competing scoring system.
+- Other evals are not the primary objective, overallQuality is the only optimization score
+  used to rank candidates 
+- They are used for diagnostics and used to detect failures, decide which prompt blocks 
+  should be mutated and act as a guradrails when deciding whether a candidate is acceptable.
+- They should not create a second competing scoring system, they should not be combined
+  into global candidate score. Global candidate score will be overallQuality. 
+
 
 ### 6. Checkpoint meaning
 - One checkpoint = one iteration snapshot.
@@ -89,19 +91,17 @@ type PromptTemplate = {
 ```
 
 Rules:
-- prompts are made of named blocks
+- prompts are made of named blocks   //??????????????????????????
 - only mutable blocks can be edited
 - unchanged blocks are carried forward from the parent candidate
 - each candidate records which block ids changed
 
-Do not introduce a prompt DSL, AST, or plugin system in v2.
 
 ### 8. Buckets
 - Buckets are workload partitions only.
 - They exist for parallel execution.
 - They are not logical groups, scoring groups, or optimization boundaries.
 
-Define them once and keep them secondary.
 
 ## Failure Signals
 The optimizer collects failures from Tally.
@@ -134,8 +134,8 @@ These summaries are used only to decide which prompt blocks should be edited nex
 
 ### Phase 1. Start session
 1. Generate the trajectory set once.
-2. Persist the generated conversations needed for replay.
-3. Record hashes for the stored session inputs so later iterations can verify nothing drifted.
+2. Keep those exact generated conversation artifacts unchanged and reuse them for replay and evaluation purposes.
+3. Store hashes of those conversation artifacts so later iterations can verify that the original frozen inputs are still unchanged.
 
 ### Phase 2. Run baseline
 1. Evaluate the current prompt on the full fixed session set.
@@ -155,7 +155,6 @@ These summaries are used only to decide which prompt blocks should be edited nex
 5. Use those summaries to identify the prompt blocks most likely to need edits.
 6. If there are no explicit failures, use low `OverallQuality` runs as fallback analysis input.
 
-Keep this simple. v2 does not need a heavy reflection subsystem.
 
 ### Phase 4. Generate next candidate
 1. Start from the last accepted prompt.
@@ -176,10 +175,11 @@ For v2, generate one candidate per iteration.
 ### Phase 6. Accept or reject
 Accept the candidate only if all of the following are true:
 
-1. `candidate_score >= baseline_score + min_delta`
+1. `candidate_score >= baseline_score + min_delta `  //min_delta : minimum improvement    threshold 
 2. no required conversations are missing
-3. session hashes still match
-4. critical guardrail evals do not regress beyond tolerance
+3. session hashes still match or the conversation artifacts used in this iteration are the same frozen session artifacts created at session start.
+4. important guardrail evals do not drop beyond the allowed tolerance, even if OverallQuality improves
+Example: if a guardrail pass rate was 0.92 and the allowed tolerance is 0.02, then a drop to 0.91 may still be acceptable, but a drop to 0.86 would cause the candidate to be rejected.
 
 If accepted:
 - the candidate becomes the new active prompt
@@ -205,8 +205,8 @@ v2 should store only what it needs:
 Stores:
 - session id
 - created time
-- trajectory set location
-- conversation artifact hashes
+- trajectory set location            //where the frozen session artifacts live 
+- conversation artifact hashes       //checksums of those stored artifacts 
 - configuration used for the session
 
 ### Checkpoint record
@@ -232,24 +232,21 @@ Keep the implementation small.
 - `evaluate` - runs Tally over all session conversations
 - `analyze` - summarizes failures and low-scoring conversations
 - `accept` - computes aggregate score and applies guardrails
-- `cli` - entry points for running the loop
 
-Avoid splitting the package into too many submodules in v2.
 
 ## v2 Non-Goals
 Do not add these in v2:
 
 - multiple candidates per iteration
 - dynamic trajectory regeneration during a session
-- prompt ASTs or advanced prompt DSLs
 - distributed execution
 - complex statistical testing
-- bucket-aware scoring semantics
-- a second optimizer-specific scoring model
-- complex weighting across eval layers
+- bucket-aware scoring semantics              // bucket only help with parallel execution, bucket should not affect how a candidate is scored 
+- a second optimizer-specific scoring model   // Do not invent another scoring criteria, the main score stays mean(overallQuality) with guradrails used seperately for acceptance checks
+- complex weighting across eval layers    // Don't create formulas that weight step-level evals, conversation-level evals and final scores against each other 
 
 ## Implementation Order
-1. Create `packages/hrpo` with session, prompt, evaluate, analyze, accept, and cli modules.
+1. Create `packages/hrpo` with session, prompt, evaluate, analyze, and accept
 2. Add session creation that generates one trajectory set and stores replayable artifacts plus hashes.
 3. Add baseline evaluation and checkpoint persistence.
 4. Add simple failure analysis based on Tally outputs.
@@ -268,4 +265,4 @@ v2 should keep the architecture opinionated and easy to explain:
 - one simple prompt model: named mutable blocks
 - one simple analysis path: failed step-level and conversation-level evals guide block mutation
 
-That keeps the good technical corrections from v1, but removes the extra architectural weight that `critique-1` correctly pushed back on.
+That keeps the good technical corrections from v1, but removes the extra architectural weight that `critique-1` pushed back on.
