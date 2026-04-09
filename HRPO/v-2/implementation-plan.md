@@ -91,7 +91,7 @@ type PromptTemplate = {
 ```
 
 Rules:
-- prompts are made of named blocks   //??????????????????????????
+- prompts are made of named blocks   // 
 - only mutable blocks can be edited
 - unchanged blocks are carried forward from the parent candidate
 - each candidate records which block ids changed

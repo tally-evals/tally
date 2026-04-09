@@ -1,207 +1,226 @@
-# HRPO v3 Architecture Critique
+# HRPO v3 Critique
 
 ## Verdict
 
-v3 is closer to a usable architecture because it finally tries to stay small.
+`v3` is still aiming at the right level of simplicity, but the plan is not tight enough to protect that simplicity in implementation.
 
-That said, the document is still not clean. It is simple in shape, but not yet disciplined in its contracts. The biggest issue is that it still blurs the line between the things that must stay fixed for fair comparison and the things that must change when a new prompt candidate is evaluated.
-
-If you do not fix that, the loop is conceptually broken no matter how tidy the diagram looks.
+The problem is not missing components. The problem is that the current write-up is still vague in exactly the places where the loop can become unfair, unreproducible, or operationally inconsistent. That is worse than being slightly verbose. 
 
 ## Critical Findings
 
 ### 1. The most important boundary is still vague: what exactly is frozen?
 
-This is the most serious flaw in the document.
-
-The plan says:
-
-- generate one trajectory set
-- persist replayable conversations
-- keep them unchanged
-- run each new candidate on that same fixed session set
-
-That is not clean enough.
-
-You are still mixing these ideas:
-
-- frozen inputs for replay
-- generated conversations
-- evaluated conversations
-- candidate reruns
-- the original prompt baseline
-
-Those are not interchangeable.
-
-There are really two different things here, and the document still blurs them together:
-
-- the original prompt can be frozen as the baseline prompt you compare future candidate prompts against
-- the replay inputs for the session can be frozen so every candidate is tested on the same starting conditions
-
-Fine.
-
-But the resulting conversations are prompt-dependent outputs. They should change when the candidate prompt changes. If the full conversations are frozen, then changing the prompt does nothing because the outputs are already baked in.
-
-If only the replay inputs are frozen and each candidate regenerates assistant behavior against those same inputs, then say that plainly and stop using language that sounds like the final conversations themselves are fixed artifacts.
-
-This is the single most important architectural boundary in the whole design, and it is still stated too loosely.
-
-### 2. `candidate_score = mean(OverallQuality for all completed conversations)` is a loophole, not a rule
-
-The word `completed` is doing dangerous work here.
-
-Right now the design allows a candidate to avoid hard cases, complete fewer runs, and still look better because the mean is computed over whatever happened to finish.
-
-That is an easy failure mode:
-
-- baseline completes everything
-- new candidate crashes, stalls, or times out on difficult cases
-- only easier conversations remain in the mean
-- score looks improved
-
-That is garbage optimization.
-
-You do not need a complicated fix. You just need the contract to stop being evasive. A candidate must be judged against the full fixed session set, not a convenient surviving subset.
-
-### 3. Guardrails are treated like hard acceptance logic, but the architecture never pins them down
+This is still the biggest flaw in the plan.
 
 The document says:
 
-- non-primary evals can block acceptance
-- important guardrail evals must not drop beyond allowed tolerance
+- generate one trajectory set
+- keep it fixed
+- evaluate every candidate against the same generated conversations
+- keep exact generated conversation artifacts unchanged
+- reuse them for replay and evaluation
 
-Fine. But which evals? Which tolerances? Are they session configuration? Are they global defaults? Are they chosen before the run or after looking at results?
+That is not a clean contract.
 
-Right now this is hand-wavy policy pretending to be architecture.
+You are still mixing:
 
-If guardrails can veto candidate acceptance, then they are part of the decision contract and must be fixed up front. Otherwise the system is not reproducible and people will tune acceptance criteria after the fact to justify whatever result they want.
+- the original prompt baseline
+- frozen replay inputs
+- generated conversations
+- evaluated conversations
+- candidate reruns
 
-### 4. Failure analysis still contains a magic step where the system suddenly knows which prompt blocks to edit
+Those are not interchangeable.
 
-This part is still too vague:
+If the original prompt is frozen, fine. That gives you a stable baseline prompt to compare later candidates against.
 
-- collect failed evals
+If the session replay inputs are frozen, also fine. That gives you stable starting conditions.
+
+But the resulting conversations are prompt-dependent outputs. They should change when the candidate prompt changes. If the full conversations are frozen, then the optimization loop is fake because the new candidate is not producing new behavior anymore.
+
+Right now the plan still talks like trajectories, conversations, and replay artifacts are one frozen unit. That is sloppy and it breaks the core comparison boundary.
+
+### 2. The scoring rule still contains a loophole large enough to invalidate comparisons
+
+The plan says:
+
+`candidate_score = mean(OverallQuality for all completed conversations)`
+
+That word `completed` is a problem.
+
+It creates an obvious failure mode:
+
+- baseline completes the full session set
+- a weaker candidate fails, times out, or stalls on the harder cases
+- only the easier cases remain in the mean
+- the candidate score appears better than it really is
+
+Then the plan tries to recover with acceptance checks. That is too late. Once the score itself is defined on a partial subset, the architecture is already allowing biased comparisons.
+
+This is not a subtle issue. It is a direct path to fake improvement.
+
+### 3. The acceptance rule is pretending to be simple while quietly carrying policy debt
+
+The plan says accept only if:
+
+- score clears `baseline_score + min_delta`
+- session hashes still match or artifacts are the same frozen session artifacts
+- important guardrails stay within tolerance
+
+That is not a simple rule. That is a bundle of policy choices, and several of them are still underdefined.
+
+The weakest part is the language itself:
+
+- "important guardrail evals"
+- "allowed tolerance"
+- "session hashes still match or ..."
+
+That is soft wording around hard decisions.
+
+If acceptance can veto a candidate, these conditions are part of the core architecture. They cannot stay at the level of "important" and "allowed" without defining who decides and when.
+
+Right now the plan reads like it wants strong operational guarantees without being willing to state the exact contract.
+
+### 4. The prompt mutation model is internally inconsistent
+
+This section is trying to sound simple, but it actually says two different things at once.
+
+It says:
+
+- prompts default to a single mutable block `full-prompt`
+- the editable unit is the full prompt
+- intended mutation behavior is selective refinement within that full prompt
+
+That is not a clean design. That is a conceptual compromise that has not been resolved.
+
+If the editable unit is the entire prompt, then stop pretending you have reliable block-level targeting.
+
+If you want true block-targeted mutation, then the fallback cannot also be "the whole thing is one block" while still talking about selective edits as if they were first-class architecture.
+
+Right now this is marketing language for a capability the design has not actually nailed down.
+
+### 5. Failure analysis still makes a magical leap from "symptoms" to "edit target"
+
+The runtime flow says:
+
+- collect failed step-level evals
+- collect failed conversation-level evals
 - summarize them
 - identify the prompt blocks most likely to need edits
 
-That sounds neat, but it skips the hard part.
+That last step is where the real reasoning burden lives, and the document handwaves it.
 
-There is no real architecture here for how failure summaries map to prompt blocks. The document just jumps over it.
+A failure summary tells you what went wrong. It does not automatically tell you which prompt region caused it.
 
-That would be less of a problem if the system truly defaulted to one mutable `full-prompt` block. But once you introduce block targeting, the handoff from failure analysis to mutation target selection cannot stay this fuzzy.
+That gap matters even more because the prompt mutation model is already fuzzy. So now you have two vague things stacked on top of each other:
 
-You do not need a large subsystem here. But you do need to stop pretending this decision is self-explanatory when it is not.
+- vague mutation units
+- vague mapping from failures to those units
 
-### 5. The acceptance rule is written like a safety check, but it still hedges on integrity
+That is not simplicity. That is missing design.
+
+### 6. The plan keeps downgrading guardrails to "not scoring" while still letting them control outcomes
+
+The document says other evals do not change the main scalar score. Fine.
+
+But then those same evals can still reject a candidate even when `OverallQuality` improves.
+
+So operationally, they are not just diagnostics. They are part of the decision function.
+
+The plan is trying to have it both ways:
+
+- "we only optimize one score"
+- "but several other signals can still override the result"
+
+That can be a valid design, but only if you stop talking about guardrails like secondary decoration. They are part of the acceptance contract. Treating them like side notes is what makes the design look simpler than it actually is.
+
+### 7. The hash-based integrity check is still written like a hedge, not a rule
 
 This line is weak:
 
 - session hashes still match or the conversation artifacts used in this iteration are the same frozen session artifacts created at session start
 
-That `or` is not reassuring. It is a red flag.
+That `or` is bad architecture writing.
 
-Integrity checks are supposed to be crisp. The design already introduced hashes. Good. Then use them cleanly. Do not weaken the rule with fallback language that reads like "close enough."
+Integrity checks should be crisp. Either there is one defined frozen artifact boundary and you verify it, or there is not.
 
-This is exactly how systems drift from reproducible to maybe-reproducible.
+Right now the plan still uses hashes as if they can compensate for a boundary that has not been stated cleanly enough. They cannot. Hashes are useful only after the thing being hashed is semantically unambiguous.
 
-### 6. The stop condition `no useful mutations remain` is operationally empty
+### 8. The stop condition `no useful mutations remain` is still operationally empty
 
-This is not a real stop condition. It is a shrug.
+`target_threshold` is real.
 
-Who decides that no useful mutations remain?
+`max iterations` is real.
 
-- the mutation generator?
-- the operator?
-- the acceptance logic?
-- the failure analyzer?
+`no useful mutations remain` is not real unless the architecture says who decides that and based on what evidence.
 
-As written, this is just a vague escape hatch. That is not architecture. That is unresolved product behavior.
+As written, it is just:
 
-If you want the design to stay simple, stop writing pseudo-intelligent conditions that nobody can execute consistently.
+- stop when the system or operator feels stuck
+
+That is not a design rule. That is an escape hatch.
+
+### 9. The plan still overstates how stable session-level comparability really is
+
+The design is correct to keep one fixed session set and one Tally configuration. Good.
+
+But the document still reads as if that alone gives you clean comparability. It does not.
+
+Comparability can still drift through:
+
+- model nondeterminism
+- tool side effects
+- evaluator implementation changes
+- environment differences between iterations
+
+That does not mean you need a bigger architecture. It means the plan should stop sounding more rigorous than it actually is.
 
 ## Secondary Problems
 
-### 7. The document keeps saying "keep it simple" while quietly reintroducing soft ambiguity
+### 10. The language is still casual in places where precision matters
 
-Examples:
+There are several phrases that sound harmless but will create implementation drift:
 
+- "same generated conversations"
 - "selected critical evals"
 - "important guardrail evals"
-- "allowed tolerance"
 - "most likely to need edits"
+- "selective refinement"
 - "no useful mutations remain"
 
-This is exactly how simple systems become messy in implementation. The top-level flow is simple, but the decision points are full of undefined judgment calls.
+This is exactly how simple designs rot. The top-level flow stays short while the operational meaning gets filled in differently by different people.
 
-That means teams will fill in the blanks differently and call it the same architecture when it is not.
+### 11. The stored artifacts section is still reflecting the same semantic confusion
 
-### 8. The prompt-block model is still only half-committed
+The session manifest stores:
 
-The document says prompts default to a single mutable `full-prompt` block.
+- trajectory set location
+- conversation artifact hashes
 
-That is the right instinct if the goal is to avoid overengineering.
+Again, that sounds tidy, but it is still not clear whether those hashed artifacts are:
 
-But then the rest of the plan talks as if block-level targeting is already a reliable mechanism. It is not. Not from what is written here.
+- frozen replay inputs
+- baseline prompt outputs
+- candidate-specific execution transcripts
 
-So the design currently sits in an awkward middle:
-
-- not truly full-prompt only
-- not truly well-defined block-targeted mutation
-
-That is unstable. Simplicity requires choosing one story and stating it bluntly.
-
-### 9. The graph is cleaner than the plan, but it hides the hardest failure modes
-
-The mermaid flow makes the loop look orderly:
-
-- evaluate
-- summarize failures
-- mutate
-- accept or reject
-
-The problem is that all the ugly architectural questions are buried inside those boxes:
-
-- what is actually frozen across iterations?
-- what happens when some runs are missing?
-- what exactly can reject a candidate besides mean score?
-- how are edit targets chosen?
-
-A clean diagram is fine, but right now it is cleaner than the system contract actually is. That is dangerous because it gives false confidence.
-
-## What v3 Gets Right
-
-To be clear, v3 does improve some things:
-
-- the core loop is short
-- it keeps one candidate per iteration
-- it avoids inventing a second blended optimizer score
-- it treats buckets as execution partitions instead of semantics
-- it tries to keep manifests and checkpoints as bookkeeping instead of architecture
-
-Those are good corrections.
-
-The problem is that the document is still loose at exactly the points where fairness, reproducibility, and candidate acceptance can break.
+If the storage model is fuzzy at this level, replay and auditability are fuzzier than the document claims.
 
 ## Bottom Line
 
-The architecture is not too complicated.
+The architecture does not need more moving parts.
 
-The architecture is still too slippery.
+It needs sharper contracts.
 
-The main failure is simple:
+The current plan is still weakest in the exact places where correctness lives:
 
-- it has not cleanly separated frozen session inputs from prompt-dependent outputs
+- what is frozen and what is allowed to change
+- whether scoring is based on the full session set or a surviving subset
+- whether guardrails are diagnostics or actual decision logic
+- whether mutation is really block-based or mostly whole-prompt
+- how failure summaries map to edit decisions
 
-And the next biggest failures are just as practical:
+So the brutally honest assessment is this:
 
-- the scoring rule can be gamed by incomplete runs
-- the guardrail contract is underdefined
-- the block-selection step is still magical
-- the integrity check language is weak
-- one stop condition is meaningless
+`v3` is small enough, but it is still not disciplined enough.
 
-So the honest principal-architect verdict is this:
-
-v3 is finally small enough, but it is still not sharp enough.
-
-Do not add more components. Do not add more abstractions. Just make the current contracts stop wobbling.
+The design keeps trying to sound simple while hiding unresolved decisions behind soft wording. That is not clean architecture. That is unfinished architecture wearing a minimalism costume.
