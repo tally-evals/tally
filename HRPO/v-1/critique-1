@@ -1,0 +1,208 @@
+# HRPO v1 Architecture Critique
+
+## Verdict
+
+After reading the repo `README.md`, the big correction is obvious: Tally evaluates conversations, and Trajectories generates those conversations dynamically. That means the architecture should not pretend it is optimizing over a static dataset shape first and foremost. It is really orchestrating a pipeline:
+
+- generate trajectories
+- convert them into conversations
+- evaluate them with Tally
+- aggregate failures
+- mutate prompts
+- run again
+
+With your clarifications, the intended model is now clear:
+
+- trajectories -> conversations -> evaluation -> candidate scoring
+- final decisions are based on aggregated results over evaluated conversations
+- trajectories are generated once per optimization session
+- each checkpoint is one iteration
+- each iteration evaluates a new candidate prompt on the same trajectory set
+- the loop stops when the aggregated candidate score exceeds the configured threshold
+
+That is much better. It removes a lot of the earlier ambiguity. The critique now shifts from "what are you even comparing?" to "is the simplified architecture stated cleanly enough, and are there still weak spots?"
+
+## Critical Findings
+
+### 1. The primary optimization model is now clear, but the document needs to say it more bluntly
+
+The architecture is simple enough now that it should stop speaking in layered abstractions and just say the thing directly:
+
+- one optimization session generates one trajectory set
+- that trajectory set stays fixed for the full session
+- each iteration/checkpoint evaluates one prompt candidate on that same set
+- each evaluated conversation gets a Tally score
+- the candidate score is the aggregate of those conversation scores
+- stop when aggregate score exceeds threshold
+
+That is the architecture. Everything else is support structure.
+
+If the document does not state this plainly, it will drift back into unnecessary complexity.
+
+### 2. Session-scoped trajectory generation solves the comparison problem, so stop hedging
+
+The biggest ambiguity from the previous version is now resolved.
+
+Trajectories are produced per optimization session. Good. That is the correct boundary for your current design.
+
+So the document should stop using language that implies:
+
+- trajectories might be regenerated per candidate
+- trajectories might vary per checkpoint
+- bucket-level comparisons might involve different inputs
+
+That is no longer the model. Say it explicitly and repeatedly enough that nobody "improves" it back into ambiguity later.
+
+### 3. Buckets are execution partitions, not logical domains
+
+This clarification is good and should stay simple:
+
+- a bucket is a parallel execution unit
+- it exists to split workload
+- it is not a semantic grouping
+- it is not an optimization boundary
+- it is not a scoring boundary
+
+That matters because otherwise teams will start attaching meaning to buckets that they do not have.
+
+The critique here is not that buckets are wrong. The critique is that the design should define them in one short paragraph and move on. Do not let buckets metastasize into their own sub-architecture.
+
+### 4. The scoring contract is finally simple enough, so keep it brutally explicit
+
+You clarified the right v1 rule:
+
+- Tally evaluates each conversation
+- Tally's `OverallQuality` scorer is the optimization objective
+- candidate score = aggregate of `OverallQuality` across evaluated conversations
+- stop when aggregated candidate score exceeds threshold
+
+That is good because it avoids HRPO inventing a second scoring system on top of Tally.
+
+But the document should be careful not to muddy this with too many side metrics. If `OverallQuality` is the optimization objective, say so. If other evals are diagnostic only, say that too. If not, people will quietly reintroduce scoring complexity through back doors.
+
+### 5. Aggregation is now the core architectural rule, and it must be written as the decision source of truth
+
+This is the part that matters most now:
+
+- one candidate prompt produces multiple evaluated conversations
+- each conversation produces a Tally score
+- the candidate decision is based on the aggregate of those scores
+
+That means the architecture should stop speaking vaguely about "candidate manifests" and "decision logic" before it clearly states the actual rule:
+
+candidate_score = mean(OverallQuality over all evaluated conversations)
+
+If you want median later, or weighted aggregation later, fine. But v1 should not sound undecided if the actual intent is just mean.
+
+### 6. Prompt representation is now concrete enough for v1, but only if you resist getting clever
+
+Your simplified prompt contract is the right move:
+
+- a prompt is a structured object
+- it contains named blocks
+- each block has `block_id` and `content`
+- the prompt is assembled in a fixed structure
+- a candidate mutates one or more blocks and tracks parent plus mutated block ids
+
+That is enough for v1.
+
+The critique is simple: do not immediately over-engineer this into a generalized prompt DSL, AST, or plugin architecture. You finally have a simple prompt model. Protect it.
+
+### 7. The architecture should demote artifacts and manifests to supporting roles
+
+Now that the session/checkpoint/candidate model is clear, the storage story should become secondary.
+
+The actual architecture is:
+
+- session
+- fixed generated trajectory set for that session
+- iteration/checkpoint
+- candidate prompt
+- evaluated conversations
+- aggregated candidate score
+- stop threshold
+
+Everything else is bookkeeping.
+
+If the document spends more time on manifests than on these six concepts, it is still upside down.
+
+### 8. The design still needs one clean statement about what is and is not in scope for v1
+
+You want to keep architecture simple. Good. Then say what simplicity means.
+
+For example:
+
+- one optimization session uses one generated trajectory set
+- one checkpoint evaluates one candidate
+- one candidate score is one aggregate number
+- buckets are only for parallel execution
+- prompt mutation only edits named blocks
+- stop condition is aggregated score > threshold
+
+That kind of explicit scoping is healthy. Without it, people will keep adding "just one more abstraction" because the document leaves too much interpretive room.
+
+## Secondary Problems
+
+### 9. The document should stop mixing "corpus" language with dynamic generation language
+
+You clarified that there is no pre-existing corpus and the data is dynamically produced at runtime.
+
+Fine. Then stop using corpus-heavy language unless you explicitly mean "the trajectory set generated for this session."
+
+If not, the document will confuse readers into thinking there is some static stored benchmark behind the loop when there is not.
+
+### 10. Checkpoint should be defined as iteration state, not some separate conceptual layer
+
+You clarified that a checkpoint is one iteration.
+
+Good. Then do not describe checkpoints like heavyweight lineage objects if they are just iteration snapshots. Keep the term plain.
+
+Too many systems invent grand checkpoint semantics when what they actually have is "state after iteration N." Do not do that.
+
+### 11. Candidate generation is still under-described
+
+You clarified how candidates are evaluated, not how the next candidate is produced.
+
+That is still a hole.
+
+The architecture should state at least this much:
+
+- next candidate is generated from prior evaluation results
+- only selected prompt blocks are mutated
+- unchanged blocks are carried forward from the parent
+- the resulting prompt becomes the next checkpoint candidate
+
+You do not need to overcomplicate mutation strategy, but you do need to describe the handoff from scoring to next candidate generation.
+
+## What Is Still Vague
+
+- Is candidate score exactly the mean of `OverallQuality`, or is some other aggregate allowed in v1?
+- Are non-`OverallQuality` evals used only for analysis, or can they affect acceptance?
+- How exactly does evaluation output drive block mutation selection?
+- Is the generated trajectory set persisted for replay, or treated as session-local only?
+- Does a session ever produce more than one candidate per iteration, or strictly one?
+
+## What I Would Change
+
+1. Rewrite the architecture summary around session -> checkpoint -> candidate -> aggregated score.
+2. Define `bucket` in two or three lines as workload partitioning only.
+3. State plainly that `OverallQuality` is the optimization objective for v1.
+4. State plainly that candidate score is the aggregate of per-conversation `OverallQuality` scores.
+5. Lock prompt representation to the structured block model and resist adding more machinery.
+6. Remove any wording that implies trajectories change during the session.
+
+## Bottom Line
+
+The architecture is now much closer to being clean and simple.
+
+The remaining risk is not that it is too weak. The remaining risk is that the document keeps talking like a flexible framework when the actual v1 design is much simpler and more opinionated than that.
+
+So the honest critique is:
+
+- stop hedging on the session-scoped trajectory model
+- stop hedging on `OverallQuality` as the objective
+- stop hedging on aggregation as the decision rule
+- stop hedging on buckets as pure execution partitioning
+- stop hedging on prompt blocks as the prompt representation
+
+If you lock those five points into the document, the architecture becomes much easier to understand and much harder to accidentally overcomplicate.

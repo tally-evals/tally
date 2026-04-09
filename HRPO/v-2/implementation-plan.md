@@ -2,14 +2,17 @@
 
 ## Goal
 
+The system should optimize the **agent under evaluation**.
+
 The system should:
 
-1. Generate one trajectory set at the start of an optimization session.
+1. Generate one fixed trajectory set at the start of an optimization session for the agent under evaluation.
 2. Keep that trajectory set fixed for the whole session.
-3. Evaluate one prompt candidate per iteration on that same fixed set.
-4. Use Tally as the source of truth for scoring each conversation.
+3. Evaluate one prompt candidate of the agent under evaluation per iteration on that same fixed set.
+4. Use Tally as the source of truth for scoring each conversation produced by the agent under evaluation.
 5. Aggregate those conversation results into one candidate score.
-6. Stop when the candidate score reaches the configured target threshold.
+6. Use the optimizer to generate the next candidate for the agent under evaluation.
+7. Stop when the candidate score reaches the configured target threshold.
 
 ## v2 Core Rule
 The architecture should be stated as plainly as possible:

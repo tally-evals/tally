@@ -9,7 +9,7 @@ The system should:
 3. Evaluate one prompt candidate per iteration on that same fixed set.
 4. Use Tally as the source of truth for scoring each conversation.
 5. Aggregate those conversation results into one candidate score.
-6. Stop when the candidate score reaches the configured target threshold.
+6. Stop when the candidate score reaches the configured target threshold or `k` iterations are reached.
 
 ## v3 Core Rule
 
@@ -23,7 +23,9 @@ The architecture should be stated as plainly as possible:
 
 - One optimization session generates one trajectory set.
 - That trajectory set does not change during the session.
-- Every candidate in the session is evaluated against the same generated conversations.
+- The original prompt is frozen as the baseline prompt.
+- One baseline copy of the original conversations is frozen for comparison and audit.
+- Every candidate in the session is evaluated on the same fixed session setup, but each candidate still generates its own conversation outputs.
 
 ### 2. Source of truth
 
@@ -71,19 +73,34 @@ v3, keep this explicit:
 
 `candidate_score = mean(OverallQuality for all conversations)`
 
-### 5. Role of other evals
+### 5. Eval importance weights
+
+- Each eval should have a configured weight that shows how important it is.
+- Higher-weight evals should matter more during failure review, checkpoint reflection, and acceptance decisions.
+- These weights do not replace `OverallQuality` as the main scalar objective.
+
+### 6. Role of other evals
 
 - Other evals do not replace `OverallQuality` as the main scalar objective, but they still directly influence which candidates can be accepted
 - They are used to detect failures, guide which prompt blocks should be mutated next, and enforce quality constraints during candidate selection
 - They should not be collapsed into a second blended score; keep the global scalar score as `OverallQuality`, while treating selected eval outcomes as explicit acceptance conditions
 
-### 6. Checkpoint meaning
+### 7. Hyper parameters
+
+- `baseline_prompt`: the original prompt frozen at session start
+- `prompt`: the current prompt being evaluated or mutated
+- `temperature`: controls response randomness
+  - low temperature = more rigid and predictable
+  - high temperature = more creative and less predictable
+
+### 8. Checkpoint meaning
 
 - One checkpoint = one iteration snapshot.
-- A checkpoint stores the prompt used, the evaluation results, the candidate score, and the accept/reject decision.
+- A checkpoint stores the prompt used, the evaluation results, the candidate score, the accept/reject decision, and a reflection.
+- Each new checkpoint should have access to previous checkpoint history so the optimizer knows what was already tried, what improved, and what should not be broken again.
 - It should be treated as plain iteration state, not a large abstraction layer.
 
-### 7. Prompt representation
+### 9. Prompt representation
 
 Use a simple structured prompt model:
 
@@ -107,7 +124,7 @@ Rules:
 within that full prompt. 
 - each new candidate is derived from its parent candidate
 
-### 8. Buckets
+### 10. Buckets
 
 - Buckets are workload partitions only.
 - They exist for parallel execution.
@@ -160,6 +177,7 @@ These summaries are used only to decide which prompt blocks should be edited nex
 2. Store one Tally result per conversation.
 3. Compute:
   - candidate score = mean `OverallQuality`
+  - weighted eval importance view for review
   - guardrail summaries for selected critical evals
 4. Save checkpoint `0000`.
 
@@ -171,17 +189,19 @@ These summaries are used only to decide which prompt blocks should be edited nex
 4. Generate:
   - a per-turn summary across failed step-level evals
   - a conversation-level summary across failed multi-turn evals
-5. Use those summaries to identify the prompt blocks most likely to need edits.
+5. Use those summaries plus eval importance weights to decide what should be edited next.
 6. If there are no explicit failures, use low `OverallQuality` runs as fallback analysis input.
 
 ### Phase 4. Generate next candidate
 
 1. Start from the last accepted prompt.
 2. Mutate only the selected mutable blocks.
-3. Record:
+3. Read previous checkpoint history before mutating so the next candidate does not repeat already-tried changes and does not re-break previously improved behavior.
+4. Record:
   - parent candidate
   - changed block ids
   - mutation rationale
+  - checkpoint reflection
 
 generate one candidate per iteration.
 
@@ -198,18 +218,7 @@ Accept the candidate only if all of the following are true:
 
 1. `candidate_score >= baseline_score + min_delta`   //min_delta : minimum improvement    threshold. baseline_score = the score of the current active prompt(the one you're comparing against)
 2. session hashes still match or the conversation artifacts used in this iteration are the same frozen session artifacts created at session start.
-
-(What is allowed to change across iterations:
-the candidate prompt
-the evaluation results
-the candidate score
-the accept/reject decision
-What is not supposed to change within the same session:
-the session identity
-the frozen trajectory/conversation set
-the hashes for those frozen artifacts)
-
-1. important guardrail evals do not drop beyond the allowed tolerance, even if OverallQuality improves
+3. higher-weight guardrail evals do not drop beyond the allowed tolerance, even if `OverallQuality` improves
 
 Example: if a guardrail pass rate was 0.92 and the allowed tolerance is 0.02, then a drop to 0.91 may still be acceptable, but a drop to 0.86 would cause the candidate to be rejected.
 
@@ -228,10 +237,7 @@ If rejected:
 Stop when either:
 
 1. `candidate_score >= target_threshold`
-2. max iterations is reached
-3. no useful mutations remain
-
-If there are no clear failures but the threshold is not reached, use low-scoring conversations as the mutation input instead of treating it as an error.
+2. `k` iterations are reached
 
 ## Minimal Stored Artifacts
 
@@ -243,6 +249,9 @@ Stores:
 
 - session id
 - created time
+- baseline prompt
+- baseline conversation copy
+- temperature
 - trajectory set location            //where the frozen session artifacts live 
 - conversation artifact hashes       //checksums of those stored artifacts 
 - configuration used for the session
@@ -253,11 +262,14 @@ Stores:
 
 - checkpoint id
 - parent checkpoint id
+- checkpoint history references
 - prompt version or hash
 - changed block ids
 - per-conversation Tally run references
 - aggregated `OverallQuality`
+- eval weights
 - guardrail summaries
+- checkpoint reflection
 - accept/reject decision
 
 This is enough for replay and auditing without building a heavy registry system first.
@@ -284,17 +296,17 @@ Do not add these in v3:
 - complex statistical testing
 - bucket-aware scoring semantics              // bucket only help with parallel execution, bucket should not affect how a candidate is scored 
 - a second optimizer-specific scoring model   // Do not invent another scoring criteria, the main score stays mean(overallQuality) with guradrails used seperately for acceptance checks
-- complex weighting across eval layers    // Don't create formulas that weight step-level evals, conversation-level evals and final scores against each other
+- complex weighting across eval layers    // eval weights express importance, but do not create a blended cross-layer scoring formula
 
 ## Implementation Order
 
 1. Create `packages/hrpo` with session, prompt, evaluate, analyze, and accept
-2. Add session creation that generates one trajectory set and stores replayable artifacts plus hashes.
-3. Add baseline evaluation and checkpoint persistence.
-4. Add simple failure analysis based on Tally outputs.
+2. Add session creation that generates one trajectory set and stores the baseline prompt, baseline conversation copy, temperature, and hashes.
+3. Add baseline evaluation and checkpoint persistence with checkpoint history and reflection.
+4. Add simple failure analysis based on Tally outputs and eval importance weights.
 5. Add block-based prompt mutation for one candidate per iteration.
 6. Add accept/reject logic using mean `OverallQuality` plus guardrails.
-7. Add loop control for threshold, max iterations, and replay.
+7. Add loop control for target threshold and `k` iterations.
 
 ## Bottom Line
 
