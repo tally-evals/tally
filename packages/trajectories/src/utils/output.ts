@@ -24,6 +24,9 @@ export function toJSONL(result: TrajectoryResult): string[] {
 				reason: result.reason,
 				...(result.summary !== undefined && { summary: result.summary }),
 				...(step.end !== undefined && { end: step.end }),
+				...(step.hilInteractions && step.hilInteractions.length > 0 && {
+					hilInteractions: step.hilInteractions,
+				}),
 			},
 		};
 		return JSON.stringify(jsonlEntry);
@@ -47,6 +50,9 @@ export function toConversation(
 			stepId: step.stepId,
 			selection: step.selection,
 			...(step.end !== undefined && { end: step.end }),
+			...(step.hilInteractions && step.hilInteractions.length > 0 && {
+				hilInteractions: step.hilInteractions,
+			}),
 		},
 	}));
 
@@ -73,6 +79,15 @@ export function summarize(result: TrajectoryResult): string {
 
 	if (result.summary) {
 		lines.push(`Summary: ${result.summary}`);
+	}
+
+	// Summarise HIL interactions
+	const hilCount = result.steps.reduce(
+		(sum, s) => sum + (s.hilInteractions?.length ?? 0),
+		0,
+	);
+	if (hilCount > 0) {
+		lines.push(`HIL interactions: ${hilCount}`);
 	}
 
 	// Add step summaries

@@ -2,16 +2,108 @@
  * Agent wrappers for different runtimes
  * 
  * These wrappers normalize agents from different ecosystems (AI SDK, Mastra)
- * to a consistent AgentHandle interface.
+ * to a consistent AgentHandle interface, including framework-specific
+ * HIL (human-in-the-loop) detection and resolution.
  */
 
 import { generateText, convertToModelMessages } from 'ai';
 import type { Prompt, ModelMessage } from 'ai';
-import type { AgentHandle } from '../core/types.js';
+import type { AgentHandle, AgentResponse, HILDecisionMap } from '../core/types.js';
+import type { HILToolCall } from '../core/hil/types.js';
 import { buildPromptFromMessages, messagesToMessages } from '../utils/prompt.js';
 import { Agent } from '@mastra/core/agent';
 
 type GenerateTextInput = Parameters<typeof generateText>[0];
+
+// ============================================================================
+// AI SDK — HIL helpers
+// ============================================================================
+
+/**
+ * Extract pending HIL tool calls from AI SDK result content.
+ */
+function extractAISdkPendingToolCalls(
+	resultContent: unknown[],
+): HILToolCall[] {
+	const pending: HILToolCall[] = [];
+	for (const part of resultContent) {
+		if (
+			part &&
+			typeof part === 'object' &&
+			'type' in part &&
+			(part as { type: string }).type === 'tool-approval-request'
+		) {
+			const approval = part as {
+				type: 'tool-approval-request';
+				approvalId: string;
+				toolCall: {
+					toolCallId: string;
+					toolName: string;
+					input: unknown;
+				};
+			};
+			pending.push({
+				toolCallId: approval.approvalId,
+				toolName: approval.toolCall.toolName,
+				args: approval.toolCall.input,
+			});
+		}
+	}
+	return pending;
+}
+
+/**
+ * Build AI SDK `tool-approval-response` messages from HIL decisions.
+ *
+ */
+function buildAISdkApprovalMessages(
+	decisions: HILDecisionMap,
+): ModelMessage[] {
+	const approvalParts: Array<{
+		type: 'tool-approval-response';
+		approvalId: string;
+		approved: boolean;
+		reason?: string;
+	}> = [];
+
+	for (const [approvalId, decision] of decisions) {
+		switch (decision.type) {
+			case 'approve':
+				approvalParts.push({
+					type: 'tool-approval-response',
+					approvalId,
+					approved: true,
+				});
+				break;
+			case 'reject':
+				approvalParts.push({
+					type: 'tool-approval-response',
+					approvalId,
+					approved: false,
+					...(decision.reason && { reason: decision.reason }),
+				});
+				break;
+			case 'provide':
+				// AI SDK approval is binary (approve/reject). For 'provide'
+				// decisions, we approve and let the tool execute.
+				approvalParts.push({
+					type: 'tool-approval-response',
+					approvalId,
+					approved: true,
+				});
+				break;
+		}
+	}
+
+	if (approvalParts.length === 0) return [];
+
+	// AI SDK expects tool-approval-response parts in a tool-role message
+	return [{ role: 'tool', content: approvalParts } as unknown as ModelMessage];
+}
+
+// ============================================================================
+// AI SDK Wrapper
+// ============================================================================
 
 /**
  * Wrapper for AI SDK Experimental_Agent or generateText
@@ -20,11 +112,14 @@ type GenerateTextInput = Parameters<typeof generateText>[0];
  * 1. AI SDK Experimental_Agent instance (with tools support)
  * 2. generateText input config (without messages/prompt, which are added from history)
  * 
+ * HIL detection: Looks for `tool-approval-request` parts in `result.content`
+ * HIL resolution: Builds `tool-approval-response` messages and re-calls generateText
+ * 
  * @param agent - AI SDK Experimental_Agent instance
  * @returns AgentHandle that can be used with trajectories
  */
 export function withAISdkAgent(
-	agent: { generate: (input: Prompt) => Promise<{ response: { messages: ModelMessage[] } }> }
+	agent: { generate: (input: Prompt) => Promise<{ response: { messages: ModelMessage[] }; content: unknown[] }> }
 ): AgentHandle;
 
 /**
@@ -39,7 +134,7 @@ export function withAISdkAgent(
 
 export function withAISdkAgent(
 	agentOrConfig: 
-		| { generate: (input: Prompt) => Promise<{ response: { messages: ModelMessage[] } }> }
+		| { generate: (input: Prompt) => Promise<{ response: { messages: ModelMessage[] }; content: unknown[] }> }
 		| Omit<GenerateTextInput, 'messages' | 'prompt'>
 ): AgentHandle {
 	// Check if it's an AI SDK Agent instance (has generate method)
@@ -49,113 +144,159 @@ export function withAISdkAgent(
 		'generate' in agentOrConfig &&
 		typeof (agentOrConfig as { generate?: unknown }).generate === 'function'
 	) {
-		const agent = agentOrConfig as { generate: (input: Prompt) => Promise<{ response: { messages: ModelMessage[] } }> };
-		return {
-			async respond(agentMemoryMessages: readonly ModelMessage[]) {
-				let modelMessages: readonly ModelMessage[] = agentMemoryMessages;
+		const agent = agentOrConfig as { generate: (input: Prompt) => Promise<{ response: { messages: ModelMessage[] }; content: unknown[] }> };
+
+		/** Shared logic for calling agent.generate and extracting HIL info */
+		async function callAgent(messages: readonly ModelMessage[]): Promise<AgentResponse> {
+			let modelMessages: readonly ModelMessage[] = messages;
+			try {
+				modelMessages = convertToModelMessages(messages as unknown as never) as unknown as ModelMessage[];
+			} catch {
+				// If conversion fails, fall back to the provided messages.
+			}
+
+			const promptInput = buildPromptFromMessages({
+				messages: modelMessages,
+				useMessages: true,
+			});
+			const result = await agent.generate(promptInput);
+
+			// Normalize output messages
+			const rawOut = result.response.messages as unknown as Array<{ role?: unknown; content?: unknown }>;
+			const hasPartsContent = rawOut.some((m) => Array.isArray(m?.content));
+			let outMessages: ModelMessage[] = result.response.messages;
+			if (hasPartsContent) {
 				try {
-					modelMessages = convertToModelMessages(agentMemoryMessages as unknown as never) as unknown as ModelMessage[];
-				} catch {
-					// If conversion fails, fall back to the provided messages.
-				}
-
-				// Use Prompt.messages for multi-turn support
-				const promptInput = buildPromptFromMessages({
-					messages: modelMessages,
-					useMessages: true,
-				});
-				const result = await agent.generate(promptInput);
-				// Some agent implementations may return UIMessage-like messages; normalize to ModelMessage[] for trajectories memory.
-				// IMPORTANT: Do NOT run convertToModelMessages on already-valid ModelMessage[]; it can drop messages.
-				const rawOut = result.response.messages as unknown as Array<{ role?: unknown; content?: unknown }>;
-				const hasPartsContent = rawOut.some((m) => Array.isArray(m?.content));
-
-				let outMessages: ModelMessage[] = result.response.messages;
-				if (hasPartsContent) {
-					try {
-						const converted = convertToModelMessages(result.response.messages as unknown as never) as unknown as ModelMessage[];
-						if (Array.isArray(converted) && converted.length > 0) {
-							outMessages = converted;
-						}
-					} catch {
-						// keep original
+					const converted = convertToModelMessages(result.response.messages as unknown as never) as unknown as ModelMessage[];
+					if (Array.isArray(converted) && converted.length > 0) {
+						outMessages = converted;
 					}
+				} catch {
+					// keep original
 				}
+			}
 
-				return { messages: outMessages };
+			// Detect HIL via tool-approval-request parts
+			const pendingToolCalls = extractAISdkPendingToolCalls(
+				result.content ?? [],
+			);
+
+			return { messages: outMessages, pendingToolCalls };
+		}
+
+		return {
+			respond: callAgent,
+
+			async resolveHIL(
+				decisions: HILDecisionMap,
+				history: readonly ModelMessage[],
+			): Promise<AgentResponse> {
+				// Build approval messages and append to history
+				const approvalMessages = buildAISdkApprovalMessages(decisions);
+				const updatedHistory = [...history, ...approvalMessages];
+				return callAgent(updatedHistory);
 			},
 		};
 	}
 
 	// generateText config pattern
 	const config = agentOrConfig as Omit<GenerateTextInput, 'messages' | 'prompt'>;
-	return {
-		async respond(agentMemoryMessages: readonly ModelMessage[]) {
-			const result = await generateText({
-				...config,
-				messages: messagesToMessages(agentMemoryMessages),
+
+	/** Shared logic for calling generateText and extracting HIL info */
+	async function callGenerateText(agentMemoryMessages: readonly ModelMessage[]): Promise<AgentResponse> {
+		const result = await generateText({
+			...config,
+			messages: messagesToMessages(agentMemoryMessages),
+		});
+		
+		// Convert result to messages format
+		const messages: ModelMessage[] = [];
+		
+		if (result.text) {
+			messages.push({
+				role: 'assistant',
+				content: result.text,
 			});
-			
-			// Convert result to messages format
-			// generateText returns text and steps, we need to convert to ModelMessage format
-			const messages: ModelMessage[] = [];
-			
-			// Add assistant message with text
-			if (result.text) {
-				messages.push({
-					role: 'assistant',
-					content: result.text,
-				});
-			}
-			
-			// If there are steps with tool calls/results, convert them to messages
-			// The steps array contains the full conversation including tool calls
-			// We'll extract the relevant messages from the steps
-			if (result.steps && result.steps.length > 0) {
-				// The last step contains the final response
-				// Earlier steps may contain tool calls and results
-				// We'll use the response messages from the steps if available
-				for (const step of result.steps) {
-					if (step.response?.messages) {
-						// Add messages from the step response
-						for (const msg of step.response.messages) {
-							// Avoid duplicates - if we already added a text message, skip it
-							if (msg.role === 'assistant' && typeof msg.content === 'string' && result.text && msg.content === result.text) {
-								continue;
-							}
-							messages.push(msg);
+		}
+		
+		if (result.steps && result.steps.length > 0) {
+			for (const step of result.steps) {
+				if (step.response?.messages) {
+					for (const msg of step.response.messages) {
+						if (msg.role === 'assistant' && typeof msg.content === 'string' && result.text && msg.content === result.text) {
+							continue;
 						}
+						messages.push(msg);
 					}
 				}
 			}
-			
-			// If no messages were added, ensure we have at least the text response
-			if (messages.length === 0 && result.text) {
-				messages.push({
-					role: 'assistant',
-					content: result.text,
-				});
-			}
-			
-			return { messages };
+		}
+		
+		if (messages.length === 0 && result.text) {
+			messages.push({
+				role: 'assistant',
+				content: result.text,
+			});
+		}
+
+		// Detect HIL via tool-approval-request parts in result.content
+		const pendingToolCalls = extractAISdkPendingToolCalls(
+			(result as unknown as { content?: unknown[] }).content ?? [],
+		);
+
+		return { messages, pendingToolCalls };
+	}
+
+	return {
+		respond: callGenerateText,
+
+		async resolveHIL(
+			decisions: HILDecisionMap,
+			history: readonly ModelMessage[],
+		): Promise<AgentResponse> {
+			const approvalMessages = buildAISdkApprovalMessages(decisions);
+			const updatedHistory = [...history, ...approvalMessages];
+			return callGenerateText(updatedHistory);
 		},
 	};
 }
 
+// ============================================================================
+// Mastra Wrapper
+// ============================================================================
+
 /**
  * Wrapper for Mastra Agent
+ * 
+ * HIL detection: Checks for `finishReason: 'suspended'` and `suspendPayload`
+ * HIL resolution: Calls `approveToolCallGenerate()` / `declineToolCallGenerate()`
+ * 
  * 
  * @param agent - Mastra Agent instance
  * @returns AgentHandle that can be used with trajectories
  */
 export function withMastraAgent(
 	agent: {
-		generate: Agent["generate"]
+		generate: Agent["generate"];
+		/** Required for HIL: approve a suspended tool call */
+		approveToolCallGenerate?: (opts: { runId: string; toolCallId?: string }) => Promise<{ text: string; steps?: Array<{ response?: { messages: ModelMessage[] } }> }>;
+		/** Required for HIL: decline a suspended tool call */
+		declineToolCallGenerate?: (opts: { runId: string; toolCallId?: string }) => Promise<{ text: string; steps?: Array<{ response?: { messages: ModelMessage[] } }> }>;
 	}
 ): AgentHandle {
+	// Hold the last runId so resolveHIL can reference it
+	let lastRunId: string | undefined;
+	let lastSuspendPayload: { toolCallId: string; toolName: string; args: unknown } | undefined;
+
 	return {
-		respond: async (history: readonly ModelMessage[]) => {
-			const result = await agent.generate(history);
+		respond: async (history: readonly ModelMessage[]): Promise<AgentResponse> => {
+			const result = await agent.generate(history) as {
+				text?: string;
+				steps?: Array<{ response?: { messages: ModelMessage[] } }>;
+				finishReason?: string;
+				runId?: string;
+				suspendPayload?: { toolCallId: string; toolName: string; args: unknown };
+			};
 			
 			let outMessages: ModelMessage[] = [];
 			
@@ -173,8 +314,91 @@ export function withMastraAgent(
 				}];
 			}
 
-			return { messages: outMessages };
-		}
+			// Detect HIL: Mastra signals via finishReason: 'suspended'
+			const pendingToolCalls: HILToolCall[] = [];
+			if (result.finishReason === 'suspended' && result.suspendPayload) {
+				lastRunId = result.runId;
+				lastSuspendPayload = result.suspendPayload;
+				pendingToolCalls.push({
+					toolCallId: result.suspendPayload.toolCallId,
+					toolName: result.suspendPayload.toolName,
+					args: result.suspendPayload.args,
+				});
+			} else {
+				lastRunId = undefined;
+				lastSuspendPayload = undefined;
+			}
+
+			return { messages: outMessages, pendingToolCalls };
+		},
+
+		resolveHIL: async (
+			decisions: HILDecisionMap,
+			_history: readonly ModelMessage[],
+		): Promise<AgentResponse> => {
+			if (!lastRunId) {
+				return { messages: [], pendingToolCalls: [] };
+			}
+
+			// Mastra resolves one tool call at a time via its approval API
+			const decision = lastSuspendPayload
+				? decisions.get(lastSuspendPayload.toolCallId)
+				: undefined;
+
+			let rawResult: {
+				text?: string;
+				steps?: Array<{ response?: { messages: ModelMessage[] } }>;
+				finishReason?: string;
+				runId?: string;
+				suspendPayload?: { toolCallId: string; toolName: string; args: unknown };
+			};
+
+			const shouldApprove = decision?.type === 'approve' || decision?.type === 'provide';
+
+			if (shouldApprove && agent.approveToolCallGenerate) {
+				rawResult = await agent.approveToolCallGenerate({
+					runId: lastRunId,
+					...(lastSuspendPayload?.toolCallId && { toolCallId: lastSuspendPayload.toolCallId }),
+				}) as typeof rawResult;
+			} else if (agent.declineToolCallGenerate) {
+				rawResult = await agent.declineToolCallGenerate({
+					runId: lastRunId,
+					...(lastSuspendPayload?.toolCallId && { toolCallId: lastSuspendPayload.toolCallId }),
+				}) as typeof rawResult;
+			} else {
+				// No approval methods available — can't resolve
+				return { messages: [], pendingToolCalls: [] };
+			}
+
+			// Extract messages from result
+			let outMessages: ModelMessage[] = [];
+			if (rawResult.steps && rawResult.steps.length > 0) {
+				const lastStep = rawResult.steps[rawResult.steps.length - 1];
+				if (lastStep && lastStep.response?.messages) {
+					outMessages = lastStep.response.messages;
+				}
+			}
+			if (outMessages.length === 0 && rawResult.text) {
+				outMessages = [{ role: 'assistant', content: rawResult.text }];
+			}
+
+			// Check if this response also has pending HIL
+			const pendingToolCalls: HILToolCall[] = [];
+			if (rawResult.finishReason === 'suspended' && rawResult.suspendPayload) {
+				lastRunId = rawResult.runId;
+				lastSuspendPayload = rawResult.suspendPayload;
+				pendingToolCalls.push({
+					toolCallId: rawResult.suspendPayload.toolCallId,
+					toolName: rawResult.suspendPayload.toolName,
+					args: rawResult.suspendPayload.args,
+				});
+			} else {
+				lastRunId = undefined;
+				lastSuspendPayload = undefined;
+			}
+
+			return { messages: outMessages, pendingToolCalls };
+		},
 	};
 }
 
