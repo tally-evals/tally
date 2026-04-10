@@ -6,7 +6,7 @@
  * HIL (human-in-the-loop) detection and resolution.
  */
 
-import { generateText, convertToModelMessages } from 'ai';
+import { generateText } from 'ai';
 import type { Prompt, ModelMessage } from 'ai';
 import type { AgentHandle, AgentResponse, HILDecisionMap } from '../core/types.js';
 import type { HILToolCall } from '../core/hil/types.js';
@@ -148,33 +148,14 @@ export function withAISdkAgent(
 
 		/** Shared logic for calling agent.generate and extracting HIL info */
 		async function callAgent(messages: readonly ModelMessage[]): Promise<AgentResponse> {
-			let modelMessages: readonly ModelMessage[] = messages;
-			try {
-				modelMessages = convertToModelMessages(messages as unknown as never) as unknown as ModelMessage[];
-			} catch {
-				// If conversion fails, fall back to the provided messages.
-			}
-
 			const promptInput = buildPromptFromMessages({
-				messages: modelMessages,
+				messages,
 				useMessages: true,
 			});
 			const result = await agent.generate(promptInput);
 
-			// Normalize output messages
-			const rawOut = result.response.messages as unknown as Array<{ role?: unknown; content?: unknown }>;
-			const hasPartsContent = rawOut.some((m) => Array.isArray(m?.content));
-			let outMessages: ModelMessage[] = result.response.messages;
-			if (hasPartsContent) {
-				try {
-					const converted = convertToModelMessages(result.response.messages as unknown as never) as unknown as ModelMessage[];
-					if (Array.isArray(converted) && converted.length > 0) {
-						outMessages = converted;
-					}
-				} catch {
-					// keep original
-				}
-			}
+			// result.response.messages are already ModelMessage[] in AI SDK v6
+			const outMessages: ModelMessage[] = result.response.messages;
 
 			// Detect HIL via tool-approval-request parts
 			const pendingToolCalls = extractAISdkPendingToolCalls(

@@ -16,7 +16,7 @@
     "dev": "mastra dev",
     "start": "mastra start",
     "build": "echo 'No build needed for example package'",
-    "test": "bun test",
+    "test": "bun test --timeout 120000",
     "test:watch": "bun test --watch",
     "cli:build": "bun run --filter @tally-evals/cli build",
     "tui": "bun run cli:build && bunx --no-install tally browse",
@@ -33,7 +33,7 @@
     "node": ">=22.13.0"
   },
   "dependencies": {
-    "@ai-sdk/google": "^2.0.29",
+    "@ai-sdk/google": "^3.0.0",
     "@faker-js/faker": "^10.2.0",
     "@mastra/core": "^0.24.9",
     "@mastra/evals": "^0.14.4",

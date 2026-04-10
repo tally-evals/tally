@@ -23,11 +23,13 @@
 export { travelPlannerAgent } from './agents/travelPlanner';
 export { demandLetterAgent } from './agents/demandLetter';
 export { weatherAgent } from './agents/weather';
+export { flightBookingAgent } from './agents/flightBooking';
 
 // Export tools
 export { travelPlannerTools } from './tools/travelPlanner';
 export { demandLetterTools } from './tools/demandLetter';
 export { weatherTools } from './tools/weather';
+export { flightBookingTools } from './tools/flightBooking';
 
 // Export types from tools
 export type {
@@ -44,3 +46,7 @@ export type {
 	WeatherData,
 } from './tools/weather';
 
+export type {
+	Flight as BookingFlight,
+	Booking,
+} from './tools/flightBooking';
