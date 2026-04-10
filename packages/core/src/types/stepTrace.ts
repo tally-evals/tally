@@ -4,6 +4,33 @@
 
 import type { ModelMessage } from './messages';
 
+/**
+ * A pending tool call that required human-in-the-loop resolution.
+ */
+export interface HILToolCallTrace {
+	toolCallId: string;
+	toolName: string;
+	args: unknown;
+}
+
+/**
+ * The decision made for a HIL tool call.
+ */
+export type HILDecisionTrace =
+	| { type: 'approve'; result?: unknown }
+	| { type: 'reject'; reason?: string }
+	| { type: 'provide'; data: unknown };
+
+/**
+ * A recorded HIL interaction within a step trace.
+ */
+export interface HILInteractionTrace {
+	toolCall: HILToolCallTrace;
+	decision: HILDecisionTrace;
+	method: 'callback' | 'llm' | 'default';
+	timestamp: Date;
+}
+
 export type StepSelectionMethod =
   | 'start'
   | 'preconditions-ordered'
@@ -55,6 +82,9 @@ export interface StepTrace {
 
   /** Optional end marker (set on the final emitted step) */
   end?: StepTraceEnd;
+
+  /** HIL interactions that occurred during this turn (if any) */
+  hilInteractions?: readonly HILInteractionTrace[];
 }
 
 /**

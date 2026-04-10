@@ -12,7 +12,24 @@ export type {
 	TrajectoryResult,
 	TrajectoryStopReason,
 	AgentHandle,
+	AgentResponse,
+	HILDecisionMap,
 } from './core/types.js';
+
+export { resolveHILCalls, generateHILDecision } from './core/hil/index.js';
+export type {
+	HILToolCall,
+	HILApproveDecision,
+	HILRejectDecision,
+	HILProvideDecision,
+	HILDecision,
+	HILContext,
+	HILHandler,
+	HILToolPolicy,
+	HILConfig,
+	HILInteraction,
+	HILResolutionResult,
+} from './core/hil/index.js';
 
 // Step types
 export type {

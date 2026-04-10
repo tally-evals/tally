@@ -2,12 +2,15 @@
  * Agent invocation and message parsing
  */
 
-import type { AgentHandle } from '../types.js';
+import type { AgentHandle, AgentResponse } from '../types.js';
 import type { ModelMessage } from 'ai';
+import type { HILToolCall } from '../hil/types.js';
 
 export interface AgentInvocationResult {
 	assistantMessages: ModelMessage[];
 	allMessages: ModelMessage[];
+	/** Pending HIL tool calls detected by the framework wrapper */
+	pendingToolCalls: readonly HILToolCall[];
 }
 
 /**
@@ -17,7 +20,7 @@ export async function invokeAgent(
 	agent: AgentHandle,
 	history: readonly ModelMessage[]
 ): Promise<AgentInvocationResult> {
-	const agentResult = await agent.respond(history);
+	const agentResult: AgentResponse = await agent.respond(history);
 
 	// Separate assistant messages from other messages
 	const assistantMessages: ModelMessage[] = [];
@@ -31,6 +34,7 @@ export async function invokeAgent(
 	return {
 		assistantMessages,
 		allMessages: [...agentResult.messages],
+		pendingToolCalls: agentResult.pendingToolCalls,
 	};
 }
 
