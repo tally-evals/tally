@@ -60,6 +60,12 @@ packages/trajectories/
         loopDetector.ts    # consecutive same step detection
         utils/
           messageFormatting.ts # utilities for formatting messages from step traces
+      hil/
+        types.ts           # HIL configuration, decision, and interaction types
+        detector.ts        # (deprecated — detection is now per-wrapper)
+        handler.ts         # resolve HIL calls via callback / default / LLM → returns HILDecisionMap
+        prompt.ts          # LLM-as-user prompt builder for HIL decisions
+        index.ts           # barrel re-exports
       memory/
         interface.ts
         InMemoryAgentMemory.ts
@@ -299,6 +305,100 @@ Steps can define custom `isSatisfied` function, or use default heuristic (user r
     - `stepTraces.json`: Full StepTrace[] execution history
     - `trajectory.meta.json`: Static trajectory definition
 
+### HIL (Human-in-the-Loop) Support
+
+Between step 8 (call agent) and step 9 (collect messages), the orchestrator runs a **HIL detection and resolution loop** when `trajectory.hil` is configured.
+
+#### Detection
+
+HIL detection is **framework-specific** and handled by each agent wrapper. Each framework has its own first-class API for signalling pending tool approvals:
+
+- **AI SDK**: When a tool has `needsApproval: true`, the `generateText` result contains `tool-approval-request` content parts with `approvalId` and `toolCall` fields. The `withAISdkAgent` wrapper scans `result.content` for these parts.
+- **Mastra**: When a tool has `requireApproval: true` (or `requireToolApproval` is set on `.generate()`), the result has `finishReason: 'suspended'` and a `suspendPayload` containing `{ toolCallId, toolName, args }`. The `withMastraAgent` wrapper checks for this signal.
+
+Both wrappers expose detected tool calls via `AgentResponse.pendingToolCalls`, providing a **uniform interface** to the orchestrator without a generic message scanner.
+
+#### Resolution Strategy (priority order)
+
+For each pending tool call, the resolver checks:
+
+1. **Per-tool `handler` callback** — if `hil.tools[toolName].handler` exists, invoke it
+2. **Global `handler` callback** — if `hil.handler` exists, invoke it
+3. **Per-tool `behavior`** — if `hil.tools[toolName].behavior` is set, use it:
+   - `'approve'` → synthesize `{ approved: true }` (or custom `approveResult`)
+   - `'reject'` → synthesize `{ approved: false, reason }` (or custom `rejectReason`)
+   - `'llm'` → delegate to LLM-as-user with optional `guidance`
+4. **`defaultPolicy`** fallback — `hil.defaultPolicy` (defaults to `'llm'`)
+
+When `behavior` is `'llm'`, the system calls `generateHILDecision()` which uses `generateObject()` with a structured schema to produce a typed `approve | reject | provide` decision, framing the LLM as the user persona described in the trajectory.
+
+#### Resolution Protocol
+
+Once decisions are made, the orchestrator delegates resolution to the framework wrapper via `AgentHandle.resolveHIL(decisions, history)`. Each wrapper translates the abstract decisions into its native protocol:
+
+- **AI SDK**: Builds `tool-approval-response` messages (with `approvalId`, `approved`, optional `reason`) and appends them to the conversation before re-calling `generateText`.
+- **Mastra**: Calls `agent.approveToolCallGenerate({ runId, toolCallId })` or `agent.declineToolCallGenerate({ runId, toolCallId })` using the stateful `runId` captured from the original suspended response.
+
+This separation ensures the decision-making logic (handler) is framework-agnostic while the resolution protocol (wrapper) is framework-specific.
+
+#### Loop Mechanics
+
+```
+agentResult = invokeAgent(agent, history)
+hilInteractions = []
+roundtrip = 0
+while (hil configured && roundtrip < maxRoundtripsPerTurn):
+  pending = agentResult.pendingToolCalls   // from wrapper detection
+  if pending.length === 0: break
+  { decisions, interactions } = resolveHILCalls(pending, ...)
+  hilInteractions.push(...interactions)
+  history = [...history, ...agentResult.allMessages]
+  agentResult = agent.resolveHIL(decisions, history)  // wrapper protocol
+  roundtrip++
+```
+
+`maxRoundtripsPerTurn` (default: 5) caps the number of detect-resolve-reinvoke cycles per turn to prevent runaway loops.
+
+#### Tracing
+
+Each HIL interaction is recorded as an `HILInteractionTrace` on the `StepTrace`:
+
+```ts
+interface HILInteractionTrace {
+  toolCall: { toolCallId: string; toolName: string; args: unknown };
+  decision: { type: 'approve'; result?: unknown }
+          | { type: 'reject'; reason?: string }
+          | { type: 'provide'; data: unknown };
+  method: 'callback' | 'llm' | 'default';
+  timestamp: Date;
+}
+```
+
+HIL interactions are also included in JSONL/Conversation output metadata.
+
+#### Configuration
+
+```ts
+interface HILConfig {
+  tools?: Record<string, HILToolPolicy>;  // Per-tool policies
+  defaultPolicy?: 'approve' | 'reject' | 'llm';  // Fallback (default: 'llm')
+  maxRoundtripsPerTurn?: number;  // Safety cap (default: 5)
+  handler?: HILHandler;  // Global callback override
+}
+
+interface HILToolPolicy {
+  behavior: 'approve' | 'reject' | 'llm';
+  guidance?: string;      // LLM prompt hint (when behavior is 'llm')
+  handler?: HILHandler;   // Per-tool callback override
+  approveResult?: unknown; // Custom result for 'approve'
+  rejectReason?: string;   // Custom reason for 'reject'
+}
+```
+
+#### Relationship to Step Graph
+
+HIL is **orthogonal to the step system**. It happens transparently within a turn; the step graph does not know or care about HIL. `StepTrace.hilInteractions` is purely observational metadata for tracing and downstream evaluation.
+
 ### Policies
 
 - **`DefaultPolicy`**: 
@@ -461,6 +561,11 @@ These utilities are used by:
   - ✅ Step traces as single source of truth (replaces history dependency)
   - ✅ Message formatting utilities for step traces
   - ✅ Tool message support in conversation context
+  - ✅ Human-in-the-Loop (HIL) support: detection, resolution, and tracing
+  - ✅ Framework-agnostic HIL detection (AI SDK + Mastra)
+  - ✅ HIL strategies: callback, deterministic (approve/reject), LLM-as-user
+  - ✅ Per-tool and global HIL configuration
+  - ✅ HIL interaction traces on StepTrace
 - v0.1:
   - Enhanced tracing utilities and richer logs
   - Step graph visualization
