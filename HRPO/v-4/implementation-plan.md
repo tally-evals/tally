@@ -1,4 +1,4 @@
-# HRPO v3 Implementation Plan
+# HRPO v4 Implementation Plan
 
 ## Goal
 
@@ -26,7 +26,7 @@ The optimizer does not optimize the fixed trajectory set.
 
 The optimizer uses the fixed trajectories, Tally outputs, checkpoint history, and optimizer hyper parameters to improve the **agent under evaluation**.
 
-## v3 Design Decisions
+## v4 Design Decisions
 
 ### 1. What is being optimized
 

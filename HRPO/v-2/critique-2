@@ -1,162 +1,172 @@
-# HRPO v2 Implementation Plan Critique
+# HRPO v2 Architecture Critique
 
 ## Verdict
 
-The plan is close, but it still gets the core optimizer loop wrong in a few places.
+This is much better than v1, but parts of the critique were still overengineered.
 
-The good news is that the fixes are small. The bad news is that they are not optional. If you leave them as-is, the document will push implementation toward a weaker loop than the one you actually want.
+The real v2 architecture is smaller than that. Good. Keep it that way.
 
-This plan does not need more architecture. It needs less ambiguity.
+What actually matters here is not reproducibility theater, runtime observability, or fancy execution semantics. What matters is whether the optimizer loop is logically correct and hard to misread.
+
+That leaves three things that are genuinely important:
+
+- candidate selection must be stated correctly
+- scoring must forbid partial results
+- the next base prompt must be unambiguous
+
+Everything else should stay secondary.
 
 ## Critical Findings
 
-### 1. The plan still hardcodes the wrong iteration model
+### 1. The candidate selection rule must be stated plainly and cannot be left implicit
 
-The biggest problem is simple: the plan says `one prompt candidate per iteration`.
+This is the most important correction.
 
-That is too narrow for the cleaner loop you actually want. Your intended rule is:
+The architecture should say exactly this:
 
-- generate one or more candidates
-- evaluate them all on the same fixed trajectory set
-- rank them
-- continue from the best one
+- each iteration generates one or more candidate prompts
+- all candidates are evaluated on the same fixed trajectory set
+- each candidate gets one score
+- candidates are ranked by score
+- if the best candidate score is greater than or equal to the threshold, accept it and stop
+- otherwise continue from the best candidate from the current iteration
 
-The current plan instead describes a baseline-vs-one-challenger accept/reject loop. That is not the same thing.
+Anything weaker than that invites confusion.
 
-Why this matters:
+The earlier wording, "otherwise we'll keep the original one," was wrong. Not slightly wrong. Fundamentally wrong.
 
-- it makes ranking impossible
-- it makes `top K` impossible
-- it keeps the document stuck in a one-candidate hill-climb model
-- it conflicts with the cleaner selection rule you already settled on
+If you reset to the original prompt after every non-threshold iteration:
 
-If the architecture is supposed to stay simple, then say the simple thing correctly. Right now it does not.
+- you throw away progress
+- you stop accumulating improvements
+- you cripple the optimizer
 
-### 2. The scoring formula is still written in a way that can lie
+So this rule is not a wording detail. It is the difference between an optimizer and a loop that keeps sabotaging itself.
 
-The plan says:
+### 2. The score denominator must be fixed and non-negotiable
 
-`candidate_score = mean(OverallQuality for all completed conversations)`
+This is the second critical rule.
 
-That wording is a bug.
+If a candidate score is defined as:
 
-"Completed conversations" is how bad candidates get artificially inflated. Anything ugly that times out, fails, or disappears gets silently removed from the denominator, and the score magically improves.
+`mean(OverallQuality)`
 
-That is fake progress.
+then the denominator must be all required conversations in the fixed session set.
 
-The rule should be:
+Not:
+
+- completed conversations only
+- available conversations only
+- whatever happened to finish
+
+Because the moment you allow partial scoring, the system starts lying.
+
+Bad cases time out, fail, or disappear, and suddenly the candidate looks better than it really is. That is fake progress.
+
+So the rule needs to be brutally explicit:
 
 - score = mean `OverallQuality` over all required conversations
 - if any required conversation is missing, the candidate is invalid
 
-This is not a refinement. It is a hard integrity requirement.
+No exceptions. No soft interpretation.
 
-### 3. The accept/reject step still keeps the wrong prompt on rejection
+### 3. The next base prompt must be defined explicitly
 
-The plan says:
+The architecture still risks ambiguity here.
 
-- if accepted, candidate becomes active prompt
-- if rejected, keep the previous active prompt
+If the best candidate does not clear the threshold, what becomes the base prompt for the next iteration?
 
-That is exactly the behavior you already decided to avoid.
+The answer should be:
 
-If the best candidate in the current iteration does not hit threshold but is still the best thing produced so far, the next iteration should continue from that best candidate, not fall back to the previous prompt by default.
+- the best candidate from the current iteration
 
-Otherwise:
+Not:
 
-- progress gets thrown away
-- the loop resets too often
-- optimization becomes weaker than it needs to be
+- the original prompt
+- some vaguely "accepted" prompt
+- some unspecified "best so far" state that is never clearly recorded
 
-This is the single most dangerous implementation trap in the document because it looks harmless while quietly sabotaging the optimizer.
+If the document does not pin this down, someone will reintroduce the broken reset behavior later.
 
-### 4. The stop condition is still fuzzier than it needs to be
+You do not need complex survivor logic for v2. You need one clear rule:
 
-The plan says stop when:
+- next iteration starts from the best candidate produced in the current iteration
 
-- threshold reached
-- max iterations reached
-- no useful mutations remain
+That keeps the loop understandable and prevents accidental regression in the design itself.
 
-That third condition is vague and unnecessary.
+### 4. The system is session-specific, and the document should admit that
 
-If you want to keep the system simple, then keep the stop rule simple too:
+You do not need a validation framework in v2.
 
-- stop when score reaches threshold
-- or when max iterations is reached
-
-`no useful mutations remain` sounds practical, but in documents like this it usually means "someone will make up the rule later." That is exactly the kind of vagueness that bloats v2.
-
-### 5. The failure-analysis sections still spend too many words without defining the only output that matters
-
-The document explains:
-
-- failed step-level evals
-- failed conversation-level evals
-- per-turn summary
-- conversation-level summary
-
-Fine. But it still avoids stating the simple contract that implementation actually needs.
-
-What matters is:
-
-- input: failed conversations plus their eval scores
-- output: the list of `blockId`s to edit next
-
-If that is the real purpose, then say it that bluntly.
-
-Right now the plan risks sounding more elaborate than it really is.
-
-### 6. The document still mixes simplicity with extra wording that does not help decisions
-
-The goal section says:
-
-- one candidate per iteration
-
-The runtime flow says:
-
-- start from the last accepted prompt
-- compare against the current accepted checkpoint
-- accept or reject
-
-The non-goals section says:
-
-- multiple candidates per iteration are out
-
-That is a lot of wording spent reinforcing a loop shape that you no longer want.
-
-This is not harmless documentation drift. It will push implementation in the wrong direction because engineers will follow the written flow, not the intent in your head.
-
-### 7. The plan should admit session-local scope plainly
-
-This is not a big flaw, but it is still missing a blunt disclaimer:
+You do need one honest sentence:
 
 Optimization is session-specific and may not generalize beyond the current trajectory set.
 
-That one sentence would stop people from overselling what the loop proves.
+That is enough.
+
+Do not pretend this loop proves broad prompt quality improvement. It proves improvement on the frozen session set being optimized.
+
+### 5. The analysis-to-mutation step is still too hand-wavy
+
+This part does not need a heavy schema, but it does need a minimum contract.
+
+Right now the document still risks sounding like:
+
+- inspect failures
+- do some magic
+- mutate prompt
+
+That is too vague.
+
+For v2, keep it simple and say:
+
+- input: failed conversations plus their eval scores
+- output: a list of `block_id`s to modify
+
+That is enough structure to keep the loop honest without inventing a reflection framework.
 
 ## What To Fix
 
-1. Replace `one candidate per iteration` with `one or more candidates per iteration`.
-2. Replace the baseline-vs-one-challenger accept/reject loop with: evaluate all candidates, rank them, continue from the best candidate.
-3. Replace `all completed conversations` with `all required conversations`.
-4. State explicitly that any missing required conversation makes the candidate invalid.
-5. Remove `keep the previous active prompt` as the default rejection behavior.
-6. Remove `no useful mutations remain` from the stop condition.
-7. Simplify failure analysis to its real contract: failures and scores in, `blockId`s out.
-8. Add the one-line session-local disclaimer.
+1. Replace any wording that says or implies "keep the original prompt" after a non-threshold iteration.
+2. State the candidate loop once, plainly: evaluate all candidates, rank them, pick best, accept if best meets threshold, otherwise continue from that best candidate.
+3. State the denominator rule plainly: no partial scoring, no missing required conversations.
+4. State the next-base rule plainly: next iteration uses the best candidate from the current iteration.
+5. Add the one-line disclaimer that optimization is session-specific.
+6. Simplify the analysis/mutation contract to failed conversations plus scores in, `block_id`s out.
+
+## Clean Architecture
+
+### Core Loop
+
+1. Generate trajectories once per session.
+2. Evaluate the baseline prompt.
+3. Generate one or more candidate prompts.
+4. Evaluate all candidates on the same trajectories.
+5. Score each candidate as mean `OverallQuality` over all required conversations.
+6. Rank the candidates.
+7. Pick the best candidate.
+8. If best score is greater than or equal to threshold, accept it and stop.
+9. Otherwise continue from the best candidate.
+10. Repeat until threshold is met or max iterations is reached.
+
+### Rules
+
+- same trajectories for all candidates
+- same Tally config for all candidates
+- no partial scoring
+- simple mutation based on failures
+- no reset to the original prompt
 
 ## Bottom Line
 
-The plan is not broken because it is too simple.
+The stripped-down version is the right version.
 
-It is broken where it is simply wrong:
+Most of the previous critique was noise. The real architectural risks are simpler:
 
-- wrong iteration model
-- wrong denominator wording
-- wrong rejection behavior
-- vague stop condition
+- does the loop keep progress or throw it away?
+- does scoring use the full required set or silently drop failures?
+- is the next base prompt obvious or ambiguous?
 
-Fix those, and v2 becomes clean.
+Fix those, and the design is coherent.
 
-Leave them in, and the implementation will faithfully build the wrong loop.
+Miss those, and the rest of the architecture discussion is just decoration.
