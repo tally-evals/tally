@@ -114,8 +114,14 @@ Output:
 type PersistInputsResult = {
   sessionHash: string;
   persistedIterationIds: string[];
-  inputCount: number;                   //
+  inputCount: number;       
 };
+/*
+inputCount is the total number of conversation inputs that were persisted in that persistInputs(...) call.
+persistedIterationIds: which iterations were stored
+inputCount: how many inputs were stored
+So if you call persistInputs(...) with 25 frozen conversations, inputCount should be 25.
+*/
 ```
 
 ## Phase 2: Run Candidate
