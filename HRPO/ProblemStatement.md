@@ -1,4 +1,4 @@
-# HRPO Problem Statement
+# Problem Statement
 
 ## Problem
 
