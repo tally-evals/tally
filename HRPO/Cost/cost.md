@@ -57,10 +57,6 @@ HRPO-specific documented metrics not already implemented in Tally:
 - single-turn: `ContextPrecision`
 - single-turn: `ContextRecall`
 
-Not counted:
-
-- `AnswerRelevance` in `HRPO/Metrics` is already covered by Tally's `createAnswerRelevanceMetric`
-- `ConversationThreadMetric` is a generic multi-turn pattern, not one concrete metric
 
 So if all of the above LLM-backed metrics are enabled without double-counting duplicates:
 
