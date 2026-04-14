@@ -21,7 +21,6 @@ export type {
 	HILToolCall,
 	HILApproveDecision,
 	HILRejectDecision,
-	HILProvideDecision,
 	HILDecision,
 	HILContext,
 	HILHandler,

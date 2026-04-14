@@ -175,8 +175,8 @@ describe('resolveHILCalls', () => {
 					askForConfirmation: {
 						behavior: 'reject', // should be overridden by handler
 						handler: async (_call, _ctx) => ({
-							type: 'provide',
-							data: { userInput: 'confirmed via callback' },
+							type: 'approve',
+							result: { userInput: 'confirmed via callback' },
 						}),
 					},
 				},
@@ -189,8 +189,8 @@ describe('resolveHILCalls', () => {
 			);
 
 			expect(interactions[0]!.decision).toEqual({
-				type: 'provide',
-				data: { userInput: 'confirmed via callback' },
+				type: 'approve',
+				result: { userInput: 'confirmed via callback' },
 			});
 			expect(interactions[0]!.method).toBe('callback');
 		});
@@ -269,11 +269,11 @@ describe('resolveHILCalls', () => {
 	});
 
 	describe('decision map structure', () => {
-		it('builds correct decision map for provide decision', async () => {
+		it('builds correct decision map for approve decision via handler', async () => {
 			const config: HILConfig = {
 				handler: async () => ({
-					type: 'provide',
-					data: { email: 'user@example.com' },
+					type: 'approve',
+					result: { email: 'user@example.com' },
 				}),
 			};
 			const { decisions } = await resolveHILCalls(
@@ -286,8 +286,8 @@ describe('resolveHILCalls', () => {
 			expect(decisions.size).toBe(1);
 			const decision = decisions.get('call-99');
 			expect(decision).toEqual({
-				type: 'provide',
-				data: { email: 'user@example.com' },
+				type: 'approve',
+				result: { email: 'user@example.com' },
 			});
 		});
 	});

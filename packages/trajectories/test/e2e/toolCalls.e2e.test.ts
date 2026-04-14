@@ -85,29 +85,30 @@ const calculatorToolMastra = createTool({
 		b: z4.number(),
 		result: z4.number(),
 	}),
-	execute: async ({ context }) => {
+	execute: async (inputData) => {
 		let result: number;
-		switch (context.operation) {
+		switch (inputData.operation) {
 			case 'add':
-				result = context.a + context.b;
+				result = inputData.a + inputData.b;
 				break;
 			case 'subtract':
-				result = context.a - context.b;
+				result = inputData.a - inputData.b;
 				break;
 			case 'multiply':
-				result = context.a * context.b;
+				result = inputData.a * inputData.b;
 				break;
 			case 'divide':
-				result = context.b !== 0 ? context.a / context.b : NaN;
+				result = inputData.b !== 0 ? inputData.a / inputData.b : NaN;
 				break;
 			default:
 				result = NaN;
 		}
-		return { operation: context.operation, a: context.a, b: context.b, result };
+		return { operation: inputData.operation, a: inputData.a, b: inputData.b, result };
 	},
 });
 
 const mastraCalculatorAgent = new MastraAgent({
+	id: 'calculator-agent',
 	name: 'Calculator Agent',
 	instructions:
 		'You are a calculator assistant. When the user asks you to perform a calculation, ALWAYS use the calculator tool to compute the answer. Never compute answers in your head.',

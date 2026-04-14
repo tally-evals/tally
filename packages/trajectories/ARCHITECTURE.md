@@ -62,7 +62,6 @@ packages/trajectories/
           messageFormatting.ts # utilities for formatting messages from step traces
       hil/
         types.ts           # HIL configuration, decision, and interaction types
-        detector.ts        # (deprecated — detection is now per-wrapper)
         handler.ts         # resolve HIL calls via callback / default / LLM → returns HILDecisionMap
         prompt.ts          # LLM-as-user prompt builder for HIL decisions
         index.ts           # barrel re-exports

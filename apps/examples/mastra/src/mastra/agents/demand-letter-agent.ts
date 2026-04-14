@@ -18,6 +18,7 @@ const DEMAND_LETTER_SYSTEM_PROMPT = `You are a helpful legal assistant that help
 Always ensure all required fields are collected before generating the final demand letter.`;
 
 export const demandLetterAgent = new Agent({
+  id: 'demand-letter-agent',
   name: 'Demand Letter Agent',
   instructions: DEMAND_LETTER_SYSTEM_PROMPT,
   model: DEFAULT_MODEL_ID,

@@ -264,14 +264,85 @@ interface Trajectory {
   loopDetection?: {
     maxConsecutiveSameStep?: number
   }
+  hil?: HILConfig
 }
 ```
+
+## Human-in-the-Loop (HIL)
+
+Trajectories supports **Human-in-the-Loop** simulation — when an agent issues a tool call that requires human approval, the orchestrator resolves it automatically according to the trajectory's `hil` configuration.
+
+### Supported Frameworks
+
+| Framework | HIL signal | Resolution |
+|-----------|-----------|------------|
+| **AI SDK v6** | `needsApproval: true` on a tool → `tool-approval-request` part in response | `tool-approval-response` messages |
+| **Mastra** | `requireApproval: true` on a tool → agent suspends with `suspendPayload` | `approveToolCall()` / `declineToolCall()` |
+
+### Configuration
+
+Add an `hil` property to your trajectory:
+
+```ts
+const trajectory = createTrajectory({
+  goal: 'Book a flight',
+  persona: { description: 'A cautious traveller' },
+  hil: {
+    // Per-tool policies
+    tools: {
+      bookFlight: { behavior: 'approve' },
+      deleteFlight: { behavior: 'reject', rejectReason: 'Never cancel flights' },
+      askConfirmation: { behavior: 'llm', guidance: 'Approve if price < $500' },
+    },
+    // Fallback for tools not listed above (default: 'llm')
+    defaultPolicy: 'llm',
+    // Max HIL round-trips per turn (default: 5)
+    maxRoundtripsPerTurn: 3,
+  },
+  maxTurns: 10,
+  userModel,
+}, agent);
+```
+
+### Decision Behaviours
+
+| Behaviour | Description |
+|-----------|-------------|
+| `'approve'` | Auto-approve the tool call. Optionally set `approveResult` for a fixed result. |
+| `'reject'` | Auto-reject. Optionally set `rejectReason`. |
+| `'llm'` | Delegate to the LLM-as-user (stays in persona). Optionally set `guidance`. |
+
+### Callback Handler
+
+For custom logic, use a `handler` callback instead of (or alongside) `behavior`:
+
+```ts
+hil: {
+  handler: async (call, context) => {
+    if (call.args.amount > 1000) {
+      return { type: 'reject', reason: 'Amount too high' };
+    }
+    return { type: 'approve' };
+  },
+}
+```
+
+Per-tool handlers take precedence over global handlers, which take precedence over `behavior`.
+
+### HIL Interaction Traces
+
+Every HIL interaction is recorded in the step trace as `hilInteractions[]`, capturing:
+- The tool call (name, ID, args)
+- The decision (approve/reject)
+- The resolution method (callback/llm/default)
+- Timestamp
 
 ## Examples
 
 See the example agents in the monorepo:
-- `apps/examples/ai-sdk/` - AI SDK agent examples (weather, travel planner, demand letter)
-- `apps/examples/mastra/` - Mastra agent examples
+- `apps/examples/ai-sdk/` - AI SDK agent examples (weather, travel planner, demand letter, flight booking HIL)
+- `apps/examples/mastra/` - Mastra agent examples (travel planner, order processing HIL)
+- `test/e2e/hil.e2e.test.ts` - HIL E2E tests for both AI SDK and Mastra
 - `test/e2e/weather.e2e.test.ts` - E2E test examples showing trajectory usage
 
 These show end-to-end runs and saving JSONL/Tally outputs.

@@ -63,22 +63,9 @@ export interface HILRejectDecision {
 }
 
 /**
- * A data-provision decision — the simulated user supplies additional
- * input data that the agent requested (e.g. Mastra suspend/resume pattern).
- */
-export interface HILProvideDecision {
-	type: 'provide';
-	/** The data to return as the tool result */
-	data: unknown;
-}
-
-/**
  * The decision made for a single HIL tool call.
  */
-export type HILDecision =
-	| HILApproveDecision
-	| HILRejectDecision
-	| HILProvideDecision;
+export type HILDecision = HILApproveDecision | HILRejectDecision;
 
 // ============================================================================
 // Context provided to handlers / LLM
@@ -135,8 +122,11 @@ export interface HILToolPolicy {
 	 * - `'approve'` — automatically approve (optionally with a fixed result)
 	 * - `'reject'`  — automatically reject (optionally with a reason)
 	 * - `'llm'`     — delegate to the LLM-as-user generator
+	 *
+	 * Optional when `handler` is provided (the handler takes precedence).
+	 * When neither `behavior` nor `handler` is set, falls back to `defaultPolicy`.
 	 */
-	behavior: 'approve' | 'reject' | 'llm';
+	behavior?: 'approve' | 'reject' | 'llm';
 
 	/**
 	 * Natural-language guidance injected into the LLM prompt when
@@ -155,6 +145,10 @@ export interface HILToolPolicy {
 	/**
 	 * Fixed result to return when `behavior` is `'approve'`.
 	 * If omitted, `{ approved: true }` is synthesised.
+	 *
+	 * **Note:** This value is only used by the deterministic handler.
+	 * AI SDK and Mastra wrappers execute the actual tool after approval;
+	 * they do not inject `approveResult` as the tool result.
 	 */
 	approveResult?: unknown;
 

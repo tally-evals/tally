@@ -6,13 +6,12 @@
 
 export { resolveHILCalls } from './handler.js';
 export type { HILResolutionResult } from './handler.js';
-export { generateHILDecision } from './prompt.js';
+export { generateHILDecision, toHILDecision } from './prompt.js';
 
 export type {
 	HILToolCall,
 	HILApproveDecision,
 	HILRejectDecision,
-	HILProvideDecision,
 	HILDecision,
 	HILContext,
 	HILHandler,

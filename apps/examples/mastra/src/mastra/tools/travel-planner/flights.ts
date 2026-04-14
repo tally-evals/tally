@@ -99,7 +99,7 @@ export const searchFlightsTool = createTool({
     description: 'Search for flights between two cities',
     inputSchema: searchFlightsParamsSchema,
     outputSchema: z.array(flightSchema),
-    execute: async ({ context }) => {
+    execute: async (inputData) => {
         const {
             origin,
             destination,
@@ -111,7 +111,7 @@ export const searchFlightsTool = createTool({
             airlines,
             departureTimeRange,
             sortBy = 'price',
-        } = context;
+        } = inputData;
 
         // Generate a stable seed from main parameters
         const seed = generateSeed(origin, destination, departureDate, flightClass);

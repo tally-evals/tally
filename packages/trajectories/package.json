@@ -50,7 +50,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@mastra/core": "^0.24.9",
+    "@mastra/core": "^1.24.1",
     "@tally-evals/core": "workspace:*",
     "ai": "^6.0.0"
   },
@@ -59,7 +59,7 @@
   },
   "devDependencies": {
     "@ai-sdk/google": "^3.0.0",
-    "@mastra/libsql": "^0.16.4",
+    "@mastra/libsql": "^1.8.0",
     "@tally-evals/biome-config": "workspace:*",
     "@tally-evals/tally": "workspace:*",
     "@tally-evals/typescript-config": "workspace:*",

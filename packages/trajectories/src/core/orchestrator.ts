@@ -319,50 +319,60 @@ export async function runTrajectory(
 					stepToUse ? { currentStep: stepToUse } : {},
 				);
 
-				// Handler determines approve/reject/provide for each call
-				const { decisions, interactions } =
-					await resolveHILCalls(
-						pending,
-						trajectory.hil,
-						hilContext,
-						userModel,
-					);
-
-				// Record interactions for tracing
-				for (const interaction of interactions) {
-					hilInteractions.push(toHILInteractionTrace(interaction));
-					if (generateLogs) {
-						console.log(
-							`    ↳ ${interaction.toolCall.toolName}: ${interaction.decision.type} (${interaction.method})`,
+				let resolved = false;
+				try {
+					// Handler determines approve/reject for each call
+					const { decisions, interactions } =
+						await resolveHILCalls(
+							pending,
+							trajectory.hil,
+							hilContext,
+							userModel,
 						);
+
+					// Record interactions for tracing
+					for (const interaction of interactions) {
+						hilInteractions.push(toHILInteractionTrace(interaction));
+						if (generateLogs) {
+							console.log(
+								`    ↳ ${interaction.toolCall.toolName}: ${interaction.decision.type} (${interaction.method})`,
+							);
+						}
 					}
-				}
 
-				// Include agent messages in the history before resolution
-				currentHistory = [
-					...currentHistory,
-					...agentResult.allMessages,
-				];
+					// Include agent messages in the history before resolution
+					currentHistory = [
+						...currentHistory,
+						...agentResult.allMessages,
+					];
 
-				// Delegate resolution to the framework wrapper
-				if (trajectory.agent.resolveHIL) {
-					agentResult = await (async () => {
-						const response = await trajectory.agent.resolveHIL!(
+					// Delegate resolution to the framework wrapper
+					if (trajectory.agent.resolveHIL) {
+						const response = await trajectory.agent.resolveHIL(
 							decisions,
 							currentHistory,
 						);
-						// Parse the response the same way invokeAgent does
 						const assistantMessages = response.messages.filter(
 							(m) => m.role === 'assistant',
 						);
-						return {
+						agentResult = {
 							assistantMessages,
 							allMessages: [...response.messages],
 							pendingToolCalls: response.pendingToolCalls,
 						};
-					})();
-				} else {
-					// No resolveHIL on the wrapper — can't continue the loop
+						resolved = true;
+					}
+				} catch (err) {
+					if (generateLogs) {
+						console.warn(
+							` HIL round ${roundtrip + 1} failed:`,
+							err instanceof Error ? err.message : err,
+						);
+					}
+				}
+
+				if (!resolved) {
+					// Resolution failed or no resolveHIL on wrapper — stop loop
 					break;
 				}
 

@@ -11,17 +11,11 @@ import { formatConversationFromTraces } from '../../utils/messageFormatting.js';
 
 /** Zod schema for the structured LLM output */
 const hilDecisionSchema = z.object({
-	decision: z.enum(['approve', 'reject', 'provide']),
+	decision: z.enum(['approve', 'reject']),
 	reason: z
 		.string()
 		.optional()
 		.describe('Short explanation for the decision'),
-	data: z
-		.string()
-		.optional()
-		.describe(
-			'JSON-serialised data to provide back to the agent (only when decision is "provide")',
-		),
 });
 
 /**
@@ -33,7 +27,7 @@ const hilDecisionSchema = z.object({
  * - The specific tool call with its arguments
  * - Optional per-tool guidance
  *
- * @returns A typed HILDecision (approve / reject / provide)
+ * @returns A typed HILDecision (approve / reject)
  */
 export async function generateHILDecision(
 	call: HILToolCall,
@@ -81,7 +75,6 @@ ${conversationContext || '(no history yet)'}
 Based on your persona and goal, decide:
 - "approve" — if you want the action to proceed
 - "reject"  — if you do not want this action
-- "provide" — if you want to supply additional/different data for the tool
 
 Respond with your decision.`;
 
@@ -98,23 +91,14 @@ Respond with your decision.`;
 
 /**
  * Convert the raw schema output to a typed HILDecision.
+ *
+ * Exported for unit testing.
  */
-function toHILDecision(raw: z.infer<typeof hilDecisionSchema>): HILDecision {
+export function toHILDecision(raw: z.infer<typeof hilDecisionSchema>): HILDecision {
 	switch (raw.decision) {
 		case 'approve':
 			return { type: 'approve' };
 		case 'reject':
 			return { type: 'reject', ...(raw.reason && { reason: raw.reason }) };
-		case 'provide': {
-			let data: unknown = raw.data ?? null;
-			if (typeof data === 'string') {
-				try {
-					data = JSON.parse(data);
-				} catch {
-					// keep as string
-				}
-			}
-			return { type: 'provide', data };
-		}
 	}
 }

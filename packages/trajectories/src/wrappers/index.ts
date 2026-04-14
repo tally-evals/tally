@@ -83,15 +83,7 @@ function buildAISdkApprovalMessages(
 					...(decision.reason && { reason: decision.reason }),
 				});
 				break;
-			case 'provide':
-				// AI SDK approval is binary (approve/reject). For 'provide'
-				// decisions, we approve and let the tool execute.
-				approvalParts.push({
-					type: 'tool-approval-response',
-					approvalId,
-					approved: true,
-				});
-				break;
+	
 		}
 	}
 
@@ -220,10 +212,18 @@ export function withAISdkAgent(
 			});
 		}
 
-		// Detect HIL via tool-approval-request parts in result.content
-		const pendingToolCalls = extractAISdkPendingToolCalls(
-			(result as unknown as { content?: unknown[] }).content ?? [],
-		);
+		// Detect HIL via tool-approval-request parts in response messages.
+		// generateText doesn't surface a top-level `content` array like
+		// Agent.generate() does — scan step response messages instead.
+		const allContentParts: unknown[] = [];
+		if (result.response?.messages) {
+			for (const msg of result.response.messages) {
+				if (msg && typeof msg === 'object' && 'content' in msg && Array.isArray((msg as { content: unknown }).content)) {
+					allContentParts.push(...(msg as { content: unknown[] }).content);
+				}
+			}
+		}
+		const pendingToolCalls = extractAISdkPendingToolCalls(allContentParts);
 
 		return { messages, pendingToolCalls };
 	}
@@ -288,9 +288,13 @@ function extractMastraMessages(out: MastraRawOutput): ModelMessage[] {
  * by the resume methods (`approveToolCall` / `declineToolCall`).
  *
  * The proxy exposes lazy Promise getters for every field.  The underlying
- * ReadableStream auto-flows while the agent loop produces chunks, so simply
- * awaiting `suspendPayload` is enough to detect suspension—no manual
- * `consumeStream()` call is required.
+ * ReadableStream auto-flows while the agent loop produces chunks.
+ *
+ * **Important (Mastra v1.x):** We must call `consumeStream()` before reading
+ * resolved properties.  The workflow engine persists suspended-state snapshots
+ * as part of the stream pipeline; reading `suspendPayload` alone does NOT
+ * guarantee the snapshot has been flushed to storage.  Without a flushed
+ * snapshot, `approveToolCall` / `declineToolCall` cannot resume the run.
  *
  * Suspension semantics:
  * - `suspendPayload` always resolves (never hangs):
@@ -310,6 +314,19 @@ async function processMastraStreamOutput(raw: unknown): Promise<MastraRawOutput>
 	// runId is a direct (non-Promise) property on MastraModelOutput.
 	const runId = any.runId as string | undefined;
 
+	// Fully consume the stream before reading resolved properties.
+	// In Mastra v1.x the workflow engine persists suspended-state snapshots
+	// asynchronously as part of the stream pipeline.  Calling `consumeStream()`
+	// guarantees the snapshot is flushed to storage before we attempt to
+	// approve / decline the tool call in a subsequent step.
+	if (typeof any.consumeStream === 'function') {
+		try {
+			await (any.consumeStream as () => Promise<void>)();
+		} catch {
+			// Tolerate stream errors — we'll still try to read resolvedproperties.
+		}
+	}
+
 	// Await suspendPayload — always resolves whether suspended or not.
 	let suspendPayload: MastraRawOutput['suspendPayload'];
 	try {
@@ -320,7 +337,7 @@ async function processMastraStreamOutput(raw: unknown): Promise<MastraRawOutput>
 
 	if (suspendPayload && typeof suspendPayload === 'object' && 'toolCallId' in suspendPayload) {
 		// Agent suspended — do NOT await text/steps (they won't resolve).
-		return { runId, suspendPayload };
+		return { ...(runId != null ? { runId } : {}), suspendPayload };
 	}
 
 	// Normal finish — text/steps are now fully resolved.
@@ -333,7 +350,11 @@ async function processMastraStreamOutput(raw: unknown): Promise<MastraRawOutput>
 		// Treat errors as empty output.
 	}
 
-	return { runId, text, steps, suspendPayload: undefined };
+	return {
+		...(runId != null ? { runId } : {}),
+		...(text != null ? { text } : {}),
+		...(steps != null ? { steps } : {}),
+	};
 }
 
 /**
@@ -341,9 +362,10 @@ async function processMastraStreamOutput(raw: unknown): Promise<MastraRawOutput>
  *
  * **HIL detection — real agents (`stream()` available)**
  * When the wrapped agent has a `stream` method, `withMastraAgent` calls
- * `agent.stream(history, { requireToolApproval: true })`, which returns a
- * `MastraModelOutput` proxy.  Awaiting `output.suspendPayload` safely detects
- * whether the agent suspended without risk of hanging.
+ * `agent.stream(history)`, which returns a `MastraModelOutput` proxy.
+ * Tools with `requireApproval: true` cause the agent to suspend automatically.
+ * Awaiting `output.suspendPayload` safely detects whether the agent suspended
+ * without risk of hanging.
  *
  * **HIL detection — mock agents (only `generate()` available)**
  * For unit-test mocks that only implement `generate()`, the wrapper calls
@@ -399,10 +421,6 @@ export function withMastraAgent(
 	let lastRunId: string | undefined;
 	let lastSuspendPayload: { toolCallId: string; toolName: string; args: unknown } | undefined;
 
-	const hasApprovalSupport =
-		typeof agent.approveToolCall === 'function' ||
-		typeof agent.approveToolCallGenerate === 'function';
-
 	/**
 	 * Call the agent and return a normalised AgentResponse.
 	 *
@@ -413,13 +431,11 @@ export function withMastraAgent(
 
 		// ── Real Mastra agent path (stream() available) ──────────────────────────
 		if (typeof agent.stream === 'function') {
-			const streamOutput = await agent.stream(
+			const streamOutput = await (agent as Agent).stream(
 				history as Parameters<Agent['stream']>[0],
-				// Tell Mastra to suspend on approval-required tools instead of
-				// executing them automatically.
-				hasApprovalSupport
-					? ({ requireToolApproval: true } as Parameters<Agent['stream']>[1])
-					: undefined,
+				// Tell Mastra to suspend on tools that have requireApproval: true
+				// instead of executing them automatically.
+				{ requireToolApproval: true },
 			);
 
 			const out = await processMastraStreamOutput(streamOutput);
@@ -515,7 +531,7 @@ export function withMastraAgent(
 				? decisions.get(lastSuspendPayload.toolCallId)
 				: undefined;
 
-			const shouldApprove = decision?.type === 'approve' || decision?.type === 'provide';
+			const shouldApprove = decision?.type === 'approve';
 
 			const runId = lastRunId;
 			const toolCallId = lastSuspendPayload?.toolCallId;

@@ -92,15 +92,16 @@ const mastraConfirmAction = createTool({
 	}),
 	// ⭐ Mastra's per-tool HIL flag — triggers suspension before executing
 	requireApproval: true,
-	execute: async ({ context }) => ({
+	execute: async (inputData) => ({
 		status: 'completed',
-		action: context.action,
-		details: context.details ?? '',
+		action: inputData.action,
+		details: inputData.details ?? '',
 		executedAt: new Date().toISOString(),
 	}),
 });
 
 const mastraHILAgent = new MastraAgent({
+	id: 'hil-test-agent',
 	name: 'HIL Test Agent',
 	instructions: `You are a helpful assistant that processes user requests.
 
@@ -123,7 +124,7 @@ After the tool result is returned, summarise what happened in one short sentence
  * no cleanup required between tests.
  */
 const _mastraInstance = new Mastra({
-	storage: new LibSQLStore({ url: ':memory:' }),
+	storage: new LibSQLStore({ id: 'hil-test-storage', url: ':memory:' }),
 	agents: { 'HIL Test Agent': mastraHILAgent },
 });
 

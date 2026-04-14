@@ -281,3 +281,134 @@ describe('withMastraAgent HIL detection', () => {
 	});
 });
 
+// ---------------------------------------------------------------------------
+// Mastra wrapper detection — stream() path
+// ---------------------------------------------------------------------------
+
+describe('withMastraAgent HIL detection (stream path)', () => {
+	/**
+	 * Build a mock agent whose `stream()` returns an object with
+	 * Promise-valued properties (mimicking the real MastraModelOutput proxy).
+	 */
+	function makeMastraStreamMock(opts: {
+		text?: string;
+		runId?: string;
+		suspendPayload?: { toolCallId: string; toolName: string; args: unknown } | undefined;
+		steps?: Array<{ response?: { messages: ModelMessage[] } }>;
+	}) {
+		return {
+			// generate is required by the wrapper signature but won't be
+			// called when stream() is available.
+			generate: async () => {
+				throw new Error('generate should not be called when stream is available');
+			},
+			stream: async () => ({
+				runId: opts.runId,
+				suspendPayload: Promise.resolve(opts.suspendPayload),
+				text: Promise.resolve(opts.text ?? ''),
+				steps: Promise.resolve(opts.steps ?? []),
+			}),
+			approveToolCall: async (o: { runId: string; toolCallId?: string }) => ({
+				runId: o.runId,
+				suspendPayload: Promise.resolve(undefined),
+				text: Promise.resolve('Approved via stream'),
+				steps: Promise.resolve([{
+					response: {
+						messages: [{ role: 'assistant' as const, content: 'Approved via stream' }],
+					},
+				}]),
+			}),
+			declineToolCall: async (o: { runId: string; toolCallId?: string }) => ({
+				runId: o.runId,
+				suspendPayload: Promise.resolve(undefined),
+				text: Promise.resolve('Declined via stream'),
+				steps: Promise.resolve([{
+					response: {
+						messages: [{ role: 'assistant' as const, content: 'Declined via stream' }],
+					},
+				}]),
+			}),
+		};
+	}
+
+	it('returns empty pendingToolCalls when stream() finishes normally', async () => {
+		const mock = makeMastraStreamMock({
+			text: 'Hello!',
+			steps: [{ response: { messages: [{ role: 'assistant' as const, content: 'Hello!' }] } }],
+		});
+		const handle = withMastraAgent(mock as never);
+		const result = await handle.respond([{ role: 'user', content: 'Hi' }]);
+
+		expect(result.pendingToolCalls).toEqual([]);
+		expect(result.messages).toHaveLength(1);
+	});
+
+	it('detects suspension via stream() suspendPayload', async () => {
+		const mock = makeMastraStreamMock({
+			runId: 'run-stream-1',
+			suspendPayload: {
+				toolCallId: 'tc-stream-1',
+				toolName: 'bookFlight',
+				args: { flightId: 'FL-100' },
+			},
+		});
+		const handle = withMastraAgent(mock as never);
+		const result = await handle.respond([]);
+
+		expect(result.pendingToolCalls).toHaveLength(1);
+		expect(result.pendingToolCalls[0]).toEqual({
+			toolCallId: 'tc-stream-1',
+			toolName: 'bookFlight',
+			args: { flightId: 'FL-100' },
+		});
+	});
+
+	it('resolveHIL calls approveToolCall on approve decision (stream path)', async () => {
+		const mock = makeMastraStreamMock({
+			runId: 'run-stream-2',
+			suspendPayload: {
+				toolCallId: 'tc-stream-2',
+				toolName: 'confirmOrder',
+				args: {},
+			},
+		});
+		const handle = withMastraAgent(mock as never);
+
+		// Trigger suspension
+		await handle.respond([]);
+
+		// Resolve with approval
+		const decisions = new Map();
+		decisions.set('tc-stream-2', { type: 'approve' as const });
+		const resolved = await handle.resolveHIL!(decisions, []);
+
+		expect(resolved.messages).toHaveLength(1);
+		expect(resolved.messages[0]!.content).toBe('Approved via stream');
+		expect(resolved.pendingToolCalls).toEqual([]);
+	});
+
+	it('resolveHIL calls declineToolCall on reject decision (stream path)', async () => {
+		const mock = makeMastraStreamMock({
+			runId: 'run-stream-3',
+			suspendPayload: {
+				toolCallId: 'tc-stream-3',
+				toolName: 'deleteAccount',
+				args: {},
+			},
+		});
+		const handle = withMastraAgent(mock as never);
+
+		// Trigger suspension
+		await handle.respond([]);
+
+		// Resolve with rejection
+		const decisions = new Map();
+		decisions.set('tc-stream-3', { type: 'reject' as const, reason: 'Too risky' });
+		const resolved = await handle.resolveHIL!(decisions, []);
+
+		expect(resolved.messages).toHaveLength(1);
+		expect(resolved.messages[0]!.content).toBe('Declined via stream');
+		expect(resolved.pendingToolCalls).toEqual([]);
+	});
+});
+
