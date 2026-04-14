@@ -7,12 +7,17 @@ Input: configuration for a code-based single-turn metric that checks substring p
 Output: a Tally single-turn metric definition that returns a boolean raw value.
 
 Contains:
+
 checks whether a required substring appears in the output.
 It returns 1.0 if the reference string is found and 0.0 otherwise.
+
 Example:
+
 input: “What is the capital of France?” 
 reference substring: “Paris” 
+
 output: “The capital of France is Paris.” → pass; 
+
 output: “France is in Europe.” → fail. 
 
 

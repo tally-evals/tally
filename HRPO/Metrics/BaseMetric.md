@@ -8,7 +8,9 @@ A metric system needs some common structure for every metric, whether that metri
 
 
 Code-based metrics:   
+
 Equals, Contains, RegexMatch, IsJson, and LevenshteinRatio 
+
 
 LLM-based metrics: LLM-judge style metrics that evaluate meaning, safety, or grounding rather than just string shpae:
  Hallucination, GEval, Moderation, AnswerRelevance, ContextPrecision, and ContextRecall 
@@ -16,7 +18,9 @@ LLM-based metrics: LLM-judge style metrics that evaluate meaning, safety, or gro
 
 Input: a base metric configuration object used before building a single-turn or multi-turn metric.
 
+
 Output: a Tally base metric definition object.
+
 
 What all metrics have in common is that they need at least:
 a name,

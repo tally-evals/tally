@@ -7,10 +7,15 @@ Input: configuration for a code-based single-turn metric that computes edit-dist
 Output: a Tally single-turn metric definition that returns a numeric raw value.
 
 LevenshteinRatio:
+
  measures string similarity rather than exact equality. It gives a score between 0.0 and 1.0, where higher means the output is more similar to the reference string. 
+
 Example: 
+
 reference: “Paris” 
+
 output: “Pariss” → high but not perfect score; 
+
 output: “London” → much lower score. This is helpful when near-matches should get partial credit. 
 
 Input type:

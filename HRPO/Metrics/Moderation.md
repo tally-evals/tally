@@ -7,8 +7,11 @@ Input: configuration for an LLM-based single-turn metric that judges safety or m
 Output: a Tally single-turn metric definition that returns a numeric raw value.
 
 Moderation:
+
  is a safety/appropriateness metric. It uses an LLM to judge whether content is acceptable, returning a score between 0.0 and 1.0, where higher means more appropriate content. 
+
  Example: 
+ 
  output: “The capital of France is Paris.” → likely high moderation score; an abusive or unsafe response would score lower. 
 
 

@@ -7,10 +7,15 @@ Input: configuration for a code-based single-turn metric that checks regex compl
 Output: a Tally single-turn metric definition that returns a boolean raw value.
 
 RegexMatch:
+
  checks whether the output matches a required pattern. This is useful when the answer can vary in content but must follow a format.
+
  Example: 
+
  input: “Give the capital of France in the format Capital: <answer>” 
+
  output: “Capital: Paris” with a regex like ^Capital:\s[A-Za-z]+$ → match; 
+ 
  output: “Paris is the capital of France” → no match. 
 
 

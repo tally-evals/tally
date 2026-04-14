@@ -38,27 +38,42 @@ If every model-backed step writes `totalCost`, this becomes exact and does not n
 
 LLM-backed evaluator uses `gemini-2.5-flash-lite`.
 
-Documented LLM-backed metrics:
+LLM-backed metrics that can be used here are:
+
+Tally built-ins:
+
+- single-turn: `createAnswerRelevanceMetric`
+- single-turn: `createCompletenessMetric`
+- single-turn: `createToxicityMetric`
+- multi-turn: `createRoleAdherenceMetric`
+- multi-turn: `createGoalCompletionMetric`
+- multi-turn: `createTopicAdherenceMetric`
+
+HRPO-specific documented metrics not already implemented in Tally:
 
 - single-turn: `Hallucination`
 - single-turn: `GEval`
 - single-turn: `Moderation`
-- single-turn: `AnswerRelevance`
 - single-turn: `ContextPrecision`
 - single-turn: `ContextRecall`
-- multi-turn: `ConversationThreadMetric`
 
-So if all documented LLM judge metrics are enabled:
+Not counted:
+
+- `AnswerRelevance` in `HRPO/Metrics` is already covered by Tally's `createAnswerRelevanceMetric`
+- `ConversationThreadMetric` is a generic multi-turn pattern, not one concrete metric
+
+So if all of the above LLM-backed metrics are enabled without double-counting duplicates:
 
 ```text
-Single-turn metrics = 6
-Multi-turn metrics = 1
+Single-turn metrics = 8
+Multi-turn metrics = 3
 ```
 
 That means each conversation evaluation uses:
 
 ```text
-LLM judge calls per conversation = 6 * number_of_steps_per_conversation + 1
+LLM judge calls per conversation
+= 8 * number_of_steps_per_conversation + 3
 ```
 
 ## 4. Main takeaways

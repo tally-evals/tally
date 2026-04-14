@@ -8,10 +8,15 @@ Input: configuration for an LLM-based single-turn metric with custom evaluation 
 Output: a Tally single-turn metric definition that returns a numeric raw value.
 
 GEval:
+
  is a rubric-based LLM judge. You give it a task description and evaluation criteria, and it scores the output from 0.0 to 1.0 with a reason. 
+
  Example: 
+
  task introduction: “Evaluate whether the answer is clear and correct.” 
+
  criteria: “The answer should be factually correct, concise, and directly answer the question.” 
+ 
  output: “Paris is the capital of France.” → likely high score. This is useful when quality cannot be captured by exact string matching. 
 
 Input type:
