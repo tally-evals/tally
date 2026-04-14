@@ -1,4 +1,4 @@
-# HRPO Cost Model
+# Optimizer Cost Model
 
 ## 1. The cost-driving parts are:
 

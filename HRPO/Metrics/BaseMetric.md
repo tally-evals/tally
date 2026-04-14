@@ -1,6 +1,11 @@
 # BaseMetric
 
-Creates the base definition shared by code-based and LLM-based metrics.
+
+
+It is the shared definition that all metrics start from. In other words, before you create a specific metric, you first define its basic identity and output type through this base shape.
+
+A metric system needs some common structure for every metric, whether that metric is rule-based or LLM-based. BaseMetric gives you that common structure.
+
 
 Code-based metrics:   
 Equals, Contains, RegexMatch, IsJson, and LevenshteinRatio 
@@ -13,16 +18,26 @@ Input: a base metric configuration object used before building a single-turn or 
 
 Output: a Tally base metric definition object.
 
+What all metrics have in common is that they need at least:
+a name,
+a value type,
+an optional description,
+optional metadata,
+and optional normalization rules.
+
 Input type:
 
 ```ts
+
+// MetricScalar: metric result is expected to be one simple scalar value.
 type MetricScalar = number | boolean | string;
 
 interface DefineBaseMetricArgs<TMetricValue extends MetricScalar> {
-  name: string;
-  valueType: BaseMetricDef<TMetricValue>["valueType"];
-  description?: string;
-  metadata?: Record<string, unknown>;
+  name: string;                                            // metric name 
+  valueType: BaseMetricDef<TMetricValue>["valueType"];    // what type of scalar the metric returns; number, boolean, or string 
+  description?: string;      //optionsl explanation of what the metric measures 
+  metadata?: Record<string, unknown>;   
+
   normalization?: MetricNormalization<
     TMetricValue,
     NormalizationContextFor<TMetricValue>
