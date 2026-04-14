@@ -13,7 +13,7 @@
  * ```
  */
 
-import { Experimental_Agent as Agent, stepCountIs } from 'ai';
+import { ToolLoopAgent as Agent, stepCountIs } from 'ai';
 import { google } from '@ai-sdk/google';
 import { demandLetterTools } from '../tools/demandLetter';
 
@@ -38,6 +38,6 @@ export const demandLetterAgent = new Agent({
 	model: google(DEFAULT_MODEL_ID),
 	tools: demandLetterTools,
 	stopWhen: stepCountIs(DEFAULT_MAX_STEPS),
-	system: DEMAND_LETTER_SYSTEM_PROMPT,
+	instructions: DEMAND_LETTER_SYSTEM_PROMPT,
 });
 

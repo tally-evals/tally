@@ -98,16 +98,16 @@ function buildAISdkApprovalMessages(
 // ============================================================================
 
 /**
- * Wrapper for AI SDK Experimental_Agent or generateText
+ * Wrapper for AI SDK ToolLoopAgent or generateText
  * 
  * Supports two patterns:
- * 1. AI SDK Experimental_Agent instance (with tools support)
+ * 1. AI SDK ToolLoopAgent instance (with tools support)
  * 2. generateText input config (without messages/prompt, which are added from history)
  * 
  * HIL detection: Looks for `tool-approval-request` parts in `result.content`
  * HIL resolution: Builds `tool-approval-response` messages and re-calls generateText
  * 
- * @param agent - AI SDK Experimental_Agent instance
+ * @param agent - AI SDK ToolLoopAgent instance
  * @returns AgentHandle that can be used with trajectories
  */
 export function withAISdkAgent(

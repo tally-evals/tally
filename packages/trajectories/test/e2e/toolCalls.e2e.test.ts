@@ -14,7 +14,7 @@
 
 import { describe, it, expect } from 'bun:test';
 import { google } from '@ai-sdk/google';
-import { Experimental_Agent as Agent, stepCountIs, dynamicTool } from 'ai';
+import { ToolLoopAgent as Agent, stepCountIs, dynamicTool } from 'ai';
 import { z } from 'zod';
 import { z as z4 } from 'zod/v4';
 import { Agent as MastraAgent } from '@mastra/core/agent';
@@ -63,7 +63,7 @@ const aiSdkCalculatorAgent = new Agent({
 	model: google('models/gemini-2.5-flash-lite'),
 	tools: aiSdkCalculatorTools,
 	stopWhen: stepCountIs(10),
-	system:
+	instructions:
 		'You are a calculator assistant. When the user asks you to perform a calculation, ALWAYS use the calculator tool to compute the answer. Never compute answers in your head.',
 });
 

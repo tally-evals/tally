@@ -14,7 +14,7 @@
  * ```
  */
 
-import { Experimental_Agent as Agent, stepCountIs } from 'ai';
+import { ToolLoopAgent as Agent, stepCountIs } from 'ai';
 import { google } from '@ai-sdk/google';
 import { weatherTools } from '../tools/weather';
 
@@ -52,6 +52,6 @@ export const weatherAgent = new Agent({
 	model: google(DEFAULT_MODEL_ID),
 	tools: weatherTools,
 	stopWhen: stepCountIs(DEFAULT_MAX_STEPS),
-	system: WEATHER_SYSTEM_PROMPT,
+	instructions: WEATHER_SYSTEM_PROMPT,
 });
 

@@ -32,7 +32,7 @@ const RECORD_MODE = process.env.RECORD_TRAJECTORIES === '1';
 export interface RunCaseOptions {
 	/** Trajectory definition */
 	trajectory: Trajectory;
-	/** AI SDK Agent instance (Experimental_Agent) */
+	/** AI SDK Agent instance (ToolLoopAgent) */
 	agent: { generate: (input: Prompt) => Promise<{ response: { messages: readonly import('ai').ModelMessage[] } }> };
 	/** Conversation ID for the trajectory */
 	conversationId: string;

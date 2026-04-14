@@ -15,7 +15,7 @@
 
 import { describe, it, expect } from 'bun:test';
 import { google } from '@ai-sdk/google';
-import { Experimental_Agent as Agent, stepCountIs, tool } from 'ai';
+import { ToolLoopAgent as Agent, stepCountIs, tool } from 'ai';
 import { z } from 'zod';
 import { z as z4 } from 'zod/v4';
 import { Agent as MastraAgent } from '@mastra/core/agent';
@@ -61,7 +61,7 @@ const hilAgent = new Agent({
 	model: google('models/gemini-2.5-flash-lite'),
 	tools: { confirmAction },
 	stopWhen: stepCountIs(8),
-	system: `You are a helpful assistant that processes user requests.
+	instructions: `You are a helpful assistant that processes user requests.
 
 When the user asks you to confirm, process, or execute an action, you MUST call the confirmAction tool.
 Always call the tool — never tell the user you will do something without actually calling the tool first.

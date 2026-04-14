@@ -9,7 +9,7 @@
  * orchestrator) must resolve the pending approval before the tool executes.
  */
 
-import { Experimental_Agent as Agent, stepCountIs } from 'ai';
+import { ToolLoopAgent as Agent, stepCountIs } from 'ai';
 import { google } from '@ai-sdk/google';
 import { flightBookingTools } from '../tools/flightBooking';
 
@@ -34,5 +34,5 @@ export const flightBookingAgent = new Agent({
   model: google(DEFAULT_MODEL_ID),
   tools: flightBookingTools,
   stopWhen: stepCountIs(10),
-  system: SYSTEM_PROMPT,
+  instructions: SYSTEM_PROMPT,
 });
