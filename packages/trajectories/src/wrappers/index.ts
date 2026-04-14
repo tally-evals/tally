@@ -247,71 +247,261 @@ export function withAISdkAgent(
 // ============================================================================
 
 /**
+ * Normalised shape of a raw Mastra agent output.
+ *
+ * Compatible with both:
+ * - Real `MastraModelOutput` proxies where property values are lazy Promise
+ *   getters (returned by `agent.stream()`).
+ * - Plain objects with synchronous values (returned by unit-test mocks via
+ *   `agent.generate()`).
+ */
+interface MastraRawOutput {
+	text?: string;
+	steps?: Array<{ response?: { messages: ModelMessage[] } }>;
+	finishReason?: string;
+	runId?: string;
+	/** Set to `{ toolCallId, toolName, args }` when the agent suspended for HIL. */
+	suspendPayload?: { toolCallId: string; toolName: string; args: unknown };
+}
+
+/**
+ * Extract `ModelMessage[]` from a normalised Mastra output.
+ *
+ * Prefers `steps[last].response.messages`; falls back to a plain assistant
+ * message built from the `text` field.
+ */
+function extractMastraMessages(out: MastraRawOutput): ModelMessage[] {
+	if (out.steps && out.steps.length > 0) {
+		const lastStep = out.steps[out.steps.length - 1];
+		if (lastStep?.response?.messages && lastStep.response.messages.length > 0) {
+			return lastStep.response.messages;
+		}
+	}
+	if (out.text) {
+		return [{ role: 'assistant', content: out.text }];
+	}
+	return [];
+}
+
+/**
+ * Consume a `MastraModelOutput` stream proxy returned by `agent.stream()` or
+ * by the resume methods (`approveToolCall` / `declineToolCall`).
+ *
+ * The proxy exposes lazy Promise getters for every field.  The underlying
+ * ReadableStream auto-flows while the agent loop produces chunks, so simply
+ * awaiting `suspendPayload` is enough to detect suspension—no manual
+ * `consumeStream()` call is required.
+ *
+ * Suspension semantics:
+ * - `suspendPayload` always resolves (never hangs):
+ *     • suspended:      `{ toolCallId, toolName, args }`
+ *     • normal finish:  `undefined`
+ * - When suspended, `text` / `steps` are NOT awaited — they remain pending
+ *   and would throw if consumed.
+ * - When NOT suspended, both `text` and `steps` are fully resolved after
+ *   `suspendPayload` resolves to `undefined`.
+ *
+ * For plain mock objects (unit tests), `Promise.resolve(x)` is idempotent and
+ * works regardless of whether `x` is already a value or a Promise.
+ */
+async function processMastraStreamOutput(raw: unknown): Promise<MastraRawOutput> {
+	const any = raw as Record<string, unknown>;
+
+	// runId is a direct (non-Promise) property on MastraModelOutput.
+	const runId = any.runId as string | undefined;
+
+	// Await suspendPayload — always resolves whether suspended or not.
+	let suspendPayload: MastraRawOutput['suspendPayload'];
+	try {
+		suspendPayload = await Promise.resolve(any.suspendPayload) as MastraRawOutput['suspendPayload'];
+	} catch {
+		suspendPayload = undefined;
+	}
+
+	if (suspendPayload && typeof suspendPayload === 'object' && 'toolCallId' in suspendPayload) {
+		// Agent suspended — do NOT await text/steps (they won't resolve).
+		return { runId, suspendPayload };
+	}
+
+	// Normal finish — text/steps are now fully resolved.
+	let text: string | undefined;
+	let steps: MastraRawOutput['steps'];
+	try {
+		text  = await Promise.resolve(any.text)  as string | undefined;
+		steps = await Promise.resolve(any.steps) as MastraRawOutput['steps'];
+	} catch {
+		// Treat errors as empty output.
+	}
+
+	return { runId, text, steps, suspendPayload: undefined };
+}
+
+/**
  * Wrapper for Mastra Agent
- * 
- * HIL detection: Checks for `finishReason: 'suspended'` and `suspendPayload`
- * HIL resolution: Calls `approveToolCallGenerate()` / `declineToolCallGenerate()`
- * 
- * 
- * @param agent - Mastra Agent instance
+ *
+ * **HIL detection — real agents (`stream()` available)**
+ * When the wrapped agent has a `stream` method, `withMastraAgent` calls
+ * `agent.stream(history, { requireToolApproval: true })`, which returns a
+ * `MastraModelOutput` proxy.  Awaiting `output.suspendPayload` safely detects
+ * whether the agent suspended without risk of hanging.
+ *
+ * **HIL detection — mock agents (only `generate()` available)**
+ * For unit-test mocks that only implement `generate()`, the wrapper calls
+ * `agent.generate(history)` and reads `result.finishReason === 'suspended'`
+ * on the plain returned object.
+ *
+ * **HIL resolution**
+ * Prefers `approveToolCall` / `declineToolCall` (Mastra v0.24+), falls back
+ * to the legacy `approveToolCallGenerate` / `declineToolCallGenerate` names.
+ *
+ * **Storage requirement**
+ * `approveToolCall` / `declineToolCall` require the agent to be registered
+ * with a `Mastra` instance that has a storage backend, so workflow snapshots
+ * can be persisted and resumed.  For tests, init via:
+ * ```ts
+ * const mastra = new Mastra({
+ *   agents: { myAgent },
+ *   storage: new LibSQLStore({ url: ':memory:' }),
+ * });
+ * ```
+ *
+ * @param agent - Mastra Agent instance (or compatible mock)
  * @returns AgentHandle that can be used with trajectories
  */
 export function withMastraAgent(
 	agent: {
 		generate: Agent["generate"];
-		/** Required for HIL: approve a suspended tool call */
-		approveToolCallGenerate?: (opts: { runId: string; toolCallId?: string }) => Promise<{ text: string; steps?: Array<{ response?: { messages: ModelMessage[] } }> }>;
-		/** Required for HIL: decline a suspended tool call */
-		declineToolCallGenerate?: (opts: { runId: string; toolCallId?: string }) => Promise<{ text: string; steps?: Array<{ response?: { messages: ModelMessage[] } }> }>;
+		/**
+		 * If present, used for HIL-aware responses (real Mastra v0.24+ agents).
+		 * When `stream` exists the wrapper calls `stream()` instead of `generate()`
+		 * so it can detect suspension safely via `output.suspendPayload`.
+		 */
+		stream?: Agent["stream"];
+		/**
+		 * Mastra v0.24+ HIL: approve a suspended tool call and resume execution.
+		 * Requires the agent to be registered with a Mastra instance with storage.
+		 */
+		approveToolCall?: (opts: { runId: string; toolCallId?: string }) => Promise<unknown>;
+		/**
+		 * Mastra v0.24+ HIL: decline a suspended tool call and resume execution.
+		 */
+		declineToolCall?: (opts: { runId: string; toolCallId?: string }) => Promise<unknown>;
+		/**
+		 * Legacy / mock names — kept for backward compatibility with unit-test mocks
+		 * that were written against an earlier wrapper contract.
+		 */
+		approveToolCallGenerate?: (opts: { runId: string; toolCallId?: string }) => Promise<unknown>;
+		declineToolCallGenerate?: (opts: { runId: string; toolCallId?: string }) => Promise<unknown>;
 	}
 ): AgentHandle {
-	// Hold the last runId so resolveHIL can reference it
+	// Carry the runId and suspendPayload across the HIL boundary so resolveHIL
+	// can reference them without needing the caller to thread them through.
 	let lastRunId: string | undefined;
 	let lastSuspendPayload: { toolCallId: string; toolName: string; args: unknown } | undefined;
 
-	return {
-		respond: async (history: readonly ModelMessage[]): Promise<AgentResponse> => {
-			const result = await agent.generate(history) as {
-				text?: string;
-				steps?: Array<{ response?: { messages: ModelMessage[] } }>;
-				finishReason?: string;
-				runId?: string;
-				suspendPayload?: { toolCallId: string; toolName: string; args: unknown };
+	const hasApprovalSupport =
+		typeof agent.approveToolCall === 'function' ||
+		typeof agent.approveToolCallGenerate === 'function';
+
+	/**
+	 * Call the agent and return a normalised AgentResponse.
+	 *
+	 * Chooses `stream()` for real Mastra agents (safe HIL detection) and
+	 * falls back to plain `generate()` for mock objects.
+	 */
+	async function callAgent(history: readonly ModelMessage[]): Promise<AgentResponse> {
+
+		// ── Real Mastra agent path (stream() available) ──────────────────────────
+		if (typeof agent.stream === 'function') {
+			const streamOutput = await agent.stream(
+				history as Parameters<Agent['stream']>[0],
+				// Tell Mastra to suspend on approval-required tools instead of
+				// executing them automatically.
+				hasApprovalSupport
+					? ({ requireToolApproval: true } as Parameters<Agent['stream']>[1])
+					: undefined,
+			);
+
+			const out = await processMastraStreamOutput(streamOutput);
+
+			if (out.suspendPayload && 'toolCallId' in out.suspendPayload) {
+				lastRunId = out.runId;
+				lastSuspendPayload = out.suspendPayload;
+				return {
+					messages: [],
+					pendingToolCalls: [{
+						toolCallId: out.suspendPayload.toolCallId,
+						toolName:   out.suspendPayload.toolName,
+						args:       out.suspendPayload.args,
+					}],
+				};
+			}
+
+			lastRunId = undefined;
+			lastSuspendPayload = undefined;
+			return { messages: extractMastraMessages(out), pendingToolCalls: [] };
+		}
+
+		// ── Mock / legacy path (only generate() available) ───────────────────────
+		const result = await agent.generate(
+			history as Parameters<Agent['generate']>[0],
+		) as MastraRawOutput;
+
+		const pendingToolCalls: HILToolCall[] = [];
+
+		if (result.finishReason === 'suspended' && result.suspendPayload) {
+			lastRunId = result.runId;
+			lastSuspendPayload = result.suspendPayload;
+			pendingToolCalls.push({
+				toolCallId: result.suspendPayload.toolCallId,
+				toolName:   result.suspendPayload.toolName,
+				args:       result.suspendPayload.args,
+			});
+			return { messages: [], pendingToolCalls };
+		}
+
+		lastRunId = undefined;
+		lastSuspendPayload = undefined;
+		return { messages: extractMastraMessages(result), pendingToolCalls };
+	}
+
+	/**
+	 * Call one of the resume methods (approve or decline), process its output,
+	 * and return an `AgentResponse`.
+	 *
+	 * Resume methods on real Mastra agents return a `MastraModelOutput` proxy
+	 * (same shape as `stream()` output), so `processMastraStreamOutput` applies.
+	 * Mock resume methods return plain objects — `Promise.resolve` handles both.
+	 */
+	async function callResume(
+		method: (opts: { runId: string; toolCallId?: string }) => Promise<unknown>,
+		runId: string,
+		toolCallId?: string,
+	): Promise<AgentResponse> {
+		const rawOutput = await method.call(agent, { runId, ...(toolCallId ? { toolCallId } : {}) });
+		const out = await processMastraStreamOutput(rawOutput);
+
+		// A resume may itself trigger another suspension (chained approvals).
+		if (out.suspendPayload && 'toolCallId' in out.suspendPayload) {
+			lastRunId = out.runId;
+			lastSuspendPayload = out.suspendPayload;
+			return {
+				messages: [],
+				pendingToolCalls: [{
+					toolCallId: out.suspendPayload.toolCallId,
+					toolName:   out.suspendPayload.toolName,
+					args:       out.suspendPayload.args,
+				}],
 			};
-			
-			let outMessages: ModelMessage[] = [];
-			
-			if (result.steps && result.steps.length > 0) {
-				const lastStep = result.steps[result.steps.length - 1];
-				if (lastStep && lastStep.response?.messages) {
-					outMessages = lastStep.response.messages;
-				}
-			}
-			
-			if (outMessages.length === 0 && result.text) {
-				outMessages = [{
-					role: 'assistant',
-					content: result.text,
-				}];
-			}
+		}
 
-			// Detect HIL: Mastra signals via finishReason: 'suspended'
-			const pendingToolCalls: HILToolCall[] = [];
-			if (result.finishReason === 'suspended' && result.suspendPayload) {
-				lastRunId = result.runId;
-				lastSuspendPayload = result.suspendPayload;
-				pendingToolCalls.push({
-					toolCallId: result.suspendPayload.toolCallId,
-					toolName: result.suspendPayload.toolName,
-					args: result.suspendPayload.args,
-				});
-			} else {
-				lastRunId = undefined;
-				lastSuspendPayload = undefined;
-			}
+		lastRunId = undefined;
+		lastSuspendPayload = undefined;
+		return { messages: extractMastraMessages(out), pendingToolCalls: [] };
+	}
 
-			return { messages: outMessages, pendingToolCalls };
-		},
+	return {
+		respond: callAgent,
 
 		resolveHIL: async (
 			decisions: HILDecisionMap,
@@ -321,64 +511,29 @@ export function withMastraAgent(
 				return { messages: [], pendingToolCalls: [] };
 			}
 
-			// Mastra resolves one tool call at a time via its approval API
 			const decision = lastSuspendPayload
 				? decisions.get(lastSuspendPayload.toolCallId)
 				: undefined;
 
-			let rawResult: {
-				text?: string;
-				steps?: Array<{ response?: { messages: ModelMessage[] } }>;
-				finishReason?: string;
-				runId?: string;
-				suspendPayload?: { toolCallId: string; toolName: string; args: unknown };
-			};
-
 			const shouldApprove = decision?.type === 'approve' || decision?.type === 'provide';
 
-			if (shouldApprove && agent.approveToolCallGenerate) {
-				rawResult = await agent.approveToolCallGenerate({
-					runId: lastRunId,
-					...(lastSuspendPayload?.toolCallId && { toolCallId: lastSuspendPayload.toolCallId }),
-				}) as typeof rawResult;
-			} else if (agent.declineToolCallGenerate) {
-				rawResult = await agent.declineToolCallGenerate({
-					runId: lastRunId,
-					...(lastSuspendPayload?.toolCallId && { toolCallId: lastSuspendPayload.toolCallId }),
-				}) as typeof rawResult;
-			} else {
-				// No approval methods available — can't resolve
-				return { messages: [], pendingToolCalls: [] };
+			const runId = lastRunId;
+			const toolCallId = lastSuspendPayload?.toolCallId;
+
+			// Prefer current Mastra v0.24+ names; fall back to legacy mock names.
+			const approveMethod = agent.approveToolCall ?? agent.approveToolCallGenerate;
+			const declineMethod = agent.declineToolCall ?? agent.declineToolCallGenerate;
+
+			if (shouldApprove && approveMethod) {
+				return callResume(approveMethod, runId, toolCallId);
 			}
 
-			// Extract messages from result
-			let outMessages: ModelMessage[] = [];
-			if (rawResult.steps && rawResult.steps.length > 0) {
-				const lastStep = rawResult.steps[rawResult.steps.length - 1];
-				if (lastStep && lastStep.response?.messages) {
-					outMessages = lastStep.response.messages;
-				}
-			}
-			if (outMessages.length === 0 && rawResult.text) {
-				outMessages = [{ role: 'assistant', content: rawResult.text }];
+			if (declineMethod) {
+				return callResume(declineMethod, runId, toolCallId);
 			}
 
-			// Check if this response also has pending HIL
-			const pendingToolCalls: HILToolCall[] = [];
-			if (rawResult.finishReason === 'suspended' && rawResult.suspendPayload) {
-				lastRunId = rawResult.runId;
-				lastSuspendPayload = rawResult.suspendPayload;
-				pendingToolCalls.push({
-					toolCallId: rawResult.suspendPayload.toolCallId,
-					toolName: rawResult.suspendPayload.toolName,
-					args: rawResult.suspendPayload.args,
-				});
-			} else {
-				lastRunId = undefined;
-				lastSuspendPayload = undefined;
-			}
-
-			return { messages: outMessages, pendingToolCalls };
+			// No approval methods available — cannot resolve.
+			return { messages: [], pendingToolCalls: [] };
 		},
 	};
 }

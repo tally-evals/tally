@@ -59,6 +59,7 @@
   },
   "devDependencies": {
     "@ai-sdk/google": "^3.0.0",
+    "@mastra/libsql": "^0.16.4",
     "@tally-evals/biome-config": "workspace:*",
     "@tally-evals/tally": "workspace:*",
     "@tally-evals/typescript-config": "workspace:*",
