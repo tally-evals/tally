@@ -65,7 +65,7 @@ These run on the full conversation.
 - Type: code-based
 - Use for Optimizer: checking tool call behavior across the full conversation
 
-## Recommended HRPO usage
+## Recommended usage
 
 For Optimizer v4, a practical default split is:
 
