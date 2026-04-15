@@ -358,6 +358,42 @@ async function processMastraStreamOutput(raw: unknown): Promise<MastraRawOutput>
 }
 
 /**
+ * Structural type for Mastra Agent instances (or compatible mocks).
+ *
+ * Using a structural interface rather than importing the concrete `Agent`
+ * class keeps the wrapper testable with lightweight mocks.
+ *
+ * **Note (Mastra single-suspension):** Mastra agents suspend on the first
+ * tool with `requireApproval: true`. Only one tool call is pending at a
+ * time — unlike AI SDK, which can surface multiple `tool-approval-request`
+ * parts in a single response.
+ */
+export interface MastraAgentLike {
+	generate: Agent["generate"];
+	/**
+	 * If present, used for HIL-aware responses (real Mastra v0.24+ agents).
+	 * When `stream` exists the wrapper calls `stream()` instead of `generate()`
+	 * so it can detect suspension safely via `output.suspendPayload`.
+	 */
+	stream?: Agent["stream"];
+	/**
+	 * Mastra v0.24+ HIL: approve a suspended tool call and resume execution.
+	 * Requires the agent to be registered with a Mastra instance with storage.
+	 */
+	approveToolCall?: (opts: { runId: string; toolCallId?: string }) => Promise<unknown>;
+	/**
+	 * Mastra v0.24+ HIL: decline a suspended tool call and resume execution.
+	 */
+	declineToolCall?: (opts: { runId: string; toolCallId?: string }) => Promise<unknown>;
+	/**
+	 * Legacy / mock names — kept for backward compatibility with unit-test mocks
+	 * that were written against an earlier wrapper contract.
+	 */
+	approveToolCallGenerate?: (opts: { runId: string; toolCallId?: string }) => Promise<unknown>;
+	declineToolCallGenerate?: (opts: { runId: string; toolCallId?: string }) => Promise<unknown>;
+}
+
+/**
  * Wrapper for Mastra Agent
  *
  * **HIL detection — real agents (`stream()` available)**
@@ -390,32 +426,7 @@ async function processMastraStreamOutput(raw: unknown): Promise<MastraRawOutput>
  * @param agent - Mastra Agent instance (or compatible mock)
  * @returns AgentHandle that can be used with trajectories
  */
-export function withMastraAgent(
-	agent: {
-		generate: Agent["generate"];
-		/**
-		 * If present, used for HIL-aware responses (real Mastra v0.24+ agents).
-		 * When `stream` exists the wrapper calls `stream()` instead of `generate()`
-		 * so it can detect suspension safely via `output.suspendPayload`.
-		 */
-		stream?: Agent["stream"];
-		/**
-		 * Mastra v0.24+ HIL: approve a suspended tool call and resume execution.
-		 * Requires the agent to be registered with a Mastra instance with storage.
-		 */
-		approveToolCall?: (opts: { runId: string; toolCallId?: string }) => Promise<unknown>;
-		/**
-		 * Mastra v0.24+ HIL: decline a suspended tool call and resume execution.
-		 */
-		declineToolCall?: (opts: { runId: string; toolCallId?: string }) => Promise<unknown>;
-		/**
-		 * Legacy / mock names — kept for backward compatibility with unit-test mocks
-		 * that were written against an earlier wrapper contract.
-		 */
-		approveToolCallGenerate?: (opts: { runId: string; toolCallId?: string }) => Promise<unknown>;
-		declineToolCallGenerate?: (opts: { runId: string; toolCallId?: string }) => Promise<unknown>;
-	}
-): AgentHandle {
+export function withMastraAgent(agent: MastraAgentLike): AgentHandle {
 	// Carry the runId and suspendPayload across the HIL boundary so resolveHIL
 	// can reference them without needing the caller to thread them through.
 	let lastRunId: string | undefined;

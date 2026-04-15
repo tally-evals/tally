@@ -204,9 +204,15 @@ export interface HILConfig {
 	maxRoundtripsPerTurn?: number;
 
 	/**
-	 * Global callback override for all HIL events.
-	 * When provided, this takes precedence over `tools` and
-	 * `defaultPolicy` for every tool call.
+	 * Global callback override for HIL events.
+	 *
+	 * Resolution priority (highest → lowest):
+	 *   1. Per-tool `handler` (in `tools[name].handler`)
+	 *   2. This global `handler`
+	 *   3. Per-tool `behavior` (in `tools[name].behavior`)
+	 *   4. `defaultPolicy`
+	 *
+	 * So per-tool handlers still take precedence over this global handler.
 	 */
 	handler?: HILHandler;
 }

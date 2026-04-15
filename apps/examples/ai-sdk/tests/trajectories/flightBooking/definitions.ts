@@ -70,26 +70,12 @@ export const flightBookingApproveTrajectory: Trajectory = {
   userModel,
 
   // ⭐ HIL configuration: auto-approve bookFlight.
-  // Note: for AI SDK, `approveResult` is informational — AI SDK always calls
-  // the tool's execute() function after approval, so the real booking ref is
-  // returned from execute(). For Mastra-style agents, approveResult would be
-  // forwarded directly as the tool result.
+  // AI SDK calls the tool's execute() function after approval, so the real
+  // result comes from execute() — no need to set approveResult here.
   hil: {
     tools: {
       bookFlight: {
         behavior: 'approve',
-        // Informational: AI SDK ignores this and calls execute() instead.
-        approveResult: {
-          booking: {
-            bookingRef: 'BK-HIL001',
-            flightId: 'AA789',
-            passengerName: 'Alex Johnson',
-            status: 'confirmed',
-            totalCharged: 299,
-            confirmationEmail: 'alex@example.com',
-          },
-          message: 'Flight AA789 booked successfully! Confirmation ref: BK-HIL001',
-        },
       },
     },
     defaultPolicy: 'approve',

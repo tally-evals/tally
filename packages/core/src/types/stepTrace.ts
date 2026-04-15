@@ -18,8 +18,7 @@ export interface HILToolCallTrace {
  */
 export type HILDecisionTrace =
 	| { type: 'approve'; result?: unknown }
-	| { type: 'reject'; reason?: string }
-	| { type: 'provide'; data: unknown };
+	| { type: 'reject'; reason?: string };
 
 /**
  * A recorded HIL interaction within a step trace.

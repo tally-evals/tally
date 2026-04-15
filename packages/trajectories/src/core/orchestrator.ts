@@ -103,7 +103,6 @@ export function createTrajectory(
 	def: Trajectory,
 	agent: AgentHandle
 ): Trajectory & { agent: AgentHandle } {
-	// Set defaults
 	const trajectory: Trajectory & { agent: AgentHandle } = {
 		...def,
 		agent,
@@ -293,6 +292,14 @@ export async function runTrajectory(
 		const hilInteractions: HILInteractionTrace[] = [];
 
 		if (trajectory.hil) {
+			// Fail fast: the agent handle must support resolveHIL when hil is configured
+			if (!trajectory.agent.resolveHIL) {
+				throw new Error(
+					'Trajectory has `hil` configured but the agent handle does not implement `resolveHIL`. ' +
+					'Use `withAISdkAgent()` or `withMastraAgent()` to wrap your agent.',
+				);
+			}
+
 			const maxRoundtrips = trajectory.hil.maxRoundtripsPerTurn ?? 5;
 			let roundtrip = 0;
 			let currentHistory = [...updatedHistory];
@@ -306,6 +313,17 @@ export async function runTrajectory(
 					console.log(
 						` HIL round ${roundtrip + 1}: ${pending.length} pending tool call(s) — ${pending.map((p) => p.toolName).join(', ')}`,
 					);
+
+					// Warn about tool calls that have no matching hil.tools entry
+					if (trajectory.hil.tools) {
+						for (const p of pending) {
+							if (!(p.toolName in trajectory.hil.tools)) {
+								console.warn(
+									`  ⚠ Tool "${p.toolName}" triggered HIL but has no entry in hil.tools — falling back to defaultPolicy ("${trajectory.hil.defaultPolicy ?? 'llm'}")`,
+								);
+							}
+						}
+					}
 				}
 
 				const hilContext: HILContext = Object.assign(

@@ -52,6 +52,7 @@ export type { RunTrajectoryOptions } from './core/orchestrator.js';
 
 // Agent wrappers
 export { withAISdkAgent, withMastraAgent } from './wrappers/index.js';
+export type { MastraAgentLike } from './wrappers/index.js';
 
 // Policies
 export { DefaultPolicy } from './policies/index.js';

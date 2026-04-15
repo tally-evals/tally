@@ -102,8 +102,7 @@ export async function runCase(
 		// Record mode: run trajectory and persist
 		console.log(`📹 Recording trajectory: ${conversationId}`);
 		
-		// Cast to remove readonly - withAISdkAgent accepts mutable arrays internally
-		const wrappedAgent = withAISdkAgent(agent as { generate: (input: Prompt) => Promise<{ response: { messages: import('ai').ModelMessage[] } }> });
+		const wrappedAgent = withAISdkAgent(agent as { generate: (input: Prompt) => Promise<{ response: { messages: import('ai').ModelMessage[] }; content: unknown[] }> });
 		const trajectoryInstance = createTrajectory(
 			{ ...trajectory, conversationId },
 			wrappedAgent

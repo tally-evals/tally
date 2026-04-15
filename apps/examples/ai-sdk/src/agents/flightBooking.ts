@@ -1,7 +1,6 @@
 /**
  * Flight Booking Agent (AI SDK HIL Example)
  *
- * Demonstrates Human-in-the-Loop (HIL) with AI SDK v6.
  *
  * The `bookFlight` tool has `needsApproval: true`, so whenever the agent
  * decides to book a flight, execution pauses and emits a

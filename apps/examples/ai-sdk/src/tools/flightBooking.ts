@@ -129,10 +129,8 @@ export const bookFlight = tool({
       .string()
       .describe('Email address to send the booking confirmation to'),
   }),
-  // ⭐ This is the AI SDK v6 HIL flag
   needsApproval: true,
   execute: async ({ flightId, passengerName, confirmEmail }) => {
-    // This executes ONLY after the human approves the tool call.
     const bookingRef = `BK-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
     return {
       booking: {
@@ -140,7 +138,7 @@ export const bookFlight = tool({
         flightId,
         passengerName,
         status: 'confirmed',
-        totalCharged: 349, // simplified mock price
+        totalCharged: 349,
         confirmationEmail: confirmEmail,
       } satisfies Booking,
       message: `Flight ${flightId} booked successfully! Confirmation ref: ${bookingRef}`,
