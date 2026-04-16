@@ -1,0 +1,156 @@
+classDiagram
+direction TB
+
+class SessionConfig {
+  +maxIterations: number
+  +acceptanceThreshold?: number
+}
+
+class Session {
+  +sessionId: string
+  +createdAt: string
+}
+
+class CreateTrajectorySetInput~Trajectory~ {
+  +sessionId: string
+  +trajectories: readonly Trajectory[]
+}
+
+class TrajectorySet {
+  +trajectoryIds: string[]
+  +createdAt: string
+}
+
+class CreateCandidateVersionInput {
+  +checkpoint: Checkpoint
+  +analysis: FailureAnalysis
+}
+
+class CandidateVersion {
+  +candidateId: string
+  +createdAt: string
+}
+
+class EvalSummaries {
+  +singleTurn: Record<EvalName, EvalSummary>
+  +multiTurn: Record<EvalName, EvalSummary>
+}
+
+class CreateCandidateRunInput {
+  +sessionId: string
+  +candidate: CandidateVersion
+}
+
+class CandidateRun~Trajectory~ {
+  +sessionId: string
+  +candidateId: string
+  +trajectories: readonly Trajectory[]
+  +startedAt: string
+  +completedAt?: string
+}
+
+class EvaluateCandidateRunInput~Trajectory~ {
+  +run: CandidateRun<Trajectory>
+}
+
+class CandidateRunEvaluation {
+  +sessionId: string
+  +candidateId: string
+  +evalSummaries: EvalSummaries
+  +aggregatedPassRate: number
+}
+
+class CreateCheckpointInput {
+  +sessionId: string
+  +candidate: CandidateVersion
+  +evaluation: CandidateRunEvaluation
+}
+
+class TallyArtifactRef {
+  +trajectoryId: string
+  +runId: string
+  +artifactPath: string
+}
+
+class Checkpoint {
+  +checkpointId: string
+  +sessionId: string
+  +candidateId: string
+  +tallyArtifacts: TallyArtifactRef[]
+  +evalSummaries: EvalSummaries
+  +aggregatedPassRate: number
+  +accepted?: boolean
+  +rejectReason?: string
+  +createdAt: string
+}
+
+class AnalyzeCheckpointFailuresInput {
+  +checkpoint: Checkpoint
+}
+
+class FailureItem {
+  +trajectoryId: string
+  +eval: string
+  +level: "step" | "conversation" | "summary"
+  +reason?: string
+}
+
+class FailureAnalysis {
+  +failures: FailureItem[]
+  +targetBlocks: string[]
+}
+
+class AcceptanceOptions {
+  +requiredEvals?: string[]
+}
+
+class EvaluateAcceptanceInput {
+  +previous: Checkpoint
+  +current: Checkpoint
+  +options?: AcceptanceOptions
+}
+
+class AcceptanceChecks {
+  +passRateImproved: boolean
+  +sameSession: boolean
+  +requiredEvalsPresent: boolean
+}
+
+class AcceptanceDecision {
+  +accepted: boolean
+  +reason: string
+  +checks: AcceptanceChecks
+}
+
+class StopConditionInput {
+  +iteration: number
+  +checkpoint: Checkpoint
+  +maxIterations: number
+  +acceptanceThreshold?: number
+}
+
+class StopDecision {
+  +stop: boolean
+  +reason: "thresholdReached" | "maxIterations"
+}
+
+Session --> SessionConfig : config
+CreateTrajectorySetInput~Trajectory~ --> Session : sessionId
+CreateCandidateVersionInput --> Checkpoint : checkpoint
+CreateCandidateVersionInput --> FailureAnalysis : analysis
+CreateCandidateRunInput --> Session : sessionId
+CreateCandidateRunInput --> CandidateVersion : candidate
+EvaluateCandidateRunInput~Trajectory~ --> CandidateRun~Trajectory~ : run
+CandidateRunEvaluation --> EvalSummaries : evalSummaries
+CreateCheckpointInput --> Session : sessionId
+CreateCheckpointInput --> CandidateVersion : candidate
+CreateCheckpointInput --> CandidateRunEvaluation : evaluation
+Checkpoint --> TallyArtifactRef : tallyArtifacts
+Checkpoint --> EvalSummaries : evalSummaries
+AnalyzeCheckpointFailuresInput --> Checkpoint : checkpoint
+FailureAnalysis --> FailureItem : failures
+EvaluateAcceptanceInput --> Checkpoint : previous
+EvaluateAcceptanceInput --> Checkpoint : current
+EvaluateAcceptanceInput --> AcceptanceOptions : options
+AcceptanceDecision --> AcceptanceChecks : checks
+StopConditionInput --> Checkpoint : checkpoint
