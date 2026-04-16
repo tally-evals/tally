@@ -37,9 +37,24 @@ class CandidateVersion {
   +createdAt: string
 }
 
+class ScopeIssue {
+  +eval: string
+  +reason: string
+  +passRate?: number
+}
+
+class ScopeOverview {
+  +summary: string
+  +issues: ScopeIssue[]
+  +failingEvals: string[]
+  +passingEvals: string[]
+}
+
 class EvalSummaries {
   +singleTurn: Record<EvalName, EvalSummary>
   +multiTurn: Record<EvalName, EvalSummary>
+  +singleTurnOverview: ScopeOverview
+  +multiTurnOverview: ScopeOverview
 }
 
 class CreateCandidateRunInput {
@@ -140,23 +155,25 @@ class StopDecision {
   +reason: thresholdReached | maxIterations
 }
 
-Session --> SessionConfig : config
-CreateTrajectorySetInput --> Session : sessionId
-CreateCandidateVersionInput --> Checkpoint : checkpoint
-CreateCandidateVersionInput --> FailureAnalysis : analysis
-CreateCandidateRunInput --> Session : sessionId
-CreateCandidateRunInput --> CandidateVersion : candidate
-EvaluateCandidateRunInput --> CandidateRun : run
-CandidateRunEvaluation --> EvalSummaries : evalSummaries
-CreateCheckpointInput --> Session : sessionId
-CreateCheckpointInput --> CandidateVersion : candidate
-CreateCheckpointInput --> CandidateRunEvaluation : evaluation
-Checkpoint --> TallyArtifactRef : tallyArtifacts
-Checkpoint --> EvalSummaries : evalSummaries
-AnalyzeCheckpointFailuresInput --> Checkpoint : checkpoint
-FailureAnalysis --> FailureItem : failures
-EvaluateAcceptanceInput --> Checkpoint : previous
-EvaluateAcceptanceInput --> Checkpoint : current
-EvaluateAcceptanceInput --> AcceptanceOptions : options
-AcceptanceDecision --> AcceptanceChecks : checks
-StopConditionInput --> Checkpoint : checkpoint
+Session --> SessionConfig : 1. createSession config
+CreateTrajectorySetInput --> Session : 2. bind trajectories to session
+CreateCandidateVersionInput --> Checkpoint : 3a. derive next candidate from checkpoint
+CreateCandidateVersionInput --> FailureAnalysis : 3b. use failure analysis guidance
+CreateCandidateRunInput --> Session : 4a. run within session scope
+CreateCandidateRunInput --> CandidateVersion : 4b. execute candidate version
+EvaluateCandidateRunInput --> CandidateRun : 5. evaluate completed candidate run
+CandidateRunEvaluation --> EvalSummaries : 5. build per-eval and scope summaries
+EvalSummaries --> ScopeOverview : 5a. derive scope overviews
+ScopeOverview --> ScopeIssue : 5b. collect scope-level issues
+CreateCheckpointInput --> Session : 6a. persist checkpoint for session
+CreateCheckpointInput --> CandidateVersion : 6b. attach evaluated candidate
+CreateCheckpointInput --> CandidateRunEvaluation : 6c. store evaluation snapshot
+Checkpoint --> TallyArtifactRef : 6d. keep Tally artifacts
+Checkpoint --> EvalSummaries : 6e. keep eval and scope summaries
+AnalyzeCheckpointFailuresInput --> Checkpoint : 7. analyze checkpoint failures
+FailureAnalysis --> FailureItem : 7a. extract concrete failures
+EvaluateAcceptanceInput --> Checkpoint : 8a. compare previous checkpoint
+EvaluateAcceptanceInput --> Checkpoint : 8b. compare current checkpoint
+EvaluateAcceptanceInput --> AcceptanceOptions : 8c. apply acceptance options
+AcceptanceDecision --> AcceptanceChecks : 8d. report named checks
+StopConditionInput --> Checkpoint : 9. evaluate stop decision from latest checkpoint

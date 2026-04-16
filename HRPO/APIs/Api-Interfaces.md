@@ -125,12 +125,46 @@ Notes:
 ## Shared Evaluation Summary Type
 
 ```ts
+type ScopeIssue<EvalName extends string = string> = {
+  // Eval that produced the issue.
+  eval: EvalName;
+
+  // Human-readable explanation of what needs attention.
+  reason: string;
+
+  // Optional pass rate copied from the eval summary when relevant.
+  passRate?: number;
+};
+
+type ScopeOverview<EvalName extends string = string> = {
+  // One synthesized summary across all evals in the scope.
+  summary: string;
+
+  // Issues collected from the scope's per-eval summaries.
+  issues: ScopeIssue<EvalName>[];
+
+  // Evals currently failing or below the desired threshold.
+  failingEvals: EvalName[];
+
+  // Evals currently healthy in this scope.
+  passingEvals: EvalName[];
+};
+
 type EvalSummaries<
   SingleTurnEvalName extends string = string,
   MultiTurnEvalName extends string = string
 > = {
+  // Per-eval summaries for step-level evaluations.
   singleTurn: Record<SingleTurnEvalName, EvalSummary>;
+
+  // Per-eval summaries for conversation-level evaluations.
   multiTurn: Record<MultiTurnEvalName, EvalSummary>;
+
+  // Rolled-up issue summary across all single-turn eval summaries.
+  singleTurnOverview: ScopeOverview<SingleTurnEvalName>;
+
+  // Rolled-up issue summary across all multi-turn eval summaries.
+  multiTurnOverview: ScopeOverview<MultiTurnEvalName>;
 };
 ```
 
@@ -206,8 +240,8 @@ type CandidateRunEvaluation = {
   // Candidate identifier for the exact candidate that was evaluated.
   candidateId: string;
 
-  // Tally summaries split by eval scope so callers can reason about
-  // single-turn and multi-turn results separately.
+  // Tally summaries split by eval scope, plus rolled-up issue summaries
+  // for single-turn and multi-turn evaluation groups.
   evalSummaries: EvalSummaries;
 
   // Single session-level score used for optimization decisions.
@@ -218,6 +252,8 @@ type CandidateRunEvaluation = {
 
 Notes:
 - Evaluation should be derived from Tally reports via `report.view()`.
+- `singleTurn` and `multiTurn` preserve per-eval summaries.
+- `singleTurnOverview` and `multiTurnOverview` are derived from those per-eval summaries.
 - `evalSummaries` is the main comparison surface.
 - This phase translates raw run artifacts into optimizer decision data.
 - The optimizer should compare evaluations, not low-level step outputs.
@@ -272,7 +308,8 @@ type Checkpoint = {
     artifactPath: string;
   }>;
 
-  // Eval snapshots used for later comparison.
+  // Eval snapshots used for later comparison, including per-eval detail
+  // and scope-level issue rollups.
   evalSummaries: EvalSummaries;
 
   // Top-level score saved with the checkpoint so acceptance logic
@@ -333,7 +370,7 @@ type FailureAnalysis = {
 
 Notes:
 - Prefer explicit Tally verdict failures first.
-- Otherwise use low pass-rate eval summaries.
+- Otherwise use low pass-rate eval summaries or scope overview issues.
 - This phase turns score data into actionable change guidance.
 
 ## Phase 8: Evaluate Acceptance
