@@ -1,3 +1,9 @@
+%%{init: {
+  "theme": "default",
+  "themeVariables": {
+    "fontSize": "24px"
+  }
+}}%%
 classDiagram
 direction TB
 
@@ -11,7 +17,7 @@ class Session {
   +createdAt: string
 }
 
-class CreateTrajectorySetInput~Trajectory~ {
+class CreateTrajectorySetInput {
   +sessionId: string
   +trajectories: readonly Trajectory[]
 }
@@ -41,7 +47,7 @@ class CreateCandidateRunInput {
   +candidate: CandidateVersion
 }
 
-class CandidateRun~Trajectory~ {
+class CandidateRun {
   +sessionId: string
   +candidateId: string
   +trajectories: readonly Trajectory[]
@@ -49,8 +55,8 @@ class CandidateRun~Trajectory~ {
   +completedAt?: string
 }
 
-class EvaluateCandidateRunInput~Trajectory~ {
-  +run: CandidateRun<Trajectory>
+class EvaluateCandidateRunInput {
+  +run: CandidateRun
 }
 
 class CandidateRunEvaluation {
@@ -91,7 +97,7 @@ class AnalyzeCheckpointFailuresInput {
 class FailureItem {
   +trajectoryId: string
   +eval: string
-  +level: "step" | "conversation" | "summary"
+  +level: step | conversation | summary
   +reason?: string
 }
 
@@ -131,16 +137,16 @@ class StopConditionInput {
 
 class StopDecision {
   +stop: boolean
-  +reason: "thresholdReached" | "maxIterations"
+  +reason: thresholdReached | maxIterations
 }
 
 Session --> SessionConfig : config
-CreateTrajectorySetInput~Trajectory~ --> Session : sessionId
+CreateTrajectorySetInput --> Session : sessionId
 CreateCandidateVersionInput --> Checkpoint : checkpoint
 CreateCandidateVersionInput --> FailureAnalysis : analysis
 CreateCandidateRunInput --> Session : sessionId
 CreateCandidateRunInput --> CandidateVersion : candidate
-EvaluateCandidateRunInput~Trajectory~ --> CandidateRun~Trajectory~ : run
+EvaluateCandidateRunInput --> CandidateRun : run
 CandidateRunEvaluation --> EvalSummaries : evalSummaries
 CreateCheckpointInput --> Session : sessionId
 CreateCheckpointInput --> CandidateVersion : candidate
