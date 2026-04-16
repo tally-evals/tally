@@ -50,6 +50,13 @@ Notes:
 
 API:
 
+/*
+<Trajectory> :   `Trajectory` is a generic placeholder type.
+The caller provides the concrete trajectory shape so this API can stay reusable
+while still type-checking the `trajectories` array.
+*/
+
+
 ```ts
 createTrajectorySet<Trajectory>(
   sessionId: string,                   //links the set to the correct session 
@@ -124,8 +131,17 @@ Notes:
 
 ## Shared Evaluation Summary Type
 
+/*
+EvalName extends string = string: 
+`EvalName` must be some kind of string because eval identifiers are names.
+Callers can narrow it to specific values like `"safety" | "accuracy"`,
+and `= string` makes plain string the default when nothing is provided.
+*/
+
 ```ts
-type ScopeIssue<EvalName extends string = string> = {
+type ScopeIssue<
+  EvalName extends string = string
+> = {
   // Eval that produced the issue.
   eval: EvalName;
 
@@ -133,7 +149,7 @@ type ScopeIssue<EvalName extends string = string> = {
   reason: string;
 
   // Optional pass rate copied from the eval summary when relevant.
-  passRate?: number;
+  passRate: number;
 };
 
 type ScopeOverview<EvalName extends string = string> = {

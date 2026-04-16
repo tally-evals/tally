@@ -1,11 +1,12 @@
+```mermaid
 %%{init: {
   "theme": "default",
   "themeVariables": {
-    "fontSize": "24px"
+    "fontSize": "18px"
   }
 }}%%
 classDiagram
-direction TB
+direction LR
 
 class SessionConfig {
   +maxIterations: number
@@ -155,25 +156,25 @@ class StopDecision {
   +reason: thresholdReached | maxIterations
 }
 
-Session --> SessionConfig : 1. createSession config
-CreateTrajectorySetInput --> Session : 2. bind trajectories to session
-CreateCandidateVersionInput --> Checkpoint : 3a. derive next candidate from checkpoint
-CreateCandidateVersionInput --> FailureAnalysis : 3b. use failure analysis guidance
-CreateCandidateRunInput --> Session : 4a. run within session scope
-CreateCandidateRunInput --> CandidateVersion : 4b. execute candidate version
-EvaluateCandidateRunInput --> CandidateRun : 5. evaluate completed candidate run
-CandidateRunEvaluation --> EvalSummaries : 5. build per-eval and scope summaries
-EvalSummaries --> ScopeOverview : 5a. derive scope overviews
-ScopeOverview --> ScopeIssue : 5b. collect scope-level issues
-CreateCheckpointInput --> Session : 6a. persist checkpoint for session
-CreateCheckpointInput --> CandidateVersion : 6b. attach evaluated candidate
-CreateCheckpointInput --> CandidateRunEvaluation : 6c. store evaluation snapshot
-Checkpoint --> TallyArtifactRef : 6d. keep Tally artifacts
-Checkpoint --> EvalSummaries : 6e. keep eval and scope summaries
-AnalyzeCheckpointFailuresInput --> Checkpoint : 7. analyze checkpoint failures
-FailureAnalysis --> FailureItem : 7a. extract concrete failures
-EvaluateAcceptanceInput --> Checkpoint : 8a. compare previous checkpoint
-EvaluateAcceptanceInput --> Checkpoint : 8b. compare current checkpoint
-EvaluateAcceptanceInput --> AcceptanceOptions : 8c. apply acceptance options
-AcceptanceDecision --> AcceptanceChecks : 8d. report named checks
-StopConditionInput --> Checkpoint : 9. evaluate stop decision from latest checkpoint
+Session --> SessionConfig : 1 config
+CreateTrajectorySetInput --> Session : 2 session
+CreateCandidateVersionInput --> Checkpoint : 3a checkpoint
+CreateCandidateVersionInput --> FailureAnalysis : 3b analysis
+CreateCandidateRunInput --> Session : 4a session
+CreateCandidateRunInput --> CandidateVersion : 4b candidate
+EvaluateCandidateRunInput --> CandidateRun : 5 run
+CandidateRunEvaluation --> EvalSummaries : 5 summaries
+EvalSummaries --> ScopeOverview : 5a overview
+ScopeOverview --> ScopeIssue : 5b issues
+CreateCheckpointInput --> Session : 6a session
+CreateCheckpointInput --> CandidateVersion : 6b candidate
+CreateCheckpointInput --> CandidateRunEvaluation : 6c evaluation
+Checkpoint --> TallyArtifactRef : 6d artifacts
+Checkpoint --> EvalSummaries : 6e summaries
+AnalyzeCheckpointFailuresInput --> Checkpoint : 7 checkpoint
+FailureAnalysis --> FailureItem : 7a failures
+EvaluateAcceptanceInput --> Checkpoint : 8 previous/current
+EvaluateAcceptanceInput --> AcceptanceOptions : 8c options
+AcceptanceDecision --> AcceptanceChecks : 8d checks
+StopConditionInput --> Checkpoint : 9 checkpoint
+```
