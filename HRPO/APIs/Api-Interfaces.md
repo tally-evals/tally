@@ -23,7 +23,7 @@ Input:
 type EvaluationPolicy = {
   // Relative importance of each eval when computing the session score.
   // Higher weights contribute more to `aggregatedPassRate`.
-  evalWeights?: Record<string, number>;
+  evalWeights: Record<string, number>;
 
   // Evals that must be present and explicitly considered even if the
   // weighted aggregate looks good overall.
