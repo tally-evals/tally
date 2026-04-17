@@ -35,12 +35,12 @@ type SessionConfig = {
 
   // Optional pass-rate target that allows early stopping.
   // If a checkpoint reaches this threshold, the session can end.
-  acceptanceThreshold?: number;
+  acceptanceThreshold: number;
 
   // Session-level scoring and acceptance policy.
   // Keep eval importance here because it should stay consistent across
   // all candidate versions in the session.
-  evaluationPolicy?: EvaluationPolicy;
+  evaluationPolicy: EvaluationPolicy;
 };
 ```
 
@@ -468,9 +468,7 @@ type AcceptanceDecision = {
 
 Notes:
 - This phase exists to keep acceptance logic explicit and auditable.
-- The decision should never rely on intuition alone; it should point to named checks.
 - Define eval weights in `SessionConfig.evaluationPolicy` when they are meant to govern the whole optimization loop.
-- Use `evaluationPolicyOverride` only if one acceptance decision needs different weighting from the session default.
 - Acceptance should derive eval importance from `evalWeights` rather than a separate list.
 - Evals with higher assigned weights should be treated as higher-priority during comparison.
 - For those higher-priority weighted evals, acceptance should require `currentPassRate >= previousPassRate`.
