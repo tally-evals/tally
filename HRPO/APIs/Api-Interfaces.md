@@ -5,8 +5,8 @@
 A `session` is the top-level optimization lifecycle:
 - one generated `sessionId`
 - one fixed trajectory set
-- multiple candidate versions
-- multiple candidate runs
+- Candidate version
+- Candidate run
 - one acceptance loop
 
 ## Phase 1: Create Session
@@ -20,12 +20,27 @@ createSession(config: SessionConfig): Promise<Session>
 Input:
 
 ```ts
+type EvaluationPolicy = {
+  // Relative importance of each eval when computing the session score.
+  // Higher weights contribute more to `aggregatedPassRate`.
+  evalWeights?: Record<string, number>;
+
+  // Evals that must be present and explicitly considered even if the
+  // weighted aggregate looks good overall.
+  requiredEvals?: string[];
+};
+
 type SessionConfig = {
   maxIterations: number;
 
   // Optional pass-rate target that allows early stopping.
   // If a checkpoint reaches this threshold, the session can end.
   acceptanceThreshold?: number;
+
+  // Session-level scoring and acceptance policy.
+  // Keep eval importance here because it should stay consistent across
+  // all candidate versions in the session.
+  evaluationPolicy?: EvaluationPolicy;
 };
 ```
 
@@ -50,14 +65,8 @@ Notes:
 
 API:
 
-/*
-<Trajectory> :   `Trajectory` is a generic placeholder type.
-The caller provides the concrete trajectory shape so this API can stay reusable
-while still type-checking the `trajectories` array.
-*/
-
-
 ```ts
+
 createTrajectorySet<Trajectory>(
   sessionId: string,                   //links the set to the correct session 
   trajectories: readonly Trajectory[]
@@ -101,6 +110,14 @@ createCandidateVersion(input: CreateCandidateVersionInput): Promise<CandidateVer
 Input:
 
 ```ts
+type CandidateGenerationConfig = {
+  // Model used to generate the next candidate prompt/version.
+  model: string;
+
+  // Sampling control for the generation step.
+  temperature?: number;
+};
+
 type CreateCandidateVersionInput = {
   // The checkpoint anchors this operation to the currently known state:
   // which candidate was evaluated and with what score.
@@ -108,6 +125,11 @@ type CreateCandidateVersionInput = {
 
   // Structured output from failure analysis that tells generation what needs to improve next.
   analysis: FailureAnalysis;
+
+  // Generation-time controls for mutating the next candidate.
+  // These belong on candidate creation instead of the session config
+  // because you may intentionally tweak them between iterations.
+  generationConfig: CandidateGenerationConfig;
 };
 ```
 
@@ -119,6 +141,10 @@ type CandidateVersion = {
   // This should identify the candidate instance directly.
   candidateId: string;
 
+  // Exact generation settings used to create this candidate.
+  // Keeping them on the candidate makes each mutation auditable.
+  generationConfig: CandidateGenerationConfig;
+
   // Creation time for ordering candidate versions.
   // The latest candidate can be identified by this timestamp.
   createdAt: string;
@@ -128,17 +154,13 @@ type CandidateVersion = {
 
 Notes:
 - `checkpoint` already identifies the candidate the next version is derived from.
+- `generationConfig` is intentionally version-scoped, not session-scoped.
+- This lets the optimizer vary `model` or `temperature` across iterations and measure how those changes affect the next candidate.
 
 ## Shared Evaluation Summary Type
 
-/*
-EvalName extends string = string: 
-`EvalName` must be some kind of string because eval identifiers are names.
-Callers can narrow it to specific values like `"safety" | "accuracy"`,
-and `= string` makes plain string the default when nothing is provided.
-*/
-
 ```ts
+
 type ScopeIssue<
   EvalName extends string = string
 > = {
@@ -262,6 +284,8 @@ type CandidateRunEvaluation = {
 
   // Single session-level score used for optimization decisions.
   // This compresses many eval outputs into one decision signal.
+  // If `session.config.evaluationPolicy.evalWeights` exists, this should
+  // be computed as a weighted aggregate instead of a plain average.
   aggregatedPassRate: number;
 };
 ```
@@ -405,9 +429,9 @@ Input:
 
 ```ts
 type AcceptanceOptions = {
-  // Optional allowlist of evals that must be present and considered
-  // during the acceptance decision.
-  requiredEvals?: string[];
+  // Optional override of the session-level policy for this one decision.
+  // Most flows should use `session.config.evaluationPolicy` as the default.
+  evaluationPolicyOverride?: EvaluationPolicy;
 };
 
 type EvaluateAcceptanceInput = {
@@ -437,6 +461,7 @@ type AcceptanceDecision = {
     passRateImproved: boolean;
     sameSession: boolean;
     requiredEvalsPresent: boolean;
+    priorityWeightedEvalsNonRegressed: boolean;
   };
 };
 ```
@@ -444,6 +469,12 @@ type AcceptanceDecision = {
 Notes:
 - This phase exists to keep acceptance logic explicit and auditable.
 - The decision should never rely on intuition alone; it should point to named checks.
+- Define eval weights in `SessionConfig.evaluationPolicy` when they are meant to govern the whole optimization loop.
+- Use `evaluationPolicyOverride` only if one acceptance decision needs different weighting from the session default.
+- Acceptance should derive eval importance from `evalWeights` rather than a separate list.
+- Evals with higher assigned weights should be treated as higher-priority during comparison.
+- For those higher-priority weighted evals, acceptance should require `currentPassRate >= previousPassRate`.
+- In practice: the weighted aggregate can improve, but the candidate should still be rejected if a more heavily weighted eval regresses.
 
 ## Phase 9: Evaluate Stop Condition
 

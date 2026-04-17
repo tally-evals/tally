@@ -8,9 +8,15 @@
 classDiagram
 direction LR
 
+class EvaluationPolicy {
+  +evalWeights?: Record<string, number>
+  +requiredEvals?: string[]
+}
+
 class SessionConfig {
   +maxIterations: number
   +acceptanceThreshold?: number
+  +evaluationPolicy?: EvaluationPolicy
 }
 
 class Session {
@@ -31,10 +37,17 @@ class TrajectorySet {
 class CreateCandidateVersionInput {
   +checkpoint: Checkpoint
   +analysis: FailureAnalysis
+  +generationConfig: CandidateGenerationConfig
+}
+
+class CandidateGenerationConfig {
+  +model: string
+  +temperature?: number
 }
 
 class CandidateVersion {
   +candidateId: string
+  +generationConfig: CandidateGenerationConfig
   +createdAt: string
 }
 
@@ -123,7 +136,7 @@ class FailureAnalysis {
 }
 
 class AcceptanceOptions {
-  +requiredEvals?: string[]
+  +evaluationPolicyOverride?: EvaluationPolicy
 }
 
 class EvaluateAcceptanceInput {
@@ -136,6 +149,7 @@ class AcceptanceChecks {
   +passRateImproved: boolean
   +sameSession: boolean
   +requiredEvalsPresent: boolean
+  +priorityWeightedEvalsNonRegressed: boolean
 }
 
 class AcceptanceDecision {
@@ -157,9 +171,11 @@ class StopDecision {
 }
 
 Session --> SessionConfig : 1 config
+SessionConfig --> EvaluationPolicy : 1a policy
 CreateTrajectorySetInput --> Session : 2 session
 CreateCandidateVersionInput --> Checkpoint : 3a checkpoint
 CreateCandidateVersionInput --> FailureAnalysis : 3b analysis
+CreateCandidateVersionInput --> CandidateGenerationConfig : 3c generation
 CreateCandidateRunInput --> Session : 4a session
 CreateCandidateRunInput --> CandidateVersion : 4b candidate
 EvaluateCandidateRunInput --> CandidateRun : 5 run
@@ -175,6 +191,7 @@ AnalyzeCheckpointFailuresInput --> Checkpoint : 7 checkpoint
 FailureAnalysis --> FailureItem : 7a failures
 EvaluateAcceptanceInput --> Checkpoint : 8 previous/current
 EvaluateAcceptanceInput --> AcceptanceOptions : 8c options
-AcceptanceDecision --> AcceptanceChecks : 8d checks
+AcceptanceOptions --> EvaluationPolicy : 8d override
+AcceptanceDecision --> AcceptanceChecks : 8e checks
 StopConditionInput --> Checkpoint : 9 checkpoint
 ```
