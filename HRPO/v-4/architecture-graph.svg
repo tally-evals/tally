@@ -144,9 +144,9 @@
   <text x="205" y="1416" text-anchor="middle" class="text">Final selection record</text>
   <text x="205" y="1444" text-anchor="middle" class="small">candidate id, cycle output id, rationale</text>
 
-  <rect x="565" y="1160" width="220" height="90" rx="16" ry="16" class="support" />
-  <text x="675" y="1196" text-anchor="middle" class="text">Buckets</text>
-  <text x="675" y="1224" text-anchor="middle" class="small">parallel execution only</text>
+  <rect x="500" y="1275" width="340" height="88" rx="16" ry="16" class="support" />
+  <text x="670" y="1311" text-anchor="middle" class="text">Buckets</text>
+  <text x="670" y="1339" text-anchor="middle" class="small">parallel execution only</text>
 
   <path d="M340 180 L800 180" class="line" />
   <path d="M240 230 L240 270" class="dashed" />
@@ -168,7 +168,7 @@
   <path d="M440 1065 L500 1066" class="line" />
   <path d="M840 1066 L900 1060" class="line" />
   <path d="M1230 1060 L1310 1020" class="line" />
-  <path d="M440 1095 L1310 1150" class="line" />
+  <path d="M260 1140 L260 1270 L1310 1270 L1310 1154" class="line" />
   <path d="M1430 970 L1430 620 L980 620 L980 248" class="line" />
   <path d="M1430 1204 L1430 1380" class="line" />
   <path d="M1060 1430 L1000 1430" class="line" />
@@ -178,6 +178,6 @@
   <text x="1600" y="135" class="label">3 outputs</text>
   <text x="1510" y="622" class="label">phase 3</text>
   <text x="455" y="1048" class="label">continue</text>
-  <text x="820" y="1125" class="label">stop</text>
+  <text x="300" y="1210" class="label">stop</text>
   <text x="1220" y="612" class="label">continue loop</text>
 </svg>
