@@ -61,7 +61,7 @@
   <text x="1700" y="336" text-anchor="middle" class="small">one scalar per conversation</text>
 
   <rect x="1460" y="400" width="380" height="118" rx="16" ry="16" class="box accent" />
-  <text x="1650" y="436" text-anchor="middle" class="text">Cycle Outputs</text>
+  <text x="1650" y="436" text-anchor="middle" class="text">Evaluation Output</text>
   <text x="1650" y="464" text-anchor="middle" class="small">candidate_score = mean OverallQuality</text>
   <text x="1650" y="486" text-anchor="middle" class="small">guardrail summaries</text>
   <text x="1650" y="508" text-anchor="middle" class="small">weighted evals guide mutation and selection</text>
