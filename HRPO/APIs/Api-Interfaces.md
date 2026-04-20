@@ -1,15 +1,5 @@
 # Optimization Job API
 
-## Why `optimization job`
-
-An `optimization job` is the top-level optimization lifecycle:
-- one generated `optimizationJobId`
-- one fixed trajectory set
-- Candidate version
-- Candidate run
-- one candidate-generation loop
-- one final candidate-selection step
-
 ## Phase 1: Create Optimization Job
 
 API:
@@ -240,7 +230,52 @@ Notes:
 - Otherwise use low pass-rate eval summaries or scope overview issues.
 - This phase turns score data into actionable change guidance.
 
-## Phase 5: Generate Next Candidate Prompt
+
+## Phase 5: Evaluate Stop Condition
+
+API:
+
+```ts
+evaluateStopCondition(input: StopConditionInput): StopDecision
+```
+
+Input:
+
+```ts
+type StopConditionInput = {
+  // Current loop number.
+  cycle: number;
+
+  // Latest cycle output being considered.
+  cycleOutput: CycleOutput;
+
+  // Hard cap for the optimization job.
+  maxCycles: number;
+
+  // Optional early-stop target from the optimization job config.
+  acceptanceThreshold?: number;
+};
+```
+
+Output:
+
+```ts
+type StopDecision = {
+  // Whether the optimizer should exit the loop now.
+  stop: boolean;
+
+  // Explicit stop reason so callers can branch correctly.
+  reason: "thresholdReached" | "maxCycles";
+};
+```
+
+Notes:
+- This phase separates loop-control policy from execution logic.
+- It gives the optimizer one clear place to decide whether to continue generating candidates.
+
+
+
+## Phase 6: Generate Next Candidate Prompt
 
 The next candidate should be produced based on:
 
@@ -305,7 +340,7 @@ Notes:
 - `cycleOutput` already identifies the candidate the next version is derived from.
 - `generationConfig` lets the optimizer vary `model` or `temperature` across cycles and measure how those changes affect the next candidate.
 
-## Phase 6: Generate Candidate 
+## Phase 7: Generate Candidate 
 
 API:
 
@@ -347,7 +382,7 @@ type CandidateRun<Trajectory> = {
 };
 ```
 
-## Phase 7: Cycle Output
+## Phase 8: Cycle Output
 
 API:
 
@@ -413,48 +448,6 @@ type CycleOutput = {
 Notes:
 - A cycle output is the optimizer's durable historical record for one evaluated candidate.
 - It is the object you compare, analyze, rank, and later use during final candidate selection.
-
-## Phase 8: Evaluate Stop Condition
-
-API:
-
-```ts
-evaluateStopCondition(input: StopConditionInput): StopDecision
-```
-
-Input:
-
-```ts
-type StopConditionInput = {
-  // Current loop number.
-  cycle: number;
-
-  // Latest cycle output being considered.
-  cycleOutput: CycleOutput;
-
-  // Hard cap for the optimization job.
-  maxCycles: number;
-
-  // Optional early-stop target from the optimization job config.
-  acceptanceThreshold?: number;
-};
-```
-
-Output:
-
-```ts
-type StopDecision = {
-  // Whether the optimizer should exit the loop now.
-  stop: boolean;
-
-  // Explicit stop reason so callers can branch correctly.
-  reason: "thresholdReached" | "maxCycles";
-};
-```
-
-Notes:
-- This phase separates loop-control policy from execution logic.
-- It gives the optimizer one clear place to decide whether to continue generating candidates.
 
 ## Phase 9: Select Final Candidate
 
