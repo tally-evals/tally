@@ -81,11 +81,9 @@
   <text x="810" y="831" text-anchor="middle" class="text">Across all conversations summary</text>
   <text x="810" y="859" text-anchor="middle" class="small">aggregate failed runs</text>
 
-  <rect x="80" y="705" width="540" height="135" rx="16" ry="16" class="support" />
+  <rect x="80" y="705" width="540" height="100" rx="16" ry="16" class="support" />
   <text x="350" y="741" text-anchor="middle" class="text">Failure analysis summary</text>
-  <text x="350" y="769" text-anchor="middle" class="small">conversation &amp; cross-run summaries,</text>
-  <text x="350" y="791" text-anchor="middle" class="small">guardrails, reflection, readonly run refs,</text>
-  <text x="350" y="813" text-anchor="middle" class="small">and cycle output context</text>
+  <text x="350" y="778" text-anchor="middle" class="small">conversation &amp; cross-run summaries</text>
 
   <rect x="80" y="990" width="360" height="150" rx="16" ry="16" class="box decision" />
   <text x="260" y="1026" text-anchor="middle" class="text">Phase 6: Stop condition?</text>
@@ -93,16 +91,12 @@
   <text x="260" y="1078" text-anchor="middle" class="small">or if max cycles reached</text>
   <text x="260" y="1100" text-anchor="middle" class="small">or if no useful mutations remain</text>
 
-  <rect x="500" y="1000" width="340" height="132" rx="16" ry="16" class="box accent" />
-  <text x="670" y="1036" text-anchor="middle" class="text">Phase 4</text>
-  <text x="670" y="1064" text-anchor="middle" class="small">Generate next candidate prompt</text>
-  <text x="670" y="1086" text-anchor="middle" class="small">context: prior candidate + cycle output</text>
-  <text x="670" y="1108" text-anchor="middle" class="small">(failure analysis); parent/history in API for lookback</text>
+  <rect x="500" y="1000" width="340" height="88" rx="16" ry="16" class="box accent" />
+  <text x="670" y="1034" text-anchor="middle" class="text">Phase 4</text>
+  <text x="670" y="1062" text-anchor="middle" class="small">Generate next candidate prompt</text>
 
-  <rect x="900" y="1010" width="330" height="100" rx="16" ry="16" class="box accent" />
-  <text x="1065" y="1046" text-anchor="middle" class="text">Store current cycle output</text>
-  <text x="1065" y="1074" text-anchor="middle" class="small">save score, guardrails, parent,</text>
-  <text x="1065" y="1096" text-anchor="middle" class="small">and mutation context</text>
+  <rect x="900" y="1000" width="330" height="88" rx="16" ry="16" class="box accent" />
+  <text x="1065" y="1048" text-anchor="middle" class="text">Save current candidate</text>
 
   <rect x="1310" y="970" width="240" height="100" rx="16" ry="16" class="box accent" />
   <text x="1430" y="1006" text-anchor="middle" class="text">Continue loop</text>
@@ -142,10 +136,10 @@
   <path d="M1020 840 L960 840" class="line" />
   <path d="M660 715 L620 750" class="line" />
   <path d="M660 840 L620 805" class="line" />
-  <path d="M350 840 L260 995" class="line" />
-  <path d="M440 1065 L500 1066" class="line" />
-  <path d="M840 1066 L900 1060" class="line" />
-  <path d="M1230 1060 L1310 1020" class="line" />
+  <path d="M350 805 L260 995" class="line" />
+  <path d="M440 1044 L500 1044" class="line" />
+  <path d="M840 1044 L900 1044" class="line" />
+  <path d="M1230 1044 L1310 1020" class="line" />
   <path d="M260 1140 L260 1175 L1310 1175 L1310 1154" class="line" />
   <path d="M1430 970 L1430 620 L980 620 L980 248" class="line" />
   <path d="M1430 1204 L1430 1380" class="line" />

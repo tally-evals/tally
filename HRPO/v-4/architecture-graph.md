@@ -23,7 +23,7 @@ flowchart TD
     N --> P[Collect failed conversation-level evals]
     O --> Q[Conversation-level summary]
     P --> R[Across all conversations summary]
-    Q --> S[Failure analysis summary]
+    Q --> S[Failure analysis summary: conversation and cross-run summaries]
     R --> S
     S --> T[Use failure analysis summary as context for stop check and next candidate prompt]
     T --> V[Prioritize edits using failure summaries plus weighted eval importance]
@@ -34,12 +34,12 @@ flowchart TD
     AQ -->|no useful mutations remain| AR
     AQ -->|continue| W[Phase 4: Generate next candidate prompt]
 
-    W --> X[Start from latest generated candidate; context = prior candidate + cycle output]
+    W --> X[Start from latest generated candidate]
     X --> Y[Reflect on previous cycle outputs, strong candidates, and prior mutations]
     Y --> Z[Apply cycle output reflection and mutation logic]
     Z --> AA[Mutate only selected mutable prompt blocks]
     AA --> AB[Record parent candidate, changed block ids, and mutation rationale]
-    AB --> AG[Store current cycle output in optimization job history]
+    AB --> AG[Save current candidate in optimization job history]
 
     AG --> F
 
@@ -66,12 +66,12 @@ flowchart TD
 - Candidate score: mean `OverallQuality` across completed conversations in the fixed trajectory set for the optimization job
 - Initial evaluation produces cycle output `0000`, and later cycle outputs remain plain cycle snapshots rather than a separate heavy abstraction
 - Weighted evals are explicit: more important evals influence mutation priority, regression checks, and final selection more strongly while optimizing the agent under evaluation
-- Failure analysis rolls the step-level and conversation-level summaries into the **failure analysis summary**, which informs the stop check, mutation priority, and the next candidate prompt (and is persisted with the cycle output)
+- Failure analysis rolls the step-level and conversation-level summaries into the **failure analysis summary** (conversation and cross-run summaries), which informs the stop check, mutation priority, and the next candidate prompt (and is persisted with the cycle output)
 - The candidate reads the runs used for the current cycle as readonly context; generating a new candidate does not modify those runs
 - Cycle output records explicitly include `cycle output id`, `parent id`, `prompt hash`, `changed block ids`, run refs used in the cycle, aggregated `OverallQuality`, weighted guardrails, and reflection summary
-- Candidate generation uses the latest generated candidate plus cycle output (including failure analysis) as context; APIs reserve parent and history fields for future lookback even when the implementation always starts from the latest candidate today
+- Candidate generation starts from the latest generated candidate and uses the failure analysis summary plus cycle output context as needed for mutation
 - Prompt mutation still defaults to a single mutable `full-prompt` block, with selective refinement happening inside that simple block model
 - Stopping is loop control only: when the threshold is reached, `k` cycles are exhausted, or no useful mutations remain, candidate generation ends and the optimization job moves to final selection
-- The loop is explicit: Phase 2 generate candidate runs on the fixed trajectory set -> Phase 3 analyze -> **Phase 6 stop or continue** -> Phase 4 generate next candidate prompt -> store current cycle output -> Phase 2 again, or exit to Phase 7
+- The loop is explicit: Phase 2 generate candidate runs on the fixed trajectory set -> Phase 3 analyze -> **Phase 6 stop or continue** -> Phase 4 generate next candidate prompt -> save current candidate -> Phase 2 again, or exit to Phase 7
 - Stop when the stopping criteria are reached
 - Final acceptance happens once, after the optimization job stops, by comparing all stored candidates and choosing the best-performing one under the configured guardrails
