@@ -60,16 +60,10 @@
   <text x="1700" y="308" text-anchor="middle" class="text">OverallQuality</text>
   <text x="1700" y="336" text-anchor="middle" class="small">one scalar per conversation</text>
 
-  <rect x="1460" y="400" width="380" height="118" rx="16" ry="16" class="box accent" />
-  <text x="1650" y="436" text-anchor="middle" class="text">Cycle Outputs</text>
-  <text x="1650" y="464" text-anchor="middle" class="small">candidate_score = mean OverallQuality</text>
-  <text x="1650" y="486" text-anchor="middle" class="small">guardrail summaries</text>
-  <text x="1650" y="508" text-anchor="middle" class="small">weighted evals guide mutation and selection</text>
-
   <rect x="1420" y="640" width="300" height="100" rx="16" ry="16" class="box accent" />
   <text x="1570" y="676" text-anchor="middle" class="text">Phase 3</text>
   <text x="1570" y="704" text-anchor="middle" class="small">Analyze failures</text>
-  <text x="1570" y="726" text-anchor="middle" class="small">from the latest cycle output</text>
+  <text x="1570" y="726" text-anchor="middle" class="small">from single-turn, multi-turn, OverallQuality</text>
 
   <rect x="1020" y="670" width="300" height="90" rx="16" ry="16" class="box" />
   <text x="1170" y="706" text-anchor="middle" class="text">Failed step-level evals</text>
@@ -87,16 +81,11 @@
   <text x="810" y="831" text-anchor="middle" class="text">Across all conversations summary</text>
   <text x="810" y="859" text-anchor="middle" class="small">aggregate failed runs</text>
 
-  <rect x="280" y="705" width="340" height="135" rx="16" ry="16" class="support" />
-  <text x="450" y="741" text-anchor="middle" class="text">Cycle Output Record</text>
-  <text x="450" y="769" text-anchor="middle" class="small">conversation summary, across-all</text>
-  <text x="450" y="791" text-anchor="middle" class="small">summary, guardrails, reflection,</text>
-  <text x="450" y="813" text-anchor="middle" class="small">readonly run refs, and context</text>
-
-  <rect x="60" y="715" width="190" height="105" rx="16" ry="16" class="box accent" />
-  <text x="155" y="751" text-anchor="middle" class="text">Next candidate</text>
-  <text x="155" y="779" text-anchor="middle" class="small">prompt input</text>
-  <text x="155" y="801" text-anchor="middle" class="small">from cycle output</text>
+  <rect x="80" y="705" width="540" height="135" rx="16" ry="16" class="support" />
+  <text x="350" y="741" text-anchor="middle" class="text">Failure analysis summary</text>
+  <text x="350" y="769" text-anchor="middle" class="small">conversation &amp; cross-run summaries,</text>
+  <text x="350" y="791" text-anchor="middle" class="small">guardrails, reflection, readonly run refs,</text>
+  <text x="350" y="813" text-anchor="middle" class="small">and cycle output context</text>
 
   <rect x="80" y="990" width="360" height="150" rx="16" ry="16" class="box decision" />
   <text x="260" y="1026" text-anchor="middle" class="text">Phase 6: Stop condition?</text>
@@ -109,11 +98,6 @@
   <text x="670" y="1064" text-anchor="middle" class="small">Generate next candidate prompt</text>
   <text x="670" y="1086" text-anchor="middle" class="small">context: prior candidate + cycle output</text>
   <text x="670" y="1108" text-anchor="middle" class="small">(failure analysis); parent/history in API for lookback</text>
-
-  <rect x="500" y="1152" width="340" height="114" rx="16" ry="16" class="support" />
-  <text x="670" y="1184" text-anchor="middle" class="text">Reflection + Metadata</text>
-  <text x="670" y="1212" text-anchor="middle" class="small">strong candidates, parent link, prior</text>
-  <text x="670" y="1234" text-anchor="middle" class="small">mutations, changed blocks, rationale</text>
 
   <rect x="900" y="1010" width="330" height="100" rx="16" ry="16" class="box accent" />
   <text x="1065" y="1046" text-anchor="middle" class="text">Store current cycle output</text>
@@ -144,10 +128,6 @@
   <text x="205" y="1416" text-anchor="middle" class="text">Final selection record</text>
   <text x="205" y="1444" text-anchor="middle" class="small">candidate id, cycle output id, rationale</text>
 
-  <rect x="500" y="1275" width="340" height="88" rx="16" ry="16" class="support" />
-  <text x="670" y="1311" text-anchor="middle" class="text">Buckets</text>
-  <text x="670" y="1339" text-anchor="middle" class="small">parallel execution only</text>
-
   <path d="M340 180 L800 180" class="line" />
   <path d="M240 230 L240 270" class="dashed" />
   <path d="M240 420 L240 440" class="dashed" />
@@ -155,20 +135,18 @@
   <path d="M1510 180 L1560 104" class="line" />
   <path d="M1510 180 L1560 210" class="line" />
   <path d="M1510 180 L1560 316" class="line" />
-  <path d="M1700 360 L1700 400" class="line" />
-  <path d="M1570 518 L1570 640" class="line" />
+  <path d="M1700 148 L1700 480 M1700 254 L1700 480 M1700 360 L1700 480 M1700 480 L1570 480 L1570 640" class="line" />
   <path d="M1420 690 L1320 715" class="line" />
   <path d="M1420 715 L1320 840" class="line" />
   <path d="M1020 715 L960 715" class="line" />
   <path d="M1020 840 L960 840" class="line" />
   <path d="M660 715 L620 750" class="line" />
   <path d="M660 840 L620 805" class="line" />
-  <path d="M280 772 L250 767" class="line" />
-  <path d="M155 820 L260 995" class="line" />
+  <path d="M350 840 L260 995" class="line" />
   <path d="M440 1065 L500 1066" class="line" />
   <path d="M840 1066 L900 1060" class="line" />
   <path d="M1230 1060 L1310 1020" class="line" />
-  <path d="M260 1140 L260 1270 L1310 1270 L1310 1154" class="line" />
+  <path d="M260 1140 L260 1175 L1310 1175 L1310 1154" class="line" />
   <path d="M1430 970 L1430 620 L980 620 L980 248" class="line" />
   <path d="M1430 1204 L1430 1380" class="line" />
   <path d="M1060 1430 L1000 1430" class="line" />
@@ -178,6 +156,6 @@
   <text x="1600" y="135" class="label">3 outputs</text>
   <text x="1510" y="622" class="label">phase 3</text>
   <text x="455" y="1048" class="label">continue</text>
-  <text x="300" y="1210" class="label">stop</text>
+  <text x="300" y="1165" class="label">stop</text>
   <text x="1220" y="612" class="label">continue loop</text>
 </svg>
