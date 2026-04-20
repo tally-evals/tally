@@ -24,15 +24,15 @@
   <text x="70" y="60" class="title">HRPO v4 Architecture Graph</text>
   <rect x="80" y="140" width="260" height="100" rx="16" ry="16" class="box accent" />
   <text x="210" y="176" text-anchor="middle" class="text">Phase 1</text>
-  <text x="210" y="204" text-anchor="middle" class="small">Start session</text>
+  <text x="210" y="204" text-anchor="middle" class="small">Start optimization job</text>
   <text x="210" y="226" text-anchor="middle" class="small">generate one trajectory set</text>
 
   <rect x="80" y="285" width="320" height="150" rx="16" ry="16" class="box support" />
-  <text x="240" y="321" text-anchor="middle" class="text">Session Metadata</text>
-  <text x="240" y="349" text-anchor="middle" class="small">session id</text>
+  <text x="240" y="321" text-anchor="middle" class="text">Optimization Job Metadata</text>
+  <text x="240" y="349" text-anchor="middle" class="small">optimization job id</text>
   <text x="240" y="371" text-anchor="middle" class="small">trajectory location</text>
   <text x="240" y="393" text-anchor="middle" class="small">conversation artifact hashes</text>
-  <text x="240" y="415" text-anchor="middle" class="small">config used for the session</text>
+  <text x="240" y="415" text-anchor="middle" class="small">config used for the optimization job</text>
 
   <rect x="80" y="455" width="320" height="140" rx="16" ry="16" class="box support" />
   <text x="240" y="489" text-anchor="middle" class="text">Hyper parameters</text>
@@ -44,13 +44,13 @@
   <rect x="430" y="140" width="330" height="100" rx="16" ry="16" class="box accent" />
   <text x="595" y="176" text-anchor="middle" class="text">Persist Inputs</text>
   <text x="595" y="204" text-anchor="middle" class="small">store frozen conversations</text>
-  <text x="595" y="226" text-anchor="middle" class="small">and record session hashes</text>
+  <text x="595" y="226" text-anchor="middle" class="small">and record optimization job hashes</text>
 
   <rect x="800" y="140" width="360" height="118" rx="16" ry="16" class="box accent" />
   <text x="980" y="176" text-anchor="middle" class="text">Phase 2</text>
   <text x="980" y="204" text-anchor="middle" class="small">Run baseline or active candidate</text>
   <text x="980" y="226" text-anchor="middle" class="small">of the agent under evaluation</text>
-  <text x="980" y="248" text-anchor="middle" class="small">on the fixed session set</text>
+  <text x="980" y="248" text-anchor="middle" class="small">on the fixed trajectory set</text>
 
   <rect x="1210" y="140" width="300" height="100" rx="16" ry="16" class="box" />
   <text x="1360" y="176" text-anchor="middle" class="text">Tally Evaluation</text>
@@ -70,21 +70,21 @@
   <text x="1700" y="346" text-anchor="middle" class="small">one scalar per conversation</text>
 
   <rect x="1460" y="410" width="380" height="118" rx="16" ry="16" class="box accent" />
-  <text x="1650" y="446" text-anchor="middle" class="text">Checkpoint Outputs</text>
+  <text x="1650" y="446" text-anchor="middle" class="text">Cycle Outputs</text>
   <text x="1650" y="474" text-anchor="middle" class="small">candidate_score = mean OverallQuality</text>
   <text x="1650" y="496" text-anchor="middle" class="small">guardrail summaries</text>
   <text x="1650" y="518" text-anchor="middle" class="small">weighted evals: more important evals matter more</text>
 
   <rect x="1420" y="560" width="420" height="122" rx="16" ry="16" class="box support" />
-  <text x="1630" y="592" text-anchor="middle" class="text">Checkpoint Record</text>
-  <text x="1630" y="618" text-anchor="middle" class="small">checkpoint id, parent id, prompt hash,</text>
+  <text x="1630" y="592" text-anchor="middle" class="text">Cycle Output Record</text>
+  <text x="1630" y="618" text-anchor="middle" class="small">cycle output id, parent id, prompt hash,</text>
   <text x="1630" y="640" text-anchor="middle" class="small">changed block ids, Tally refs, aggregated score,</text>
   <text x="1630" y="662" text-anchor="middle" class="small">weighted guardrails, reflection, accept/reject</text>
 
   <rect x="1420" y="780" width="300" height="100" rx="16" ry="16" class="box accent" />
   <text x="1570" y="816" text-anchor="middle" class="text">Phase 3</text>
   <text x="1570" y="844" text-anchor="middle" class="small">Analyze failures</text>
-  <text x="1570" y="866" text-anchor="middle" class="small">from the checkpoint</text>
+  <text x="1570" y="866" text-anchor="middle" class="small">from the cycle output</text>
 
   <rect x="1020" y="720" width="300" height="90" rx="16" ry="16" class="box" />
   <text x="1170" y="756" text-anchor="middle" class="text">Failed step-level evals</text>
@@ -117,7 +117,7 @@
   <text x="245" y="1150" text-anchor="middle" class="small">Generate next candidate</text>
   <text x="245" y="1172" text-anchor="middle" class="small">start from last accepted candidate</text>
   <text x="245" y="1194" text-anchor="middle" class="small">of the agent under evaluation</text>
-  <text x="245" y="1216" text-anchor="middle" class="small">apply checkpoint reflection and mutation logic</text>
+  <text x="245" y="1216" text-anchor="middle" class="small">apply cycle output reflection and mutation logic</text>
 
   <rect x="80" y="1242" width="330" height="114" rx="16" ry="16" class="box support" />
   <text x="245" y="1274" text-anchor="middle" class="text">Reflection + Metadata</text>
@@ -137,7 +137,7 @@
   <rect x="1190" y="1078" width="340" height="150" rx="16" ry="16" class="box decision" />
   <text x="1360" y="1114" text-anchor="middle" class="text">Phase 6: Accept candidate?</text>
   <text x="1360" y="1144" text-anchor="middle" class="small">candidate_score >= baseline_score + min_delta</text>
-  <text x="1360" y="1166" text-anchor="middle" class="small">hashes + session identity match</text>
+  <text x="1360" y="1166" text-anchor="middle" class="small">hashes + optimization job identity match</text>
   <text x="1360" y="1188" text-anchor="middle" class="small">weighted guardrails stay within tolerance</text>
 
   <rect x="1590" y="1038" width="250" height="100" rx="16" ry="16" class="box accent" />
@@ -153,10 +153,10 @@
   <rect x="1190" y="1308" width="340" height="120" rx="16" ry="16" class="box decision" />
   <text x="1360" y="1344" text-anchor="middle" class="text">Phase 7: Stop condition?</text>
   <text x="1360" y="1372" text-anchor="middle" class="small">stop if threshold score achieved</text>
-  <text x="1360" y="1394" text-anchor="middle" class="small">or if k iterations reached</text>
+  <text x="1360" y="1394" text-anchor="middle" class="small">or if k cycles reached</text>
 
   <rect x="820" y="1323" width="300" height="90" rx="16" ry="16" class="box accent" />
-  <text x="970" y="1359" text-anchor="middle" class="text">Stop session</text>
+  <text x="970" y="1359" text-anchor="middle" class="text">Stop optimization job</text>
 
   <rect x="470" y="1323" width="280" height="90" rx="16" ry="16" class="box support" />
   <text x="610" y="1359" text-anchor="middle" class="text">Buckets</text>

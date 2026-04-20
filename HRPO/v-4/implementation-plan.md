@@ -6,9 +6,9 @@ The system should optimize the **agent under evaluation**.
 
 The system should:
 
-1. Generate one fixed trajectory set at the start of an optimization session for the agent under evaluation.
-2. Keep that trajectory set fixed for the whole session.
-3. Evaluate one prompt candidate of the agent under evaluation per iteration on that same fixed set.
+1. Generate one fixed trajectory set at the start of an optimization job for the agent under evaluation.
+2. Keep that trajectory set fixed for the whole optimization job.
+3. Evaluate one prompt candidate of the agent under evaluation per cycle on that same fixed set.
 4. Use Tally as the source of truth for scoring each conversation produced by the agent under evaluation.
 5. Aggregate those conversation results into one candidate score.
 6. Use the optimizer to generate the next candidate for the agent under evaluation.
@@ -24,7 +24,7 @@ The optimizer does not optimize Tally.
 
 The optimizer does not optimize the fixed trajectory set.
 
-The optimizer uses the fixed trajectories, Tally outputs, checkpoint history, and optimizer hyper parameters to improve the **agent under evaluation**.
+The optimizer uses the fixed trajectories, Tally outputs, cycle output history, and optimizer hyper parameters to improve the **agent under evaluation**.
 
 ## v4 Design Decisions
 
@@ -48,11 +48,11 @@ The optimizer is the component that proposes changes.
 
 The **agent under evaluation** is the thing being optimized.
 
-### 2. Session-scoped data
+### 2. Optimization job-scoped data
 
-* One optimization session generates one fixed trajectory set.
-* That trajectory set does not change during the session.
-* Every candidate of the agent under evaluation in the session is evaluated against the same generated conversations.
+* One optimization job generates one fixed trajectory set.
+* That trajectory set does not change during the optimization job.
+* Every candidate of the agent under evaluation in the optimization job is evaluated against the same generated conversations.
 * This ensures that changes in score come from changes to the agent under evaluation, not from changes to the evaluation input.
 
 ### 3. Source of truth
@@ -90,7 +90,7 @@ Tally evaluates at three levels:
 ### 5. Candidate scoring
 
 * Primary scalar objective: `OverallQuality`
-* Candidate score: mean `OverallQuality` across all evaluated conversations in the fixed session set
+* Candidate score: mean `OverallQuality` across all evaluated conversations in the fixed trajectory set for the optimization job
 * This candidate score belongs to the current candidate of the **agent under evaluation**
 * Candidate selection is not determined by that scalar alone; acceptance also depends on whether key non-primary evals remain within allowed bounds
 * `OverallQuality` tells you whether the candidate improved on the main objective, other evals can still block acceptance if they regress too much
@@ -116,15 +116,15 @@ v3, keep this explicit:
 * Keep the global scalar score as `OverallQuality`, while treating selected eval outcomes as explicit acceptance conditions
 * Certain evals are more important than others, so each eval should have an explicit importance level or weightage that indicates how strongly it should influence candidate acceptance, mutation priority, and regression checks
 
-### 7. Checkpoint meaning
+### 7. Cycle output meaning
 
-* One checkpoint = one iteration snapshot
-* A checkpoint stores the candidate of the agent under evaluation, the evaluation results, the candidate score, and the accept/reject decision
-* It should be treated as plain iteration state, not a large abstraction layer
-* A new checkpoint should have knowledge of previous checkpoints, so the LLM knows the previous history
+* One cycle output = one cycle snapshot
+* A cycle output stores the candidate of the agent under evaluation, the evaluation results, the candidate score, and the accept/reject decision
+* It should be treated as plain cycle state, not a large abstraction layer
+* A new cycle output should have knowledge of previous cycle outputs, so the LLM knows the previous history
 * It should know which step it has already gone through, so it does not repeat those again
-* If something was fixed previously, the new checkpoint should help ensure those things are not broken again after further changes
-* The new checkpoint will do a reflection on previous checkpoints, prior mutations, accepted fixes, rejected changes, and failure summaries before generating the next candidate for the agent under evaluation
+* If something was fixed previously, the new cycle output should help ensure those things are not broken again after further changes
+* The new cycle output will do a reflection on previous cycle outputs, prior mutations, accepted fixes, rejected changes, and failure summaries before generating the next candidate for the agent under evaluation
 
 ### 8. Prompt representation
 
@@ -215,26 +215,26 @@ These summaries are used only to decide which prompt blocks of the **agent under
 
 ## Minimal Runtime Flow
 
-### Phase 1. Start session
+### Phase 1. Start Optimization Job
 
 1. Generate the fixed trajectory set once for the agent under evaluation.
 2. Keep those exact generated conversation artifacts unchanged and reuse them for replay and evaluation purposes.
-3. Store hashes of those conversation artifacts so later iterations can verify that the original frozen inputs are still unchanged.
+3. Store hashes of those conversation artifacts so later cycles can verify that the original frozen inputs are still unchanged.
 4. Record the optimizer configuration and hyper parameters used to optimize the agent under evaluation.
 
 ### Phase 2. Run baseline
 
-1. Run the current version of the agent under evaluation on the full fixed session set.
+1. Run the current version of the agent under evaluation on the full fixed trajectory set for the optimization job.
 2. Store one Tally result per conversation.
 3. Compute:
 
    * candidate score = mean `OverallQuality`
    * guardrail summaries for selected critical evals
-4. Save checkpoint `0000`.
+4. Save cycle output `0000`.
 
 ### Phase 3. Analyze failures
 
-1. Read the Tally results for the checkpoint.
+1. Read the Tally results for the cycle output.
 2. Collect failed step-level evals from single-turn evaluation.
 3. Collect failed conversation-level evals from multi-turn evaluation.
 4. Generate:
@@ -248,21 +248,21 @@ These summaries are used only to decide which prompt blocks of the **agent under
 
 1. Start from the last accepted version of the agent under evaluation.
 2. Mutate only the selected mutable blocks of the agent under evaluation.
-3. Use optimizer controls such as optimizer system prompt, temperature, checkpoint reflection, and mutation logic.
+3. Use optimizer controls such as optimizer system prompt, temperature, cycle output reflection, and mutation logic.
 4. Record:
 
    * parent candidate
    * changed block ids
    * mutation rationale
 
-Generate one candidate per iteration for the **agent under evaluation**.
+Generate one candidate per cycle for the **agent under evaluation**.
 
 ### Phase 5. Re-evaluate
 
-1. Run the new candidate of the agent under evaluation on the same fixed session set.
+1. Run the new candidate of the agent under evaluation on the same fixed trajectory set for the optimization job.
 2. Use the same Tally configuration.
 3. Compute the new candidate score from `OverallQuality`.
-4. Compare it against the current accepted checkpoint.
+4. Compare it against the current accepted cycle output.
 
 ### Phase 6. Accept or reject
 
@@ -272,18 +272,18 @@ Accept the candidate only if all of the following are true:
    `min_delta`: minimum improvement threshold
    `baseline_score`: the score of the current active version of the agent under evaluation
 
-2. session hashes still match or the conversation artifacts used in this iteration are the same frozen session artifacts created at session start
+2. optimization job hashes still match, or the conversation artifacts used in this cycle are the same frozen artifacts created at optimization job start
 
-What is allowed to change across iterations:
+What is allowed to change across cycles:
 
 * the candidate of the agent under evaluation
 * the evaluation results
 * the candidate score
 * the accept/reject decision
 
-What is not supposed to change within the same session:
+What is not supposed to change within the same optimization job:
 
-* the session identity
+* the optimization job identity
 * the frozen trajectory/conversation set
 * the hashes for those frozen artifacts
 
@@ -294,24 +294,24 @@ Example: if a guardrail pass rate was 0.92 and the allowed tolerance is 0.02, th
 If accepted:
 
 * the candidate becomes the new active version of the agent under evaluation
-* the next checkpoint uses this candidate as the baseline
+* the next cycle output uses this candidate as the baseline
 
 If rejected:
 
 * keep the previous active version of the agent under evaluation
-* still store the rejected checkpoint for auditability
+* still store the rejected cycle output for auditability
 
 ### Phase 7. Stop condition
 
 Stop when either:
 
 1. `candidate_score >= target_threshold`
-2. max iterations is reached
+2. max cycles is reached
 3. no useful mutations remain
 
 Define stopping criteria explicitly:
 
-* stop when the maximum number of iterations `k` has been reached
+* stop when the maximum number of cycles `k` has been reached
 * stop when the candidate score of the agent under evaluation reaches the configured target threshold
 * stop when no useful mutations remain
 
@@ -321,31 +321,31 @@ If there are no clear failures but the threshold is not reached, use low-scoring
 
 v3 should store only what it needs.
 
-### Session manifest
+### Optimization Job manifest
 
 Stores:
 
-* session id
+* optimization job id
 * created time
 * trajectory set location
 * conversation artifact hashes
-* configuration used for the session
+* configuration used for the optimization job
 * defined optimizer hyper parameters, including baseline prompt, optimizer system prompt, and temperature
-* identifier of the agent under evaluation being optimized in that session
+* identifier of the agent under evaluation being optimized in that optimization job
 
-### Checkpoint record
+### Cycle output record
 
 Stores:
 
-* checkpoint id
-* parent checkpoint id
+* cycle output id
+* parent cycle output id
 * prompt version or hash for the agent under evaluation
 * changed block ids
 * per-conversation Tally run references
 * aggregated `OverallQuality`
 * guardrail summaries
 * accept/reject decision
-* checkpoint reflection summary from previous checkpoints
+* cycle output reflection summary from previous cycle outputs
 
 This is enough for replay and auditing without building a heavy registry system first.
 
@@ -355,9 +355,9 @@ Keep the implementation small.
 
 `packages/hrpo` should start with:
 
-* `session` - creates and validates the fixed session trajectory set for the agent under evaluation
+* `optimization-job` - creates and validates the fixed trajectory set for the optimization job
 * `prompts` - loads prompt templates and applies block mutations to the agent under evaluation
-* `evaluate` - runs Tally over all session conversations produced by the agent under evaluation
+* `evaluate` - runs Tally over all conversations in the optimization job produced by the agent under evaluation
 * `analyze` - summarizes failures and low-scoring conversations for the agent under evaluation
 * `accept` - computes aggregate score and applies guardrails
 * `optimize` - generates the next candidate for the agent under evaluation using optimizer controls such as optimizer system prompt and temperature
@@ -366,8 +366,8 @@ Keep the implementation small.
 
 Do not add these in v3:
 
-* multiple candidates per iteration
-* dynamic trajectory regeneration during a session
+* multiple candidates per cycle
+* dynamic trajectory regeneration during an optimization job
 * distributed execution
 * complex statistical testing
 * bucket-aware scoring semantics
@@ -376,13 +376,13 @@ Do not add these in v3:
 
 ## Implementation Order
 
-1. Create `packages/hrpo` with session, prompt, evaluate, analyze, accept, and optimize
-2. Add session creation that generates one fixed trajectory set and stores replayable artifacts plus hashes
-3. Add baseline evaluation of the agent under evaluation and checkpoint persistence
+1. Create `packages/hrpo` with `optimization-job`, `prompt`, `evaluate`, `analyze`, `accept`, and `optimize`
+2. Add optimization job creation that generates one fixed trajectory set and stores replayable artifacts plus hashes
+3. Add baseline evaluation of the agent under evaluation and cycle output persistence
 4. Add simple failure analysis based on Tally outputs
-5. Add block-based prompt mutation for one candidate per iteration of the agent under evaluation
+5. Add block-based prompt mutation for one candidate per cycle of the agent under evaluation
 6. Add accept/reject logic using mean `OverallQuality` plus guardrails
-7. Add loop control for target threshold, max iterations, and stopping criteria
+7. Add loop control for target threshold, max cycles, and stopping criteria
 
 ## Bottom Line
 
@@ -390,13 +390,13 @@ v3 should keep the architecture opinionated and easy to explain:
 
 * one agent under evaluation
 * one optimizer that improves that agent
-* one session
+* one optimization job
 * one fixed trajectory set
-* one candidate per iteration
+* one candidate per cycle
 * one primary objective: `OverallQuality`
 * one decision rule: aggregate conversation scores
 * one simple prompt model: named mutable blocks
 * one simple analysis path: failed step-level and conversation-level evals guide block mutation
-* one checkpoint flow that remembers previous checkpoints and reflects before the next mutation
+* one cycle output flow that remembers previous cycle outputs and reflects before the next mutation
 
 That keeps the good technical corrections from v1, but removes the extra architectural weight that `critique-1` pushed back on. 

@@ -1,3 +1,4 @@
+```mermaid
 %%{init: {
   "theme": "default",
   "themeVariables": {
@@ -7,18 +8,24 @@
 classDiagram
 direction LR
 
-class SessionConfig {
-  +maxIterations: number
-  +acceptanceThreshold?: number
+class EvaluationPolicy {
+  +evalWeights?: Record<string, number>
+  +requiredEvals?: string[]
 }
 
-class Session {
-  +sessionId: string
+class OptimizationJobConfig {
+  +maxCycles: number
+  +acceptanceThreshold?: number
+  +evaluationPolicy?: EvaluationPolicy
+}
+
+class OptimizationJob {
+  +optimizationJobId: string
   +createdAt: string
 }
 
 class CreateTrajectorySetInput {
-  +sessionId: string
+  +optimizationJobId: string
   +trajectories: readonly Trajectory[]
 }
 
@@ -28,12 +35,19 @@ class TrajectorySet {
 }
 
 class CreateCandidateVersionInput {
-  +checkpoint: Checkpoint
+  +cycleOutput: CycleOutput
   +analysis: FailureAnalysis
+  +generationConfig: CandidateGenerationConfig
+}
+
+class CandidateGenerationConfig {
+  +model: string
+  +temperature?: number
 }
 
 class CandidateVersion {
   +candidateId: string
+  +generationConfig: CandidateGenerationConfig
   +createdAt: string
 }
 
@@ -58,12 +72,12 @@ class EvalSummaries {
 }
 
 class CreateCandidateRunInput {
-  +sessionId: string
+  +optimizationJobId: string
   +candidate: CandidateVersion
 }
 
 class CandidateRun {
-  +sessionId: string
+  +optimizationJobId: string
   +candidateId: string
   +trajectories: readonly Trajectory[]
   +startedAt: string
@@ -75,14 +89,14 @@ class EvaluateCandidateRunInput {
 }
 
 class CandidateRunEvaluation {
-  +sessionId: string
+  +optimizationJobId: string
   +candidateId: string
   +evalSummaries: EvalSummaries
   +aggregatedPassRate: number
 }
 
-class CreateCheckpointInput {
-  +sessionId: string
+class CreateCycleOutputInput {
+  +optimizationJobId: string
   +candidate: CandidateVersion
   +evaluation: CandidateRunEvaluation
 }
@@ -93,9 +107,9 @@ class TallyArtifactRef {
   +artifactPath: string
 }
 
-class Checkpoint {
-  +checkpointId: string
-  +sessionId: string
+class CycleOutput {
+  +cycleOutputId: string
+  +optimizationJobId: string
   +candidateId: string
   +tallyArtifacts: TallyArtifactRef[]
   +evalSummaries: EvalSummaries
@@ -105,8 +119,8 @@ class Checkpoint {
   +createdAt: string
 }
 
-class AnalyzeCheckpointFailuresInput {
-  +checkpoint: Checkpoint
+class AnalyzeCycleOutputFailuresInput {
+  +cycleOutput: CycleOutput
 }
 
 class FailureItem {
@@ -122,19 +136,20 @@ class FailureAnalysis {
 }
 
 class AcceptanceOptions {
-  +requiredEvals?: string[]
+  +evaluationPolicyOverride?: EvaluationPolicy
 }
 
 class EvaluateAcceptanceInput {
-  +previous: Checkpoint
-  +current: Checkpoint
+  +previous: CycleOutput
+  +current: CycleOutput
   +options?: AcceptanceOptions
 }
 
 class AcceptanceChecks {
   +passRateImproved: boolean
-  +sameSession: boolean
+  +sameOptimizationJob: boolean
   +requiredEvalsPresent: boolean
+  +priorityWeightedEvalsNonRegressed: boolean
 }
 
 class AcceptanceDecision {
@@ -144,35 +159,39 @@ class AcceptanceDecision {
 }
 
 class StopConditionInput {
-  +iteration: number
-  +checkpoint: Checkpoint
-  +maxIterations: number
+  +cycle: number
+  +cycleOutput: CycleOutput
+  +maxCycles: number
   +acceptanceThreshold?: number
 }
 
 class StopDecision {
   +stop: boolean
-  +reason: thresholdReached | maxIterations
+  +reason: thresholdReached | maxCycles
 }
 
-Session --> SessionConfig : 1 config
-CreateTrajectorySetInput --> Session : 2 session
-CreateCandidateVersionInput --> Checkpoint : 3a checkpoint
+OptimizationJob --> OptimizationJobConfig : 1 config
+OptimizationJobConfig --> EvaluationPolicy : 1a policy
+CreateTrajectorySetInput --> OptimizationJob : 2 optimization job
+CreateCandidateVersionInput --> CycleOutput : 3a cycle output
 CreateCandidateVersionInput --> FailureAnalysis : 3b analysis
-CreateCandidateRunInput --> Session : 4a session
+CreateCandidateVersionInput --> CandidateGenerationConfig : 3c generation
+CreateCandidateRunInput --> OptimizationJob : 4a optimization job
 CreateCandidateRunInput --> CandidateVersion : 4b candidate
 EvaluateCandidateRunInput --> CandidateRun : 5 run
 CandidateRunEvaluation --> EvalSummaries : 5 summaries
 EvalSummaries --> ScopeOverview : 5a overview
 ScopeOverview --> ScopeIssue : 5b issues
-CreateCheckpointInput --> Session : 6a session
-CreateCheckpointInput --> CandidateVersion : 6b candidate
-CreateCheckpointInput --> CandidateRunEvaluation : 6c evaluation
-Checkpoint --> TallyArtifactRef : 6d artifacts
-Checkpoint --> EvalSummaries : 6e summaries
-AnalyzeCheckpointFailuresInput --> Checkpoint : 7 checkpoint
+CreateCycleOutputInput --> OptimizationJob : 6a optimization job
+CreateCycleOutputInput --> CandidateVersion : 6b candidate
+CreateCycleOutputInput --> CandidateRunEvaluation : 6c evaluation
+CycleOutput --> TallyArtifactRef : 6d artifacts
+CycleOutput --> EvalSummaries : 6e summaries
+AnalyzeCycleOutputFailuresInput --> CycleOutput : 7 cycle output
 FailureAnalysis --> FailureItem : 7a failures
-EvaluateAcceptanceInput --> Checkpoint : 8 previous/current
+EvaluateAcceptanceInput --> CycleOutput : 8 previous/current
 EvaluateAcceptanceInput --> AcceptanceOptions : 8c options
-AcceptanceDecision --> AcceptanceChecks : 8d checks
-StopConditionInput --> Checkpoint : 9 checkpoint
+AcceptanceOptions --> EvaluationPolicy : 8d override
+AcceptanceDecision --> AcceptanceChecks : 8e checks
+StopConditionInput --> CycleOutput : 9 cycle output
+```
