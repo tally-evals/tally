@@ -61,7 +61,7 @@
   <text x="1700" y="336" text-anchor="middle" class="small">one scalar per conversation</text>
 
   <rect x="1460" y="400" width="380" height="118" rx="16" ry="16" class="box accent" />
-  <text x="1650" y="436" text-anchor="middle" class="text">Cycle Outputs</text>
+  <text x="1650" y="436" text-anchor="middle" class="text">Evaluation Output</text>
   <text x="1650" y="464" text-anchor="middle" class="small">candidate_score = mean OverallQuality</text>
   <text x="1650" y="486" text-anchor="middle" class="small">guardrail summaries</text>
   <text x="1650" y="508" text-anchor="middle" class="small">weighted evals guide mutation and selection</text>
@@ -98,27 +98,27 @@
   <text x="155" y="779" text-anchor="middle" class="small">prompt input</text>
   <text x="155" y="801" text-anchor="middle" class="small">from cycle output</text>
 
-  <rect x="80" y="990" width="360" height="150" rx="16" ry="16" class="box decision" />
-  <text x="260" y="1026" text-anchor="middle" class="text">Phase 6: Stop condition?</text>
-  <text x="260" y="1056" text-anchor="middle" class="small">stop if threshold score achieved</text>
-  <text x="260" y="1078" text-anchor="middle" class="small">or if max cycles reached</text>
-  <text x="260" y="1100" text-anchor="middle" class="small">or if no useful mutations remain</text>
+  <rect x="80" y="1000" width="340" height="132" rx="16" ry="16" class="box accent" />
+  <text x="250" y="1036" text-anchor="middle" class="text">Phase 4</text>
+  <text x="250" y="1064" text-anchor="middle" class="small">Generate next candidate prompt</text>
+  <text x="250" y="1086" text-anchor="middle" class="small">start from latest generated candidate</text>
+  <text x="250" y="1108" text-anchor="middle" class="small">or another chosen parent from history</text>
 
-  <rect x="500" y="1000" width="340" height="132" rx="16" ry="16" class="box accent" />
-  <text x="670" y="1036" text-anchor="middle" class="text">Phase 4</text>
-  <text x="670" y="1064" text-anchor="middle" class="small">Generate next candidate prompt</text>
-  <text x="670" y="1086" text-anchor="middle" class="small">context: prior candidate + cycle output</text>
-  <text x="670" y="1108" text-anchor="middle" class="small">(failure analysis); parent/history in API for lookback</text>
+  <rect x="80" y="1152" width="340" height="114" rx="16" ry="16" class="support" />
+  <text x="250" y="1184" text-anchor="middle" class="text">Reflection + Metadata</text>
+  <text x="250" y="1212" text-anchor="middle" class="small">strong candidates, parent link, prior</text>
+  <text x="250" y="1234" text-anchor="middle" class="small">mutations, changed blocks, rationale</text>
 
-  <rect x="500" y="1152" width="340" height="114" rx="16" ry="16" class="support" />
-  <text x="670" y="1184" text-anchor="middle" class="text">Reflection + Metadata</text>
-  <text x="670" y="1212" text-anchor="middle" class="small">strong candidates, parent link, prior</text>
-  <text x="670" y="1234" text-anchor="middle" class="small">mutations, changed blocks, rationale</text>
+  <rect x="500" y="1010" width="330" height="100" rx="16" ry="16" class="box accent" />
+  <text x="665" y="1046" text-anchor="middle" class="text">Store current cycle output</text>
+  <text x="665" y="1074" text-anchor="middle" class="small">save score, guardrails, parent,</text>
+  <text x="665" y="1096" text-anchor="middle" class="small">and mutation context</text>
 
-  <rect x="900" y="1010" width="330" height="100" rx="16" ry="16" class="box accent" />
-  <text x="1065" y="1046" text-anchor="middle" class="text">Store current cycle output</text>
-  <text x="1065" y="1074" text-anchor="middle" class="small">save score, guardrails, parent,</text>
-  <text x="1065" y="1096" text-anchor="middle" class="small">and mutation context</text>
+  <rect x="900" y="990" width="360" height="150" rx="16" ry="16" class="box decision" />
+  <text x="1080" y="1026" text-anchor="middle" class="text">Phase 6: Stop condition?</text>
+  <text x="1080" y="1056" text-anchor="middle" class="small">stop if threshold score achieved</text>
+  <text x="1080" y="1078" text-anchor="middle" class="small">or if max cycles reached</text>
+  <text x="1080" y="1100" text-anchor="middle" class="small">or if no useful mutations remain</text>
 
   <rect x="1310" y="970" width="240" height="100" rx="16" ry="16" class="box accent" />
   <text x="1430" y="1006" text-anchor="middle" class="text">Continue loop</text>
@@ -144,9 +144,9 @@
   <text x="205" y="1416" text-anchor="middle" class="text">Final selection record</text>
   <text x="205" y="1444" text-anchor="middle" class="small">candidate id, cycle output id, rationale</text>
 
-  <rect x="565" y="1160" width="220" height="90" rx="16" ry="16" class="support" />
-  <text x="675" y="1196" text-anchor="middle" class="text">Buckets</text>
-  <text x="675" y="1224" text-anchor="middle" class="small">parallel execution only</text>
+  <rect x="480" y="1160" width="250" height="90" rx="16" ry="16" class="support" />
+  <text x="605" y="1196" text-anchor="middle" class="text">Buckets</text>
+  <text x="605" y="1224" text-anchor="middle" class="small">parallel execution only</text>
 
   <path d="M340 180 L800 180" class="line" />
   <path d="M240 230 L240 270" class="dashed" />
@@ -164,11 +164,11 @@
   <path d="M660 715 L620 750" class="line" />
   <path d="M660 840 L620 805" class="line" />
   <path d="M280 772 L250 767" class="line" />
-  <path d="M155 820 L260 995" class="line" />
-  <path d="M440 1065 L500 1066" class="line" />
-  <path d="M840 1066 L900 1060" class="line" />
-  <path d="M1230 1060 L1310 1020" class="line" />
-  <path d="M440 1095 L1310 1150" class="line" />
+  <path d="M155 820 L155 1000" class="line" />
+  <path d="M420 1066 L500 1060" class="line" />
+  <path d="M830 1060 L900 1065" class="line" />
+  <path d="M1260 1065 L1310 1020" class="line" />
+  <path d="M1260 1065 L1310 1154" class="line" />
   <path d="M1430 970 L1430 620 L980 620 L980 248" class="line" />
   <path d="M1430 1204 L1430 1380" class="line" />
   <path d="M1060 1430 L1000 1430" class="line" />
@@ -177,7 +177,7 @@
 
   <text x="1600" y="135" class="label">3 outputs</text>
   <text x="1510" y="622" class="label">phase 3</text>
-  <text x="455" y="1048" class="label">continue</text>
-  <text x="820" y="1125" class="label">stop</text>
+  <text x="1270" y="1014" class="label">continue</text>
+  <text x="1275" y="1150" class="label">stop</text>
   <text x="1220" y="612" class="label">continue loop</text>
 </svg>

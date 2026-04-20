@@ -19,7 +19,7 @@ The system should:
 
 The architecture should be stated as plainly as possible:
 
-`agent under evaluation -> fixed trajectory set -> Tally evaluation -> aggregated score -> optimizer generates next candidate -> store cycle outputs -> stop -> select final candidate`
+`agent under evaluation -> fixed trajectory set -> Tally evaluation -> aggregated score -> stop check -> optimizer generates next candidate -> store cycle outputs -> select final candidate`
 
 The optimizer does not optimize Tally.
 
@@ -214,6 +214,8 @@ These summaries are used only to decide which prompt blocks of the **agent under
 
 ## Minimal Runtime Flow
 
+The v4 architecture graph orders the main loop as: **Phase 3 (analyze) → Phase 6 (stop condition) → Phase 4 (generate next candidate) → store cycle output → Phase 2 (next candidate runs)**. The subsection titles below follow implementation steps; **stop before generating the next candidate** matches diagram Phase 6 before Phase 4.
+
 ### Phase 1. Start Optimization Job
 
 1. Generate the fixed trajectory set once for the agent under evaluation.
@@ -243,9 +245,31 @@ These summaries are used only to decide which prompt blocks of the **agent under
 5. Use those summaries to identify the prompt blocks of the agent under evaluation most likely to need edits.
 6. If there are no explicit failures, use low `OverallQuality` runs as fallback analysis input.
 
+### Stop condition (v4 diagram: Phase 6)
+
+Stop when either:
+
+1. `candidate_score >= target_threshold`
+2. max cycles is reached
+3. no useful mutations remain
+
+Define stopping criteria explicitly:
+
+* stop when the maximum number of cycles `k` has been reached
+* stop when one candidate score reaches the configured target threshold
+* stop when no useful mutations remain
+
+If there are no clear failures but the threshold is not reached, use low-scoring conversations as the mutation input instead of treating it as an error.
+
+Reaching a stopping criterion ends candidate generation. It does not mean the latest candidate is automatically accepted.
+
+If stopping criteria are met, skip generating another candidate and proceed to final selection (see Phase 7 below).
+
 ### Phase 4. Generate next candidate
 
-1. Start from the latest generated version of the agent under evaluation, or another explicitly chosen parent from cycle history.
+Run only if the stopping criteria above were **not** met.
+
+1. Start from the latest generated version of the agent under evaluation. APIs should allow an explicitly chosen parent from history for future lookback; the initial implementation may always use the latest candidate.
 2. Mutate only the selected mutable blocks of the agent under evaluation.
 3. Use optimizer controls such as temperature, cycle output reflection, and mutation logic.
 4. Record:
@@ -284,25 +308,7 @@ What is not supposed to change within the same optimization job:
 * the frozen trajectory/conversation set
 * the hashes for those frozen artifacts
 
-### Phase 7. Stop condition
-
-Stop when either:
-
-1. `candidate_score >= target_threshold`
-2. max cycles is reached
-3. no useful mutations remain
-
-Define stopping criteria explicitly:
-
-* stop when the maximum number of cycles `k` has been reached
-* stop when one candidate score reaches the configured target threshold
-* stop when no useful mutations remain
-
-If there are no clear failures but the threshold is not reached, use low-scoring conversations as the mutation input instead of treating it as an error.
-
-Reaching a stopping criterion ends candidate generation. It does not mean the latest candidate is automatically accepted.
-
-### Phase 8. Select final candidate
+### Phase 7. Select final candidate
 
 After the optimization job stops:
 

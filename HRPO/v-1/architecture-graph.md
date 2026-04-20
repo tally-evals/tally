@@ -33,13 +33,8 @@ flowchart TD
     S --> T[Use cycle output record as input to the next candidate prompt]
     T --> V[Prioritize edits using failure summaries plus weighted eval importance]
 
-    V --> AQ{Phase 6: Stop if stopping criteria reached?}
-    AQ -->|threshold score achieved| AR[Stop optimization job]
-    AQ -->|max cycles reached| AR
-    AQ -->|no useful mutations remain| AR
-    AQ -->|continue| W[Phase 4: Generate next candidate prompt]
-
-    W --> X[Start from latest generated candidate; context = prior candidate + cycle output]
+    V --> W[Phase 4: Generate next candidate prompt]
+    W --> X[Start from latest generated candidate or another chosen parent from cycle history]
     X --> Y[Reflect on previous cycle outputs, strong candidates, and prior mutations]
     Y --> Z[Apply cycle output reflection and mutation logic]
     Z --> AA[Mutate only selected mutable prompt blocks]
@@ -47,7 +42,11 @@ flowchart TD
     AB --> AG[Store current cycle output in optimization job history]
     AB -.parallel execution only.-> AV[Buckets are workload partitions only]
 
-    AG --> F
+    AG --> AQ{Phase 6: Stop if stopping criteria reached?}
+    AQ -->|threshold score achieved| AR[Stop optimization job]
+    AQ -->|k cycles reached| AR
+    AQ -->|no useful mutations remain| AR
+    AQ -->|continue| G
 
     AR --> AS2[Phase 7: Review all stored cycle outputs]
     AS2 --> AT2[Compare all candidates using OverallQuality plus weighted guardrails]
@@ -61,7 +60,7 @@ flowchart TD
 
 ## Reading Guide
 
-- Core rule: `agent under evaluation -> fixed trajectory set -> Tally evaluation -> aggregated score -> stop check -> generate next candidate -> store cycle outputs -> loop or final selection`
+- Core rule: `agent under evaluation -> fixed trajectory set -> Tally evaluation -> aggregated score -> optimizer generates next candidate -> store cycle outputs -> stop -> select final candidate`
 - The fixed trajectory set is created once per optimization job, then reused across all cycles
 - The optimization job setup now separates `Optimization Job Metadata` from `Hyper parameters`
 - `Optimization Job Metadata` explicitly stores `optimization job id`, `trajectory location`, and the `config used for the optimization job`
@@ -74,10 +73,10 @@ flowchart TD
 - Failure analysis rolls the step-level and conversation-level summaries into the cycle output record, which then becomes the input to the next candidate prompt
 - The candidate reads the runs used for the current cycle as readonly context; generating a new candidate does not modify those runs
 - Cycle output records explicitly include `cycle output id`, `parent id`, `prompt hash`, `changed block ids`, run refs used in the cycle, aggregated `OverallQuality`, weighted guardrails, and reflection summary
-- Candidate generation uses the latest generated candidate plus cycle output (including failure analysis) as context; APIs reserve parent and history fields for future lookback even when the implementation always starts from the latest candidate today
+- Candidate generation starts from the latest generated candidate, or another chosen parent from cycle history, and includes cycle output reflection over prior cycle outputs and mutation history so the optimizer does not repeat work or re-break earlier fixes
 - Prompt mutation still defaults to a single mutable `full-prompt` block, with selective refinement happening inside that simple block model
 - Stopping is loop control only: when the threshold is reached, `k` cycles are exhausted, or no useful mutations remain, candidate generation ends and the optimization job moves to final selection
-- The loop is explicit: Phase 2 generate candidate runs on the fixed trajectory set -> Phase 3 analyze -> **Phase 6 stop or continue** -> Phase 4 generate next candidate prompt -> store current cycle output -> Phase 2 again, or exit to Phase 7
+- The loop is explicit: Phase 2 generate candidate runs on the fixed trajectory set -> Phase 3 analyze -> Phase 4 generate next candidate prompt -> store current cycle output -> Phase 6 stop or continue
 - Stop when the stopping criteria are reached
 - Final acceptance happens once, after the optimization job stops, by comparing all stored candidates and choosing the best-performing one under the configured guardrails
 - Buckets are workload partitions for parallel execution only, not scoring groups or optimization boundaries
