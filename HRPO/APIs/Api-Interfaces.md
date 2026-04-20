@@ -10,21 +10,6 @@ An `optimization job` is the top-level optimization lifecycle:
 - one candidate-generation loop
 - one final candidate-selection step
 
-## Flow Sequence
-
-The API flow should be read in this order:
-
-1. `Phase 1: Create Optimization Job`
-2. `Phase 2: Create Trajectory Set`
-3. `Phase 3: Evaluate Candidate`
-4. `Shared Evaluation Summary Type`
-5. `Phase 4: Analyze Failures`
-6. `Phase 5: Generate Next Candidate Prompt`
-7. `Phase 6: Generate Candidate`
-8. `Phase 7: Cycle Output`
-9. `Phase 8: Evaluate Stop Condition`
-10. `Phase 9: Select Final Candidate`
-
 ## Phase 1: Create Optimization Job
 
 API:
