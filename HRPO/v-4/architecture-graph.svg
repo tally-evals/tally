@@ -30,15 +30,12 @@
   <text x="240" y="306" text-anchor="middle" class="text">Optimization Job Metadata</text>
   <text x="240" y="334" text-anchor="middle" class="small">optimization job id</text>
   <text x="240" y="356" text-anchor="middle" class="small">trajectory location</text>
-  <text x="240" y="378" text-anchor="middle" class="small">trajectory artifact hashes</text>
-  <text x="240" y="400" text-anchor="middle" class="small">config used for the optimization job</text>
+  <text x="240" y="389" text-anchor="middle" class="small">config used for the optimization job</text>
 
   <rect x="80" y="440" width="320" height="140" rx="16" ry="16" class="support" />
   <text x="240" y="474" text-anchor="middle" class="text">Hyper parameters</text>
-  <text x="240" y="502" text-anchor="middle" class="small">prompt</text>
   <text x="240" y="524" text-anchor="middle" class="small">seed prompt</text>
-  <text x="240" y="546" text-anchor="middle" class="small">optimizer system prompt</text>
-  <text x="240" y="568" text-anchor="middle" class="small">temperature</text>
+  <text x="240" y="546" text-anchor="middle" class="small">temperature</text>
 
   <rect x="800" y="130" width="360" height="118" rx="16" ry="16" class="box accent" />
   <text x="980" y="166" text-anchor="middle" class="text">Phase 2</text>

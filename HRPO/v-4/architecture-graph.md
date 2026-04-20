@@ -52,8 +52,8 @@ flowchart TD
     AS2 --> AT2[Compare all candidates using OverallQuality plus weighted guardrails]
     AT2 --> AU2[Select final accepted candidate for the optimization job]
 
-    E -.stores.-> AS[Optimization Job Metadata: optimization job id, trajectory location, trajectory artifact hashes, config used for the optimization job]
-    E -.stores.-> AU[Hyper parameters: prompt, seed prompt, optimizer system prompt, temperature]
+    E -.stores.-> AS[Optimization Job Metadata: optimization job id, trajectory location, config used for the optimization job]
+    E -.stores.-> AU[Hyper parameters: seed prompt, temperature]
     M -.stores.-> AT[Cycle output record includes: cycle output id, parent id, prompt hash, changed block ids, run refs used in this cycle, aggregated OverallQuality, weighted guardrails, and reflection summary]
     AU2 -.stores.-> AV2[Final selection record: accepted candidate id, selected cycle output id, and selection rationale]
 ```
@@ -63,8 +63,8 @@ flowchart TD
 - Core rule: `agent under evaluation -> fixed trajectory set -> Tally evaluation -> aggregated score -> optimizer generates next candidate -> store cycle outputs -> stop -> select final candidate`
 - The fixed trajectory set is created once per optimization job, then reused across all cycles
 - The optimization job setup now separates `Optimization Job Metadata` from `Hyper parameters`
-- `Optimization Job Metadata` explicitly stores `optimization job id`, `trajectory location`, `trajectory artifact hashes`, and the `config used for the optimization job`
-- `Hyper parameters` explicitly store `prompt`, `seed prompt`, `optimizer system prompt`, and `temperature`
+- `Optimization Job Metadata` explicitly stores `optimization job id`, `trajectory location`, and the `config used for the optimization job`
+- `Hyper parameters` explicitly store `seed prompt` and `temperature`
 - Tally remains the source of truth, with step-level, conversation-level, and final `OverallQuality` outputs per conversation
 - Primary scalar objective: `OverallQuality`
 - Candidate score: mean `OverallQuality` across completed conversations in the fixed trajectory set for the optimization job

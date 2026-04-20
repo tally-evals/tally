@@ -160,8 +160,6 @@ These hyper parameters are used by the optimizer to generate the next candidate 
 They should include:
 
 * current prompt candidate: the current version of the agent under evaluation being evaluated
-* seed prompt: the starting version of the agent under evaluation that initializes the optimization job
-* optimizer system prompt: the system prompt used by the optimizer when generating candidate updates
 * temperature: handles LLM creativity and response randomness during candidate generation
 
 Temperature meaning:
@@ -249,7 +247,7 @@ These summaries are used only to decide which prompt blocks of the **agent under
 
 1. Start from the latest generated version of the agent under evaluation, or another explicitly chosen parent from cycle history.
 2. Mutate only the selected mutable blocks of the agent under evaluation.
-3. Use optimizer controls such as optimizer system prompt, temperature, cycle output reflection, and mutation logic.
+3. Use optimizer controls such as temperature, cycle output reflection, and mutation logic.
 4. Record:
 
    * parent candidate
@@ -324,9 +322,8 @@ Stores:
 * optimization job id
 * created time
 * trajectory set location
-* conversation artifact hashes
 * configuration used for the optimization job
-* defined optimizer hyper parameters, including seed prompt, optimizer system prompt, and temperature
+* defined optimizer hyper parameters, including temperature
 * identifier of the agent under evaluation being optimized in that optimization job
 * final accepted candidate id
 * selected cycle output id
@@ -358,7 +355,7 @@ Keep the implementation small.
 * `evaluate` - runs Tally over all conversations in the optimization job produced by the agent under evaluation
 * `analyze` - summarizes failures and low-scoring conversations for the agent under evaluation
 * `select` - compares stored cycle outputs and chooses the final accepted candidate after the optimization job stops
-* `optimize` - generates the next candidate for the agent under evaluation using optimizer controls such as optimizer system prompt and temperature
+* `optimize` - generates the next candidate for the agent under evaluation using optimizer controls such as temperature
 
 ## v3 Non-Goals
 
