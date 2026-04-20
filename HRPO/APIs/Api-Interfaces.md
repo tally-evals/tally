@@ -19,8 +19,8 @@ The API flow should be read in this order:
 3. `Phase 3: Evaluate Candidate`
 4. `Shared Evaluation Summary Type`
 5. `Phase 4: Analyze Failures`
-6. `Phase 5: Create Candidate Version`
-7. `Phase 6: Candidate Run`
+6. `Phase 5: Generate Next Candidate Prompt`
+7. `Phase 6: Generate Candidate Runs`
 8. `Phase 7: Cycle Output`
 9. `Phase 8: Evaluate Stop Condition`
 10. `Phase 9: Select Final Candidate`
@@ -255,7 +255,13 @@ Notes:
 - Otherwise use low pass-rate eval summaries or scope overview issues.
 - This phase turns score data into actionable change guidance.
 
-## Phase 5: Create Candidate Version
+## Phase 5: Generate Next Candidate Prompt
+
+The next candidate should be produced based on:
+
+1. the latest `cycleOutput`, which anchors the current candidate state and score
+2. the `FailureAnalysis`, which identifies what needs to improve next
+3. the `CandidateGenerationConfig`, which controls how the next candidate is generated
 
 API:
 
@@ -312,7 +318,7 @@ Notes:
 - `cycleOutput` already identifies the candidate the next version is derived from.
 - `generationConfig` lets the optimizer vary `model` or `temperature` across cycles and measure how those changes affect the next candidate.
 
-## Phase 6: Candidate Run
+## Phase 6: Generate Candidate Runs
 
 API:
 
