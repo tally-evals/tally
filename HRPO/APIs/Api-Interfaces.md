@@ -7,7 +7,8 @@ An `optimization job` is the top-level optimization lifecycle:
 - one fixed trajectory set
 - Candidate version
 - Candidate run
-- one acceptance loop
+- one candidate-generation loop
+- one final candidate-selection step
 
 ## Phase 1: Create Optimization Job
 
@@ -34,7 +35,7 @@ type OptimizationJobConfig = {
   maxCycles: number;
 
   // Optional pass-rate target that allows early stopping.
-  // If a cycle output reaches this threshold, the optimization job can end.
+  // If a candidate reaches this threshold, the optimization job can end.
   acceptanceThreshold: number;
 
   // Optimization job-level scoring and acceptance policy.
@@ -352,14 +353,9 @@ type CycleOutput = {
   // and scope-level issue rollups.
   evalSummaries: EvalSummaries;
 
-  // Top-level score saved with the cycle output so acceptance logic
+  // Top-level score saved with the cycle output so later comparison logic
   // does not need to recompute it.
   aggregatedPassRate: number;
-
-  // Optional acceptance result once this cycle output has been judged
-  // against a previous cycle output.
-  accepted?: boolean;
-  rejectReason?: string;
 
   // Creation timestamp for ordering and history.
   createdAt: string;
@@ -367,8 +363,8 @@ type CycleOutput = {
 ```
 
 Notes:
-- A cycle output is the optimizer's durable decision boundary.
-- It is the object you compare, accept, reject, or analyze later.
+- A cycle output is the optimizer's durable historical record for one evaluated candidate.
+- It is the object you compare, analyze, rank, and later use during final candidate selection.
 
 ## Phase 7: Analyze Failures
 
@@ -413,68 +409,7 @@ Notes:
 - Otherwise use low pass-rate eval summaries or scope overview issues.
 - This phase turns score data into actionable change guidance.
 
-## Phase 8: Evaluate Acceptance
-
-API:
-
-```ts
-evaluateAcceptance(
-  previous: CycleOutput,
-  current: CycleOutput,
-  options?: AcceptanceOptions
-): Promise<AcceptanceDecision>
-```
-
-Input:
-
-```ts
-type AcceptanceOptions = {
-  // Optional override of the optimization job-level policy for this one decision.
-  // Most flows should use `optimizationJob.config.evaluationPolicy` as the default.
-  evaluationPolicyOverride?: EvaluationPolicy;
-};
-
-type EvaluateAcceptanceInput = {
-  // Previously accepted or baseline cycle output.
-  previous: CycleOutput;
-
-  // Newly produced cycle output under consideration.
-  current: CycleOutput;
-
-  // Extra policy controls for the decision.
-  options?: AcceptanceOptions;
-};
-```
-
-Output:
-
-```ts
-type AcceptanceDecision = {
-  // Final accept / reject result.
-  accepted: boolean;
-
-  // Human-readable explanation of the decision.
-  reason: string;
-
-  // Structured checks so callers know exactly what passed or failed.
-  checks: {
-    passRateImproved: boolean;
-    sameOptimizationJob: boolean;
-    requiredEvalsPresent: boolean;
-    priorityWeightedEvalsNonRegressed: boolean;
-  };
-};
-```
-
-Notes:
-- This phase exists to keep acceptance logic explicit and auditable.
-- Define eval weights in `OptimizationJobConfig.evaluationPolicy` when they are meant to govern the whole optimization loop.
-- Acceptance should derive eval importance from `evalWeights` rather than a separate list.
-- Evals with higher assigned weights should be treated as higher-priority during comparison.
-- For those higher-priority weighted evals, acceptance should require `currentPassRate >= previousPassRate`.
-- In practice: the weighted aggregate can improve, but the candidate should still be rejected if a more heavily weighted eval regresses.
-
-## Phase 9: Evaluate Stop Condition
+## Phase 8: Evaluate Stop Condition
 
 API:
 
@@ -514,4 +449,64 @@ type StopDecision = {
 
 Notes:
 - This phase separates loop-control policy from execution logic.
-- It gives the optimizer one clear place to decide whether to continue.
+- It gives the optimizer one clear place to decide whether to continue generating candidates.
+
+## Phase 9: Select Final Candidate
+
+API:
+
+```ts
+selectFinalCandidate(
+  input: SelectFinalCandidateInput
+): Promise<FinalCandidateDecision>
+```
+
+Input:
+
+```ts
+type FinalCandidateSelectionOptions = {
+  // Optional override of the optimization job-level policy for final selection.
+  // Most flows should use `optimizationJob.config.evaluationPolicy` as the default.
+  evaluationPolicyOverride?: EvaluationPolicy;
+};
+
+type SelectFinalCandidateInput = {
+  // Optimization job whose candidate history is being finalized.
+  optimizationJobId: string;
+
+  // All evaluated cycle outputs produced during the optimization job.
+  cycleOutputs: CycleOutput[];
+
+  // Extra policy controls for the final decision.
+  options?: FinalCandidateSelectionOptions;
+};
+```
+
+Output:
+
+```ts
+type FinalCandidateDecision = {
+  // Candidate selected as the final accepted result of the optimization job.
+  acceptedCandidateId: string;
+
+  // Cycle output that justifies the final selection.
+  selectedCycleOutputId: string;
+
+  // Human-readable explanation of the decision.
+  reason: string;
+
+  // Structured checks so callers know exactly what passed or failed.
+  checks: {
+    sameOptimizationJob: boolean;
+    requiredEvalsPresent: boolean;
+    priorityWeightedEvalsNonRegressed: boolean;
+  };
+};
+```
+
+Notes:
+- This phase happens only after the optimization job has stopped generating candidates.
+- Define eval weights in `OptimizationJobConfig.evaluationPolicy` when they are meant to govern final selection across the full candidate history.
+- Final selection should derive eval importance from `evalWeights` rather than a separate list.
+- Evals with higher assigned weights should be treated as higher-priority during comparison.
+- A candidate can have a strong aggregate score and still lose final selection if a more heavily weighted eval regresses too much.

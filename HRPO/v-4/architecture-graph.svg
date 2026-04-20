@@ -1,15 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1900" height="1560" viewBox="0 0 1900 1560">
+<svg xmlns="http://www.w3.org/2000/svg" width="1900" height="1620" viewBox="0 0 1900 1620">
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#334155" />
     </marker>
     <style>
       .title { font: 700 30px Arial, sans-serif; fill: #0f172a; }
-      .subtitle { font: 400 16px Arial, sans-serif; fill: #334155; }
       .box { fill: #f8fafc; stroke: #334155; stroke-width: 2; }
       .accent { fill: #eff6ff; stroke: #2563eb; }
       .decision { fill: #fff7ed; stroke: #ea580c; }
-      .support { fill: #f8fafc; stroke: #64748b; stroke-dasharray: 8 6; }
+      .support { fill: #f8fafc; stroke: #64748b; stroke-width: 2; stroke-dasharray: 8 6; }
       .text { font: 600 18px Arial, sans-serif; fill: #0f172a; }
       .small { font: 400 15px Arial, sans-serif; fill: #334155; }
       .tiny { font: 400 14px Arial, sans-serif; fill: #475569; }
@@ -19,183 +18,169 @@
     </style>
   </defs>
 
-  <rect width="1900" height="1560" fill="#ffffff" />
-
+  <rect width="1900" height="1620" fill="#ffffff" />
   <text x="70" y="60" class="title">HRPO v4 Architecture Graph</text>
-  <rect x="80" y="140" width="260" height="100" rx="16" ry="16" class="box accent" />
-  <text x="210" y="176" text-anchor="middle" class="text">Phase 1</text>
-  <text x="210" y="204" text-anchor="middle" class="small">Start optimization job</text>
-  <text x="210" y="226" text-anchor="middle" class="small">generate one trajectory set</text>
 
-  <rect x="80" y="285" width="320" height="150" rx="16" ry="16" class="box support" />
-  <text x="240" y="321" text-anchor="middle" class="text">Optimization Job Metadata</text>
-  <text x="240" y="349" text-anchor="middle" class="small">optimization job id</text>
-  <text x="240" y="371" text-anchor="middle" class="small">trajectory location</text>
-  <text x="240" y="393" text-anchor="middle" class="small">conversation artifact hashes</text>
-  <text x="240" y="415" text-anchor="middle" class="small">config used for the optimization job</text>
+  <rect x="80" y="130" width="260" height="100" rx="16" ry="16" class="box accent" />
+  <text x="210" y="166" text-anchor="middle" class="text">Phase 1</text>
+  <text x="210" y="194" text-anchor="middle" class="small">Start optimization job</text>
+  <text x="210" y="216" text-anchor="middle" class="small">generate one trajectory set</text>
 
-  <rect x="80" y="455" width="320" height="140" rx="16" ry="16" class="box support" />
-  <text x="240" y="489" text-anchor="middle" class="text">Hyper parameters</text>
-  <text x="240" y="517" text-anchor="middle" class="small">prompt</text>
-  <text x="240" y="539" text-anchor="middle" class="small">baseline prompt or current active</text>
-  <text x="240" y="561" text-anchor="middle" class="small">agent under evaluation</text>
-  <text x="240" y="583" text-anchor="middle" class="small">temperature</text>
+  <rect x="80" y="270" width="320" height="150" rx="16" ry="16" class="support" />
+  <text x="240" y="306" text-anchor="middle" class="text">Optimization Job Metadata</text>
+  <text x="240" y="334" text-anchor="middle" class="small">optimization job id</text>
+  <text x="240" y="356" text-anchor="middle" class="small">trajectory location</text>
+  <text x="240" y="378" text-anchor="middle" class="small">trajectory artifact hashes</text>
+  <text x="240" y="400" text-anchor="middle" class="small">config used for the optimization job</text>
 
-  <rect x="430" y="140" width="330" height="100" rx="16" ry="16" class="box accent" />
-  <text x="595" y="176" text-anchor="middle" class="text">Persist Inputs</text>
-  <text x="595" y="204" text-anchor="middle" class="small">store frozen conversations</text>
-  <text x="595" y="226" text-anchor="middle" class="small">and record optimization job hashes</text>
+  <rect x="80" y="440" width="320" height="140" rx="16" ry="16" class="support" />
+  <text x="240" y="474" text-anchor="middle" class="text">Hyper parameters</text>
+  <text x="240" y="502" text-anchor="middle" class="small">prompt</text>
+  <text x="240" y="524" text-anchor="middle" class="small">seed prompt</text>
+  <text x="240" y="546" text-anchor="middle" class="small">optimizer system prompt</text>
+  <text x="240" y="568" text-anchor="middle" class="small">temperature</text>
 
-  <rect x="800" y="140" width="360" height="118" rx="16" ry="16" class="box accent" />
-  <text x="980" y="176" text-anchor="middle" class="text">Phase 2</text>
-  <text x="980" y="204" text-anchor="middle" class="small">Run baseline or active candidate</text>
-  <text x="980" y="226" text-anchor="middle" class="small">of the agent under evaluation</text>
-  <text x="980" y="248" text-anchor="middle" class="small">on the fixed trajectory set</text>
+  <rect x="800" y="130" width="360" height="118" rx="16" ry="16" class="box accent" />
+  <text x="980" y="166" text-anchor="middle" class="text">Phase 2</text>
+  <text x="980" y="194" text-anchor="middle" class="small">Generate candidate runs on the</text>
+  <text x="980" y="216" text-anchor="middle" class="small">same fixed trajectory set for</text>
+  <text x="980" y="238" text-anchor="middle" class="small">the current candidate</text>
 
-  <rect x="1210" y="140" width="300" height="100" rx="16" ry="16" class="box" />
-  <text x="1360" y="176" text-anchor="middle" class="text">Tally Evaluation</text>
-  <text x="1360" y="204" text-anchor="middle" class="small">one TallyRunArtifact</text>
-  <text x="1360" y="226" text-anchor="middle" class="small">per conversation</text>
+  <rect x="1210" y="130" width="300" height="100" rx="16" ry="16" class="box" />
+  <text x="1360" y="166" text-anchor="middle" class="text">Tally Evaluation</text>
+  <text x="1360" y="194" text-anchor="middle" class="small">one TallyRunArtifact</text>
+  <text x="1360" y="216" text-anchor="middle" class="small">per conversation</text>
 
-  <rect x="1560" y="70" width="280" height="88" rx="16" ry="16" class="box" />
-  <text x="1700" y="106" text-anchor="middle" class="text">Single-turn evals</text>
-  <text x="1700" y="134" text-anchor="middle" class="small">step-level pass or fail</text>
+  <rect x="1560" y="60" width="280" height="88" rx="16" ry="16" class="box" />
+  <text x="1700" y="96" text-anchor="middle" class="text">Single-turn evals</text>
+  <text x="1700" y="124" text-anchor="middle" class="small">step-level pass or fail</text>
 
-  <rect x="1560" y="176" width="280" height="88" rx="16" ry="16" class="box" />
-  <text x="1700" y="212" text-anchor="middle" class="text">Multi-turn evals</text>
-  <text x="1700" y="240" text-anchor="middle" class="small">conversation-level pass or fail</text>
+  <rect x="1560" y="166" width="280" height="88" rx="16" ry="16" class="box" />
+  <text x="1700" y="202" text-anchor="middle" class="text">Multi-turn evals</text>
+  <text x="1700" y="230" text-anchor="middle" class="small">conversation-level pass or fail</text>
 
-  <rect x="1560" y="282" width="280" height="88" rx="16" ry="16" class="box accent" />
-  <text x="1700" y="318" text-anchor="middle" class="text">OverallQuality</text>
-  <text x="1700" y="346" text-anchor="middle" class="small">one scalar per conversation</text>
+  <rect x="1560" y="272" width="280" height="88" rx="16" ry="16" class="box accent" />
+  <text x="1700" y="308" text-anchor="middle" class="text">OverallQuality</text>
+  <text x="1700" y="336" text-anchor="middle" class="small">one scalar per conversation</text>
 
-  <rect x="1460" y="410" width="380" height="118" rx="16" ry="16" class="box accent" />
-  <text x="1650" y="446" text-anchor="middle" class="text">Cycle Outputs</text>
-  <text x="1650" y="474" text-anchor="middle" class="small">candidate_score = mean OverallQuality</text>
-  <text x="1650" y="496" text-anchor="middle" class="small">guardrail summaries</text>
-  <text x="1650" y="518" text-anchor="middle" class="small">weighted evals: more important evals matter more</text>
+  <rect x="1460" y="400" width="380" height="118" rx="16" ry="16" class="box accent" />
+  <text x="1650" y="436" text-anchor="middle" class="text">Cycle Outputs</text>
+  <text x="1650" y="464" text-anchor="middle" class="small">candidate_score = mean OverallQuality</text>
+  <text x="1650" y="486" text-anchor="middle" class="small">guardrail summaries</text>
+  <text x="1650" y="508" text-anchor="middle" class="small">weighted evals guide mutation and selection</text>
 
-  <rect x="1420" y="560" width="420" height="122" rx="16" ry="16" class="box support" />
-  <text x="1630" y="592" text-anchor="middle" class="text">Cycle Output Record</text>
-  <text x="1630" y="618" text-anchor="middle" class="small">cycle output id, parent id, prompt hash,</text>
-  <text x="1630" y="640" text-anchor="middle" class="small">changed block ids, Tally refs, aggregated score,</text>
-  <text x="1630" y="662" text-anchor="middle" class="small">weighted guardrails, reflection, accept/reject</text>
+  <rect x="1420" y="640" width="300" height="100" rx="16" ry="16" class="box accent" />
+  <text x="1570" y="676" text-anchor="middle" class="text">Phase 3</text>
+  <text x="1570" y="704" text-anchor="middle" class="small">Analyze failures</text>
+  <text x="1570" y="726" text-anchor="middle" class="small">from the latest cycle output</text>
 
-  <rect x="1420" y="780" width="300" height="100" rx="16" ry="16" class="box accent" />
-  <text x="1570" y="816" text-anchor="middle" class="text">Phase 3</text>
-  <text x="1570" y="844" text-anchor="middle" class="small">Analyze failures</text>
-  <text x="1570" y="866" text-anchor="middle" class="small">from the cycle output</text>
+  <rect x="1020" y="670" width="300" height="90" rx="16" ry="16" class="box" />
+  <text x="1170" y="706" text-anchor="middle" class="text">Failed step-level evals</text>
+  <text x="1170" y="734" text-anchor="middle" class="small">single-turn failures</text>
 
-  <rect x="1020" y="720" width="300" height="90" rx="16" ry="16" class="box" />
-  <text x="1170" y="756" text-anchor="middle" class="text">Failed step-level evals</text>
-  <text x="1170" y="784" text-anchor="middle" class="small">single-turn failures</text>
+  <rect x="1020" y="795" width="300" height="90" rx="16" ry="16" class="box" />
+  <text x="1170" y="831" text-anchor="middle" class="text">Failed conversation evals</text>
+  <text x="1170" y="859" text-anchor="middle" class="small">multi-turn failures</text>
 
-  <rect x="1020" y="845" width="300" height="90" rx="16" ry="16" class="box" />
-  <text x="1170" y="881" text-anchor="middle" class="text">Failed conversation evals</text>
-  <text x="1170" y="909" text-anchor="middle" class="small">multi-turn failures</text>
+  <rect x="660" y="670" width="300" height="90" rx="16" ry="16" class="box accent" />
+  <text x="810" y="706" text-anchor="middle" class="text">Conversation-level summary</text>
+  <text x="810" y="734" text-anchor="middle" class="small">aggregate failed steps</text>
 
-  <rect x="660" y="720" width="300" height="90" rx="16" ry="16" class="box accent" />
-  <text x="810" y="756" text-anchor="middle" class="text">Conversation-level summary</text>
-  <text x="810" y="784" text-anchor="middle" class="small">aggregate failed steps</text>
+  <rect x="660" y="795" width="300" height="90" rx="16" ry="16" class="box accent" />
+  <text x="810" y="831" text-anchor="middle" class="text">Across all conversations summary</text>
+  <text x="810" y="859" text-anchor="middle" class="small">aggregate failed runs</text>
 
-  <rect x="660" y="845" width="300" height="90" rx="16" ry="16" class="box accent" />
-  <text x="810" y="881" text-anchor="middle" class="text">Across all conversations summary</text>
-  <text x="810" y="909" text-anchor="middle" class="small">aggregate failed runs</text>
+  <rect x="280" y="705" width="340" height="135" rx="16" ry="16" class="support" />
+  <text x="450" y="741" text-anchor="middle" class="text">Cycle Output Record</text>
+  <text x="450" y="769" text-anchor="middle" class="small">conversation summary, across-all</text>
+  <text x="450" y="791" text-anchor="middle" class="small">summary, guardrails, reflection,</text>
+  <text x="450" y="813" text-anchor="middle" class="small">readonly run refs, and context</text>
 
-  <rect x="300" y="765" width="300" height="125" rx="16" ry="16" class="box decision" />
-  <text x="450" y="801" text-anchor="middle" class="text">Explicit failures?</text>
-  <text x="450" y="829" text-anchor="middle" class="small">If no, fall back to low</text>
-  <text x="450" y="851" text-anchor="middle" class="small">OverallQuality conversations</text>
-  <text x="450" y="873" text-anchor="middle" class="tiny">analysis only, not a new score</text>
+  <rect x="60" y="715" width="190" height="105" rx="16" ry="16" class="box accent" />
+  <text x="155" y="751" text-anchor="middle" class="text">Next candidate</text>
+  <text x="155" y="779" text-anchor="middle" class="small">prompt input</text>
+  <text x="155" y="801" text-anchor="middle" class="small">from cycle output</text>
 
-  <rect x="80" y="770" width="180" height="95" rx="16" ry="16" class="box accent" />
-  <text x="170" y="806" text-anchor="middle" class="text">Target</text>
-  <text x="170" y="834" text-anchor="middle" class="small">high-priority blocks</text>
+  <rect x="80" y="1000" width="340" height="132" rx="16" ry="16" class="box accent" />
+  <text x="250" y="1036" text-anchor="middle" class="text">Phase 4</text>
+  <text x="250" y="1064" text-anchor="middle" class="small">Generate next candidate prompt</text>
+  <text x="250" y="1086" text-anchor="middle" class="small">start from latest generated candidate</text>
+  <text x="250" y="1108" text-anchor="middle" class="small">or another chosen parent from history</text>
 
-  <rect x="80" y="1090" width="330" height="132" rx="16" ry="16" class="box accent" />
-  <text x="245" y="1122" text-anchor="middle" class="text">Phase 4</text>
-  <text x="245" y="1150" text-anchor="middle" class="small">Generate next candidate</text>
-  <text x="245" y="1172" text-anchor="middle" class="small">start from last accepted candidate</text>
-  <text x="245" y="1194" text-anchor="middle" class="small">of the agent under evaluation</text>
-  <text x="245" y="1216" text-anchor="middle" class="small">apply cycle output reflection and mutation logic</text>
+  <rect x="80" y="1152" width="340" height="114" rx="16" ry="16" class="support" />
+  <text x="250" y="1184" text-anchor="middle" class="text">Reflection + Metadata</text>
+  <text x="250" y="1212" text-anchor="middle" class="small">strong candidates, parent link, prior</text>
+  <text x="250" y="1234" text-anchor="middle" class="small">mutations, changed blocks, rationale</text>
 
-  <rect x="80" y="1242" width="330" height="114" rx="16" ry="16" class="box support" />
-  <text x="245" y="1274" text-anchor="middle" class="text">Reflection + Metadata</text>
-  <text x="245" y="1302" text-anchor="middle" class="small">prior fixes, rejected changes, parent,</text>
-  <text x="245" y="1324" text-anchor="middle" class="small">changed blocks, mutation rationale</text>
+  <rect x="500" y="1010" width="330" height="100" rx="16" ry="16" class="box accent" />
+  <text x="665" y="1046" text-anchor="middle" class="text">Store current cycle output</text>
+  <text x="665" y="1074" text-anchor="middle" class="small">save score, guardrails, parent,</text>
+  <text x="665" y="1096" text-anchor="middle" class="small">and mutation context</text>
 
-  <rect x="470" y="1098" width="300" height="100" rx="16" ry="16" class="box accent" />
-  <text x="620" y="1134" text-anchor="middle" class="text">Phase 5</text>
-  <text x="620" y="1162" text-anchor="middle" class="small">Re-evaluate candidate of the</text>
-  <text x="620" y="1184" text-anchor="middle" class="small">agent under evaluation</text>
+  <rect x="900" y="990" width="360" height="150" rx="16" ry="16" class="box decision" />
+  <text x="1080" y="1026" text-anchor="middle" class="text">Phase 6: Stop condition?</text>
+  <text x="1080" y="1056" text-anchor="middle" class="small">stop if threshold score achieved</text>
+  <text x="1080" y="1078" text-anchor="middle" class="small">or if max cycles reached</text>
+  <text x="1080" y="1100" text-anchor="middle" class="small">or if no useful mutations remain</text>
 
-  <rect x="820" y="1098" width="320" height="100" rx="16" ry="16" class="box accent" />
-  <text x="980" y="1134" text-anchor="middle" class="text">Recompute candidate score</text>
-  <text x="980" y="1162" text-anchor="middle" class="small">mean OverallQuality across</text>
-  <text x="980" y="1184" text-anchor="middle" class="small">completed conversations</text>
+  <rect x="1310" y="970" width="240" height="100" rx="16" ry="16" class="box accent" />
+  <text x="1430" y="1006" text-anchor="middle" class="text">Continue loop</text>
+  <text x="1430" y="1034" text-anchor="middle" class="small">go back to candidate runs</text>
 
-  <rect x="1190" y="1078" width="340" height="150" rx="16" ry="16" class="box decision" />
-  <text x="1360" y="1114" text-anchor="middle" class="text">Phase 6: Accept candidate?</text>
-  <text x="1360" y="1144" text-anchor="middle" class="small">candidate_score >= baseline_score + min_delta</text>
-  <text x="1360" y="1166" text-anchor="middle" class="small">hashes + optimization job identity match</text>
-  <text x="1360" y="1188" text-anchor="middle" class="small">weighted guardrails stay within tolerance</text>
+  <rect x="1310" y="1104" width="240" height="100" rx="16" ry="16" class="box accent" />
+  <text x="1430" y="1140" text-anchor="middle" class="text">Stop optimization job</text>
+  <text x="1430" y="1168" text-anchor="middle" class="small">freeze candidate generation</text>
 
-  <rect x="1590" y="1038" width="250" height="100" rx="16" ry="16" class="box accent" />
-  <text x="1715" y="1070" text-anchor="middle" class="text">Accept path</text>
-  <text x="1715" y="1098" text-anchor="middle" class="small">candidate of the agent under</text>
-  <text x="1715" y="1120" text-anchor="middle" class="small">evaluation becomes active</text>
+  <rect x="1060" y="1380" width="360" height="100" rx="16" ry="16" class="box accent" />
+  <text x="1240" y="1416" text-anchor="middle" class="text">Phase 7</text>
+  <text x="1240" y="1444" text-anchor="middle" class="small">Review all stored cycle outputs</text>
 
-  <rect x="1590" y="1172" width="250" height="100" rx="16" ry="16" class="box" />
-  <text x="1715" y="1204" text-anchor="middle" class="text">Reject path</text>
-  <text x="1715" y="1232" text-anchor="middle" class="small">keep previous active version of</text>
-  <text x="1715" y="1254" text-anchor="middle" class="small">the agent under evaluation</text>
+  <rect x="700" y="1380" width="300" height="100" rx="16" ry="16" class="box accent" />
+  <text x="850" y="1416" text-anchor="middle" class="text">Compare all candidates</text>
+  <text x="850" y="1444" text-anchor="middle" class="small">OverallQuality plus weighted guardrails</text>
 
-  <rect x="1190" y="1308" width="340" height="120" rx="16" ry="16" class="box decision" />
-  <text x="1360" y="1344" text-anchor="middle" class="text">Phase 7: Stop condition?</text>
-  <text x="1360" y="1372" text-anchor="middle" class="small">stop if threshold score achieved</text>
-  <text x="1360" y="1394" text-anchor="middle" class="small">or if k cycles reached</text>
+  <rect x="380" y="1380" width="260" height="100" rx="16" ry="16" class="box accent" />
+  <text x="510" y="1416" text-anchor="middle" class="text">Final accepted candidate</text>
+  <text x="510" y="1444" text-anchor="middle" class="small">choose best-performing candidate</text>
 
-  <rect x="820" y="1323" width="300" height="90" rx="16" ry="16" class="box accent" />
-  <text x="970" y="1359" text-anchor="middle" class="text">Stop optimization job</text>
+  <rect x="80" y="1380" width="250" height="100" rx="16" ry="16" class="support" />
+  <text x="205" y="1416" text-anchor="middle" class="text">Final selection record</text>
+  <text x="205" y="1444" text-anchor="middle" class="small">candidate id, cycle output id, rationale</text>
 
-  <rect x="470" y="1323" width="280" height="90" rx="16" ry="16" class="box support" />
-  <text x="610" y="1359" text-anchor="middle" class="text">Buckets</text>
-  <text x="610" y="1387" text-anchor="middle" class="small">parallel execution only</text>
+  <rect x="480" y="1160" width="250" height="90" rx="16" ry="16" class="support" />
+  <text x="605" y="1196" text-anchor="middle" class="text">Buckets</text>
+  <text x="605" y="1224" text-anchor="middle" class="small">parallel execution only</text>
 
-  <path d="M340 190 L430 190" class="line" />
-  <path d="M240 240 L240 285" class="dashed" />
-  <path d="M240 435 L240 455" class="dashed" />
-  <path d="M760 190 L800 190" class="line" />
-  <path d="M1160 190 L1210 190" class="line" />
-  <path d="M1510 190 L1560 114" class="line" />
-  <path d="M1510 190 L1560 220" class="line" />
-  <path d="M1510 190 L1560 326" class="line" />
-  <path d="M1700 370 L1700 410" class="line" />
-  <path d="M1630 528 L1630 560" class="dashed" />
-  <path d="M1570 682 L1570 780" class="line" />
-  <path d="M1420 815 L1320 765" class="line" />
-  <path d="M1420 845 L1320 890" class="line" />
-  <path d="M1020 765 L960 765" class="line" />
-  <path d="M1020 890 L960 890" class="line" />
-  <path d="M660 765 L600 805" class="line" />
-  <path d="M660 890 L600 850" class="line" />
-  <path d="M300 828 L260 818" class="line" />
-  <path d="M170 865 L170 1090" class="line" />
-  <path d="M410 1156 L470 1148" class="line" />
-  <path d="M770 1148 L820 1148" class="line" />
-  <path d="M1140 1148 L1190 1148" class="line" />
-  <path d="M1530 1148 L1590 1088" class="line" />
-  <path d="M1530 1148 L1590 1222" class="line" />
-  <path d="M1715 1138 L1715 1308 L1530 1308" class="line" />
-  <path d="M1715 1272 L1715 1308" class="line" />
-  <path d="M1190 1368 L1120 1368" class="line" />
-  <path d="M1360 1308 L1360 1228" class="line" />
-  <path d="M1190 1428 L1190 1516 L980 1516 L980 258" class="line" />
+  <path d="M340 180 L800 180" class="line" />
+  <path d="M240 230 L240 270" class="dashed" />
+  <path d="M240 420 L240 440" class="dashed" />
+  <path d="M1160 180 L1210 180" class="line" />
+  <path d="M1510 180 L1560 104" class="line" />
+  <path d="M1510 180 L1560 210" class="line" />
+  <path d="M1510 180 L1560 316" class="line" />
+  <path d="M1700 360 L1700 400" class="line" />
+  <path d="M1570 518 L1570 640" class="line" />
+  <path d="M1420 690 L1320 715" class="line" />
+  <path d="M1420 715 L1320 840" class="line" />
+  <path d="M1020 715 L960 715" class="line" />
+  <path d="M1020 840 L960 840" class="line" />
+  <path d="M660 715 L620 750" class="line" />
+  <path d="M660 840 L620 805" class="line" />
+  <path d="M280 772 L250 767" class="line" />
+  <path d="M155 820 L155 1000" class="line" />
+  <path d="M420 1066 L500 1060" class="line" />
+  <path d="M830 1060 L900 1065" class="line" />
+  <path d="M1260 1065 L1310 1020" class="line" />
+  <path d="M1260 1065 L1310 1154" class="line" />
+  <path d="M1430 970 L1430 620 L980 620 L980 248" class="line" />
+  <path d="M1430 1204 L1430 1380" class="line" />
+  <path d="M1060 1430 L1000 1430" class="line" />
+  <path d="M700 1430 L640 1430" class="line" />
+  <path d="M380 1430 L330 1430" class="dashed" />
 
-  <text x="1600" y="145" class="label">3 outputs</text>
-  <text x="1510" y="760" class="label">phase 3</text>
-  <text x="160" y="1060" class="label">next</text>
-  <text x="1560" y="1095" class="label">yes</text>
-  <text x="1560" y="1228" class="label">no</text>
-  <text x="1080" y="1500" class="label">continue loop</text>
+  <text x="1600" y="135" class="label">3 outputs</text>
+  <text x="1510" y="622" class="label">phase 3</text>
+  <text x="1270" y="1014" class="label">continue</text>
+  <text x="1275" y="1150" class="label">stop</text>
+  <text x="1220" y="612" class="label">continue loop</text>
 </svg>

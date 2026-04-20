@@ -12,13 +12,14 @@ The system should:
 4. Use Tally as the source of truth for scoring each conversation produced by the agent under evaluation.
 5. Aggregate those conversation results into one candidate score.
 6. Use the optimizer to generate the next candidate for the agent under evaluation.
-7. Stop when the candidate score reaches the configured target threshold.
+7. Stop when the configured stopping criteria are reached.
+8. After the optimization job stops, compare all generated candidates and accept the one that performed best.
 
 ## v3 Core Rule
 
 The architecture should be stated as plainly as possible:
 
-`agent under evaluation -> fixed trajectory set -> Tally evaluation -> aggregated score -> optimizer generates next candidate -> re-run agent under evaluation`
+`agent under evaluation -> fixed trajectory set -> Tally evaluation -> aggregated score -> optimizer generates next candidate -> store cycle outputs -> stop -> select final candidate`
 
 The optimizer does not optimize Tally.
 
@@ -38,7 +39,7 @@ More specifically:
 * the optimizer reads Tally outputs for that agent
 * the optimizer analyzes failures and regressions for that agent
 * the optimizer generates the next candidate for that agent
-* the optimizer re-runs that updated agent on the same fixed trajectory set
+* the optimizer evaluates each generated candidate on the same fixed trajectory set
 
 The fixed trajectory set is evaluation input.
 
@@ -92,8 +93,8 @@ Tally evaluates at three levels:
 * Primary scalar objective: `OverallQuality`
 * Candidate score: mean `OverallQuality` across all evaluated conversations in the fixed trajectory set for the optimization job
 * This candidate score belongs to the current candidate of the **agent under evaluation**
-* Candidate selection is not determined by that scalar alone; acceptance also depends on whether key non-primary evals remain within allowed bounds
-* `OverallQuality` tells you whether the candidate improved on the main objective, other evals can still block acceptance if they regress too much
+* Candidate selection is not determined by that scalar alone; the final choice also depends on whether key non-primary evals remain within allowed bounds
+* `OverallQuality` tells you whether a candidate improved on the main objective, while other evals help decide which stored candidate should be finally accepted after the optimization job ends
 
 Example:
 
@@ -110,21 +111,21 @@ v3, keep this explicit:
 ### 6. Role of other evals
 
 * Other evals do not replace `OverallQuality` as the main scalar objective
-* They still directly influence which candidates of the agent under evaluation can be accepted
-* They are used to detect failures, guide which prompt blocks should be mutated next, and enforce quality constraints during candidate selection
+* They still directly influence which candidates of the agent under evaluation can be selected at the end
+* They are used to detect failures, guide which prompt blocks should be mutated next, and enforce quality constraints during final candidate selection
 * They should not be collapsed into a second blended score
-* Keep the global scalar score as `OverallQuality`, while treating selected eval outcomes as explicit acceptance conditions
-* Certain evals are more important than others, so each eval should have an explicit importance level or weightage that indicates how strongly it should influence candidate acceptance, mutation priority, and regression checks
+* Keep the global scalar score as `OverallQuality`, while treating selected eval outcomes as explicit final-selection conditions
+* Certain evals are more important than others, so each eval should have an explicit importance level or weightage that indicates how strongly it should influence final candidate selection, mutation priority, and regression checks
 
 ### 7. Cycle output meaning
 
 * One cycle output = one cycle snapshot
-* A cycle output stores the candidate of the agent under evaluation, the evaluation results, the candidate score, and the accept/reject decision
+* A cycle output stores the candidate of the agent under evaluation, the evaluation results, and the candidate score
 * It should be treated as plain cycle state, not a large abstraction layer
 * A new cycle output should have knowledge of previous cycle outputs, so the LLM knows the previous history
 * It should know which step it has already gone through, so it does not repeat those again
-* If something was fixed previously, the new cycle output should help ensure those things are not broken again after further changes
-* The new cycle output will do a reflection on previous cycle outputs, prior mutations, accepted fixes, rejected changes, and failure summaries before generating the next candidate for the agent under evaluation
+* If something was fixed previously, later cycle outputs should help ensure those things are not broken again after further changes
+* The next candidate should reflect on previous cycle outputs, prior mutations, failure summaries, and strong-performing candidates before generating another version of the agent under evaluation
 
 ### 8. Prompt representation
 
@@ -159,7 +160,7 @@ These hyper parameters are used by the optimizer to generate the next candidate 
 They should include:
 
 * current prompt candidate: the current version of the agent under evaluation being evaluated
-* baseline prompt: the current active version of the agent under evaluation used as the comparison reference
+* seed prompt: the starting version of the agent under evaluation that initializes the optimization job
 * optimizer system prompt: the system prompt used by the optimizer when generating candidate updates
 * temperature: handles LLM creativity and response randomness during candidate generation
 
@@ -222,7 +223,7 @@ These summaries are used only to decide which prompt blocks of the **agent under
 3. Store hashes of those conversation artifacts so later cycles can verify that the original frozen inputs are still unchanged.
 4. Record the optimizer configuration and hyper parameters used to optimize the agent under evaluation.
 
-### Phase 2. Run baseline
+### Phase 2. Run initial candidate
 
 1. Run the current version of the agent under evaluation on the full fixed trajectory set for the optimization job.
 2. Store one Tally result per conversation.
@@ -246,7 +247,7 @@ These summaries are used only to decide which prompt blocks of the **agent under
 
 ### Phase 4. Generate next candidate
 
-1. Start from the last accepted version of the agent under evaluation.
+1. Start from the latest generated version of the agent under evaluation, or another explicitly chosen parent from cycle history.
 2. Mutate only the selected mutable blocks of the agent under evaluation.
 3. Use optimizer controls such as optimizer system prompt, temperature, cycle output reflection, and mutation logic.
 4. Record:
@@ -257,49 +258,33 @@ These summaries are used only to decide which prompt blocks of the **agent under
 
 Generate one candidate per cycle for the **agent under evaluation**.
 
-### Phase 5. Re-evaluate
+### Phase 5. Evaluate candidate
 
 1. Run the new candidate of the agent under evaluation on the same fixed trajectory set for the optimization job.
 2. Use the same Tally configuration.
 3. Compute the new candidate score from `OverallQuality`.
-4. Compare it against the current accepted cycle output.
+4. Save the evaluation as a new cycle output in the optimization job history.
 
-### Phase 6. Accept or reject
+### Phase 6. Record cycle output
 
-Accept the candidate only if all of the following are true:
+For each cycle, record the result without making the final acceptance decision yet:
 
-1. `candidate_score >= baseline_score + min_delta`
-   `min_delta`: minimum improvement threshold
-   `baseline_score`: the score of the current active version of the agent under evaluation
-
-2. optimization job hashes still match, or the conversation artifacts used in this cycle are the same frozen artifacts created at optimization job start
+1. store the candidate of the agent under evaluation
+2. store the evaluation results and candidate score
+3. keep the parent relationship and mutation rationale
+4. keep optimization job hashes and frozen artifact references auditable
 
 What is allowed to change across cycles:
 
 * the candidate of the agent under evaluation
 * the evaluation results
 * the candidate score
-* the accept/reject decision
 
 What is not supposed to change within the same optimization job:
 
 * the optimization job identity
 * the frozen trajectory/conversation set
 * the hashes for those frozen artifacts
-
-3. important guardrail evals do not drop beyond the allowed tolerance, even if `OverallQuality` improves
-
-Example: if a guardrail pass rate was 0.92 and the allowed tolerance is 0.02, then a drop to 0.91 may still be acceptable, but a drop to 0.86 would cause the candidate to be rejected.
-
-If accepted:
-
-* the candidate becomes the new active version of the agent under evaluation
-* the next cycle output uses this candidate as the baseline
-
-If rejected:
-
-* keep the previous active version of the agent under evaluation
-* still store the rejected cycle output for auditability
 
 ### Phase 7. Stop condition
 
@@ -312,10 +297,21 @@ Stop when either:
 Define stopping criteria explicitly:
 
 * stop when the maximum number of cycles `k` has been reached
-* stop when the candidate score of the agent under evaluation reaches the configured target threshold
+* stop when one candidate score reaches the configured target threshold
 * stop when no useful mutations remain
 
 If there are no clear failures but the threshold is not reached, use low-scoring conversations as the mutation input instead of treating it as an error.
+
+Reaching a stopping criterion ends candidate generation. It does not mean the latest candidate is automatically accepted.
+
+### Phase 8. Select final candidate
+
+After the optimization job stops:
+
+1. Gather all stored cycle outputs, including the initial candidate and every generated candidate.
+2. Compare candidates using `OverallQuality` plus the selected guardrail evals.
+3. Prefer the candidate that performs best overall without unacceptable regressions on important evals.
+4. Record the final accepted candidate, the selected cycle output, and the selection rationale.
 
 ## Minimal Stored Artifacts
 
@@ -330,8 +326,11 @@ Stores:
 * trajectory set location
 * conversation artifact hashes
 * configuration used for the optimization job
-* defined optimizer hyper parameters, including baseline prompt, optimizer system prompt, and temperature
+* defined optimizer hyper parameters, including seed prompt, optimizer system prompt, and temperature
 * identifier of the agent under evaluation being optimized in that optimization job
+* final accepted candidate id
+* selected cycle output id
+* final selection rationale
 
 ### Cycle output record
 
@@ -344,7 +343,6 @@ Stores:
 * per-conversation Tally run references
 * aggregated `OverallQuality`
 * guardrail summaries
-* accept/reject decision
 * cycle output reflection summary from previous cycle outputs
 
 This is enough for replay and auditing without building a heavy registry system first.
@@ -359,7 +357,7 @@ Keep the implementation small.
 * `prompts` - loads prompt templates and applies block mutations to the agent under evaluation
 * `evaluate` - runs Tally over all conversations in the optimization job produced by the agent under evaluation
 * `analyze` - summarizes failures and low-scoring conversations for the agent under evaluation
-* `accept` - computes aggregate score and applies guardrails
+* `select` - compares stored cycle outputs and chooses the final accepted candidate after the optimization job stops
 * `optimize` - generates the next candidate for the agent under evaluation using optimizer controls such as optimizer system prompt and temperature
 
 ## v3 Non-Goals
@@ -376,12 +374,12 @@ Do not add these in v3:
 
 ## Implementation Order
 
-1. Create `packages/hrpo` with `optimization-job`, `prompt`, `evaluate`, `analyze`, `accept`, and `optimize`
+1. Create `packages/hrpo` with `optimization-job`, `prompt`, `evaluate`, `analyze`, `select`, and `optimize`
 2. Add optimization job creation that generates one fixed trajectory set and stores replayable artifacts plus hashes
-3. Add baseline evaluation of the agent under evaluation and cycle output persistence
+3. Add initial candidate evaluation of the agent under evaluation and cycle output persistence
 4. Add simple failure analysis based on Tally outputs
 5. Add block-based prompt mutation for one candidate per cycle of the agent under evaluation
-6. Add accept/reject logic using mean `OverallQuality` plus guardrails
+6. Add final candidate selection logic using mean `OverallQuality` plus guardrails over all stored cycle outputs
 7. Add loop control for target threshold, max cycles, and stopping criteria
 
 ## Bottom Line
@@ -394,9 +392,9 @@ v3 should keep the architecture opinionated and easy to explain:
 * one fixed trajectory set
 * one candidate per cycle
 * one primary objective: `OverallQuality`
-* one decision rule: aggregate conversation scores
+* one final selection step after the loop ends
 * one simple prompt model: named mutable blocks
 * one simple analysis path: failed step-level and conversation-level evals guide block mutation
-* one cycle output flow that remembers previous cycle outputs and reflects before the next mutation
+* one cycle output history that remembers previous cycle outputs and reflects before the next mutation
 
 That keeps the good technical corrections from v1, but removes the extra architectural weight that `critique-1` pushed back on. 

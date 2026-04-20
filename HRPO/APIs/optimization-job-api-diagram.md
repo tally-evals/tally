@@ -114,8 +114,6 @@ class CycleOutput {
   +tallyArtifacts: TallyArtifactRef[]
   +evalSummaries: EvalSummaries
   +aggregatedPassRate: number
-  +accepted?: boolean
-  +rejectReason?: string
   +createdAt: string
 }
 
@@ -135,27 +133,8 @@ class FailureAnalysis {
   +targetBlocks: string[]
 }
 
-class AcceptanceOptions {
+class FinalCandidateSelectionOptions {
   +evaluationPolicyOverride?: EvaluationPolicy
-}
-
-class EvaluateAcceptanceInput {
-  +previous: CycleOutput
-  +current: CycleOutput
-  +options?: AcceptanceOptions
-}
-
-class AcceptanceChecks {
-  +passRateImproved: boolean
-  +sameOptimizationJob: boolean
-  +requiredEvalsPresent: boolean
-  +priorityWeightedEvalsNonRegressed: boolean
-}
-
-class AcceptanceDecision {
-  +accepted: boolean
-  +reason: string
-  +checks: AcceptanceChecks
 }
 
 class StopConditionInput {
@@ -168,6 +147,25 @@ class StopConditionInput {
 class StopDecision {
   +stop: boolean
   +reason: thresholdReached | maxCycles
+}
+
+class SelectFinalCandidateInput {
+  +optimizationJobId: string
+  +cycleOutputs: CycleOutput[]
+  +options?: FinalCandidateSelectionOptions
+}
+
+class FinalCandidateChecks {
+  +sameOptimizationJob: boolean
+  +requiredEvalsPresent: boolean
+  +priorityWeightedEvalsNonRegressed: boolean
+}
+
+class FinalCandidateDecision {
+  +acceptedCandidateId: string
+  +selectedCycleOutputId: string
+  +reason: string
+  +checks: FinalCandidateChecks
 }
 
 OptimizationJob --> OptimizationJobConfig : 1 config
@@ -189,9 +187,10 @@ CycleOutput --> TallyArtifactRef : 6d artifacts
 CycleOutput --> EvalSummaries : 6e summaries
 AnalyzeCycleOutputFailuresInput --> CycleOutput : 7 cycle output
 FailureAnalysis --> FailureItem : 7a failures
-EvaluateAcceptanceInput --> CycleOutput : 8 previous/current
-EvaluateAcceptanceInput --> AcceptanceOptions : 8c options
-AcceptanceOptions --> EvaluationPolicy : 8d override
-AcceptanceDecision --> AcceptanceChecks : 8e checks
-StopConditionInput --> CycleOutput : 9 cycle output
+StopConditionInput --> CycleOutput : 8 cycle output
+SelectFinalCandidateInput --> OptimizationJob : 9 optimization job
+SelectFinalCandidateInput --> CycleOutput : 9a cycle outputs
+SelectFinalCandidateInput --> FinalCandidateSelectionOptions : 9b options
+FinalCandidateSelectionOptions --> EvaluationPolicy : 9c override
+FinalCandidateDecision --> FinalCandidateChecks : 9d checks
 ```

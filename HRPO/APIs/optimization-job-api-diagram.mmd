@@ -7,9 +7,15 @@
 classDiagram
 direction LR
 
+class EvaluationPolicy {
+  +evalWeights?: Record<string, number>
+  +requiredEvals?: string[]
+}
+
 class OptimizationJobConfig {
   +maxCycles: number
   +acceptanceThreshold?: number
+  +evaluationPolicy?: EvaluationPolicy
 }
 
 class OptimizationJob {
@@ -100,8 +106,6 @@ class CycleOutput {
   +tallyArtifacts: TallyArtifactRef[]
   +evalSummaries: EvalSummaries
   +aggregatedPassRate: number
-  +accepted?: boolean
-  +rejectReason?: string
   +createdAt: string
 }
 
@@ -121,26 +125,8 @@ class FailureAnalysis {
   +targetBlocks: string[]
 }
 
-class AcceptanceOptions {
-  +requiredEvals?: string[]
-}
-
-class EvaluateAcceptanceInput {
-  +previous: CycleOutput
-  +current: CycleOutput
-  +options?: AcceptanceOptions
-}
-
-class AcceptanceChecks {
-  +passRateImproved: boolean
-  +sameOptimizationJob: boolean
-  +requiredEvalsPresent: boolean
-}
-
-class AcceptanceDecision {
-  +accepted: boolean
-  +reason: string
-  +checks: AcceptanceChecks
+class FinalCandidateSelectionOptions {
+  +evaluationPolicyOverride?: EvaluationPolicy
 }
 
 class StopConditionInput {
@@ -155,7 +141,27 @@ class StopDecision {
   +reason: thresholdReached | maxCycles
 }
 
+class SelectFinalCandidateInput {
+  +optimizationJobId: string
+  +cycleOutputs: CycleOutput[]
+  +options?: FinalCandidateSelectionOptions
+}
+
+class FinalCandidateChecks {
+  +sameOptimizationJob: boolean
+  +requiredEvalsPresent: boolean
+  +priorityWeightedEvalsNonRegressed: boolean
+}
+
+class FinalCandidateDecision {
+  +acceptedCandidateId: string
+  +selectedCycleOutputId: string
+  +reason: string
+  +checks: FinalCandidateChecks
+}
+
 OptimizationJob --> OptimizationJobConfig : 1 config
+OptimizationJobConfig --> EvaluationPolicy : 1a policy
 CreateTrajectorySetInput --> OptimizationJob : 2 optimization job
 CreateCandidateVersionInput --> CycleOutput : 3a cycle output
 CreateCandidateVersionInput --> FailureAnalysis : 3b analysis
@@ -172,7 +178,8 @@ CycleOutput --> TallyArtifactRef : 6d artifacts
 CycleOutput --> EvalSummaries : 6e summaries
 AnalyzeCycleOutputFailuresInput --> CycleOutput : 7 cycle output
 FailureAnalysis --> FailureItem : 7a failures
-EvaluateAcceptanceInput --> CycleOutput : 8 previous/current
-EvaluateAcceptanceInput --> AcceptanceOptions : 8c options
-AcceptanceDecision --> AcceptanceChecks : 8d checks
-StopConditionInput --> CycleOutput : 9 cycle output
+StopConditionInput --> CycleOutput : 8 cycle output
+SelectFinalCandidateInput --> OptimizationJob : 9 optimization job
+SelectFinalCandidateInput --> CycleOutput : 9a cycle outputs
+SelectFinalCandidateInput --> FinalCandidateSelectionOptions : 9b options
+FinalCandidateDecision --> FinalCandidateChecks : 9c checks
