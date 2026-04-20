@@ -16,12 +16,12 @@ The API flow should be read in this order:
 
 1. `Phase 1: Create Optimization Job`
 2. `Phase 2: Create Trajectory Set`
-3. `Phase 5: Evaluate Candidate`
+3. `Phase 3: Evaluate Candidate`
 4. `Shared Evaluation Summary Type`
-5. `Phase 7: Analyze Failures`
-6. `Phase 3: Create Candidate Version`
-7. `Phase 4: Candidate Run`
-8. `Phase 6: Cycle Output`
+5. `Phase 4: Analyze Failures`
+6. `Phase 5: Create Candidate Version`
+7. `Phase 6: Candidate Run`
+8. `Phase 7: Cycle Output`
 9. `Phase 8: Evaluate Stop Condition`
 10. `Phase 9: Select Final Candidate`
 
@@ -114,7 +114,7 @@ Notes:
 - `optimizationJobId` is required here because the trajectory set belongs to a specific optimization job.
 - Once the set is created, candidate quality can be compared fairly.
 
-## Phase 5: Evaluate Candidate
+## Phase 3: Evaluate Candidate
 
 API:
 
@@ -212,7 +212,7 @@ type EvalSummaries<
 };
 ```
 
-## Phase 7: Analyze Failures
+## Phase 4: Analyze Failures
 
 API:
 
@@ -255,7 +255,7 @@ Notes:
 - Otherwise use low pass-rate eval summaries or scope overview issues.
 - This phase turns score data into actionable change guidance.
 
-## Phase 3: Create Candidate Version
+## Phase 5: Create Candidate Version
 
 API:
 
@@ -312,7 +312,7 @@ Notes:
 - `cycleOutput` already identifies the candidate the next version is derived from.
 - `generationConfig` lets the optimizer vary `model` or `temperature` across cycles and measure how those changes affect the next candidate.
 
-## Phase 4: Candidate Run
+## Phase 6: Candidate Run
 
 API:
 
@@ -354,7 +354,7 @@ type CandidateRun<Trajectory> = {
 };
 ```
 
-## Phase 6: Cycle Output
+## Phase 7: Cycle Output
 
 API:
 
