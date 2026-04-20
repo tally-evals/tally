@@ -280,6 +280,7 @@ type CandidateGenerationConfig = {
   temperature?: number;
 };
 
+// Extension point: future optional fields for history / lookback may be added to this input without a new phase.
 type CreateCandidateVersionInput = {
   // The cycle output anchors this operation to the currently known state:
   // which candidate was evaluated and with what score.
@@ -315,6 +316,7 @@ type CandidateVersion = {
 ```
 
 Notes:
+- Initial implementation: only the latest `cycleOutput` is used; history and lookback are not implemented.
 - `cycleOutput` already identifies the candidate the next version is derived from.
 - `generationConfig` lets the optimizer vary `model` or `temperature` across cycles and measure how those changes affect the next candidate.
 
