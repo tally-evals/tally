@@ -10,6 +10,21 @@ An `optimization job` is the top-level optimization lifecycle:
 - one candidate-generation loop
 - one final candidate-selection step
 
+## Flow Sequence
+
+The API flow should be read in this order:
+
+1. `Phase 1: Create Optimization Job`
+2. `Phase 2: Create Trajectory Set`
+3. `Phase 5: Evaluate Candidate`
+4. `Shared Evaluation Summary Type`
+5. `Phase 7: Analyze Failures`
+6. `Phase 3: Create Candidate Version`
+7. `Phase 4: Candidate Run`
+8. `Phase 6: Cycle Output`
+9. `Phase 8: Evaluate Stop Condition`
+10. `Phase 9: Select Final Candidate`
+
 ## Phase 1: Create Optimization Job
 
 API:
@@ -99,6 +114,146 @@ Notes:
 - `optimizationJobId` is required here because the trajectory set belongs to a specific optimization job.
 - Once the set is created, candidate quality can be compared fairly.
 
+## Phase 5: Evaluate Candidate
+
+API:
+
+```ts
+evaluateCandidateRun<Trajectory>(
+  input: EvaluateCandidateRunInput<Trajectory>
+): Promise<CandidateRunEvaluation>
+```
+
+Input:
+
+```ts
+type EvaluateCandidateRunInput<Trajectory> = {
+  // The completed execution batch being scored.
+  run: CandidateRun<Trajectory>;
+};
+```
+
+Output:
+
+```ts
+type CandidateRunEvaluation = {
+  // Optimization job scope for consistency checks.
+  optimizationJobId: string;
+
+  // Candidate identifier for the exact candidate that was evaluated.
+  candidateId: string;
+
+  // Tally summaries split by eval scope, plus rolled-up issue summaries
+  // for single-turn and multi-turn evaluation groups.
+  evalSummaries: EvalSummaries;
+
+  // Single optimization job-level score used for optimization decisions.
+  // This compresses many eval outputs into one decision signal.
+  // If `optimizationJob.config.evaluationPolicy.evalWeights` exists, this should
+  // be computed as a weighted aggregate instead of a plain average.
+  aggregatedPassRate: number;
+};
+```
+
+Notes:
+- Evaluation should be derived from Tally reports via `report.view()`.
+- `singleTurn` and `multiTurn` preserve per-eval summaries.
+- `singleTurnOverview` and `multiTurnOverview` are derived from those per-eval summaries.
+- `evalSummaries` is the main comparison surface.
+- This phase translates raw run artifacts into optimizer decision data.
+- The optimizer should compare evaluations, not low-level step outputs.
+
+## Shared Evaluation Summary Type
+
+```ts
+
+type ScopeIssue<
+  EvalName extends string = string
+> = {
+  // Eval that produced the issue.
+  eval: EvalName;
+
+  // Human-readable explanation of what needs attention.
+  reason: string;
+
+  // Optional pass rate copied from the eval summary when relevant.
+  passRate: number;
+};
+
+type ScopeOverview<EvalName extends string = string> = {
+  // One synthesized summary across all evals in the scope.
+  summary: string;
+
+  // Issues collected from the scope's per-eval summaries.
+  issues: ScopeIssue<EvalName>[];
+
+  // Evals currently failing or below the desired threshold.
+  failingEvals: EvalName[];
+
+  // Evals currently healthy in this scope.
+  passingEvals: EvalName[];
+};
+
+type EvalSummaries<
+  SingleTurnEvalName extends string = string,
+  MultiTurnEvalName extends string = string
+> = {
+  // Per-eval summaries for step-level evaluations.
+  singleTurn: Record<SingleTurnEvalName, EvalSummary>;
+
+  // Per-eval summaries for conversation-level evaluations.
+  multiTurn: Record<MultiTurnEvalName, EvalSummary>;
+
+  // Rolled-up issue summary across all single-turn eval summaries.
+  singleTurnOverview: ScopeOverview<SingleTurnEvalName>;
+
+  // Rolled-up issue summary across all multi-turn eval summaries.
+  multiTurnOverview: ScopeOverview<MultiTurnEvalName>;
+};
+```
+
+## Phase 7: Analyze Failures
+
+API:
+
+```ts
+analyzeFailures(
+  input: AnalyzeCycleOutputFailuresInput
+): Promise<FailureAnalysis>
+```
+
+Input:
+
+```ts
+type AnalyzeCycleOutputFailuresInput = {
+  // The saved optimizer state being inspected.
+  cycleOutput: CycleOutput;
+};
+```
+
+Output:
+
+```ts
+type FailureAnalysis = {
+  // Concrete failures extracted from Tally outputs.
+  // These become the evidence for the next mutation step.
+  failures: Array<{
+    trajectoryId: string;
+    eval: string;
+    level: "step" | "conversation" | "summary";
+    reason?: string;
+  }>;
+
+  // High-value regions of the candidate content to change next.
+  // This keeps generation focused instead of rewriting everything.
+  targetBlocks: string[];
+};
+```
+
+Notes:
+- Prefer explicit Tally verdict failures first.
+- Otherwise use low pass-rate eval summaries or scope overview issues.
+- This phase turns score data into actionable change guidance.
 
 ## Phase 3: Create Candidate Version
 
@@ -155,60 +310,9 @@ type CandidateVersion = {
 
 Notes:
 - `cycleOutput` already identifies the candidate the next version is derived from.
-- `generationConfig` is intentionally version-scoped, not optimization job-scoped.
-- This lets the optimizer vary `model` or `temperature` across cycles and measure how those changes affect the next candidate.
+- `generationConfig` lets the optimizer vary `model` or `temperature` across cycles and measure how those changes affect the next candidate.
 
-## Shared Evaluation Summary Type
-
-```ts
-
-type ScopeIssue<
-  EvalName extends string = string
-> = {
-  // Eval that produced the issue.
-  eval: EvalName;
-
-  // Human-readable explanation of what needs attention.
-  reason: string;
-
-  // Optional pass rate copied from the eval summary when relevant.
-  passRate: number;
-};
-
-type ScopeOverview<EvalName extends string = string> = {
-  // One synthesized summary across all evals in the scope.
-  summary: string;
-
-  // Issues collected from the scope's per-eval summaries.
-  issues: ScopeIssue<EvalName>[];
-
-  // Evals currently failing or below the desired threshold.
-  failingEvals: EvalName[];
-
-  // Evals currently healthy in this scope.
-  passingEvals: EvalName[];
-};
-
-type EvalSummaries<
-  SingleTurnEvalName extends string = string,
-  MultiTurnEvalName extends string = string
-> = {
-  // Per-eval summaries for step-level evaluations.
-  singleTurn: Record<SingleTurnEvalName, EvalSummary>;
-
-  // Per-eval summaries for conversation-level evaluations.
-  multiTurn: Record<MultiTurnEvalName, EvalSummary>;
-
-  // Rolled-up issue summary across all single-turn eval summaries.
-  singleTurnOverview: ScopeOverview<SingleTurnEvalName>;
-
-  // Rolled-up issue summary across all multi-turn eval summaries.
-  multiTurnOverview: ScopeOverview<MultiTurnEvalName>;
-};
-```
-
-
-## Phase 4: Create Candidate Run
+## Phase 4: Candidate Run
 
 API:
 
@@ -250,56 +354,7 @@ type CandidateRun<Trajectory> = {
 };
 ```
 
-## Phase 5: Evaluate Candidate Run
-
-API:
-
-```ts
-evaluateCandidateRun<Trajectory>(
-  input: EvaluateCandidateRunInput<Trajectory>
-): Promise<CandidateRunEvaluation>
-```
-
-Input:
-
-```ts
-type EvaluateCandidateRunInput<Trajectory> = {
-  // The completed execution batch being scored.
-  run: CandidateRun<Trajectory>;
-};
-```
-
-Output:
-
-```ts
-type CandidateRunEvaluation = {
-  // Optimization job scope for consistency checks.
-  optimizationJobId: string;
-
-  // Candidate identifier for the exact candidate that was evaluated.
-  candidateId: string;
-
-  // Tally summaries split by eval scope, plus rolled-up issue summaries
-  // for single-turn and multi-turn evaluation groups.
-  evalSummaries: EvalSummaries;
-
-  // Single optimization job-level score used for optimization decisions.
-  // This compresses many eval outputs into one decision signal.
-  // If `optimizationJob.config.evaluationPolicy.evalWeights` exists, this should
-  // be computed as a weighted aggregate instead of a plain average.
-  aggregatedPassRate: number;
-};
-```
-
-Notes:
-- Evaluation should be derived from Tally reports via `report.view()`.
-- `singleTurn` and `multiTurn` preserve per-eval summaries.
-- `singleTurnOverview` and `multiTurnOverview` are derived from those per-eval summaries.
-- `evalSummaries` is the main comparison surface.
-- This phase translates raw run artifacts into optimizer decision data.
-- The optimizer should compare evaluations, not low-level step outputs.
-
-## Phase 6: Create Cycle Output
+## Phase 6: Cycle Output
 
 API:
 
@@ -365,49 +420,6 @@ type CycleOutput = {
 Notes:
 - A cycle output is the optimizer's durable historical record for one evaluated candidate.
 - It is the object you compare, analyze, rank, and later use during final candidate selection.
-
-## Phase 7: Analyze Failures
-
-API:
-
-```ts
-analyzeFailures(
-  input: AnalyzeCycleOutputFailuresInput
-): Promise<FailureAnalysis>
-```
-
-Input:
-
-```ts
-type AnalyzeCycleOutputFailuresInput = {
-  // The saved optimizer state being inspected.
-  cycleOutput: CycleOutput;
-};
-```
-
-Output:
-
-```ts
-type FailureAnalysis = {
-  // Concrete failures extracted from Tally outputs.
-  // These become the evidence for the next mutation step.
-  failures: Array<{
-    trajectoryId: string;
-    eval: string;
-    level: "step" | "conversation" | "summary";
-    reason?: string;
-  }>;
-
-  // High-value regions of the candidate content to change next.
-  // This keeps generation focused instead of rewriting everything.
-  targetBlocks: string[];
-};
-```
-
-Notes:
-- Prefer explicit Tally verdict failures first.
-- Otherwise use low pass-rate eval summaries or scope overview issues.
-- This phase turns score data into actionable change guidance.
 
 ## Phase 8: Evaluate Stop Condition
 
