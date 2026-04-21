@@ -496,12 +496,6 @@ type FinalCandidateDecision = {
   // Human-readable explanation of the decision.
   reason: string;
 
-  // Structured checks so callers know exactly what passed or failed.
-  checks: {
-    sameOptimizationJob: boolean;
-    requiredEvalsPresent: boolean;
-    priorityWeightedEvalsNonRegressed: boolean;
-  };
 };
 ```
 
@@ -510,4 +504,3 @@ Notes:
 - Define eval weights in `OptimizationJobConfig.evaluationPolicy` when they are meant to govern final selection across the full candidate history.
 - Final selection should derive eval importance from `evalWeights` rather than a separate list.
 - Evals with higher assigned weights should be treated as higher-priority during comparison.
-- A candidate can have a strong aggregate score and still lose final selection if a more heavily weighted eval regresses too much.
