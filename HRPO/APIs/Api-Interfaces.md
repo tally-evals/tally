@@ -268,15 +268,15 @@ type StopDecision = {
 Notes:
 - This phase separates loop-control policy from execution logic.
 - It gives the optimizer one clear place to decide whether to continue generating candidates.
-- **All evals passing:** if the latest `cycleOutput` shows **no eval failures** (every eval that is in scope for the job is passing per the same rules the optimizer uses elsewhere), stop with `reason: "allEvalsPassing"` — there is nothing left for the mutation loop to fix.
+- **All evals passing:** if the latest `cycleOutput` shows **no eval failures** (every eval that is in scope for the job is passing), stop with `reason: "allEvalsPassing"`
 
 
 
 ## Phase 6: Generate Next Candidate Prompt
 
-The **next** candidate prompt is produced from the latest **cycle output** — the durable snapshot of the iteration you just completed (not a future, unevaluated cycle):
+The **next** candidate prompt is produced from the latest **cycle output**
 
-1. `cycleOutput` — that snapshot (scores, artifacts, ids)
+1. `cycleOutput` — the previous snapshot (scores, artifacts, ids)
 2. `FailureAnalysis` — what to improve before the next prompt
 3. `CandidateGenerationConfig` — how to generate that next prompt
 
@@ -334,7 +334,6 @@ type CandidatePrompt = {
 
 Notes:
 - Initial implementation: only the most recently recorded `cycleOutput` is used; history and lookback are not implemented.
-- `cycleOutput` ties the mutation to the prompt and scores from the iteration you are continuing from.
 - `generationConfig` lets the optimizer vary `model` or `temperature` across cycles and measure how those changes affect the next candidate.
 
 ## Phase 7: Generate Candidate 
@@ -381,7 +380,8 @@ type CandidateAgent<Trajectory> = {
 
 ## Phase 8: Record cycle output
 
-After one candidate prompt is run and evaluated, persist the result as **`CycleOutput`**: a durable snapshot of **that** completed iteration. Downstream phases (stop, failure analysis, next prompt) consume the latest `CycleOutput` as input; the job history holds every recorded cycle output for comparison and final selection.
+After one candidate prompt is run and evaluated, persist the result as **`CycleOutput`**: a durable snapshot of **that** completed iteration. 
+Downstream phases (stop, failure analysis, next prompt) consume the latest `CycleOutput` as input
 
 API:
 
@@ -445,8 +445,8 @@ type CycleOutput = {
 ```
 
 Notes:
-- One `CycleOutput` = one fully evaluated candidate prompt for one completed iteration (durable checkpoint).
-- Phase 6 consumes the **latest** such record to produce the **next** `CandidatePrompt`; Phase 7 does not need it.
+- One `CycleOutput` = one fully evaluated candidate prompt for one completed cycle.
+- Phase 6 consumes the **latest** such record to produce the **next** `CandidatePrompt`
 - Collect these over the job to compare, analyze, rank, and drive final candidate selection.
 
 ## Phase 9: Select Final Candidate
