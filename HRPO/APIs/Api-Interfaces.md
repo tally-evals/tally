@@ -30,7 +30,7 @@ type OptimizationJobConfig = {
 
   // Optimization job-level scoring and acceptance policy.
   // Keep eval importance here because it should stay consistent across
-  // all candidate versions in the optimization job.
+  // all candidate prompts in the optimization job.
   evaluationPolicy: EvaluationPolicy;
 };
 ```
@@ -94,24 +94,24 @@ Notes:
 API:
 
 ```ts
-evaluateCandidateRun<Trajectory>(
-  input: EvaluateCandidateRunInput<Trajectory>
-): Promise<CandidateRunEvaluation>
+evaluateCandidate<Trajectory>(
+  input: EvaluateCandidateInput<Trajectory>
+): Promise<CandidateEvaluation>
 ```
 
 Input:
 
 ```ts
-type EvaluateCandidateRunInput<Trajectory> = {
-  // The completed execution batch being scored.
-  run: CandidateRun<Trajectory>;
+type EvaluateCandidateInput<Trajectory> = {
+  // The completed candidate execution being scored.
+  candidate: Candidate<Trajectory>;
 };
 ```
 
 Output:
 
 ```ts
-type CandidateRunEvaluation = {
+type CandidateEvaluation = {
   // Optimization job scope for consistency checks.
   optimizationJobId: string;
 
@@ -286,14 +286,14 @@ The next candidate should be produced based on:
 API:
 
 ```ts
-createCandidateVersion(input: CreateCandidateVersionInput): Promise<CandidateVersion>
+createCandidatePrompt(input: CreateCandidatePromptInput): Promise<CandidatePrompt>
 ```
 
 Input:
 
 ```ts
 type CandidateGenerationConfig = {
-  // Model used to generate the next candidate prompt/version.
+  // Model used to generate the next candidate prompt.
   model: string;
 
   // Sampling control for the generation step.
@@ -301,7 +301,7 @@ type CandidateGenerationConfig = {
 };
 
 // Extension point: future optional fields for history / lookback may be added to this input without a new phase.
-type CreateCandidateVersionInput = {
+type CreateCandidatePromptInput = {
   // The cycle output anchors this operation to the currently known state:
   // which candidate was evaluated and with what score.
   cycleOutput: CycleOutput;
@@ -319,17 +319,17 @@ type CreateCandidateVersionInput = {
 Output:
 
 ```ts
-type CandidateVersion = {
-  // Unique identifier for one generated candidate version.
-  // This should identify the candidate instance directly.
+type CandidatePrompt = {
+  // Unique identifier for one generated candidate prompt.
+  // This should identify the prompt instance directly.
   candidateId: string;
 
-  // Exact generation settings used to create this candidate.
-  // Keeping them on the candidate makes each mutation auditable.
+  // Exact generation settings used to create this prompt.
+  // Keeping them on the record makes each mutation auditable.
   generationConfig: CandidateGenerationConfig;
 
-  // Creation time for ordering candidate versions.
-  // The latest candidate can be identified by this timestamp.
+  // Creation time for ordering prompts in the optimization loop.
+  // The latest prompt can be identified by this timestamp.
   createdAt: string;
 };
 
@@ -337,7 +337,7 @@ type CandidateVersion = {
 
 Notes:
 - Initial implementation: only the latest `cycleOutput` is used; history and lookback are not implemented.
-- `cycleOutput` already identifies the candidate the next version is derived from.
+- `cycleOutput` already identifies the candidate prompt the next iteration is derived from.
 - `generationConfig` lets the optimizer vary `model` or `temperature` across cycles and measure how those changes affect the next candidate.
 
 ## Phase 7: Generate Candidate 
@@ -345,34 +345,34 @@ Notes:
 API:
 
 ```ts
-createCandidateRun<Trajectory>(
-  input: CreateCandidateRunInput
-): Promise<CandidateRun<Trajectory>>
+createCandidate<Trajectory>(
+  input: CreateCandidateInput
+): Promise<Candidate<Trajectory>>
 ```
 
 Input:
 
 ```ts
-type CreateCandidateRunInput = {
-  // Optimization job scope ensures the run uses the correct trajectory set and rules.
+type CreateCandidateInput = {
+  // Optimization job scope ensures the execution uses the correct trajectory set and rules.
   optimizationJobId: string;
 
-  // The candidate version to execute against the optimization job's trajectory set.
-  candidate: CandidateVersion;
+  // The candidate prompt to execute against the optimization job's trajectory set.
+  candidatePrompt: CandidatePrompt;
 };
 ```
 
 Output:
 
 ```ts
-type CandidateRun<Trajectory> = {
+type Candidate<Trajectory> = {
   // Owning optimization job for this execution batch.
   optimizationJobId: string;
 
-  // Candidate identifier for the exact candidate that was executed.
+  // Candidate identifier for the exact candidate prompt that was executed.
   candidateId: string;
 
-  // The trajectories executed in this run.
+  // The trajectories executed for this candidate.
   // The trajectory layer owns the concrete trajectory shape.
   trajectories: readonly Trajectory[];
 
@@ -389,8 +389,8 @@ API:
 ```ts
 createCycleOutput(
   optimizationJobId: string,
-  candidate: CandidateVersion,
-  evaluation: CandidateRunEvaluation
+  candidatePrompt: CandidatePrompt,
+  evaluation: CandidateEvaluation
 ): Promise<CycleOutput>
 ```
 
@@ -401,11 +401,11 @@ type CreateCycleOutputInput = {
   // Owning optimization job for the cycle output.
   optimizationJobId: string;
 
-  // Candidate version being captured in this cycle output.
-  candidate: CandidateVersion;
+  // Candidate prompt being captured in this cycle output.
+  candidatePrompt: CandidatePrompt;
 
   // Evaluation snapshot that justifies the cycle output.
-  evaluation: CandidateRunEvaluation;
+  evaluation: CandidateEvaluation;
 };
 ```
 
@@ -419,7 +419,7 @@ type CycleOutput = {
   // Optimization job that owns the cycle output.
   optimizationJobId: string;
 
-  // Candidate identifier for the exact candidate captured in this cycle output.
+  // Identifier for the exact candidate prompt captured in this cycle output.
   candidateId: string;
 
   // Stored Tally artifacts that back this cycle output.
@@ -446,7 +446,7 @@ type CycleOutput = {
 ```
 
 Notes:
-- A cycle output is the optimizer's durable historical record for one evaluated candidate.
+- A cycle output is the optimizer's durable historical record for one evaluated candidate prompt.
 - It is the object you compare, analyze, rank, and later use during final candidate selection.
 
 ## Phase 9: Select Final Candidate
