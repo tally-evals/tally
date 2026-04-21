@@ -6,8 +6,8 @@ export const validateInputsTool = createTool({
   id: 'validateInputs',
   description: 'Validate user inputs against the template field requirements',
   inputSchema: validateInputsParamsSchema,
-  execute: async ({ context }) => {
-    const { fieldId, value } = context;
+  execute: async (inputData) => {
+    const { fieldId, value } = inputData;
 
     const field = DEMAND_LETTER_FIELDS.find((f) => f.id === fieldId);
     if (!field) {

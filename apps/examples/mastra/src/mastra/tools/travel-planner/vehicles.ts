@@ -244,7 +244,7 @@ export const searchVehiclesTool = createTool({
     description: 'Search for rental vehicles with advanced filtering',
     inputSchema: searchVehiclesParamsSchema,
     outputSchema: z.array(vehicleSchema),
-    execute: async ({ context }) => {
+    execute: async (inputData) => {
         const {
             location,
             startDate,
@@ -258,7 +258,7 @@ export const searchVehiclesTool = createTool({
             features,
             insuranceIncluded,
             sortBy = 'price',
-        } = context;
+        } = inputData;
 
         // Generate a stable seed from main parameters
         const seed = generateSeed(location, startDate);

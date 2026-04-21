@@ -122,7 +122,7 @@ export const searchAccommodationsTool = createTool({
     description: 'Search for accommodations in a destination with advanced filtering',
     inputSchema: searchAccommodationsParamsSchema,
     outputSchema: z.array(accommodationSchema),
-    execute: async ({ context }) => {
+    execute: async (inputData) => {
         const {
             location,
             checkIn,
@@ -134,7 +134,7 @@ export const searchAccommodationsTool = createTool({
             distanceFromCityCenter,
             cancellationPolicy,
             sortBy = 'rating',
-        } = context;
+        } = inputData;
 
         // Generate a stable seed from main parameters
         const seed = generateSeed(location, checkIn);

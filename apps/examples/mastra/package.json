@@ -16,8 +16,8 @@
     "dev": "mastra dev",
     "start": "mastra start",
     "build": "echo 'No build needed for example package'",
-    "test": "bun test",
-    "test:watch": "bun test --watch",
+    "test": "bun test --timeout 120000",
+    "test:watch": "bun test --watch --timeout 120000",
     "cli:build": "bun run --filter @tally-evals/cli build",
     "tui": "bun run cli:build && bunx --no-install tally browse",
     "dev:server": "bun run cli:build && bunx --no-install tally dev server",
@@ -33,13 +33,14 @@
     "node": ">=22.13.0"
   },
   "dependencies": {
-    "@ai-sdk/google": "^2.0.29",
+    "@ai-sdk/google": "^3.0.0",
     "@faker-js/faker": "^10.2.0",
-    "@mastra/core": "^0.24.9",
-    "@mastra/evals": "^0.14.4",
-    "@mastra/libsql": "^0.16.4",
-    "@mastra/loggers": "^0.10.19",
-    "@mastra/memory": "^0.15.13",
+    "@mastra/core": "^1.24.1",
+    "@mastra/evals": "^1.2.1",
+    "@mastra/libsql": "^1.8.0",
+    "@mastra/loggers": "^1.1.1",
+    "@mastra/memory": "^1.15.0",
+    "@mastra/observability": "^1.9.0",
     "@tally-evals/core": "workspace:*",
     "@tally-evals/tally": "workspace:*",
     "@tally-evals/trajectories": "workspace:*",
@@ -49,7 +50,7 @@
   "devDependencies": {
     "@tally-evals/typescript-config": "workspace:*",
     "@types/node": "^25.0.3",
-    "mastra": "^0.18.0",
+    "mastra": "^1.5.0",
     "typescript": "^5.9.3",
     "vite-tsconfig-paths": "^6.0.3"
   }

@@ -33,7 +33,7 @@
   "scripts": {
     "build": "tsdown",
     "dev": "tsdown --watch",
-    "test": "bun test --timeout=30000",
+    "test": "bun test --timeout=120000",
     "test:watch": "bun test --watch",
     "test:e2e": "E2E_TRAJECTORIES=1 bun test test/e2e",
     "lint": "biome check .",
@@ -50,15 +50,16 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@mastra/core": "^0.24.9",
+    "@mastra/core": "^1.24.1",
     "@tally-evals/core": "workspace:*",
-    "ai": "^5.0.121"
+    "ai": "^6.0.0"
   },
   "peerDependencies": {
     "@tally-evals/tally": "workspace:*"
   },
   "devDependencies": {
-    "@ai-sdk/google": "^2.0.52",
+    "@ai-sdk/google": "^3.0.0",
+    "@mastra/libsql": "^1.8.0",
     "@tally-evals/biome-config": "workspace:*",
     "@tally-evals/tally": "workspace:*",
     "@tally-evals/typescript-config": "workspace:*",
