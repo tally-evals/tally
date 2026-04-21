@@ -222,11 +222,6 @@ type FailureAnalysis = {
 };
 ```
 
-Notes:
-- Prefer explicit Tally verdict failures first.
-- Otherwise use low pass-rate eval summaries or scope overview issues.
-- This phase turns score data into actionable change guidance.
-
 
 ## Phase 5: Evaluate Stop Condition
 
@@ -274,7 +269,6 @@ Notes:
 - This phase separates loop-control policy from execution logic.
 - It gives the optimizer one clear place to decide whether to continue generating candidates.
 - **All evals passing:** if the latest `cycleOutput` shows **no eval failures** (every eval that is in scope for the job is passing per the same rules the optimizer uses elsewhere), stop with `reason: "allEvalsPassing"` — there is nothing left for the mutation loop to fix.
-- Order of evaluation is implementation-defined as long as the outcome matches policy; typical checks are whether all evals pass, then optional `acceptanceThreshold` on `aggregatedPassRate`, then `maxCycles`.
 
 
 
