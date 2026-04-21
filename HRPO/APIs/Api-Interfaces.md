@@ -268,7 +268,7 @@ type StopDecision = {
 Notes:
 - This phase separates loop-control policy from execution logic.
 - It gives the optimizer one clear place to decide whether to continue generating candidates.
-- **All evals passing:** if the latest `cycleOutput` shows **no eval failures** (every eval that is in scope for the job is passing), stop with `reason: "allEvalsPassing"`
+- **All evals passing:** derived from `cycleOutput.evalSummaries` (not stored separately); if there are no eval failures for every in-scope eval, stop with `reason: "allEvalsPassing"`.
 
 
 
