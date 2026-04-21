@@ -107,7 +107,7 @@ Rules:
 * prompts default to a single mutable block (`full-prompt`)
 * each new candidate is derived from previous candidate candidate
 
-### 8. Hyper Parameters
+### 7. Hyper Parameters
 
 Define the optimizer hyper parameters explicitly.
 
