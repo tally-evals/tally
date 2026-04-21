@@ -193,16 +193,16 @@ API:
 
 ```ts
 analyzeFailures(
-  input: AnalyzePreviousCycleFailuresInput
+  input: AnalyzeCycleFailuresInput
 ): Promise<FailureAnalysis>
 ```
 
 Input:
 
 ```ts
-type AnalyzePreviousCycleFailuresInput = {
-  // The previous cycle: run + evaluation from the last iteration.
-  previousCycleOutput: PreviousCycleOutput;
+type AnalyzeCycleFailuresInput = {
+  // Cycle output for the iteration being analyzed (completed run + evaluation).
+  cycleOutput: CycleOutput;
 };
 ```
 
@@ -246,8 +246,8 @@ type StopConditionInput = {
   // Current loop number.
   cycle: number;
 
-  // The previous cycle (after evaluate + record); basis for stop/continue.
-  previousCycleOutput: PreviousCycleOutput;
+  // Latest cycle output (after evaluate + record); basis for stop/continue.
+  cycleOutput: CycleOutput;
 
   // Hard cap for the optimization job.
   maxCycles: number;
@@ -277,9 +277,9 @@ Notes:
 
 ## Phase 6: Generate Next Candidate Prompt
 
-The **next** candidate prompt is produced from the **previous** cycle’s record (not a future, unevaluated cycle):
+The **next** candidate prompt is produced from the latest **cycle output** — the durable snapshot of the iteration you just completed (not a future, unevaluated cycle):
 
-1. `previousCycleOutput` — snapshot of the iteration you just finished (scores, artifacts, ids)
+1. `cycleOutput` — that snapshot (scores, artifacts, ids)
 2. `FailureAnalysis` — what to improve before the next prompt
 3. `CandidateGenerationConfig` — how to generate that next prompt
 
@@ -302,9 +302,9 @@ type CandidateGenerationConfig = {
 
 // Extension point: future optional fields for history / lookback may be added to this input without a new phase.
 type CandidatePromptInput = {
-  // Previous cycle — same `PreviousCycleOutput` Phase 8 recorded after evaluate.
+  // Latest `CycleOutput` from Phase 8 (record after evaluate for the completed iteration).
   // Phase 6 uses it to generate the *next* `CandidatePrompt`.
-  previousCycleOutput: PreviousCycleOutput;
+  cycleOutput: CycleOutput;
 
   // Structured output from failure analysis that tells generation what needs to improve next.
   analysis: FailureAnalysis;
@@ -336,8 +336,8 @@ type CandidatePrompt = {
 ```
 
 Notes:
-- Initial implementation: only the most recently recorded `previousCycleOutput` is used; history and lookback are not implemented.
-- `previousCycleOutput` ties the mutation to the prompt and scores from the iteration you are continuing from.
+- Initial implementation: only the most recently recorded `cycleOutput` is used; history and lookback are not implemented.
+- `cycleOutput` ties the mutation to the prompt and scores from the iteration you are continuing from.
 - `generationConfig` lets the optimizer vary `model` or `temperature` across cycles and measure how those changes affect the next candidate.
 
 ## Phase 7: Generate Candidate 
@@ -382,24 +382,24 @@ type CandidateAgent<Trajectory> = {
 };
 ```
 
-## Phase 8: Record previous cycle
+## Phase 8: Record cycle output
 
-After one candidate prompt is run and evaluated, persist it as **`PreviousCycleOutput`**. That value is the **previous cycle** for the next mutation, stop check, or history entry.
+After one candidate prompt is run and evaluated, persist the result as **`CycleOutput`**: a durable snapshot of **that** completed iteration. Downstream phases (stop, failure analysis, next prompt) consume the latest `CycleOutput` as input; the job history holds every recorded cycle output for comparison and final selection.
 
 API:
 
 ```ts
-createPreviousCycleOutput(
+createCycleOutput(
   optimizationJobId: string,
   candidatePrompt: CandidatePrompt,
   evaluation: CandidateEvaluation
-): Promise<PreviousCycleOutput>
+): Promise<CycleOutput>
 ```
 
 Input:
 
 ```ts
-type CreatePreviousCycleOutputInput = {
+type CreateCycleOutputInput = {
   // Owning optimization job for this cycle record.
   optimizationJobId: string;
 
@@ -414,14 +414,14 @@ type CreatePreviousCycleOutputInput = {
 Output:
 
 ```ts
-type PreviousCycleOutput = {
-  // Unique identifier for this previous-cycle record.
-  previousCycleOutputId: string;
+type CycleOutput = {
+  // Unique identifier for this cycle output record.
+  cycleOutputId: string;
 
   // Optimization job that owns this record.
   optimizationJobId: string;
 
-  // Candidate prompt captured in this previous cycle.
+  // Candidate prompt captured in this cycle output.
   candidateId: string;
 
   // Stored Tally artifacts for this cycle.
@@ -438,7 +438,7 @@ type PreviousCycleOutput = {
   // and scope-level issue rollups.
   evalSummaries: EvalSummaries;
 
-  // Top-level score for this previous cycle so later comparison logic
+  // Top-level score for this cycle so later comparison logic
   // does not need to recompute it.
   aggregatedPassRate: number;
 
@@ -448,7 +448,7 @@ type PreviousCycleOutput = {
 ```
 
 Notes:
-- One `PreviousCycleOutput` = one fully evaluated candidate prompt for a past iteration (durable checkpoint).
+- One `CycleOutput` = one fully evaluated candidate prompt for one completed iteration (durable checkpoint).
 - Phase 6 consumes the **latest** such record to produce the **next** `CandidatePrompt`; Phase 7 does not need it.
 - Collect these over the job to compare, analyze, rank, and drive final candidate selection.
 
@@ -475,8 +475,8 @@ type SelectFinalCandidateInput = {
   // Optimization job whose candidate history is being finalized.
   optimizationJobId: string;
 
-  // All previous-cycle records from the job (each is one evaluated candidate prompt).
-  previousCycleOutputs: PreviousCycleOutput[];
+  // All cycle output records from the job (each is one evaluated candidate prompt).
+  cycleOutputs: CycleOutput[];
 
   // Extra policy controls for the final decision.
   options?: FinalCandidateSelectionOptions;
@@ -490,8 +490,8 @@ type FinalCandidateDecision = {
   // Candidate selected as the final accepted result of the optimization job.
   acceptedCandidateId: string;
 
-  // Previous-cycle record that justifies the final selection.
-  selectedPreviousCycleOutputId: string;
+  // Cycle output record that justifies the final selection.
+  selectedCycleOutputId: string;
 
   // Human-readable explanation of the decision.
   reason: string;
