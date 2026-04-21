@@ -286,7 +286,7 @@ The next candidate should be produced based on:
 API:
 
 ```ts
-createCandidatePrompt(input: CreateCandidatePromptInput): Promise<CandidatePrompt>
+createCandidatePrompt(input: CandidatePromptInput): Promise<CandidatePrompt>
 ```
 
 Input:
@@ -301,7 +301,7 @@ type CandidateGenerationConfig = {
 };
 
 // Extension point: future optional fields for history / lookback may be added to this input without a new phase.
-type CreateCandidatePromptInput = {
+type CandidatePromptInput = {
   // The cycle output anchors this operation to the currently known state:
   // which candidate was evaluated and with what score.
   cycleOutput: CycleOutput;
@@ -345,15 +345,15 @@ Notes:
 API:
 
 ```ts
-createCandidate<Trajectory>(
-  input: CreateCandidateInput
-): Promise<Candidate<Trajectory>>
+createCandidateAgent<Trajectory>(
+  input: CandidateAgentInput
+): Promise<CandidateAgent<Trajectory>>
 ```
 
 Input:
 
 ```ts
-type CreateCandidateInput = {
+type CandidateAgentInput = {
   // Optimization job scope ensures the execution uses the correct trajectory set and rules.
   optimizationJobId: string;
 
@@ -365,7 +365,7 @@ type CreateCandidateInput = {
 Output:
 
 ```ts
-type Candidate<Trajectory> = {
+type CandidateAgent<Trajectory> = {
   // Owning optimization job for this execution batch.
   optimizationJobId: string;
 
