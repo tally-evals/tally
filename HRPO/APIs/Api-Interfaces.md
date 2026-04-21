@@ -87,7 +87,6 @@ type TrajectorySet = {
 
 Notes:
 - `optimizationJobId` is required here because the trajectory set belongs to a specific optimization job.
-- Once the set is created, candidate quality can be compared fairly.
 
 ## Phase 3: Evaluate Candidate
 
@@ -135,8 +134,6 @@ Notes:
 - `singleTurn` and `multiTurn` preserve per-eval summaries.
 - `singleTurnOverview` and `multiTurnOverview` are derived from those per-eval summaries.
 - `evalSummaries` is the main comparison surface.
-- This phase translates raw run artifacts into optimizer decision data.
-- The optimizer should compare evaluations, not low-level step outputs.
 
 ## Shared Evaluation Summary Type
 
@@ -246,7 +243,8 @@ type StopConditionInput = {
   // Current loop number.
   cycle: number;
 
-  // Latest cycle output (after evaluate + record); basis for stop/continue.
+  // Latest cycle output (after evaluate + record); basis for stop/continue
+  // and for detecting whether every eval is passing.
   cycleOutput: CycleOutput;
 
   // Hard cap for the optimization job.
@@ -265,13 +263,18 @@ type StopDecision = {
   stop: boolean;
 
   // Explicit stop reason so callers can branch correctly.
-  reason: "thresholdReached" | "maxCycles";
+  reason:
+    | "allEvalsPassing"
+    | "thresholdReached"
+    | "maxCycles";
 };
 ```
 
 Notes:
 - This phase separates loop-control policy from execution logic.
 - It gives the optimizer one clear place to decide whether to continue generating candidates.
+- **All evals passing:** if the latest `cycleOutput` shows **no eval failures** (every eval that is in scope for the job is passing per the same rules the optimizer uses elsewhere), stop with `reason: "allEvalsPassing"` — there is nothing left for the mutation loop to fix.
+- Order of evaluation is implementation-defined as long as the outcome matches policy; typical checks are whether all evals pass, then optional `acceptanceThreshold` on `aggregatedPassRate`, then `maxCycles`.
 
 
 
