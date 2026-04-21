@@ -193,16 +193,16 @@ API:
 
 ```ts
 analyzeFailures(
-  input: AnalyzeCycleOutputFailuresInput
+  input: AnalyzePreviousCycleFailuresInput
 ): Promise<FailureAnalysis>
 ```
 
 Input:
 
 ```ts
-type AnalyzeCycleOutputFailuresInput = {
-  // The saved optimizer state being inspected.
-  cycleOutput: CycleOutput;
+type AnalyzePreviousCycleFailuresInput = {
+  // The previous cycle: run + evaluation from the last iteration.
+  previousCycleOutput: PreviousCycleOutput;
 };
 ```
 
@@ -246,8 +246,8 @@ type StopConditionInput = {
   // Current loop number.
   cycle: number;
 
-  // Latest cycle output being considered.
-  cycleOutput: CycleOutput;
+  // The previous cycle (after evaluate + record); basis for stop/continue.
+  previousCycleOutput: PreviousCycleOutput;
 
   // Hard cap for the optimization job.
   maxCycles: number;
@@ -277,11 +277,11 @@ Notes:
 
 ## Phase 6: Generate Next Candidate Prompt
 
-The next candidate should be produced based on:
+The **next** candidate prompt is produced from the **previous** cycle’s record (not a future, unevaluated cycle):
 
-1. the latest `cycleOutput`, which anchors the current candidate state and score
-2. the `FailureAnalysis`, which identifies what needs to improve next
-3. the `CandidateGenerationConfig`, which controls how the next candidate is generated
+1. `previousCycleOutput` — snapshot of the iteration you just finished (scores, artifacts, ids)
+2. `FailureAnalysis` — what to improve before the next prompt
+3. `CandidateGenerationConfig` — how to generate that next prompt
 
 API:
 
@@ -302,9 +302,9 @@ type CandidateGenerationConfig = {
 
 // Extension point: future optional fields for history / lookback may be added to this input without a new phase.
 type CandidatePromptInput = {
-  // The cycle output anchors this operation to the currently known state:
-  // which candidate was evaluated and with what score.
-  cycleOutput: CycleOutput;
+  // Previous cycle — same `PreviousCycleOutput` Phase 8 recorded after evaluate.
+  // Phase 6 uses it to generate the *next* `CandidatePrompt`.
+  previousCycleOutput: PreviousCycleOutput;
 
   // Structured output from failure analysis that tells generation what needs to improve next.
   analysis: FailureAnalysis;
@@ -336,8 +336,8 @@ type CandidatePrompt = {
 ```
 
 Notes:
-- Initial implementation: only the latest `cycleOutput` is used; history and lookback are not implemented.
-- `cycleOutput` already identifies the candidate prompt the next iteration is derived from.
+- Initial implementation: only the most recently recorded `previousCycleOutput` is used; history and lookback are not implemented.
+- `previousCycleOutput` ties the mutation to the prompt and scores from the iteration you are continuing from.
 - `generationConfig` lets the optimizer vary `model` or `temperature` across cycles and measure how those changes affect the next candidate.
 
 ## Phase 7: Generate Candidate 
@@ -382,29 +382,31 @@ type CandidateAgent<Trajectory> = {
 };
 ```
 
-## Phase 8: Cycle Output
+## Phase 8: Record previous cycle
+
+After one candidate prompt is run and evaluated, persist it as **`PreviousCycleOutput`**. That value is the **previous cycle** for the next mutation, stop check, or history entry.
 
 API:
 
 ```ts
-createCycleOutput(
+createPreviousCycleOutput(
   optimizationJobId: string,
   candidatePrompt: CandidatePrompt,
   evaluation: CandidateEvaluation
-): Promise<CycleOutput>
+): Promise<PreviousCycleOutput>
 ```
 
 Input:
 
 ```ts
-type CreateCycleOutputInput = {
-  // Owning optimization job for the cycle output.
+type CreatePreviousCycleOutputInput = {
+  // Owning optimization job for this cycle record.
   optimizationJobId: string;
 
-  // Candidate prompt being captured in this cycle output.
+  // Candidate prompt that was run in this iteration.
   candidatePrompt: CandidatePrompt;
 
-  // Evaluation snapshot that justifies the cycle output.
+  // Evaluation snapshot for that run.
   evaluation: CandidateEvaluation;
 };
 ```
@@ -412,18 +414,18 @@ type CreateCycleOutputInput = {
 Output:
 
 ```ts
-type CycleOutput = {
-  // Unique identifier for this saved optimizer state.
-  cycleOutputId: string;
+type PreviousCycleOutput = {
+  // Unique identifier for this previous-cycle record.
+  previousCycleOutputId: string;
 
-  // Optimization job that owns the cycle output.
+  // Optimization job that owns this record.
   optimizationJobId: string;
 
-  // Identifier for the exact candidate prompt captured in this cycle output.
+  // Candidate prompt captured in this previous cycle.
   candidateId: string;
 
-  // Stored Tally artifacts that back this cycle output.
-  // Each item comes from a completed trajectory run after the system calls
+  // Stored Tally artifacts for this cycle.
+  // Each item comes from a finished trajectory run after the system calls
   // `report.toArtifact()` on that trajectory's `TallyRunReport`.
   // These are needed for replay, debugging, or later inspection.
   tallyArtifacts: Array<{
@@ -436,7 +438,7 @@ type CycleOutput = {
   // and scope-level issue rollups.
   evalSummaries: EvalSummaries;
 
-  // Top-level score saved with the cycle output so later comparison logic
+  // Top-level score for this previous cycle so later comparison logic
   // does not need to recompute it.
   aggregatedPassRate: number;
 
@@ -446,8 +448,9 @@ type CycleOutput = {
 ```
 
 Notes:
-- A cycle output is the optimizer's durable historical record for one evaluated candidate prompt.
-- It is the object you compare, analyze, rank, and later use during final candidate selection.
+- One `PreviousCycleOutput` = one fully evaluated candidate prompt for a past iteration (durable checkpoint).
+- Phase 6 consumes the **latest** such record to produce the **next** `CandidatePrompt`; Phase 7 does not need it.
+- Collect these over the job to compare, analyze, rank, and drive final candidate selection.
 
 ## Phase 9: Select Final Candidate
 
@@ -472,8 +475,8 @@ type SelectFinalCandidateInput = {
   // Optimization job whose candidate history is being finalized.
   optimizationJobId: string;
 
-  // All evaluated cycle outputs produced during the optimization job.
-  cycleOutputs: CycleOutput[];
+  // All previous-cycle records from the job (each is one evaluated candidate prompt).
+  previousCycleOutputs: PreviousCycleOutput[];
 
   // Extra policy controls for the final decision.
   options?: FinalCandidateSelectionOptions;
@@ -487,8 +490,8 @@ type FinalCandidateDecision = {
   // Candidate selected as the final accepted result of the optimization job.
   acceptedCandidateId: string;
 
-  // Cycle output that justifies the final selection.
-  selectedCycleOutputId: string;
+  // Previous-cycle record that justifies the final selection.
+  selectedPreviousCycleOutputId: string;
 
   // Human-readable explanation of the decision.
   reason: string;
