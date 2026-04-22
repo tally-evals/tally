@@ -32,7 +32,7 @@
     "turbo": "^1.12.4"
   },
   "dependencies": {
-    "ai": "^5.0.121",
+    "ai": "6",
     "zod": "^4.1.12"
   },
   "overrides": {

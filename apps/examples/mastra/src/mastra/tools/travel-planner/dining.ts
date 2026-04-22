@@ -171,7 +171,7 @@ export const searchDiningTool = createTool({
     description: 'Search for dining options at a location with advanced filtering',
     inputSchema: searchDiningParamsSchema,
     outputSchema: z.array(diningSchema),
-    execute: async ({ context }) => {
+    execute: async (inputData) => {
         const {
             location,
             cuisine,
@@ -183,7 +183,7 @@ export const searchDiningTool = createTool({
             distanceFromCityCenter,
             reservationsRequired,
             sortBy = 'rating',
-        } = context;
+        } = inputData;
 
         // Generate a stable seed from main parameters
         const seed = generateSeed(location, cuisine);

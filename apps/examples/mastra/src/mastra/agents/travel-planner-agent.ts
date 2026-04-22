@@ -54,6 +54,7 @@ IMPORTANT: You do not have the capability to book flights, accommodations, resta
 Always be friendly, helpful, and efficient in gathering information.`
 
 export const travelPlannerAgent = new Agent({
+   id: 'travel-planner-agent',
    name: 'Travel Planner Agent',
    instructions: TRAVEL_PLANNER_SYSTEM_PROMPT,
    model: DEFAULT_MODEL_ID,

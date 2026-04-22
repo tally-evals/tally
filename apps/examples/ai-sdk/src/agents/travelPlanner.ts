@@ -14,7 +14,7 @@
  * ```
  */
 
-import { Experimental_Agent as Agent, stepCountIs } from 'ai';
+import { ToolLoopAgent as Agent, stepCountIs } from 'ai';
 import { google } from '@ai-sdk/google';
 import { travelPlannerTools } from '../tools/travelPlanner';
 
@@ -73,5 +73,5 @@ export const travelPlannerAgent = new Agent({
   model: google(DEFAULT_MODEL_ID),
   tools: travelPlannerTools,
   stopWhen: stepCountIs(DEFAULT_MAX_STEPS),
-  system: TRAVEL_PLANNER_SYSTEM_PROMPT,
+  instructions: TRAVEL_PLANNER_SYSTEM_PROMPT,
 });

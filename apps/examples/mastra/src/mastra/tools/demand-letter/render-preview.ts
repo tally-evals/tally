@@ -18,7 +18,7 @@ export const renderPreviewTool = createTool({
       description,
       legalBasis,
       demandType,
-    } = context;
+    } = inputData;
 
     // Ensure amount is a number
     const amountNum = Number(amount);
