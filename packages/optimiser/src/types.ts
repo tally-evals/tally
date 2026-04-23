@@ -115,10 +115,7 @@ export type StopConditionInput = {
   acceptanceThreshold?: number;
 };
 
-export type StopReason =
-  | 'allEvalsPassing'
-  | 'thresholdReached'
-  | 'maxCycles';
+export type StopReason = 'allEvalsPassing' | 'thresholdReached' | 'maxCycles';
 
 export type StopDecision = {
   stop: boolean;

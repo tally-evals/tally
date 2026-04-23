@@ -9,7 +9,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/tally-evals/tally.git",
-    "directory": "HRPO"
+    "directory": "packages/optimiser"
   },
   "exports": {
     ".": {
@@ -28,8 +28,8 @@
     "build": "bun run tsdown",
     "dev": "bun run tsdown --watch",
     "test": "bun test",
-    "lint": "bun run biome check . --config-path ../packages/biome-config/biome.json",
-    "lint:fix": "bun run biome check --write . --config-path ../packages/biome-config/biome.json",
+    "lint": "bun run biome check . --config-path ../biome-config/biome.json",
+    "lint:fix": "bun run biome check --write . --config-path ../biome-config/biome.json",
     "clean": "rm -rf dist"
   },
   "license": "MIT",

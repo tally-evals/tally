@@ -9,8 +9,7 @@
   "workspaces": [
     "apps/*",
     "packages/*",
-    "apps/examples/*",
-    "HRPO"
+    "apps/examples/*"
   ],
   "packageManager": "bun@1.2.22",
   "scripts": {
