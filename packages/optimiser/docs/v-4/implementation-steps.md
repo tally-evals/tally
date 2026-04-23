@@ -27,7 +27,7 @@ This guide breaks the work into **small, verifiable steps** so you do not have t
 1. Add `HRPO/src/types.ts` (or split files if you prefer) and transcribe from the API doc:
    - `OptimizationJobConfig`, `EvaluationPolicy`, `OptimizationJob`
    - `TrajectorySet` / `CreateTrajectorySetInput` as needed
-   - `EvalSummaries` / `ScopeOverview` / `ScopeIssue` (and `EvalSummary` as aligned with `@tally-evals/tally` re-exports, or a thin HRPO view type)
+   - `EvalSummaries` / `ScopeOverview` / `ScopeIssue` (and `EvalSummary` as aligned with `@tally-evals/tally` re-exports, or a thin HRPO view type that adds **per-eval outcome counts** — see Phase 3)
    - `CandidateEvaluation`, `CycleOutput`, `FailureAnalysis`, `StopConditionInput` / `StopDecision` — **include** `reason: "noUsefulMutations"` if you extend the API union
    - A single type for **completed candidate execution** (whatever you name it: e.g. `CompletedCandidateRunBatch` or document `Candidate<Trajectory>` as the execution batch)
 2. Re-export Tally types you need (`TallyRunArtifact`, `Eval` from tallly) to avoid duplicating the engine.
@@ -53,14 +53,40 @@ This guide breaks the work into **small, verifiable steps** so you do not have t
 
 ## Phase 3 — Tally bridge (evidence + aggregate)
 
-**Goal:** one module that turns `TallyRunArtifact` / reports into `EvalSummaries` and `aggregatedPassRate`. Nothing else in HRPO re-parses raw artifacts for routine logic.
+**Goal:** one module that turns `TallyRunArtifact` / reports into `EvalSummaries` and `aggregatedPassRate`. **Primary evidence** is **per-eval interpretability**: pass/fail *counts* and derived pass rates, not only a single scalar. `aggregatedPassRate` remains the job-level optimization number (thresholds, ranking, stop logic) but should **not** be the only thing surfaced in summaries. Nothing else in HRPO re-parses raw artifacts for routine logic.
+
+**Mental model**
+
+- **Raw Tally output** — verdicts / results per run (and across steps where applicable).
+- **HRPO bridge** — converts that into **per-eval evidence**: `passedCount`, `failedCount`, `totalCount`, derived `passRate`, failing trajectories / issues, and concise **summary** text (e.g. “failed mainly on two short-answer cases”).
+- **aggregatedPassRate** — computed **from** that evidence (weighted by **`evalWeights`**, which the **user** sets on the job’s **`EvaluationPolicy`**). Weights are **not** equal by default: **higher-weighted** evals move the aggregate and **ranking/selection** more than **lower-weighted** evals, so the user can mark some criteria (e.g. safety) as **more necessary** than others. The aggregate is **secondary** for *display* (users still read per-eval counts) but **primary** for *weighted policy* (thresholds, compare candidates, final pick).
+
+`buildEvalSummariesFromArtifact` and **candidate-level pooling** must preserve **per-eval outcome counts** (`passedCount`, `failedCount`, `totalCount`, and derived `passRate`) so HRPO can show eval-level lines such as *“relevance: 8 pass, 2 fail, 80%”* instead of only a single aggregated candidate score. A pass-rate alone (e.g. `0.8`) is ambiguous (8/10 vs 80/100 vs 4/5); counts make the evidence legible.
+
+**Type design**
+
+- Prefer **`EvalSummary`** (or the scope record value) to **already carry** counts if Tally’s summary shape exposes them; the bridge should **preserve** them.
+- If Tally’s summary is pass-rate–only, introduce a **richer HRPO view** that wraps or extends it, e.g.:
+
+  ```ts
+  type HrpoEvalEvidence = {
+    summary: EvalSummary; // or minimal Tally-aligned fields
+    passedCount: number;
+    failedCount: number;
+    totalCount: number;
+    passRate: number; // derived from the three counts
+    reason?: string;
+  };
+  // e.g. singleTurn: Record<string, HrpoEvalEvidence>
+  ```
+
+  so each eval remains **8 pass / 2 fail / 80%** plus optional narrative, not only `{ passRate: 0.8 }`.
 
 1. Implement `buildEvalSummariesFromArtifact` (or from `TallyRunReport` after `tally.run()`):
-   - Start from **one** conversation’s artifact; map Tally `summaries` / verdicts into your `EvalSummaries` shape.
-   - **Start minimal:** correct per-eval pass rates and failing eval names; add overview text in a second sub-step if needed.
-2. Implement **pooling** across multiple trajectories for one candidate: merge per-trajectory summaries into a **job-level** `EvalSummaries` (document the merge rule, e.g. mean pass rates, concatenated issues).
-3. Implement `computeAggregatedPassRate(evalSummaries, evaluationPolicy)` per API (weighted by `evalWeights`).
-4. **Checkpoint:** unit tests with **fixed JSON fixtures** of minimal artifacts (or mocked summaries) — no LLM, no real agent.
+   - Start from **one** conversation’s artifact; map Tally `summaries` / verdicts into your `EvalSummaries` shape **while preserving per-eval pass/fail counts and derived pass rates** (and summary / reason text when available).
+2. Implement **pooling** across multiple trajectories for one candidate: merge per-trajectory evidence by **accumulating** per-eval `passedCount` / `failedCount` (hence `totalCount`), then set `passRate = passedCount / totalCount` (or document edge cases for empty totals). **Do not** average precomputed pass rates without counts unless you have no other option — that loses interpretability. Optionally merge overview / issue text (e.g. concatenation or de-duplication). `aggregatedPassRate` is still computed from the **merged** eval evidence using `evalWeights`; it remains a **derived** scalar, not a substitute for the per-eval breakdown.
+3. Implement `computeAggregatedPassRate(evalSummaries, evaluationPolicy)` per API: apply **`evalWeights`** exactly as in [Api-Interfaces.md](../APIs/Api-Interfaces.md) (normalized / combined with `requiredEvals` per API). **After** the rich per-eval evidence exists, this function is what makes **user-assigned** importance show up in a single number for ordering candidates.
+4. **Checkpoint:** unit tests with **fixed JSON fixtures** of minimal artifacts (or mocked summaries) that assert **non-trivial** `passedCount` / `failedCount` for at least one eval *and* a correct pooled merge — no LLM, no real agent.
 
 ---
 
@@ -71,7 +97,7 @@ This guide breaks the work into **small, verifiable steps** so you do not have t
 1. Wire `createTally({ data: [conversation], evals })` with a **small, fixed** `evals` list (from `@tally-evals/tally` tests or README patterns).
 2. For each conversation in the batch, `await tally.run()`, collect artifacts, then call Phase 3 builders.
 3. Expose a single function `evaluateCandidate(input)` that uses the store (or accept artifacts injected for tests).
-4. **Checkpoint:** integration-style test: 2 mock conversations, 2 artifacts, one `CandidateEvaluation` with `aggregatedPassRate` and non-empty `evalSummaries`.
+4. **Checkpoint:** integration-style test: 2 mock conversations, 2 artifacts, one `CandidateEvaluation` with `aggregatedPassRate`, non-empty `evalSummaries`, and **verifiable per-eval counts** after pooling (not only pass rates).
 
 ---
 
@@ -86,7 +112,7 @@ Implement in **dependency order**; each can be a few lines that delegate to stor
 | 3 | `createCycleOutput` | persist from `CandidateEvaluation` + prompt + artifact paths |
 | 4 | `analyzeFailures` | read `cycleOutput.evalSummaries` → `FailureAnalysis` (deterministic at first) |
 | 5 | `evaluateStopCondition` | pure function of cycle, `maxCycles`, `cycleOutput`, threshold |
-| 6 | `selectFinalCandidate` | compare `cycleOutputs` with policy (weights, required evals) |
+| 6 | `selectFinalCandidate` | compare `cycleOutputs` with policy: **`evalWeights`** prefer candidates that score better on **high-weight** evals (via `aggregatedPassRate` and rules in API), plus **`requiredEvals`** |
 
 **Checkpoint:** each function has 1–2 unit tests; no full loop yet.
 
@@ -117,7 +143,7 @@ Implement in **dependency order**; each can be a few lines that delegate to stor
 
 ## Phase 8 — Hardening
 
-- Expand `buildEvalSummaries` overview strings and `FailureAnalysis.targetBlocks` if still minimal.
+- Expand `buildEvalSummaries` overview strings (still grounded in **per-eval counts**, not only rates) and `FailureAnalysis.targetBlocks` if still minimal.
 - Add integration test with **one** real LLM eval behind env if you have API keys.
 - Document public exports in `HRPO/src/index.ts` and align [Api-Interfaces.md](../APIs/Api-Interfaces.md) (rename `Candidate` to execution batch, etc.) as you stabilize names.
 

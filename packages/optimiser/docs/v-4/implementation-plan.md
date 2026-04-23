@@ -6,12 +6,12 @@ The system should optimize the **agent under evaluation**.
 
 The system should:
 
-1. Create an optimization job and attach an **evaluation policy** (see [Api-Interfaces.md](../APIs/Api-Interfaces.md): `evalWeights`, `requiredEvals`, thresholds).
+1. Create an optimization job and attach an **evaluation policy** (see [Api-Interfaces.md](../APIs/Api-Interfaces.md): `evalWeights`, `requiredEvals`, thresholds). The **user** chooses **`evalWeights`**: some evals can be given **more weight** than others, and those weights directly control how strongly each eval influences **`aggregatedPassRate`** and **candidate ranking/selection** relative to less-weighted evals (see §5).
 2. Generate **one fixed trajectory set** at the start of the job, using trajectory definitions from **`@tally-evals/trajectories`** (HRPO does not redefine trajectories; it stores ids and links to the fixed set).
 3. Keep that trajectory set **fixed** for the whole job; every candidate is judged on the **same** evaluation surface.
 4. For **each** cycle, run the **current** candidate on that fixed set and produce **new** run instances (conversations) every time — runs are **candidate-specific**; trajectory ids repeat, `runId`s do not.
 5. **Evaluate** those runs with **Tally** (`TallyRunArtifact` as the canonical record per run). The `evaluateCandidate` phase takes the **completed candidate execution batch** (per-trajectory outputs for that `candidateId`) and scores them; it does **not** replace trajectory definitions.
-6. Build **`EvalSummaries`** as **structured evaluation evidence** (pass/fail, pass-rates, stats, concise failure text) — not a flat list of scores — and compute the job-level **`aggregatedPassRate`** from that evidence using **`evalWeights`** (see API).
+6. Build **`EvalSummaries`** as **structured evaluation evidence**: **per-eval** pass and fail **counts**, totals, derived pass rates, and concise failure text — not a flat list of scores and not **only** pass-rate scalars (a rate without counts is ambiguous). Compute the job-level **`aggregatedPassRate`** **from** that richer evidence using **`evalWeights`** (see API); the aggregate is the main **policy** scalar (thresholds, ranking) but the **primary interpretable** surface is the per-eval breakdown.
 7. Use failure analysis and prior **cycle output** to generate the **next** candidate (evidence carries forward; **execution** does not reuse prior candidates’ runs).
 8. Stop when configured stopping criteria are met.
 9. After the job stops, **select the final candidate** using the same **evaluation policy** (weights, required evals, aggregate), aligned with [Api-Interfaces.md](../APIs/Api-Interfaces.md).
@@ -51,7 +51,7 @@ The fixed trajectory set is **evaluation input** (definitions from `@tally-evals
 
 Tally is **evaluation machinery**.
 
-The **evaluation policy** on the job (`evalWeights`, `requiredEvals`) is how HRPO **aggregates** and **ranks** — Tally does not read weights.
+The **evaluation policy** on the job (`evalWeights`, `requiredEvals`) is how HRPO **aggregates** and **ranks** — Tally does not read weights. **`evalWeights` are set by the user (or the integrating app)** per job: a higher weight on an eval means that eval’s pass rate contributes **more** to the weighted aggregate, so it plays a **larger** role in comparing and selecting candidates than evals with lower weights (subject to `requiredEvals` and other policy rules).
 
 The **agent under evaluation** is the thing being optimized.
 
@@ -82,14 +82,16 @@ Tally evaluates at three layers (all feed **EvalSummaries** and failure analysis
 
 ### 5. Candidate scoring and selection
 
-* **`aggregatedPassRate`** (API) is the main **job-level** scalar for thresholds and comparison: computed from **per-eval** evidence using **`evalWeights`** on the optimization job’s **`EvaluationPolicy`**, as defined in [Api-Interfaces.md](../APIs/Api-Interfaces.md).
-* **Primary levers:** per-eval pass rates (and related stats), **weighted** into `aggregatedPassRate`, plus **`requiredEvals`** for guardrails.
+* **`evalWeights` (user-assigned):** For each job, the **user** assigns a non-negative **weight** per eval name (see API normalization rules). **Higher weight ⇒ stronger influence** on the job-level score and on **which candidate is preferred** when ranking by `aggregatedPassRate`. Lower-weighted evals still appear in the per-eval breakdown and may still matter for **failure analysis** and UX, but they **contribute less** to the single weighted number used to order candidates. This is intentional: the user can mark some dimensions (e.g. safety, correctness) as **more necessary** to optimize for than others (e.g. nice-to-have phrasing) by giving them larger weights.
+* **`aggregatedPassRate`** (API) is the main **job-level** scalar for **thresholds, stop logic, and comparison**: computed from **per-eval** evidence using those **`evalWeights`**, as defined in [Api-Interfaces.md](../APIs/Api-Interfaces.md). It is **not** meant to be the only thing shown in summaries when the goal is interpretability.
+* **Primary *visible* evidence:** per-eval **passedCount**, **failedCount**, **totalCount**, and derived **passRate** (e.g. “relevance: 8 pass, 2 fail, 80%”), optionally with short summary text — then, if needed, the **aggregated** candidate score (e.g. 0.87), which **encodes the user’s weighting**.
+* **Primary *policy* levers:** those per-eval stats (counts-first), **weighted** into `aggregatedPassRate`, plus **`requiredEvals`** (evals that must pass regardless of weight — a separate “hard” constraint from *how much* an eval matters in the scalar).
 * **`OverallQuality`** contributes like any other weighted eval; do **not** special-case it above the policy unless **`evalWeights`** say so.
 * **Final selection** uses the same policy surface (weights, required evals, aggregate) — see Phase 9 in the API; not “highest mean `OverallQuality`” unless the configured weights make that the effective rule.
 
 ### 6. EvalSummaries as structured evidence
 
-* **`EvalSummaries`** are **structured evaluation evidence**: pass/fail, pass-rates, key statistics, and concise textual failure reasons (per [Api-Interfaces.md](../APIs/Api-Interfaces.md) shapes such as per-eval summaries and `ScopeOverview` / `ScopeIssue`).
+* **`EvalSummaries`** are **structured evaluation evidence**: per-eval **outcome counts** (pass / fail / total), derived pass rates, key statistics, and concise textual failure reasons (per [Api-Interfaces.md](../APIs/Api-Interfaces.md) shapes such as per-eval summaries and `ScopeOverview` / `ScopeIssue`). The **bridge** from Tally artifacts must **preserve** eval-level counts across runs/trajectories; **pooling** merges by **accumulating** per-eval pass/fail counts first, then deriving pass rates — not by dropping to a single opaque aggregate. If Tally’s native summary is thin, HRPO may use a **richer wrapper type** (see Phase 3 in [implementation-steps.md](implementation-steps.md)) so evidence stays first-class.
 * They feed **failure analysis**, **stop decisions**, and **next-candidate generation** — not a replacement for reading Tally, but the **roll-up** HRPO uses after `TallyRunArtifact` exists.
 * One **cycle output** = one cycle snapshot: candidate ref, **this candidate’s** `tallyArtifacts` (run-scoped), eval snapshots, `aggregatedPassRate`, and ordering metadata.
 * A new cycle output may reference **history** of prior cycle outputs for the LLM (optimizer behavior); the **next** candidate still runs **fresh** on the fixed trajectory set.
@@ -111,7 +113,7 @@ Define optimizer hyper parameters explicitly (e.g. `temperature` for next-candid
 ### 9. Metrics: Tally, HRPO, and weights
 
 * **`@tally-evals/tally`** receives a single `evals` array at `createTally` time. Metrics can be defined in `@tally-evals/tally/metrics`, in HRPO code, or in a consumer; Tally does not “register” HRPO separately — **composition** passes all evals in one list.
-* **`evalWeights` and `requiredEvals`** live on **`OptimizationJobConfig.evaluationPolicy`** ([Api-Interfaces.md](../APIs/Api-Interfaces.md)). Keys must match **eval `name` strings** in the suite. HRPO applies weights when computing `aggregatedPassRate` and in final selection; Tally does not read weights.
+* **`evalWeights` and `requiredEvals`** live on **`OptimizationJobConfig.evaluationPolicy`** ([Api-Interfaces.md](../APIs/Api-Interfaces.md)). Keys must match **eval `name` strings** in the suite. The **user** supplies **`evalWeights`** so that **more important** evals (larger weight) **drive** `aggregatedPassRate` and selection **more** than less important ones. HRPO applies weights when computing `aggregatedPassRate` and in final selection; Tally does not read weights.
 
 ## Failure Summaries
 
