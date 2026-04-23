@@ -307,6 +307,7 @@ export {
   getToolNames,
   countToolCallsByType,
   assertToolCallSequence,
+  getHILInteractionForToolCall,
 } from './utils';
 
 export {

@@ -25,7 +25,8 @@ function buildStepTrace(
   timestamp: Date,
   stepId: StepTrace['stepId'],
   selection: StepTrace['selection'],
-  end: StepTrace['end'] | undefined
+  end: StepTrace['end'] | undefined,
+  hilInteractions?: StepTrace['hilInteractions'],
 ): StepTrace {
   const base: StepTrace = {
     turnIndex,
@@ -37,6 +38,7 @@ function buildStepTrace(
   };
 
   if (end !== undefined) base.end = end;
+  if (hilInteractions && hilInteractions.length > 0) base.hilInteractions = hilInteractions;
 
   return base;
 }
@@ -97,7 +99,8 @@ export function conversationToStepTraces(
       step.timestamp ?? new Date(),
       stepId,
       selection,
-      end
+      end,
+      step.hilInteractions ? [...step.hilInteractions] : undefined,
     );
   });
 }
@@ -134,6 +137,7 @@ export function conversationStepToStepTrace(step: ConversationStep, turnIndex?: 
     step.timestamp ?? new Date(),
     stepId,
     selection,
-    end
+    end,
+    step.hilInteractions ? [...step.hilInteractions] : undefined,
   );
 }

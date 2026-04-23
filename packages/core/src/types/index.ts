@@ -32,7 +32,7 @@ export type { Conversation, ConversationStep } from './conversation';
 // Trajectory types
 // ============================================================================
 
-export type { StepTrace, TrajectoryStopReason } from './stepTrace';
+export type { StepTrace, TrajectoryStopReason, HILInteractionTrace, HILDecisionTrace, HILToolCallTrace } from './stepTrace';
 export type { TrajectoryMeta } from './trajectoryMeta';
 
 // ============================================================================

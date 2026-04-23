@@ -379,8 +379,10 @@ export interface MastraAgentLike {
 	/**
 	 * Mastra v0.24+ HIL: approve a suspended tool call and resume execution.
 	 * Requires the agent to be registered with a Mastra instance with storage.
+	 * `resumeData` can carry an arbitrary value (e.g. a user-selected option)
+	 * that the step's `resumeSchema`-typed handler will receive.
 	 */
-	approveToolCall?: (opts: { runId: string; toolCallId?: string }) => Promise<unknown>;
+	approveToolCall?: (opts: { runId: string; toolCallId?: string; resumeData?: unknown }) => Promise<unknown>;
 	/**
 	 * Mastra v0.24+ HIL: decline a suspended tool call and resume execution.
 	 */
@@ -389,7 +391,7 @@ export interface MastraAgentLike {
 	 * Legacy / mock names — kept for backward compatibility with unit-test mocks
 	 * that were written against an earlier wrapper contract.
 	 */
-	approveToolCallGenerate?: (opts: { runId: string; toolCallId?: string }) => Promise<unknown>;
+	approveToolCallGenerate?: (opts: { runId: string; toolCallId?: string; resumeData?: unknown }) => Promise<unknown>;
 	declineToolCallGenerate?: (opts: { runId: string; toolCallId?: string }) => Promise<unknown>;
 }
 
@@ -552,7 +554,20 @@ export function withMastraAgent(agent: MastraAgentLike): AgentHandle {
 			const declineMethod = agent.declineToolCall ?? agent.declineToolCallGenerate;
 
 			if (shouldApprove && approveMethod) {
-				return callResume(approveMethod, runId, toolCallId);
+				// Wire through decision.result as resumeData if present.
+				// This enables multi-option responses — e.g. the agent asked the user
+				// to pick from N choices and the HIL policy carries the selected value.
+				// Note: AI SDK does not support this (its approval protocol is binary);
+				// for Mastra the value arrives via the step's resumeSchema.
+				const resumeData =
+					decision?.type === 'approve' && decision.result !== undefined
+						? decision.result
+						: undefined;
+				return callResume(
+					(opts) => approveMethod.call(agent, { ...opts, ...(resumeData !== undefined && { resumeData }) }),
+					runId,
+					toolCallId,
+				);
 			}
 
 			if (declineMethod) {

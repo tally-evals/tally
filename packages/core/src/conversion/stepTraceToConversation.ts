@@ -33,18 +33,26 @@ export function stepTracesToConversation(
   conversationId: string,
   options: StepTracesToConversationOptions = {}
 ): Conversation {
-  const steps: ConversationStep[] = traces.map((trace, index) => ({
-    stepIndex: index,
-    input: trace.userMessage,
-    output: [...trace.agentMessages],
-    timestamp: trace.timestamp,
-    metadata: {
-      originalTurnIndex: trace.turnIndex,
-      stepId: trace.stepId,
-      selection: trace.selection,
-      ...(trace.end !== undefined && { end: trace.end }),
-    },
-  }));
+  const steps: ConversationStep[] = traces.map((trace, index) => {
+    const step: ConversationStep = {
+      stepIndex: index,
+      input: trace.userMessage,
+      output: [...trace.agentMessages],
+      timestamp: trace.timestamp,
+      metadata: {
+        originalTurnIndex: trace.turnIndex,
+        stepId: trace.stepId,
+        selection: trace.selection,
+        ...(trace.end !== undefined && { end: trace.end }),
+      },
+    };
+
+    if (trace.hilInteractions && trace.hilInteractions.length > 0) {
+      step.hilInteractions = trace.hilInteractions;
+    }
+
+    return step;
+  });
 
   return options.metadata
     ? { id: conversationId, steps, metadata: options.metadata }

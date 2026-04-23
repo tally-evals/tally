@@ -9,6 +9,7 @@
 
 import type { ConversationStep, ModelMessage } from '../types';
 import type { ExtractedToolCall, ExtractedToolResult } from '../types';
+import type { HILInteractionTrace } from '../types';
 
 /**
  * Helper to safely get a property from an object with unknown structure
@@ -243,15 +244,46 @@ export function matchToolCallsWithResults(
 /**
  * Extract tool calls from a ConversationStep
  *
- * Also matches tool results from the output messages.
+ * Returns the pre-built, enriched tool calls when available (populated by
+ * `stepTracesToConversation` with results and HIL data already attached).
+ * Falls back to extracting and matching from raw `output` messages for
+ * steps that were constructed manually or loaded without conversion.
  *
  * @param step - The conversation step to extract from
- * @returns Array of extracted tool calls with results
+ * @returns Array of extracted tool calls with results and optional HIL data
  */
 export function extractToolCallsFromStep(step: ConversationStep): ExtractedToolCall[] {
   const toolCalls = extractToolCallsFromMessages(step.output);
   const toolResults = extractToolResultsFromMessages(step.output);
-  return matchToolCallsWithResults(toolCalls, toolResults);
+  const matched = matchToolCallsWithResults(toolCalls, toolResults);
+
+  if (!step.hilInteractions || step.hilInteractions.length === 0) {
+    return matched;
+  }
+
+  const hilMap = new Map<string, HILInteractionTrace>();
+  for (const interaction of step.hilInteractions) {
+    hilMap.set(interaction.toolCall.toolCallId, interaction);
+  }
+
+  return matched.map((tc) => {
+    const hilInteraction = hilMap.get(tc.toolCallId);
+    return hilInteraction ? { ...tc, hilInteraction } : tc;
+  });
+}
+
+/**
+ * Get the HIL interaction for a specific tool call in a step, if any.
+ *
+ * @param step - The conversation step to search
+ * @param toolCallId - The tool call ID to look up
+ * @returns The matching HIL interaction, or undefined
+ */
+export function getHILInteractionForToolCall(
+  step: ConversationStep,
+  toolCallId: string,
+): HILInteractionTrace | undefined {
+  return step.hilInteractions?.find((h) => h.toolCall.toolCallId === toolCallId);
 }
 
 /**

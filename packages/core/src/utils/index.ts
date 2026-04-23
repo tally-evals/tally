@@ -14,6 +14,7 @@ export {
   getToolNames,
   countToolCallsByType,
   assertToolCallSequence,
+  getHILInteractionForToolCall,
 } from './toolCalls';
 
 // Text extraction
