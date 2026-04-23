@@ -12,12 +12,12 @@ Input:
 
 ```ts
 type EvaluationPolicy = {
-  // Relative importance of each eval when computing the optimization job score.
-  // Higher weights contribute more to `aggregatedPassRate`.
+  // User-assigned relative importance per eval name (keys should match the eval suite when known).
+  // Higher weights contribute more to `aggregatedPassRate` and candidate ranking than lower weights.
   evalWeights: Record<string, number>;
 
   // Evals that must be present and explicitly considered even if the
-  // weighted aggregate looks good overall.
+  // weighted aggregate looks good overall (hard policy, separate from weight magnitude).
   requiredEvals?: string[];
 };
 
@@ -135,6 +135,8 @@ Notes:
 - `singleTurnOverview` and `multiTurnOverview` are derived from those per-eval summaries.
 - `evalSummaries` is the main comparison surface.
 
+**Per-eval evidence and weights (v4):** Tally’s `EvalSummary` includes an optional `verdictSummary` with `passCount`, `failCount`, `totalCount`, and pass/fail rates—that is the **primary** interpretable evidence per eval. The bridge should **preserve** those counts when mapping artifacts and **pool** across trajectories by **accumulating** counts, then deriving rates. `aggregatedPassRate` is **secondary for display** but **primary for policy** (thresholds, ranking); it must respect **user-assigned** `evalWeights` so higher-weight evals influence the scalar more than lower-weight evals. See [implementation-plan.md](../v-4/implementation-plan.md).
+
 ## Shared Evaluation Summary Type
 
 ```ts
@@ -148,8 +150,14 @@ type ScopeIssue<
   // Human-readable explanation of what needs attention.
   reason: string;
 
-  // Optional pass rate copied from the eval summary when relevant.
+  // Pass rate for this eval in the scope (often from verdict summary).
   passRate: number;
+
+  // Optional pooled counts (e.g. after merging trajectories) for the same legibility as
+  // `EvalSummary.verdictSummary`—e.g. "8 pass, 2 fail" vs. a bare `passRate` alone.
+  passedCount?: number;
+  failedCount?: number;
+  totalCount?: number;
 };
 
 type ScopeOverview<EvalName extends string = string> = {

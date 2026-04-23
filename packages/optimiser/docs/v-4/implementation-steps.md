@@ -65,7 +65,8 @@ This guide breaks the work into **small, verifiable steps** so you do not have t
 
 **Type design**
 
-- Prefer **`EvalSummary`** (or the scope record value) to **already carry** counts if Tally’s summary shape exposes them; the bridge should **preserve** them.
+- Tally’s **`EvalSummary`** (from `@tally-evals/tally` / core) already includes **`verdictSummary`** with **`passCount`**, **`failCount`**, **`totalCount`**, and rates—treat that as first-class evidence in the bridge; only introduce a separate wrapper (e.g. `HrpoEvalEvidence`) if you need fields Tally does not provide.
+- Prefer those fields (or the scope record value) over pass-rate-only views; the bridge should **preserve** counts when mapping and pooling.
 - If Tally’s summary is pass-rate–only, introduce a **richer HRPO view** that wraps or extends it, e.g.:
 
   ```ts

@@ -4,9 +4,7 @@ import type { Trajectory } from '@tally-evals/trajectories';
 // ── Job & policy (Phase 1 API) ───────────────────────────────────────────────
 
 export type EvaluationPolicy = {
-  /** Relative importance of each eval when computing the optimization job score. */
   evalWeights: Record<string, number>;
-  /** Evals that must be present and explicitly considered. */
   requiredEvals?: string[];
 };
 
@@ -28,13 +26,12 @@ export type CreateTrajectorySetInput<TrajectoryItem = Trajectory> = {
   optimizationJobId: string;
   trajectories: readonly TrajectoryItem[];
 };
-// output type for the createTrajectorySetInput function
+
 export type TrajectorySet = {
   trajectoryIds: string[];
   createdAt: string;
 };
 
-/** One trajectory row executed for a candidate agent; `conversation` is Tally input. */
 export type CandidateAgentTrajectoryRun<T = Trajectory> = {
   trajectoryId: string;
   trajectory: T;
@@ -42,7 +39,6 @@ export type CandidateAgentTrajectoryRun<T = Trajectory> = {
   runId: string;
 };
 
-/** Completed candidate-agent execution batch for the job’s fixed trajectory*/
 export type CandidateAgent<T = Trajectory> = {
   optimizationJobId: string;
   candidateAgentId: string;
@@ -66,6 +62,9 @@ export type ScopeIssue<EvalName extends string = string> = {
   eval: EvalName;
   reason: string;
   passRate: number;
+  passedCount?: number;
+  failedCount?: number;
+  totalCount?: number;
 };
 
 export type ScopeOverview<EvalName extends string = string> = {
@@ -85,7 +84,6 @@ export type EvalSummaries<
   multiTurnOverview: ScopeOverview<MultiTurnEvalName>;
 };
 
-// Re-export Tally’s summary cell type for consumers defining custom `EvalSummaries`.
 export type { EvalSummary } from '@tally-evals/tally';
 
 // ── Failure analysis (Phase 4) ──────────────────────────────────────────────
