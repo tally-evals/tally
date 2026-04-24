@@ -38,6 +38,12 @@ export {
   selectFinalCandidate,
 } from './optimizationJobPhases';
 export type { CreateOptimizationJobOptions } from './optimizationJobPhases';
+export { runOptimizationJob } from './runOptimizationJob';
+export type {
+  RunOptimizationJobInput,
+  RunOptimizationJobResult,
+  RunCandidateOnTrajectorySet,
+} from './runOptimizationJob';
 
 export { createTally } from '@tally-evals/tally';
 export type { Conversation, Eval, TallyRunArtifact, VerdictSummary } from '@tally-evals/tally';
