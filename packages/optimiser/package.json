@@ -38,6 +38,7 @@
     "@tally-evals/trajectories": "workspace:*"
   },
   "devDependencies": {
+    "@tally-evals/core": "workspace:*",
     "@tally-evals/biome-config": "workspace:*",
     "@tally-evals/typescript-config": "workspace:*",
     "@types/bun": "latest",

@@ -6,7 +6,6 @@ import {
 } from '@tally-evals/tally';
 import type { EvalSummaries, EvaluationPolicy, ScopeIssue, ScopeOverview } from './types';
 
-
 type ByEvalRow = {
   eval: string;
   kind: 'singleTurn' | 'multiTurn' | 'scorer';
@@ -38,10 +37,13 @@ function toEvalSummary(row: ByEvalRow): EvalSummary {
     ...(row.verdictSummary ? { verdictSummary: row.verdictSummary } : {}),
   };
 }
-// Checks whether an eval is passing by looking at its fail count.
-function isPassing(summary: EvalSummary): boolean {
+/** Whether a single eval is passing (no failing verdicts). Exported for stop / selection / failure analysis. */
+export function evalSummaryIsPassing(summary: EvalSummary): boolean {
   const verdict = summary.verdictSummary;
   return verdict ? verdict.failCount === 0 : true;
+}
+function isPassing(summary: EvalSummary): boolean {
+  return evalSummaryIsPassing(summary);
 }
 // Creates an issue object for a failing eval, including counts and pass rate.
 function buildIssue<Name extends string>(name: Name, summary: EvalSummary): ScopeIssue<Name> {
@@ -49,7 +51,9 @@ function buildIssue<Name extends string>(name: Name, summary: EvalSummary): Scop
 
   return {
     eval: name,
-    reason: verdict ? `${verdict.failCount} fail / ${verdict.totalCount} total` : 'no verdict summary',
+    reason: verdict
+      ? `${verdict.failCount} fail / ${verdict.totalCount} total`
+      : 'no verdict summary',
     passRate: verdict ? Number(verdict.passRate) : 0,
     ...(verdict
       ? {
@@ -153,13 +157,11 @@ function mergeEvalRecords(
   acc: Record<string, EvalSummary>,
   next: Record<string, EvalSummary>
 ): Record<string, EvalSummary> {
-  return Object.entries(next).reduce(
-    (out, [name, summary]) => ({
-      ...out,
-      [name]: out[name] ? mergeEvalSummary(out[name], summary) : { ...summary },
-    }),
-    { ...acc }
-  );
+  const out: Record<string, EvalSummary> = { ...acc };
+  for (const [name, summary] of Object.entries(next)) {
+    out[name] = out[name] ? mergeEvalSummary(out[name], summary) : { ...summary };
+  }
+  return out;
 }
 
 /**
@@ -188,7 +190,7 @@ export function poolEvalSummaries(pool: ReadonlyArray<EvalSummaries>): EvalSumma
   };
 }
 
-function allEvalSummaries(evalSummaries: EvalSummaries): EvalSummary[] {
+export function allEvalSummariesList(evalSummaries: EvalSummaries): EvalSummary[] {
   return [...Object.values(evalSummaries.singleTurn), ...Object.values(evalSummaries.multiTurn)];
 }
 // Derives the pass rate from one EvalSummary using its verdict counts.
@@ -203,7 +205,7 @@ function passRate(summary: EvalSummary): number | undefined {
 }
 // Computes the fallback unweighted mean pass rate across all evals.
 function meanPassRateAllEvals(evalSummaries: EvalSummaries): number {
-  const rates = allEvalSummaries(evalSummaries)
+  const rates = allEvalSummariesList(evalSummaries)
     .map(passRate)
     .filter((rate): rate is number => rate !== undefined);
 

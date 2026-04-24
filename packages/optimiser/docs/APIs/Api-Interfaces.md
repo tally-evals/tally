@@ -470,21 +470,12 @@ selectFinalCandidate(
 Input:
 
 ```ts
-type FinalCandidateSelectionOptions = {
-  // Optional override of the optimization job-level policy for final selection.
-  // Most flows should use `optimizationJob.config.evaluationPolicy` as the default.
-  evaluationPolicyOverride?: EvaluationPolicy;
-};
-
 type SelectFinalCandidateInput = {
   // Optimization job whose candidate history is being finalized.
   optimizationJobId: string;
 
   // All cycle output records from the job (each is one evaluated candidate prompt).
   cycleOutputs: CycleOutput[];
-
-  // Extra policy controls for the final decision.
-  options?: FinalCandidateSelectionOptions;
 };
 ```
 
@@ -506,6 +497,7 @@ type FinalCandidateDecision = {
 
 Notes:
 - This phase happens only after the optimization job has stopped generating candidates.
+- Final selection uses the job’s `OptimizationJob.config.evaluationPolicy` only (same policy as the rest of the job; it cannot be overridden for this call).
 - Define eval weights in `OptimizationJobConfig.evaluationPolicy` when they are meant to govern final selection across the full candidate history.
 - Final selection should derive eval importance from `evalWeights` rather than a separate list.
 - Evals with higher assigned weights should be treated as higher-priority during comparison.

@@ -113,7 +113,12 @@ export type StopConditionInput = {
   acceptanceThreshold?: number;
 };
 
-export type StopReason = 'allEvalsPassing' | 'thresholdReached' | 'maxCycles';
+export type StopReason =
+  | 'allEvalsPassing'
+  | 'thresholdReached'
+  | 'maxCycles'
+  /** Loop continues; `stop` is false. */
+  | 'continue';
 
 export type StopDecision = {
   stop: boolean;
@@ -180,14 +185,9 @@ export type CycleOutput = {
 
 // ── Final selection (Phase 9) ────────────────────────────────────────────────
 
-export type FinalCandidateSelectionOptions = {
-  evaluationPolicyOverride?: EvaluationPolicy;
-};
-
 export type SelectFinalCandidateInput = {
   optimizationJobId: string;
   cycleOutputs: CycleOutput[];
-  options?: FinalCandidateSelectionOptions;
 };
 
 export type FinalCandidateDecision = {

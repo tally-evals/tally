@@ -176,6 +176,7 @@
       },
       "devDependencies": {
         "@tally-evals/biome-config": "workspace:*",
+        "@tally-evals/core": "workspace:*",
         "@tally-evals/typescript-config": "workspace:*",
         "@types/bun": "latest",
         "@types/node": "24.6.2",
