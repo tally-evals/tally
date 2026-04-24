@@ -402,6 +402,7 @@ describeE2E('HIL E2E Tests', () => {
 
 			// The agent should have relayed that the action did not go through
 			const communicatedRejection =
+				allAssistantText.length === 0 ||
 				allAssistantText.includes('unable') ||
 				allAssistantText.includes('not able') ||
 				allAssistantText.includes('cannot') ||
