@@ -140,6 +140,8 @@ export type CandidatePromptInput = {
 
 export type CandidatePrompt = {
   candidateAgentId: string;
+  /** Instruction text the agent under evaluation will use (e.g. system / full-prompt block). */
+  promptText: string;
   generationConfig: CandidateGenerationConfig;
   createdAt: string;
 };

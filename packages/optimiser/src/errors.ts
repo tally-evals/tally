@@ -59,6 +59,18 @@ export class EmptyCandidatePoolError extends Error {
   }
 }
 
+export class PreviousCandidatePromptNotFoundError extends Error {
+  override readonly name = 'PreviousCandidatePromptNotFoundError';
+  constructor(
+    readonly optimizationJobId: string,
+    readonly candidateAgentId: string
+  ) {
+    super(
+      `No registered CandidatePrompt for job ${optimizationJobId} and candidate ${candidateAgentId}. Call registerCandidate for the current candidate before createCandidatePrompt.`
+    );
+  }
+}
+
 // ── Config validation (throws domain errors) ───────────────────────────────
 
 function assertKeysInEvalSuite(

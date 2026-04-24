@@ -6,6 +6,7 @@ export {
   JobNotFoundError,
   MismatchedCandidateIdError,
   NoCycleOutputsError,
+  PreviousCandidatePromptNotFoundError,
   TallyArtifactRefKeyCollisionError,
   TrajectorySetAlreadyAttachedError,
 } from './errors';
@@ -23,6 +24,11 @@ export {
 } from './evalSummaries';
 export { evaluateCandidate } from './evaluateCandidate';
 export type { EvaluateCandidateInput } from './evaluateCandidate';
+export { createCandidatePrompt } from './createCandidatePrompt';
+export type {
+  CreateCandidatePromptOptions,
+  GenerateNextCandidatePromptText,
+} from './createCandidatePrompt';
 export {
   analyzeFailures,
   createCycleOutput,
