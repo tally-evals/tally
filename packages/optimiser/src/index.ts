@@ -30,8 +30,8 @@ export {
   createTrajectorySet,
   evaluateStopCondition,
   selectFinalCandidate,
-} from './optimizationPhases';
-export type { CreateOptimizationJobOptions } from './optimizationPhases';
+} from './optimizationJobPhases';
+export type { CreateOptimizationJobOptions } from './optimizationJobPhases';
 
 export { createTally } from '@tally-evals/tally';
 export type { Conversation, Eval, TallyRunArtifact, VerdictSummary } from '@tally-evals/tally';

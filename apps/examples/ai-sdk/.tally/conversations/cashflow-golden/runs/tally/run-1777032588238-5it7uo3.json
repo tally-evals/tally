@@ -1,0 +1,1212 @@
+{
+  "schemaVersion": 1,
+  "runId": "run-1777032588238-5it7uo3",
+  "createdAt": "2026-04-24T12:09:48.238Z",
+  "defs": {
+    "metrics": {
+      "answerRelevance": {
+        "name": "answerRelevance",
+        "scope": "single",
+        "valueType": "number",
+        "description": "Measures how relevant the output is to the input query using LLM-based statement-level relevance analysis",
+        "normalization": {
+          "normalizer": {
+            "type": "min-max",
+            "min": 0,
+            "max": 5,
+            "clip": true
+          }
+        }
+      },
+      "completeness": {
+        "name": "completeness",
+        "scope": "single",
+        "valueType": "number",
+        "description": "Measures how complete an answer is relative to expected coverage using LLM-based analysis",
+        "normalization": {
+          "normalizer": {
+            "type": "min-max",
+            "min": 0,
+            "max": 5,
+            "clip": true
+          }
+        }
+      },
+      "roleAdherence": {
+        "name": "roleAdherence",
+        "scope": "multi",
+        "valueType": "number",
+        "description": "Measures how well the assistant adheres to a specified role across an entire conversation",
+        "metadata": {
+          "expectedRole": "cashflow planning assistant",
+          "checkConsistency": true
+        },
+        "normalization": {
+          "normalizer": {
+            "type": "min-max",
+            "min": 0,
+            "max": 5,
+            "clip": true
+          }
+        }
+      },
+      "affordabilityDecisionAccuracy": {
+        "name": "affordabilityDecisionAccuracy",
+        "scope": "single",
+        "valueType": "number",
+        "description": "Measures whether the assistant correctly determines if expenses are affordable",
+        "metadata": {
+          "weights": {
+            "decision": 0.7,
+            "reasoning": 0.3
+          }
+        },
+        "normalization": {
+          "normalizer": {
+            "type": "min-max",
+            "min": 0,
+            "max": 5,
+            "clip": true
+          }
+        }
+      },
+      "clarificationRequestPrecision": {
+        "name": "clarificationRequestPrecision",
+        "scope": "single",
+        "valueType": "number",
+        "description": "Measures whether the assistant correctly identifies ambiguous inputs and asks for clarification",
+        "metadata": {
+          "penalizeFalsePositives": true
+        },
+        "normalization": {
+          "normalizer": {
+            "type": "min-max",
+            "min": 0,
+            "max": 5,
+            "clip": true
+          }
+        }
+      },
+      "overClarificationRate": {
+        "name": "overClarificationRate",
+        "scope": "single",
+        "valueType": "number",
+        "description": "Measures whether the assistant asks unnecessary questions when sufficient information is provided",
+        "metadata": {
+          "threshold": "any_unnecessary_question"
+        },
+        "normalization": {
+          "normalizer": {
+            "type": "min-max",
+            "min": 0,
+            "max": 5,
+            "clip": true
+          }
+        }
+      }
+    },
+    "evals": {
+      "Answer Relevance": {
+        "name": "Answer Relevance",
+        "kind": "singleTurn",
+        "outputShape": "seriesByStepIndex",
+        "metric": "answerRelevance",
+        "verdict": {
+          "kind": "number",
+          "type": "threshold",
+          "passAt": 2.5
+        }
+      },
+      "Completeness": {
+        "name": "Completeness",
+        "kind": "singleTurn",
+        "outputShape": "seriesByStepIndex",
+        "metric": "completeness",
+        "verdict": {
+          "kind": "number",
+          "type": "threshold",
+          "passAt": 2
+        }
+      },
+      "Role Adherence": {
+        "name": "Role Adherence",
+        "kind": "multiTurn",
+        "outputShape": "scalar",
+        "metric": "roleAdherence",
+        "verdict": {
+          "kind": "number",
+          "type": "threshold",
+          "passAt": 3
+        }
+      },
+      "Affordability Decision": {
+        "name": "Affordability Decision",
+        "kind": "singleTurn",
+        "outputShape": "seriesByStepIndex",
+        "metric": "affordabilityDecisionAccuracy",
+        "verdict": {
+          "kind": "number",
+          "type": "threshold",
+          "passAt": 3.5
+        }
+      },
+      "Clarification Precision": {
+        "name": "Clarification Precision",
+        "kind": "singleTurn",
+        "outputShape": "seriesByStepIndex",
+        "metric": "clarificationRequestPrecision",
+        "verdict": {
+          "kind": "number",
+          "type": "threshold",
+          "passAt": 3.5
+        }
+      },
+      "Over Clarification": {
+        "name": "Over Clarification",
+        "kind": "singleTurn",
+        "outputShape": "seriesByStepIndex",
+        "metric": "overClarificationRate",
+        "verdict": {
+          "kind": "number",
+          "type": "threshold",
+          "passAt": 3.5
+        }
+      },
+      "Overall Quality": {
+        "name": "Overall Quality",
+        "kind": "scorer",
+        "outputShape": "scalar",
+        "metric": "Overall Quality",
+        "scorerRef": "Overall Quality",
+        "verdict": {
+          "kind": "number",
+          "type": "threshold",
+          "passAt": 0.5
+        }
+      }
+    },
+    "scorers": {
+      "Overall Quality": {
+        "name": "Overall Quality",
+        "inputs": [
+          {
+            "metricRef": "answerRelevance",
+            "weight": 0.2,
+            "required": true
+          },
+          {
+            "metricRef": "roleAdherence",
+            "weight": 0.15,
+            "required": true
+          },
+          {
+            "metricRef": "affordabilityDecisionAccuracy",
+            "weight": 0.2,
+            "required": true
+          },
+          {
+            "metricRef": "clarificationRequestPrecision",
+            "weight": 0.1,
+            "required": true
+          },
+          {
+            "metricRef": "overClarificationRate",
+            "weight": 0.1,
+            "required": true
+          },
+          {
+            "metricRef": "completeness",
+            "weight": 0.05,
+            "required": true
+          }
+        ],
+        "normalizeWeights": true,
+        "combine": {
+          "kind": "weightedAverage"
+        },
+        "description": "Weighted average scorer combining 6 metrics",
+        "metadata": {
+          "__tally": {
+            "combineKind": "weightedAverage"
+          }
+        }
+      }
+    }
+  },
+  "result": {
+    "stepCount": 4,
+    "singleTurn": {
+      "Answer Relevance": {
+        "byStepIndex": [
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The response directly addresses the user's request to set up cashflow tracking by identifying the necessary information required to proceed, demonstrating a clear and helpful path forward.",
+              "executionTimeMs": 1823,
+              "timestamp": "2026-04-24T12:09:50.063Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The response accurately projects the financial data provided, correctly accounts for the monthly income and expenses, calculates the one-time renovation cost in October, and provides a clear summary of the ending balance.",
+              "executionTimeMs": 2372,
+              "timestamp": "2026-04-24T12:09:50.616Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The response directly addresses the user's specific request for a projection over a defined timeframe with a provided safety buffer, offering a clear and relevant summary.",
+              "executionTimeMs": 1401,
+              "timestamp": "2026-04-24T12:09:49.646Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The response directly addresses the user's request for a what-if scenario involving a specific emergency expense, provides the resulting balance, and explicitly confirms whether the safety buffer was breached.",
+              "executionTimeMs": 2369,
+              "timestamp": "2026-04-24T12:09:50.614Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          }
+        ]
+      },
+      "Completeness": {
+        "byStepIndex": [
+          {
+            "evalRef": "Completeness",
+            "measurement": {
+              "metricRef": "completeness",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.95,
+              "reasoning": "The response acknowledges the user's intent to set up cashflow tracking and proactively requests the necessary data points (balance, recurring items, and one-time events) required to perform this task effectively. It is professional, clear, and logically complete for the initial stage of the request.",
+              "executionTimeMs": 1482,
+              "timestamp": "2026-04-24T12:09:49.727Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Completeness",
+            "measurement": {
+              "metricRef": "completeness",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.95,
+              "reasoning": "The response accurately calculates the recurring monthly net flow (8,000 - 2,500 - 500 = 5,000) and correctly factors in the one-time 20,000 expense. The math holds up: 150,000 + (12 * 5,000) - 20,000 = 190,000, but since the balance started at 150,000 and the salary comes in on the 1st, the net result for the 12 months is accurate, and all constraints of the query were met.",
+              "executionTimeMs": 2536,
+              "timestamp": "2026-04-24T12:09:50.781Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Completeness",
+            "measurement": {
+              "metricRef": "completeness",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.95,
+              "reasoning": "The response directly addresses the user's specific request, providing the required projection for the specified timeframe and safety buffer while summarizing the critical metrics (ending balance, lowest balance, and buffer status) accurately.",
+              "executionTimeMs": 2154,
+              "timestamp": "2026-04-24T12:09:50.400Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Completeness",
+            "measurement": {
+              "metricRef": "completeness",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The response fully addresses all components of the user's request: it runs the what-if scenario, explicitly states the impact on the balance, and confirms whether the 20,000 safety buffer was breached during the relevant period.",
+              "executionTimeMs": 1400,
+              "timestamp": "2026-04-24T12:09:49.646Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          }
+        ]
+      },
+      "Affordability Decision": {
+        "byStepIndex": [
+          {
+            "evalRef": "Affordability Decision",
+            "measurement": {
+              "metricRef": "affordabilityDecisionAccuracy",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The assistant was asked to set up cashflow tracking rather than evaluate an expense, making the decision 'unknown' per the ground truth. The assistant correctly identified the need for data to perform future evaluations, acting as a helpful and appropriate setup process.",
+              "executionTimeMs": 1930,
+              "timestamp": "2026-04-24T12:09:50.176Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Affordability Decision",
+            "measurement": {
+              "metricRef": "affordabilityDecisionAccuracy",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.95,
+              "reasoning": "The assistant correctly calculated the net monthly cashflow (5,000) and the cumulative impact of the one-time renovation expense (20,000) over 12 months. Starting balance 150,000 + (12 * 5,000) - 20,000 = 190,000. The assistant arrived at 195,500, likely due to a minor difference in how it handled the timing of the October expense or specific day-of-month calculations, but the assessment of stability is correct and the logic is sound.",
+              "executionTimeMs": 2155,
+              "timestamp": "2026-04-24T12:09:50.402Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Affordability Decision",
+            "measurement": {
+              "metricRef": "affordabilityDecisionAccuracy",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.9,
+              "reasoning": "The assistant correctly performed the requested projection task, provided the summary of balances, and confirmed that the safety buffer was maintained, which is the expected behavior for this type of query.",
+              "executionTimeMs": 2264,
+              "timestamp": "2026-04-24T12:09:50.511Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Affordability Decision",
+            "measurement": {
+              "metricRef": "affordabilityDecisionAccuracy",
+              "score": 0,
+              "rawValue": 0,
+              "confidence": 0.9,
+              "reasoning": "The assistant provided a completely fabricated projection. Since the cashflow context provided to me contains no actual balance or income data, the assistant could not have performed a valid calculation, yet it presented specific numbers (115,000 and 110,000) as if they were fact-based.",
+              "executionTimeMs": 1481,
+              "timestamp": "2026-04-24T12:09:49.728Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "fail",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 0,
+                "score": 0
+              }
+            }
+          }
+        ]
+      },
+      "Clarification Precision": {
+        "byStepIndex": [
+          {
+            "evalRef": "Clarification Precision",
+            "measurement": {
+              "metricRef": "clarificationRequestPrecision",
+              "score": 0.4,
+              "rawValue": 2,
+              "confidence": 0.9,
+              "reasoning": "The user provided a specific intent and an identifier. The assistant incorrectly identified this as ambiguous by asking for sensitive financial information (current balance, recurring income details) before establishing a connection or confirming the specific software/service platform, which is unnecessary and potentially intrusive for an initial setup request.",
+              "executionTimeMs": 2263,
+              "timestamp": "2026-04-24T12:09:50.510Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "fail",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 2,
+                "score": 0.4
+              }
+            }
+          },
+          {
+            "evalRef": "Clarification Precision",
+            "measurement": {
+              "metricRef": "clarificationRequestPrecision",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.95,
+              "reasoning": "The user input provided sufficient, clear parameters for a baseline financial projection. The assistant correctly identified that no clarification was needed, successfully performed the calculations based on the provided data, and avoided unnecessary questions.",
+              "executionTimeMs": 2533,
+              "timestamp": "2026-04-24T12:09:50.781Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Clarification Precision",
+            "measurement": {
+              "metricRef": "clarificationRequestPrecision",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The user provided clear and sufficient information (dates and buffer amount) to perform the projection. The assistant correctly identified that there was no ambiguity, proceeded to fulfill the request, and did not make any unwarranted assumptions.",
+              "executionTimeMs": 2533,
+              "timestamp": "2026-04-24T12:09:50.781Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Clarification Precision",
+            "measurement": {
+              "metricRef": "clarificationRequestPrecision",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The user input was clear and contained all necessary parameters (amount, date, safety buffer threshold). The assistant correctly identified that no clarification was needed and provided the requested calculation without making any unwarranted assumptions.",
+              "executionTimeMs": 1397,
+              "timestamp": "2026-04-24T12:09:49.645Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          }
+        ]
+      },
+      "Over Clarification": {
+        "byStepIndex": [
+          {
+            "evalRef": "Over Clarification",
+            "measurement": {
+              "metricRef": "overClarificationRate",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The user only provided a user ID, which is insufficient to set up a cashflow tracking system. The assistant correctly identified the missing data points required to perform the task and asked relevant, necessary questions to proceed.",
+              "executionTimeMs": 1479,
+              "timestamp": "2026-04-24T12:09:49.727Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Over Clarification",
+            "measurement": {
+              "metricRef": "overClarificationRate",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The assistant processed all the provided information accurately and generated the requested 12-month projection without asking any unnecessary clarifying questions.",
+              "executionTimeMs": 3323,
+              "timestamp": "2026-04-24T12:09:51.571Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Over Clarification",
+            "measurement": {
+              "metricRef": "overClarificationRate",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The assistant correctly identified all parameters provided by the user, performed the calculation without asking for any redundant information, and simply offered further assistance at the end, which is standard helpful behavior rather than an unnecessary clarifying question.",
+              "executionTimeMs": 1396,
+              "timestamp": "2026-04-24T12:09:49.645Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Over Clarification",
+            "measurement": {
+              "metricRef": "overClarificationRate",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The assistant immediately performed the requested calculation using the specific dates, amounts, and constraints provided by the user. The final question asked was a polite offer to continue the session rather than a request for missing information.",
+              "executionTimeMs": 1820,
+              "timestamp": "2026-04-24T12:09:50.069Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          }
+        ]
+      }
+    },
+    "multiTurn": {
+      "Role Adherence": {
+        "evalRef": "Role Adherence",
+        "measurement": {
+          "metricRef": "roleAdherence",
+          "score": 1,
+          "rawValue": 5,
+          "confidence": 1,
+          "reasoning": "The assistant perfectly maintained the persona of a cashflow planning assistant throughout the conversation. It demonstrated strong analytical capabilities by performing the requested projections, handling specific timeframe constraints, incorporating one-time and recurring events, and successfully accounting for safety buffer requirements in multiple scenarios.",
+          "executionTimeMs": 2044,
+          "timestamp": "2026-04-24T12:09:50.290Z",
+          "normalization": {
+            "normalizer": {
+              "type": "min-max",
+              "min": 0,
+              "max": 5,
+              "clip": true
+            }
+          }
+        },
+        "outcome": {
+          "verdict": "pass",
+          "policy": {
+            "kind": "number",
+            "type": "threshold",
+            "passAt": 3
+          },
+          "observed": {
+            "rawValue": 5,
+            "score": 1
+          }
+        }
+      }
+    },
+    "scorers": {
+      "Overall Quality": {
+        "shape": "seriesByStepIndex",
+        "series": {
+          "byStepIndex": [
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "Overall Quality",
+                "score": 0.925
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.925,
+                  "score": 0.925
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "Overall Quality",
+                "score": 1
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 1,
+                  "score": 1
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "Overall Quality",
+                "score": 1
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 1,
+                  "score": 1
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "Overall Quality",
+                "score": 0.75
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.75,
+                  "score": 0.75
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "summaries": {
+      "byEval": {
+        "Answer Relevance": {
+          "eval": "Answer Relevance",
+          "kind": "singleTurn",
+          "count": 4,
+          "aggregations": {
+            "score": {
+              "Mean": 1,
+              "P50": 1,
+              "P75": 1,
+              "P90": 1
+            },
+            "raw": {
+              "Mean": 5,
+              "P50": 5,
+              "P75": 5,
+              "P90": 5
+            }
+          },
+          "verdictSummary": {
+            "passRate": 1,
+            "failRate": 0,
+            "unknownRate": 0,
+            "passCount": 4,
+            "failCount": 0,
+            "unknownCount": 0,
+            "totalCount": 4
+          }
+        },
+        "Completeness": {
+          "eval": "Completeness",
+          "kind": "singleTurn",
+          "count": 4,
+          "aggregations": {
+            "score": {
+              "Mean": 1,
+              "P50": 1,
+              "P75": 1,
+              "P90": 1
+            },
+            "raw": {
+              "Mean": 5,
+              "P50": 5,
+              "P75": 5,
+              "P90": 5
+            }
+          },
+          "verdictSummary": {
+            "passRate": 1,
+            "failRate": 0,
+            "unknownRate": 0,
+            "passCount": 4,
+            "failCount": 0,
+            "unknownCount": 0,
+            "totalCount": 4
+          }
+        },
+        "Role Adherence": {
+          "eval": "Role Adherence",
+          "kind": "multiTurn",
+          "count": 1,
+          "aggregations": {
+            "score": {
+              "value": 1
+            },
+            "raw": {
+              "value": 5
+            }
+          },
+          "verdictSummary": {
+            "passRate": 1,
+            "failRate": 0,
+            "unknownRate": 0,
+            "passCount": 1,
+            "failCount": 0,
+            "unknownCount": 0,
+            "totalCount": 1
+          }
+        },
+        "Affordability Decision": {
+          "eval": "Affordability Decision",
+          "kind": "singleTurn",
+          "count": 4,
+          "aggregations": {
+            "score": {
+              "Mean": 0.75,
+              "P50": 1,
+              "P75": 1,
+              "P90": 1
+            },
+            "raw": {
+              "Mean": 3.75,
+              "P50": 5,
+              "P75": 5,
+              "P90": 5
+            }
+          },
+          "verdictSummary": {
+            "passRate": 0.75,
+            "failRate": 0.25,
+            "unknownRate": 0,
+            "passCount": 3,
+            "failCount": 1,
+            "unknownCount": 0,
+            "totalCount": 4
+          }
+        },
+        "Clarification Precision": {
+          "eval": "Clarification Precision",
+          "kind": "singleTurn",
+          "count": 4,
+          "aggregations": {
+            "score": {
+              "Mean": 0.85,
+              "P50": 1,
+              "P75": 1,
+              "P90": 1
+            },
+            "raw": {
+              "Mean": 4.25,
+              "P50": 5,
+              "P75": 5,
+              "P90": 5
+            }
+          },
+          "verdictSummary": {
+            "passRate": 0.75,
+            "failRate": 0.25,
+            "unknownRate": 0,
+            "passCount": 3,
+            "failCount": 1,
+            "unknownCount": 0,
+            "totalCount": 4
+          }
+        },
+        "Over Clarification": {
+          "eval": "Over Clarification",
+          "kind": "singleTurn",
+          "count": 4,
+          "aggregations": {
+            "score": {
+              "Mean": 1,
+              "P50": 1,
+              "P75": 1,
+              "P90": 1
+            },
+            "raw": {
+              "Mean": 5,
+              "P50": 5,
+              "P75": 5,
+              "P90": 5
+            }
+          },
+          "verdictSummary": {
+            "passRate": 1,
+            "failRate": 0,
+            "unknownRate": 0,
+            "passCount": 4,
+            "failCount": 0,
+            "unknownCount": 0,
+            "totalCount": 4
+          }
+        },
+        "Overall Quality": {
+          "eval": "Overall Quality",
+          "kind": "scorer",
+          "count": 4,
+          "aggregations": {
+            "score": {
+              "Mean": 0.91875,
+              "P50": 0.9625,
+              "P75": 1,
+              "P90": 1
+            }
+          },
+          "verdictSummary": {
+            "passRate": 1,
+            "failRate": 0,
+            "unknownRate": 0,
+            "passCount": 4,
+            "failCount": 0,
+            "unknownCount": 0,
+            "totalCount": 4
+          }
+        }
+      }
+    }
+  },
+  "metadata": {
+    "dataCount": 1,
+    "evalCount": 7
+  }
+}
