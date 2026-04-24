@@ -199,9 +199,23 @@ export function analyzeFailures(input: AnalyzeCycleFailuresInput): FailureAnalys
     }
   }
 
+  const targetBlocks: string[] = [];
+  if (failures.length > 0) {
+    const blocks = new Set<string>(['full-prompt']);
+    for (const f of failures) {
+      if (f.level === 'conversation') {
+        blocks.add('multi-turn');
+      }
+      if (f.level === 'summary') {
+        blocks.add('summary-scorers');
+      }
+    }
+    targetBlocks.push(...blocks);
+  }
+
   return {
     failures,
-    targetBlocks: ['full-prompt'],
+    targetBlocks,
   };
 }
 

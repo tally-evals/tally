@@ -64,6 +64,32 @@ function buildIssue<Name extends string>(name: Name, summary: EvalSummary): Scop
       : {}),
   };
 }
+/** One-line evidence string: counts first, then derived rate (API / Phase 8 hardening). */
+function formatEvalEvidenceLine(name: string, summary: EvalSummary): string {
+  const verdict = summary.verdictSummary;
+  if (!verdict || verdict.totalCount === 0) {
+    return `${name}: no verdict or zero checks`;
+  }
+  const pct = (100 * (verdict.passCount / verdict.totalCount)).toFixed(0);
+  return `${name}: ${verdict.passCount} pass, ${verdict.failCount} fail, ${verdict.totalCount} total (${pct}% pass)`;
+}
+
+function scopeVerdictTotals(records: Record<string, EvalSummary>): {
+  passCount: number;
+  failCount: number;
+} {
+  let passCount = 0;
+  let failCount = 0;
+  for (const summary of Object.values(records)) {
+    const verdict = summary.verdictSummary;
+    if (verdict) {
+      passCount += verdict.passCount;
+      failCount += verdict.failCount;
+    }
+  }
+  return { passCount, failCount };
+}
+
 // Builds a readable overview for one scope, such as singleTurn or multiTurn.
 function buildScopeOverview<Name extends string>(
   records: Record<string, EvalSummary>
@@ -76,14 +102,37 @@ function buildScopeOverview<Name extends string>(
   const failingEvals = failingEntries.map(([name]) => name);
   const issues = failingEntries.map(([name, summary]) => buildIssue(name, summary));
 
-  const summary =
-    entries.length === 0
-      ? ''
-      : failingEvals.length === 0
-        ? `All ${entries.length} eval(s) in this scope are passing.`
-        : `${failingEvals.length} of ${entries.length} eval(s) in this scope are failing: ${failingEvals.join(', ')}.`;
+  if (entries.length === 0) {
+    return { summary: '', issues, failingEvals, passingEvals };
+  }
 
-  return { summary, issues, failingEvals, passingEvals };
+  const { passCount: scopePass, failCount: scopeFail } = scopeVerdictTotals(records);
+  const scopeTotal = scopePass + scopeFail;
+  const scopeTotalsLine =
+    scopeTotal > 0
+      ? `Scope verdict totals: ${scopePass} pass, ${scopeFail} fail (${scopeTotal} checks).`
+      : '';
+
+  if (failingEvals.length === 0) {
+    const lines = [
+      `All ${entries.length} eval(s) in this scope are passing.`,
+      ...(scopeTotalsLine ? [scopeTotalsLine] : []),
+      ...entries.map(([name, summary]) => formatEvalEvidenceLine(name, summary)),
+    ];
+    return { summary: lines.join('\n'), issues, failingEvals, passingEvals };
+  }
+
+  const lines = [
+    `${failingEvals.length} of ${entries.length} eval(s) in this scope are failing.`,
+    ...(scopeTotalsLine ? [scopeTotalsLine] : []),
+    'Failing eval evidence:',
+    ...failingEntries.map(([name, summary]) => formatEvalEvidenceLine(name, summary)),
+  ];
+  if (passingEvals.length > 0) {
+    lines.push(`Passing evals: ${passingEvals.join(', ')}.`);
+  }
+
+  return { summary: lines.join('\n'), issues, failingEvals, passingEvals };
 }
 
 /** Map one `TallyRunArtifact` into `EvalSummaries` (single-turn vs multi-turn/scorer scopes). */

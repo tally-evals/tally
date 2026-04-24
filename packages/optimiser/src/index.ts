@@ -1,3 +1,14 @@
+/**
+ * `@tally-evals/hrpo` — optimization job orchestration over a fixed trajectory set,
+ * Tally evaluation, weighted aggregates, and candidate prompt iteration.
+ *
+ * **Phase-style entry points**
+ * - Job / trajectories: `createOptimizationJob`, `createTrajectorySet`, `OptimizationJobStore`
+ * - Execution + Tally: `evaluateCandidate` (per-trajectory runs → pooled `EvalSummaries`)
+ * - Cycle record (Phase 8): `createCycleOutput` — durable snapshot with artifact refs + evidence
+ * - Loop: `runOptimizationJob` — run → evaluate → `createCycleOutput` → stop / next prompt → `selectFinalCandidate`
+ * - Evidence helpers: `buildEvalSummariesFromArtifact`, `poolEvalSummaries`, `computeAggregatedPassRate`
+ */
 export * from './types';
 export {
   assertValidOptimizationJobConfig,
