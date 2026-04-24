@@ -300,12 +300,11 @@ export async function runTrajectory(
 				);
 			}
 
+			const { resolveHIL } = trajectory.agent;
 			const maxRoundtrips = trajectory.hil.maxRoundtripsPerTurn ?? 5;
-			let roundtrip = 0;
 			let currentHistory = [...updatedHistory];
 
-			while (roundtrip < maxRoundtrips) {
-				// Framework wrappers surface pending tool calls via AgentResponse
+			for (let roundtrip = 0; roundtrip < maxRoundtrips; roundtrip++) {
 				const pending = agentResult.pendingToolCalls;
 				if (pending.length === 0) break;
 
@@ -314,7 +313,6 @@ export async function runTrajectory(
 						` HIL round ${roundtrip + 1}: ${pending.length} pending tool call(s) — ${pending.map((p) => p.toolName).join(', ')}`,
 					);
 
-					// Warn about tool calls that have no matching hil.tools entry
 					if (trajectory.hil.tools) {
 						for (const p of pending) {
 							if (!(p.toolName in trajectory.hil.tools)) {
@@ -326,29 +324,23 @@ export async function runTrajectory(
 					}
 				}
 
-				const hilContext: HILContext = Object.assign(
-					{
-						goal: trajectory.goal,
-						persona: trajectory.persona,
-						history: currentHistory,
-						stepTraces: steps,
-						turnIndex,
-					},
-					stepToUse ? { currentStep: stepToUse } : {},
-				);
+				const hilContext: HILContext = {
+					goal: trajectory.goal,
+					persona: trajectory.persona,
+					history: currentHistory,
+					stepTraces: steps,
+					turnIndex,
+					...(stepToUse && { currentStep: stepToUse }),
+				};
 
-				let resolved = false;
 				try {
-					// Handler determines approve/reject for each call
-					const { decisions, interactions } =
-						await resolveHILCalls(
-							pending,
-							trajectory.hil,
-							hilContext,
-							userModel,
-						);
+					const { decisions, interactions } = await resolveHILCalls(
+						pending,
+						trajectory.hil,
+						hilContext,
+						userModel,
+					);
 
-					// Record interactions for tracing
 					for (const interaction of interactions) {
 						hilInteractions.push(toHILInteractionTrace(interaction));
 						if (generateLogs) {
@@ -358,28 +350,15 @@ export async function runTrajectory(
 						}
 					}
 
-					// Include agent messages in the history before resolution
-					currentHistory = [
-						...currentHistory,
-						...agentResult.allMessages,
-					];
+					// Append the agent's pending messages before forwarding decisions
+					currentHistory = [...currentHistory, ...agentResult.allMessages];
 
-					// Delegate resolution to the framework wrapper
-					if (trajectory.agent.resolveHIL) {
-						const response = await trajectory.agent.resolveHIL(
-							decisions,
-							currentHistory,
-						);
-						const assistantMessages = response.messages.filter(
-							(m) => m.role === 'assistant',
-						);
-						agentResult = {
-							assistantMessages,
-							allMessages: [...response.messages],
-							pendingToolCalls: response.pendingToolCalls,
-						};
-						resolved = true;
-					}
+					const response = await resolveHIL(decisions, currentHistory);
+					agentResult = {
+						assistantMessages: response.messages.filter((m) => m.role === 'assistant'),
+						allMessages: [...response.messages],
+						pendingToolCalls: response.pendingToolCalls,
+					};
 				} catch (err) {
 					if (generateLogs) {
 						console.warn(
@@ -387,19 +366,11 @@ export async function runTrajectory(
 							err instanceof Error ? err.message : err,
 						);
 					}
-				}
-
-				if (!resolved) {
-					// Resolution failed or no resolveHIL on wrapper — stop loop
 					break;
 				}
-
-				agentMemory.set(conversationId, currentHistory);
-				roundtrip++;
 			}
 
-			// Update the base history reference so subsequent code uses
-			// the history that includes all HIL roundtrips
+			// Propagate the HIL-updated history to subsequent code
 			updatedHistory = currentHistory;
 		}
 
