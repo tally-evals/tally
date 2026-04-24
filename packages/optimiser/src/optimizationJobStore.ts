@@ -120,8 +120,9 @@ export class InMemoryOptimizationJobStore implements OptimizationJobStore {
   readonly #evaluations = new Map<string, CandidateAgentEvaluation>();
   readonly #cycleOutputs = new Map<string, CycleOutput>();
   readonly #cycleOutputIdsByJob = new Map<string, string[]>();
+  // artifact by full (job, candidate, trajectory, run) key
   readonly #artifactRefs = new Map<string, TallyArtifactRef>();
-  /** Secondary index: job|candidate -> keys into #artifactRefs */
+  // helper index to list all artifacts for one candidate
   readonly #artifactRefKeysByCandidate = new Map<string, string[]>();
 
   createJob(config: OptimizationJobConfig): OptimizationJob {
