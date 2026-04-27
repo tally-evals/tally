@@ -62,7 +62,16 @@ describe('Order Processing Agent — HIL Approve', () => {
 		const allAgentText = conversation.steps
 			.flatMap((s) => s.output)
 			.filter((m) => m.role === 'assistant')
-			.map((m) => (typeof m.content === 'string' ? m.content : ''))
+			.map((m) => {
+				if (typeof m.content === 'string') return m.content;
+				if (Array.isArray(m.content)) {
+					return (m.content as Array<{ type?: string; text?: string }>)
+						.filter((p) => p.type === 'text')
+						.map((p) => p.text ?? '')
+						.join(' ');
+				}
+				return '';
+			})
 			.join(' ')
 			.toLowerCase();
 
