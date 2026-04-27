@@ -8,7 +8,7 @@ import { createFutureTool } from '../tools/cashflow/future';
 import { createRecurringTool } from '../tools/cashflow/recurring';
 import { runProjectionTool } from '../tools/cashflow/run-projection';
 
-const CASHFLOW_COPILOT_SYSTEM_PROMPT = `You are the "Personal Cashflow Projection Tool".
+export const CASHFLOW_COPILOT_SYSTEM_PROMPT = `You are the "Personal Cashflow Projection Tool".
 Your goal is to help users project, simulate, and understand their financial outlook.
 
 ## Core Interfaces
@@ -187,36 +187,46 @@ If the user asks for a "calculation breakdown" after a projection, use the same 
 Today's date is: ${new Date().toISOString().split('T')[0]}
 `;
 
-export const cashflowCopilotAgent = new Agent({
-  name: 'Personal Cashflow Projection Tool',
-  instructions: CASHFLOW_COPILOT_SYSTEM_PROMPT,
-  model: 'google/gemini-3.1-flash-lite-preview',
-  tools: {
-    updateCashPosition: updateCashPositionTool,
-    createRecurring: createRecurringTool,
-    createFutureCashflow: createFutureTool,
-    runProjection: runProjectionTool,
-  },
-  defaultGenerateOptions: {
-    maxSteps: 40,
-    providerOptions: {
-      google: {
-        thinkingConfig: {
-          thinkingLevel: 'high',
+export type CreateCashflowCopilotAgentOptions = {
+  instructions?: string;
+};
+
+export function createCashflowCopilotAgent(options: CreateCashflowCopilotAgentOptions = {}): Agent {
+  const { instructions = CASHFLOW_COPILOT_SYSTEM_PROMPT } = options;
+
+  return new Agent({
+    name: 'Personal Cashflow Projection Tool',
+    instructions,
+    model: 'google/gemini-3.1-flash-lite-preview',
+    tools: {
+      updateCashPosition: updateCashPositionTool,
+      createRecurring: createRecurringTool,
+      createFutureCashflow: createFutureTool,
+      runProjection: runProjectionTool,
+    },
+    defaultGenerateOptions: {
+      maxSteps: 40,
+      providerOptions: {
+        google: {
+          thinkingConfig: {
+            thinkingLevel: 'high',
+          },
         },
       },
     },
-  },
-  memory: new Memory({
-    storage: new LibSQLStore({
-      url: ':memory:',
-    }),
-    options: {
-      workingMemory: {
-        enabled: true,
-        scope: 'thread',
-        schema: z.toJSONSchema(cashflowWorkingMemorySchema) as import('json-schema').JSONSchema7,
+    memory: new Memory({
+      storage: new LibSQLStore({
+        url: ':memory:',
+      }),
+      options: {
+        workingMemory: {
+          enabled: true,
+          scope: 'thread',
+          schema: z.toJSONSchema(cashflowWorkingMemorySchema) as import('json-schema').JSONSchema7,
+        },
       },
-    },
-  }),
-});
+    }),
+  });
+}
+
+export const cashflowCopilotAgent = createCashflowCopilotAgent();

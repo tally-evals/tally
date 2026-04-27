@@ -18,6 +18,7 @@
     "build": "echo 'No build needed for example package'",
     "test": "bun test",
     "test:watch": "bun test --watch",
+    "optimise:cashflow": "bun run ./src/mastra/optimiser/run-cashflow-optimization.ts",
     "cli:build": "bun run --filter @tally-evals/cli build",
     "tui": "bun run cli:build && bunx --no-install tally browse",
     "dev:server": "bun run cli:build && bunx --no-install tally dev server",
@@ -41,8 +42,10 @@
     "@mastra/loggers": "^0.10.19",
     "@mastra/memory": "^0.15.13",
     "@tally-evals/core": "workspace:*",
+    "@tally-evals/hrpo": "workspace:*",
     "@tally-evals/tally": "workspace:*",
     "@tally-evals/trajectories": "workspace:*",
+    "ai": "^5.0.121",
     "dotenv": "^17.2.3",
     "zod": "^4"
   },

@@ -11,23 +11,7 @@
  */
 
 import { google } from '@ai-sdk/google';
-import {
-  createTally,
-  defineBaseMetric,
-  defineInput,
-  defineMultiTurnEval,
-  defineScorerEval,
-  defineSingleTurnEval,
-  formatReportAsTables,
-  runAllTargets,
-  thresholdVerdict,
-} from '@tally-evals/tally';
-import {
-  createAnswerRelevanceMetric,
-  createCompletenessMetric,
-  createRoleAdherenceMetric,
-} from '@tally-evals/tally/metrics';
-import { createWeightedAverageScorer } from '@tally-evals/tally/scorers';
+import { createTally, formatReportAsTables, runAllTargets } from '@tally-evals/tally';
 import type { CoreMessage as ModelMessage } from 'ai';
 import { describe, expect, it } from 'vitest';
 import {
@@ -36,21 +20,23 @@ import {
   runCase,
   saveTallyReportToStore,
 } from '../../utils/harness';
-import { getSummaryScoreValue } from '../../utils/summary';
 import { cashflowGoldenTrajectory } from './definitions';
-import {
-  createAffordabilityDecisionMetric,
-  createClarificationPrecisionMetric,
-  createContextPrecisionMetric,
-  createContextRecallMetric,
-  createOverClarificationMetric,
-} from './metrics';
+import { createCashflowGoldenEvals } from './evals';
 
 const skipReason = getTrajectoryTestSkipReason('cashflow-golden');
 if (skipReason) {
   console.warn(`Skipping Cashflow Copilot Agent - Golden Path: ${skipReason}`);
 }
 const describeCashflowGolden = skipReason ? describe.skip : describe;
+
+function getSummaryScoreValue(summary: {
+  aggregations?: {
+    score?: Record<string, unknown>;
+  };
+}): number | undefined {
+  const mean = summary.aggregations?.score?.mean ?? summary.aggregations?.score?.Mean;
+  return typeof mean === 'number' ? mean : undefined;
+}
 
 describeCashflowGolden('Cashflow Copilot Agent - Golden Path', () => {
   it('should manage cashflow successfully', async () => {
@@ -96,135 +82,11 @@ describeCashflowGolden('Cashflow Copilot Agent - Golden Path', () => {
     }
 
     const model = google('models/gemini-3.1-flash-lite-preview');
-
-    // General metrics
-    const answerRelevance = createAnswerRelevanceMetric({
-      provider: model,
-    });
-
-    const completeness = createCompletenessMetric({
-      provider: model,
-    });
-
-    const roleAdherence = createRoleAdherenceMetric({
-      expectedRole:
-        'cashflow management assistant that helps users track income, expenses, and manage their financial situation',
-      provider: model,
-    });
-
-    // Cashflow-specific metrics
-    // Affordability Decision: Agent should make correct affordability decisions
-    const affordabilityDecision = createAffordabilityDecisionMetric({
-      provider: model,
-    });
-
-    // Clarification Precision: Agent should ask for clarification when needed
-    const clarificationPrecision = createClarificationPrecisionMetric({
-      provider: model,
-    });
-
-    const contextPrecision = createContextPrecisionMetric({
-      provider: model,
-    });
-
-    const contextRecall = createContextRecallMetric({
-      provider: model,
-    });
-
-    // Over Clarification: Agent should not ask for information already provided
-    const overClarification = createOverClarificationMetric({
-      provider: model,
-    });
-
-    // Overall Quality: Combined score of all metrics
-    const overallQuality = defineBaseMetric({
-      name: 'overallQuality',
-      valueType: 'number',
-    });
-
-    const qualityScorer = createWeightedAverageScorer({
-      name: 'OverallQuality',
-      output: overallQuality,
-      inputs: [
-        defineInput({ metric: answerRelevance, weight: 0.2 }),
-        defineInput({ metric: roleAdherence, weight: 0.15 }),
-        defineInput({ metric: affordabilityDecision, weight: 0.2 }),
-        defineInput({ metric: clarificationPrecision, weight: 0.1 }),
-        defineInput({ metric: overClarification, weight: 0.1 }),
-        defineInput({ metric: completeness, weight: 0.05 }),
-        defineInput({ metric: contextPrecision, weight: 0.1 }),
-        defineInput({ metric: contextRecall, weight: 0.1 }),
-      ],
-    });
-
-    // Create evals with appropriate pass/fail criteria for golden path
-    const answerRelevanceEval = defineSingleTurnEval({
-      name: 'Answer Relevance',
-      metric: answerRelevance,
-      verdict: thresholdVerdict(2.5),
-    });
-
-    const completenessEval = defineSingleTurnEval({
-      name: 'Completeness',
-      metric: completeness,
-      verdict: thresholdVerdict(3),
-    });
-
-    const roleAdherenceEval = defineMultiTurnEval({
-      name: 'Role Adherence',
-      metric: roleAdherence,
-      verdict: thresholdVerdict(3.5),
-    });
-
-    const affordabilityDecisionEval = defineSingleTurnEval({
-      name: 'Affordability Decision',
-      metric: affordabilityDecision,
-      verdict: thresholdVerdict(3.5),
-    });
-
-    const clarificationPrecisionEval = defineSingleTurnEval({
-      name: 'Clarification Precision',
-      metric: clarificationPrecision,
-      verdict: thresholdVerdict(3.5),
-    });
-
-    const contextPrecisionEval = defineSingleTurnEval({
-      name: 'Context Precision',
-      metric: contextPrecision,
-      verdict: thresholdVerdict(3.5),
-    });
-
-    const contextRecallEval = defineSingleTurnEval({
-      name: 'Context Recall',
-      metric: contextRecall,
-      verdict: thresholdVerdict(3.5),
-    });
-
-    const overClarificationEval = defineSingleTurnEval({
-      name: 'Over Clarification',
-      metric: overClarification,
-      verdict: thresholdVerdict(3.5),
-    });
-
-    const overallQualityEval = defineScorerEval({
-      name: 'Overall Quality',
-      scorer: qualityScorer,
-      verdict: thresholdVerdict(0.5),
-    });
+    const evals = createCashflowGoldenEvals({ provider: model });
 
     const tally = createTally({
       data: [conversation],
-      evals: [
-        answerRelevanceEval,
-        completenessEval,
-        roleAdherenceEval,
-        affordabilityDecisionEval,
-        clarificationPrecisionEval,
-        contextPrecisionEval,
-        contextRecallEval,
-        overClarificationEval,
-        overallQualityEval,
-      ],
+      evals,
       context: runAllTargets(),
     });
 
