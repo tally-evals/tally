@@ -140,7 +140,15 @@ export async function runCashflowOptimization(
   requireGoogleApiKey();
 
   const pkgRoot = getPackageRoot();
-  const tallyStore = await TallyStore.open({ cwd: pkgRoot });
+  const tallyStore = await TallyStore.open({
+    cwd: pkgRoot,
+    config: {
+      storage: {
+        backend: 'local',
+        path: '.tally/optimiser',
+      },
+    },
+  });
 
   const evalProvider = google(DEFAULT_MODEL_ID);
   const evals = options.evals ?? createCashflowGoldenEvals({ provider: evalProvider });
@@ -229,7 +237,7 @@ export async function runCashflowOptimization(
         (await tallyStore.createConversation(conversationId));
       const runRef = await convRef.createRun({ type: 'tally', runId: artifact.runId });
       await runRef.save(artifact as never);
-      return `.tally/conversations/${conversationId}/runs/tally/${artifact.runId}.json`;
+      return `.tally/optimiser/conversations/${conversationId}/runs/tally/${artifact.runId}.json`;
     },
   });
 
