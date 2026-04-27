@@ -41,6 +41,8 @@ import { cashflowGoldenTrajectory } from './definitions';
 import {
   createAffordabilityDecisionMetric,
   createClarificationPrecisionMetric,
+  createContextPrecisionMetric,
+  createContextRecallMetric,
   createOverClarificationMetric,
 } from './metrics';
 
@@ -121,6 +123,14 @@ describeCashflowGolden('Cashflow Copilot Agent - Golden Path', () => {
       provider: model,
     });
 
+    const contextPrecision = createContextPrecisionMetric({
+      provider: model,
+    });
+
+    const contextRecall = createContextRecallMetric({
+      provider: model,
+    });
+
     // Over Clarification: Agent should not ask for information already provided
     const overClarification = createOverClarificationMetric({
       provider: model,
@@ -142,6 +152,8 @@ describeCashflowGolden('Cashflow Copilot Agent - Golden Path', () => {
         defineInput({ metric: clarificationPrecision, weight: 0.1 }),
         defineInput({ metric: overClarification, weight: 0.1 }),
         defineInput({ metric: completeness, weight: 0.05 }),
+        defineInput({ metric: contextPrecision, weight: 0.1 }),
+        defineInput({ metric: contextRecall, weight: 0.1 }),
       ],
     });
 
@@ -176,6 +188,18 @@ describeCashflowGolden('Cashflow Copilot Agent - Golden Path', () => {
       verdict: thresholdVerdict(3.5),
     });
 
+    const contextPrecisionEval = defineSingleTurnEval({
+      name: 'Context Precision',
+      metric: contextPrecision,
+      verdict: thresholdVerdict(3.5),
+    });
+
+    const contextRecallEval = defineSingleTurnEval({
+      name: 'Context Recall',
+      metric: contextRecall,
+      verdict: thresholdVerdict(3.5),
+    });
+
     const overClarificationEval = defineSingleTurnEval({
       name: 'Over Clarification',
       metric: overClarification,
@@ -196,6 +220,8 @@ describeCashflowGolden('Cashflow Copilot Agent - Golden Path', () => {
         roleAdherenceEval,
         affordabilityDecisionEval,
         clarificationPrecisionEval,
+        contextPrecisionEval,
+        contextRecallEval,
         overClarificationEval,
         overallQualityEval,
       ],

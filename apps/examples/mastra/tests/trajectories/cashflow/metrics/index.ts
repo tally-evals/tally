@@ -22,3 +22,15 @@ export {
   type AffordabilityDecisionMetadata,
   type AffordabilityDecision,
 } from './affordabilityDecision';
+
+export {
+  createContextPrecisionMetric,
+  type ContextPrecisionOptions,
+  type ContextPrecisionMetadata,
+} from './contextPrecision';
+
+export {
+  createContextRecallMetric,
+  type ContextRecallOptions,
+  type ContextRecallMetadata,
+} from './contextRecall';
