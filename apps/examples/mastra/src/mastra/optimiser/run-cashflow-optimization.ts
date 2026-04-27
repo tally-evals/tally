@@ -1,7 +1,8 @@
+import { mkdir, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { google } from '@ai-sdk/google';
-import { stepTracesToConversation } from '@tally-evals/core';
+import { TallyStore, stepTracesToConversation } from '@tally-evals/core';
 import {
   type OptimizationJobConfig,
   type RunOptimizationJobResult,
@@ -48,8 +49,12 @@ export type RunCashflowOptimizationOptions = {
   initialPromptText?: string;
 };
 
+function getPackageRoot(): string {
+  return resolve(fileURLToPath(new URL('../../..', import.meta.url)));
+}
+
 function loadEnv(): void {
-  const pkgRoot = resolve(fileURLToPath(new URL('../../..', import.meta.url)));
+  const pkgRoot = getPackageRoot();
   loadDotenv({ path: join(pkgRoot, '.env.local') });
   loadDotenv({ path: join(pkgRoot, '.env') });
 }
@@ -82,20 +87,50 @@ function buildRunId(args: {
   return `${args.optimizationJobId}-${args.trajectoryId}-${args.candidateAgentId}`;
 }
 
-function printSummary(result: RunOptimizationJobResult): void {
-  console.log('\nCashflow optimization complete.');
-  console.log(`Job: ${result.job.optimizationJobId}`);
-  console.log(`Cycles: ${result.cycleOutputs.length}`);
-  console.log(`Stop reason: ${result.lastStop.reason}`);
-  console.log(
-    `Selected candidate: ${result.finalDecision.acceptedCandidateAgentId} (${result.finalDecision.selectedCycleOutputId})`
-  );
+function formatSummary(result: RunOptimizationJobResult): string {
+  const lines = [
+    '# Cashflow Optimization Summary',
+    '',
+    `Job: ${result.job.optimizationJobId}`,
+    `Cycles: ${result.cycleOutputs.length}`,
+    `Stop reason: ${result.lastStop.reason}`,
+    `Selected candidate: ${result.finalDecision.acceptedCandidateAgentId}`,
+    `Selected cycle output: ${result.finalDecision.selectedCycleOutputId}`,
+    `Selection reason: ${result.finalDecision.reason}`,
+    '',
+    '## Cycles',
+  ];
 
   for (const [index, cycle] of result.cycleOutputs.entries()) {
-    console.log(
-      `Cycle ${index + 1}: candidate=${cycle.candidateAgentId} aggregatedPassRate=${cycle.aggregatedPassRate.toFixed(4)}`
+    lines.push(`- Cycle ${index + 1}`);
+    lines.push(`  - Candidate: ${cycle.candidateAgentId}`);
+    lines.push(`  - Aggregated pass rate: ${cycle.aggregatedPassRate.toFixed(4)}`);
+    lines.push(
+      `  - Single-turn overview: ${cycle.evalSummaries.singleTurnOverview.summary || '(empty)'}`
+    );
+    lines.push(
+      `  - Multi-turn overview: ${cycle.evalSummaries.multiTurnOverview.summary || '(empty)'}`
     );
   }
+
+  return lines.join('\n');
+}
+
+async function writeSummaryArtifacts(result: RunOptimizationJobResult): Promise<{
+  summaryPath: string;
+  resultPath: string;
+}> {
+  const pkgRoot = getPackageRoot();
+  const outputDir = join(pkgRoot, '.tally', 'optimiser', 'cashflow');
+  await mkdir(outputDir, { recursive: true });
+
+  const summaryPath = join(outputDir, `summary-${result.job.optimizationJobId}.md`);
+  const resultPath = join(outputDir, `result-${result.job.optimizationJobId}.json`);
+
+  await writeFile(summaryPath, `${formatSummary(result)}\n`, 'utf8');
+  await writeFile(resultPath, `${JSON.stringify(result, null, 2)}\n`, 'utf8');
+
+  return { summaryPath, resultPath };
 }
 
 export async function runCashflowOptimization(
@@ -103,6 +138,9 @@ export async function runCashflowOptimization(
 ): Promise<RunOptimizationJobResult> {
   loadEnv();
   requireGoogleApiKey();
+
+  const pkgRoot = getPackageRoot();
+  const tallyStore = await TallyStore.open({ cwd: pkgRoot });
 
   const evalProvider = google(DEFAULT_MODEL_ID);
   const evals = options.evals ?? createCashflowGoldenEvals({ provider: evalProvider });
@@ -149,6 +187,7 @@ export async function runCashflowOptimization(
           const execution = await runTrajectory(trajectoryInstance, {
             generateLogs: options.generateLogs ?? true,
             trajectoryId: runId,
+            store: tallyStore,
           });
           const conversation = stepTracesToConversation(execution.steps, runId);
 
@@ -178,6 +217,20 @@ export async function runCashflowOptimization(
         return result.text;
       },
     },
+    runOptions: {
+      runId: (args) => args.conversation.id,
+    },
+    // Persist each per-trajectory Tally artifact to the same `.tally` conversation as the run.
+    // This makes the optimiser’s evidence browseable in the CLI/viewer.
+    persistArtifact: async ({ runId, artifact }) => {
+      const conversationId = runId;
+      const convRef =
+        (await tallyStore.getConversation(conversationId)) ??
+        (await tallyStore.createConversation(conversationId));
+      const runRef = await convRef.createRun({ type: 'tally', runId: artifact.runId });
+      await runRef.save(artifact as never);
+      return `.tally/conversations/${conversationId}/runs/tally/${artifact.runId}.json`;
+    },
   });
 
   return result;
@@ -185,5 +238,7 @@ export async function runCashflowOptimization(
 
 if (import.meta.main) {
   const result = await runCashflowOptimization();
-  printSummary(result);
+  const artifacts = await writeSummaryArtifacts(result);
+  console.log(`Cashflow optimization summary written to ${artifacts.summaryPath}`);
+  console.log(`Cashflow optimization result written to ${artifacts.resultPath}`);
 }

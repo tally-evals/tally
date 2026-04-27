@@ -1,4 +1,9 @@
-import type { Eval, EvaluationContext, TallyRunOptions } from '@tally-evals/tally';
+import type {
+  Eval,
+  EvaluationContext,
+  TallyRunArtifact,
+  TallyRunOptions,
+} from '@tally-evals/tally';
 import { createTally } from '@tally-evals/tally';
 import {
   buildEvalSummariesFromArtifact,
@@ -18,6 +23,20 @@ export type EvaluateCandidateInput = EvaluateCandidateAgentInput & {
   context?: EvaluationContext;
   runOptions?: TallyRunOptions;
   store?: OptimizationJobStore;
+  /**
+   * Optional persistence hook to save the produced Tally artifact for each run.
+   * Useful for writing to a `TallyStore` (disk) from an app layer without coupling
+   * the optimiser package to any storage backend.
+   *
+   * Return value becomes `artifactPath` in `TallyArtifactRef`.
+   */
+  persistArtifact?: (args: {
+    optimizationJobId: string;
+    candidateAgentId: string;
+    trajectoryId: string;
+    runId: string;
+    artifact: TallyRunArtifact;
+  }) => Promise<string> | string;
 };
 
 function tallyArtifactPath(reportRunId: string): string {
@@ -52,13 +71,23 @@ export async function evaluateCandidate(
 
     // Store the tally artifact reference if a store is provided.
     if (input.store) {
+      const artifactPath =
+        input.persistArtifact !== undefined
+          ? await input.persistArtifact({
+              optimizationJobId: input.candidateAgent.optimizationJobId,
+              candidateAgentId: input.candidateAgent.candidateAgentId,
+              trajectoryId: run.trajectoryId,
+              runId: run.runId,
+              artifact,
+            })
+          : tallyArtifactPath(report.runId);
       input.store.putTallyArtifactRef({
         optimizationJobId: input.candidateAgent.optimizationJobId,
         candidateAgentId: input.candidateAgent.candidateAgentId,
         ref: {
           trajectoryId: run.trajectoryId,
           runId: report.runId,
-          artifactPath: tallyArtifactPath(report.runId),
+          artifactPath,
         },
       });
     }

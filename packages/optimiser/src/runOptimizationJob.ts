@@ -2,6 +2,7 @@ import type { Eval, EvaluationContext, TallyRunOptions } from '@tally-evals/tall
 import type { Trajectory } from '@tally-evals/trajectories';
 import { type CreateCandidatePromptOptions, createCandidatePrompt } from './createCandidatePrompt';
 import { evaluateCandidate } from './evaluateCandidate';
+import type { EvaluateCandidateInput } from './evaluateCandidate';
 import {
   type CreateOptimizationJobOptions,
   analyzeFailures,
@@ -28,7 +29,7 @@ import type {
  * (`attached`), producing **new** runs / conversations for Tally. The set of trajectories does
  * not change between cycles; only the candidate (prompt) and the resulting run ids do.
  */
-// runs the candidate on the trajectory set 
+// runs the candidate on the trajectory set
 export type RunCandidateOnTrajectorySet<T extends Trajectory = Trajectory> = (args: {
   optimizationJobId: string;
   attached: AttachedTrajectorySet<T>;
@@ -51,8 +52,10 @@ export type RunOptimizationJobInput<T extends Trajectory = Trajectory> = {
   runCandidateOnTrajectorySet: RunCandidateOnTrajectorySet<T>;
   createCandidatePromptOptions: CreateCandidatePromptOptions;
   createJobOptions?: CreateOptimizationJobOptions;
-  context?: EvaluationContext;      
+  context?: EvaluationContext;
   runOptions?: TallyRunOptions;
+  /** Optional persistence hook for per-trajectory Tally artifacts. */
+  persistArtifact?: EvaluateCandidateInput['persistArtifact'];
 };
 
 export type RunOptimizationJobResult = {
@@ -141,6 +144,7 @@ export async function runOptimizationJob<T extends Trajectory = Trajectory>(
       evals,
       evaluationPolicy: config.evaluationPolicy,
       store,
+      ...(input.persistArtifact !== undefined ? { persistArtifact: input.persistArtifact } : {}),
       ...(context !== undefined ? { context } : {}),
       ...(runOptions !== undefined ? { runOptions } : {}),
     });
