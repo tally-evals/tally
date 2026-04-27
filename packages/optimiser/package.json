@@ -2,7 +2,7 @@
   "name": "@tally-evals/hrpo",
   "version": "0.0.0",
   "private": true,
-  "description": "HRPO — optimization loop for agents under evaluation on fixed trajectory sets (v4)",
+  "description": "Optimization loop for agents under evaluation on fixed trajectory sets",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
