@@ -26,7 +26,6 @@ import {
 const DEFAULT_MODEL_ID = 'models/gemini-3.1-flash-lite-preview';
 // Used specifically for prompt optimisation (next-candidate generation).
 const PROMPT_OPTIMIZER_MODEL_ID = 'models/gemini-3-flash';
-type MastraAgentLike = Parameters<typeof withMastraAgent>[0];
 type CycleFailureAnalysisRecord = {
   cycleOutputId: string;
   candidateAgentId: string;
@@ -239,10 +238,12 @@ export async function runCashflowOptimization(
           const agent = createCashflowCopilotAgent({
             instructions: candidatePrompt.promptText,
           });
-          const mastraAgentLike: MastraAgentLike = {
+          const mastraAgentLike = {
             generate: agent.generate.bind(agent),
           };
-          const wrappedAgent = withMastraAgent(mastraAgentLike);
+          const wrappedAgent = withMastraAgent(
+            mastraAgentLike as Parameters<typeof withMastraAgent>[0]
+          );
           const trajectoryInstance = createTrajectory(
             {
               ...trajectory,
@@ -290,12 +291,9 @@ export async function runCashflowOptimization(
         return result.text;
       },
     },
-    runOptions: {
-      runId: (args) => args.conversation.id,
-    },
     // Persist each per-trajectory Tally artifact to the same `.tally` conversation as the run.
     // This makes the optimiser’s evidence browseable in the CLI/viewer.
-    persistArtifact: async ({ runId, artifact }) => {
+    persistRunArtifact: async ({ runId, artifact }) => {
       const conversationId = runId;
       const convRef =
         (await tallyStore.getConversation(conversationId)) ??
