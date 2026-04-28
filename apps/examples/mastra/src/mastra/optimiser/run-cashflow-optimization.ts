@@ -4,8 +4,10 @@ import { fileURLToPath } from 'node:url';
 import { google } from '@ai-sdk/google';
 import { TallyStore, stepTracesToConversation } from '@tally-evals/core';
 import {
+  type FailureAnalysis,
   type OptimizationJobConfig,
   type RunOptimizationJobResult,
+  analyzeFailures,
   createInMemoryOptimizationJobStore,
   runOptimizationJob,
 } from '@tally-evals/hrpo';
@@ -20,8 +22,26 @@ import {
   createCashflowCopilotAgent,
 } from '../agents/cashflow-copilot-agent';
 
+// Used for evals and other lightweight LLM calls in this runner.
 const DEFAULT_MODEL_ID = 'models/gemini-3.1-flash-lite-preview';
+// Used specifically for prompt optimisation (next-candidate generation).
+const PROMPT_OPTIMIZER_MODEL_ID = 'models/gemini-3-flash';
 type MastraAgentLike = Parameters<typeof withMastraAgent>[0];
+type CycleFailureAnalysisRecord = {
+  cycleOutputId: string;
+  candidateAgentId: string;
+  analysis: FailureAnalysis;
+};
+type PersistedRunCashflowOptimizationResult = RunOptimizationJobResult & {
+  metadata: {
+    generatedAt: string;
+    maxCyclesConfigured: number;
+    completedCycles: number;
+    selectedCandidateAgentId: string;
+    selectedCycleOutputId: string;
+  };
+  cycleFailureAnalyses: CycleFailureAnalysisRecord[];
+};
 
 export const DEFAULT_CASHFLOW_OPTIMIZATION_CONFIG: OptimizationJobConfig = {
   maxCycles: 3,
@@ -72,7 +92,7 @@ function buildInitialPrompt(promptText: string) {
     candidateAgentId: crypto.randomUUID(),
     promptText,
     generationConfig: {
-      model: DEFAULT_MODEL_ID,
+      model: PROMPT_OPTIMIZER_MODEL_ID,
       temperature: 0.2,
     },
     createdAt: new Date().toISOString(),
@@ -88,11 +108,13 @@ function buildRunId(args: {
 }
 
 function formatSummary(result: RunOptimizationJobResult): string {
+  const selectedCycleOutputId = result.finalDecision.selectedCycleOutputId;
   const lines = [
     '# Cashflow Optimization Summary',
     '',
     `Job: ${result.job.optimizationJobId}`,
-    `Cycles: ${result.cycleOutputs.length}`,
+    `Max cycles configured: ${result.job.config.maxCycles}`,
+    `Cycles completed: ${result.cycleOutputs.length}`,
     `Stop reason: ${result.lastStop.reason}`,
     `Selected candidate: ${result.finalDecision.acceptedCandidateAgentId}`,
     `Selected cycle output: ${result.finalDecision.selectedCycleOutputId}`,
@@ -102,8 +124,12 @@ function formatSummary(result: RunOptimizationJobResult): string {
   ];
 
   for (const [index, cycle] of result.cycleOutputs.entries()) {
-    lines.push(`- Cycle ${index + 1}`);
+    const isSelected = cycle.cycleOutputId === selectedCycleOutputId;
+    const marker = isSelected ? ' [SELECTED]' : '';
+    const analysis = analyzeFailures({ cycleOutput: cycle });
+    lines.push(`- Cycle ${index + 1}${marker}`);
     lines.push(`  - Candidate: ${cycle.candidateAgentId}`);
+    lines.push(`  - Cycle output id: ${cycle.cycleOutputId}`);
     lines.push(`  - Aggregated pass rate: ${cycle.aggregatedPassRate.toFixed(4)}`);
     lines.push(
       `  - Single-turn overview: ${cycle.evalSummaries.singleTurnOverview.summary || '(empty)'}`
@@ -111,9 +137,38 @@ function formatSummary(result: RunOptimizationJobResult): string {
     lines.push(
       `  - Multi-turn overview: ${cycle.evalSummaries.multiTurnOverview.summary || '(empty)'}`
     );
+    lines.push(`  - Failure analysis: ${analysis.failures.length} failure item(s)`);
+    if (analysis.failures.length > 0) {
+      lines.push(`  - Failure target blocks: ${analysis.targetBlocks.join(', ')}`);
+      for (const failure of analysis.failures) {
+        lines.push(
+          `    - [${failure.level}] ${failure.eval}: ${failure.reason ?? 'failing or missing verdict'}`
+        );
+      }
+    }
   }
 
   return lines.join('\n');
+}
+
+function buildPersistedResult(
+  result: RunOptimizationJobResult
+): PersistedRunCashflowOptimizationResult {
+  return {
+    ...result,
+    metadata: {
+      generatedAt: new Date().toISOString(),
+      maxCyclesConfigured: result.job.config.maxCycles,
+      completedCycles: result.cycleOutputs.length,
+      selectedCandidateAgentId: result.finalDecision.acceptedCandidateAgentId,
+      selectedCycleOutputId: result.finalDecision.selectedCycleOutputId,
+    },
+    cycleFailureAnalyses: result.cycleOutputs.map((cycleOutput) => ({
+      cycleOutputId: cycleOutput.cycleOutputId,
+      candidateAgentId: cycleOutput.candidateAgentId,
+      analysis: analyzeFailures({ cycleOutput }),
+    })),
+  };
 }
 
 async function writeSummaryArtifacts(result: RunOptimizationJobResult): Promise<{
@@ -126,9 +181,12 @@ async function writeSummaryArtifacts(result: RunOptimizationJobResult): Promise<
 
   const summaryPath = join(outputDir, `summary-${result.job.optimizationJobId}.md`);
   const resultPath = join(outputDir, `result-${result.job.optimizationJobId}.json`);
+  const persistedResult = buildPersistedResult(result);
+  const summaryText = `${formatSummary(result)}\n`;
+  const resultText = `${JSON.stringify(persistedResult, null, 2)}\n`;
 
-  await writeFile(summaryPath, `${formatSummary(result)}\n`, 'utf8');
-  await writeFile(resultPath, `${JSON.stringify(result, null, 2)}\n`, 'utf8');
+  await writeFile(summaryPath, summaryText, 'utf8');
+  await writeFile(resultPath, resultText, 'utf8');
 
   return { summaryPath, resultPath };
 }
@@ -221,6 +279,13 @@ export async function runCashflowOptimization(
           system,
           prompt: user,
           ...(temperature !== undefined ? { temperature } : {}),
+          providerOptions: {
+            google: {
+              thinkingConfig: {
+                thinkingLevel: 'high',
+              },
+            },
+          },
         });
         return result.text;
       },
