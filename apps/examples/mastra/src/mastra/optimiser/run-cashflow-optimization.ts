@@ -171,6 +171,7 @@ function buildPersistedResult(
 async function writeSummaryArtifacts(result: RunOptimizationJobResult): Promise<{
   summaryPath: string;
   resultPath: string;
+  cycleOutputPaths: string[];
 }> {
   const pkgRoot = getPackageRoot();
   const outputDir = join(pkgRoot, '.tally', 'optimiser', 'cashflow');
@@ -185,7 +186,17 @@ async function writeSummaryArtifacts(result: RunOptimizationJobResult): Promise<
   await writeFile(summaryPath, summaryText, 'utf8');
   await writeFile(resultPath, resultText, 'utf8');
 
-  return { summaryPath, resultPath };
+  const cyclesDir = join(outputDir, 'cycles', result.job.optimizationJobId);
+  await mkdir(cyclesDir, { recursive: true });
+  const cycleOutputPaths: string[] = [];
+  for (const [index, cycle] of result.cycleOutputs.entries()) {
+    const fileName = `cycle-${String(index + 1).padStart(2, '0')}-${cycle.cycleOutputId}.json`;
+    const cyclePath = join(cyclesDir, fileName);
+    await writeFile(cyclePath, `${JSON.stringify(cycle, null, 2)}\n`, 'utf8');
+    cycleOutputPaths.push(cyclePath);
+  }
+
+  return { summaryPath, resultPath, cycleOutputPaths };
 }
 
 export async function runCashflowOptimization(
@@ -291,16 +302,14 @@ export async function runCashflowOptimization(
     },
     // Persist each per-trajectory Tally artifact to the same `.tally` conversation as the run.
     // This makes the optimiser’s evidence browseable in the CLI/viewer.
-    persistRunArtifact: async ({ run, report }) => {
-      const conversationId = run.runId;
+    persistArtifact: async ({ runId, artifact }) => {
+      const conversationId = runId;
       const convRef =
         (await tallyStore.getConversation(conversationId)) ??
         (await tallyStore.createConversation(conversationId));
-      const runRef = await convRef.createRun({ type: 'tally', runId: report.runId });
-      await runRef.save(report as never);
-      return {
-        artifactPath: `.tally/optimiser/conversations/${conversationId}/runs/tally/${report.runId}.json`,
-      };
+      const runRef = await convRef.createRun({ type: 'tally', runId: artifact.runId });
+      await runRef.save(artifact as never);
+      return `.tally/optimiser/conversations/${conversationId}/runs/tally/${artifact.runId}.json`;
     },
   });
 
@@ -312,4 +321,7 @@ if (import.meta.main) {
   const artifacts = await writeSummaryArtifacts(result);
   console.log(`Cashflow optimization summary written to ${artifacts.summaryPath}`);
   console.log(`Cashflow optimization result written to ${artifacts.resultPath}`);
+  console.log(
+    `Wrote ${artifacts.cycleOutputPaths.length} cycle output file(s) under ${join(getPackageRoot(), '.tally', 'optimiser', 'cashflow', 'cycles', result.job.optimizationJobId)}`
+  );
 }
