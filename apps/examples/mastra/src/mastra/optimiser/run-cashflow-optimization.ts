@@ -24,6 +24,10 @@ import {
 
 // Used for evals, prompt optimisation (next-candidate generation), and other LLM calls in this runner.
 const DEFAULT_MODEL_ID = 'models/gemini-3.1-flash-lite-preview';
+
+/** Under `.tally/optimiser/` we write `agent/<evaluation name>/<jobId>/…`. */
+const OPTIMISER_AGENT_SEGMENT = 'agent';
+const OPTIMISER_EVALUATION_NAME = 'Cashflow';
 type CycleFailureAnalysisRecord = {
   cycleOutputId: string;
   candidateAgentId: string;
@@ -174,11 +178,19 @@ async function writeSummaryArtifacts(result: RunOptimizationJobResult): Promise<
   cycleOutputPaths: string[];
 }> {
   const pkgRoot = getPackageRoot();
-  const outputDir = join(pkgRoot, '.tally', 'optimiser', 'cashflow');
+  // `.tally/optimiser/agent/Cashflow/<jobId>/` — short filenames below (summary.md, result.json, cycles/).
+  const outputDir = join(
+    pkgRoot,
+    '.tally',
+    'optimiser',
+    OPTIMISER_AGENT_SEGMENT,
+    OPTIMISER_EVALUATION_NAME,
+    result.job.optimizationJobId
+  );
   await mkdir(outputDir, { recursive: true });
 
-  const summaryPath = join(outputDir, `summary-${result.job.optimizationJobId}.md`);
-  const resultPath = join(outputDir, `result-${result.job.optimizationJobId}.json`);
+  const summaryPath = join(outputDir, 'summary.md');
+  const resultPath = join(outputDir, 'result.json');
   const persistedResult = buildPersistedResult(result);
   const summaryText = `${formatSummary(result)}\n`;
   const resultText = `${JSON.stringify(persistedResult, null, 2)}\n`;
@@ -186,11 +198,11 @@ async function writeSummaryArtifacts(result: RunOptimizationJobResult): Promise<
   await writeFile(summaryPath, summaryText, 'utf8');
   await writeFile(resultPath, resultText, 'utf8');
 
-  const cyclesDir = join(outputDir, 'cycles', result.job.optimizationJobId);
+  const cyclesDir = join(outputDir, 'cycles');
   await mkdir(cyclesDir, { recursive: true });
   const cycleOutputPaths: string[] = [];
   for (const [index, cycle] of result.cycleOutputs.entries()) {
-    const fileName = `cycle-${String(index + 1).padStart(2, '0')}-${cycle.cycleOutputId}.json`;
+    const fileName = `cycle-${String(index + 1).padStart(2, '0')}.json`;
     const cyclePath = join(cyclesDir, fileName);
     await writeFile(cyclePath, `${JSON.stringify(cycle, null, 2)}\n`, 'utf8');
     cycleOutputPaths.push(cyclePath);
@@ -322,6 +334,6 @@ if (import.meta.main) {
   console.log(`Cashflow optimization summary written to ${artifacts.summaryPath}`);
   console.log(`Cashflow optimization result written to ${artifacts.resultPath}`);
   console.log(
-    `Wrote ${artifacts.cycleOutputPaths.length} cycle output file(s) under ${join(getPackageRoot(), '.tally', 'optimiser', 'cashflow', 'cycles', result.job.optimizationJobId)}`
+    `Wrote ${artifacts.cycleOutputPaths.length} cycle output file(s) under ${join(getPackageRoot(), '.tally', 'optimiser', OPTIMISER_AGENT_SEGMENT, OPTIMISER_EVALUATION_NAME, result.job.optimizationJobId, 'cycles')}`
   );
 }
