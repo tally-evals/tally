@@ -164,19 +164,27 @@ export async function createCycleOutput(
   return cycleOutput;
 }
 
+function trajectoryIdsForFailures(cycleOutput: CycleOutput): string {
+  const ids = [...new Set(cycleOutput.tallyArtifacts.map((r) => r.trajectoryId))].sort();
+  if (ids.length === 1) return ids[0] ?? 'unknown';
+  if (ids.length > 1) return ids.join(', ');
+  return 'unknown';
+}
+
 /**
- * Derives a deterministic failure view from pooled `EvalSummaries` (no per-trajectory breakdown at this level).
+ * Derives a deterministic failure view from pooled `EvalSummaries`. Verdict breakdown is pooled;
+ * each `failure.trajectoryId` lists the trajectory id(s) from this cycle's Tally artifact refs when available.
  */
 export function analyzeFailures(input: AnalyzeCycleFailuresInput): FailureAnalysis {
   const { singleTurn, multiTurn } = input.cycleOutput.evalSummaries;
   const failures: FailureDetail[] = [];
-  const pooledId = 'pooled';
+  const trajectoryId = trajectoryIdsForFailures(input.cycleOutput);
 
   for (const [name, summary] of Object.entries(singleTurn) as [string, EvalSummary][]) {
     if (!evalSummaryIsPassing(summary)) {
       const verdict = summary.verdictSummary;
       failures.push({
-        trajectoryId: pooledId,
+        trajectoryId,
         eval: name,
         level: failureLevelForKind(summary.kind),
         reason: verdict
@@ -189,7 +197,7 @@ export function analyzeFailures(input: AnalyzeCycleFailuresInput): FailureAnalys
     if (!evalSummaryIsPassing(summary)) {
       const verdict = summary.verdictSummary;
       failures.push({
-        trajectoryId: pooledId,
+        trajectoryId,
         eval: name,
         level: failureLevelForKind(summary.kind),
         reason: verdict
