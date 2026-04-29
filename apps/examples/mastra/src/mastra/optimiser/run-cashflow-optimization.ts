@@ -22,10 +22,8 @@ import {
   createCashflowCopilotAgent,
 } from '../agents/cashflow-copilot-agent';
 
-// Used for evals and other lightweight LLM calls in this runner.
+// Used for evals, prompt optimisation (next-candidate generation), and other LLM calls in this runner.
 const DEFAULT_MODEL_ID = 'models/gemini-3.1-flash-lite-preview';
-// Used specifically for prompt optimisation (next-candidate generation).
-const PROMPT_OPTIMIZER_MODEL_ID = 'models/gemini-3-flash';
 type CycleFailureAnalysisRecord = {
   cycleOutputId: string;
   candidateAgentId: string;
@@ -44,7 +42,7 @@ type PersistedRunCashflowOptimizationResult = RunOptimizationJobResult & {
 
 export const DEFAULT_CASHFLOW_OPTIMIZATION_CONFIG: OptimizationJobConfig = {
   maxCycles: 3,
-  acceptanceThreshold: 0.85,
+  acceptanceThreshold: 0.95, 
   evaluationPolicy: {
     evalWeights: {
       'Overall Quality': 0.25,
@@ -91,7 +89,7 @@ function buildInitialPrompt(promptText: string) {
     candidateAgentId: crypto.randomUUID(),
     promptText,
     generationConfig: {
-      model: PROMPT_OPTIMIZER_MODEL_ID,
+      model: DEFAULT_MODEL_ID,
       temperature: 0.2,
     },
     createdAt: new Date().toISOString(),
@@ -293,14 +291,16 @@ export async function runCashflowOptimization(
     },
     // Persist each per-trajectory Tally artifact to the same `.tally` conversation as the run.
     // This makes the optimiser’s evidence browseable in the CLI/viewer.
-    persistRunArtifact: async ({ runId, artifact }) => {
-      const conversationId = runId;
+    persistRunArtifact: async ({ run, report }) => {
+      const conversationId = run.runId;
       const convRef =
         (await tallyStore.getConversation(conversationId)) ??
         (await tallyStore.createConversation(conversationId));
-      const runRef = await convRef.createRun({ type: 'tally', runId: artifact.runId });
-      await runRef.save(artifact as never);
-      return `.tally/optimiser/conversations/${conversationId}/runs/tally/${artifact.runId}.json`;
+      const runRef = await convRef.createRun({ type: 'tally', runId: report.runId });
+      await runRef.save(report as never);
+      return {
+        artifactPath: `.tally/optimiser/conversations/${conversationId}/runs/tally/${report.runId}.json`,
+      };
     },
   });
 
