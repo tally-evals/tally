@@ -12,10 +12,18 @@ import {
   runOptimizationJob,
 } from '@tally-evals/hrpo';
 import { type Eval, runAllTargets } from '@tally-evals/tally';
-import { createTrajectory, runTrajectory, withMastraAgent } from '@tally-evals/trajectories';
+import {
+  createTrajectory,
+  runTrajectory,
+  type Trajectory,
+  withMastraAgent,
+} from '@tally-evals/trajectories';
 import { generateText } from 'ai';
 import { config as loadDotenv } from 'dotenv';
-import { cashflowGoldenTrajectory } from '../../../tests/trajectories/cashflow/definitions';
+import {
+  cashflowCurveTrajectory,
+  cashflowGoldenTrajectory,
+} from '../../../tests/trajectories/cashflow/definitions';
 import { createCashflowGoldenEvals } from '../../../tests/trajectories/cashflow/evals';
 import {
   CASHFLOW_COPILOT_SYSTEM_PROMPT,
@@ -33,6 +41,12 @@ type CycleFailureAnalysisRecord = {
   candidateAgentId: string;
   analysis: FailureAnalysis;
 };
+
+const CASHFLOW_OPTIMIZATION_TRAJECTORIES = [
+  cashflowGoldenTrajectory,
+  cashflowCurveTrajectory,
+] as const satisfies readonly Trajectory[];
+
 type PersistedRunCashflowOptimizationResult = RunOptimizationJobResult & {
   metadata: {
     generatedAt: string;
@@ -68,6 +82,7 @@ export type RunCashflowOptimizationOptions = {
   evals?: readonly Eval[];
   generateLogs?: boolean;
   initialPromptText?: string;
+  trajectories?: readonly Trajectory[];
 };
 
 function getPackageRoot(): string {
@@ -232,6 +247,7 @@ export async function runCashflowOptimization(
   const evals = options.evals ?? createCashflowGoldenEvals({ provider: evalProvider });
   const store = createInMemoryOptimizationJobStore();
   const config = options.config ?? DEFAULT_CASHFLOW_OPTIMIZATION_CONFIG;
+  const trajectories = options.trajectories ?? CASHFLOW_OPTIMIZATION_TRAJECTORIES;
   const initialCandidatePrompt = buildInitialPrompt(
     options.initialPromptText ?? CASHFLOW_COPILOT_SYSTEM_PROMPT
   );
@@ -239,7 +255,7 @@ export async function runCashflowOptimization(
   const result = await runOptimizationJob({
     store,
     config,
-    trajectories: [cashflowGoldenTrajectory],
+    trajectories,
     initialCandidatePrompt,
     evals,
     context: runAllTargets(),
