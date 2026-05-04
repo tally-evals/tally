@@ -37,7 +37,7 @@ Selection reason:
 > Required evals satisfied among compared cycles; Selected candidate `77c07ad8-a89c-44fc-ad45-39a63d29308f` (cycle output `eed56777-706b-48e0-bd6d-4c9573067240`) with weighted score `0.9042`. Compared 3 cycle(s).
 
 
-## Optimizer Policy (recorded in `result.json`)
+## Optimizer Policy 
 
 (Same policy across both jobs.)
 
@@ -123,7 +123,7 @@ Selected cycle output: `eed56777-706b-48e0-bd6d-4c9573067240` (candidate `77c07a
 
 - **`ce72e8…` improves aggregate score**: `0.9042` vs `0.8882` on the selected cycle.
 - **Affordability Decision and Context Recall improved** in the selected cycle (91.18% → 96.36% and 88.24% → 96.36% respectively).
-- **Other small gains vs `report2.md`**: Answer Relevance **+1.12pp** (97.06% → 98.18%), Completeness **+0.43pp** (94.12% → 94.55%), Over Clarification **+1.55pp** (91.18% → 92.73%).
+- Other small gains: Answer Relevance  (97.06% → 98.18%), Completeness  (94.12% → 94.55%), Over Clarification  (91.18% → 92.73%).
 - **Context Precision remains the dominant weakness** in both (11.76% vs 9.09%).
 - **Role Adherence is stable at 100%** for both selected candidates; one non-selected `ce72e8…` cycle (Cycle 3) shows that multi-turn failures are still possible under some prompt candidates.
 
