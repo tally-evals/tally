@@ -3,6 +3,7 @@
  */
 
 import type { ModelMessage } from './messages';
+import type { HILInteractionTrace } from './stepTrace';
 
 /**
  * A single turn in a conversation
@@ -28,6 +29,15 @@ export interface ConversationStep {
 
   /** Additional metadata */
   metadata?: Record<string, unknown>;
+
+  /**
+   * HIL interactions that occurred during this step.
+   *
+   * Each entry corresponds to a tool call in `output` that required
+   * human-in-the-loop resolution. `extractToolCallsFromStep` correlates these
+   * by `toolCallId` and surfaces them as `ExtractedToolCall.hilInteraction`.
+   */
+  hilInteractions?: readonly HILInteractionTrace[];
 }
 
 /**

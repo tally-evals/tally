@@ -94,7 +94,7 @@ bun run lint
 
 ## Integration with Tally
 
-These agents are native AI SDK `Experimental_Agent` instances with pre-configured system prompts and can be used directly with Tally:
+These agents are native AI SDK `ToolLoopAgent` instances with pre-configured system prompts and can be used directly with Tally:
 
 ```ts
 import { travelPlannerAgent } from '@tally/examples-ai-sdk';

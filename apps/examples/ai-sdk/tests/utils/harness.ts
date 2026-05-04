@@ -32,7 +32,7 @@ const RECORD_MODE = process.env.RECORD_TRAJECTORIES === '1';
 export interface RunCaseOptions {
 	/** Trajectory definition */
 	trajectory: Trajectory;
-	/** AI SDK Agent instance (Experimental_Agent) */
+	/** AI SDK Agent instance (ToolLoopAgent) */
 	agent: { generate: (input: Prompt) => Promise<{ response: { messages: readonly import('ai').ModelMessage[] } }> };
 	/** Conversation ID for the trajectory */
 	conversationId: string;
@@ -102,8 +102,7 @@ export async function runCase(
 		// Record mode: run trajectory and persist
 		console.log(`📹 Recording trajectory: ${conversationId}`);
 		
-		// Cast to remove readonly - withAISdkAgent accepts mutable arrays internally
-		const wrappedAgent = withAISdkAgent(agent as { generate: (input: Prompt) => Promise<{ response: { messages: import('ai').ModelMessage[] } }> });
+		const wrappedAgent = withAISdkAgent(agent as { generate: (input: Prompt) => Promise<{ response: { messages: import('ai').ModelMessage[] }; content: unknown[] }> });
 		const trajectoryInstance = createTrajectory(
 			{ ...trajectory, conversationId },
 			wrappedAgent

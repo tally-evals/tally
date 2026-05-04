@@ -10,7 +10,7 @@
 
 import { describe, it, expect, beforeAll } from 'bun:test';
 import { google } from '@ai-sdk/google';
-import { Experimental_Agent as Agent, stepCountIs, tool } from 'ai';
+import { ToolLoopAgent as Agent, stepCountIs, tool } from 'ai';
 import { z } from 'zod';
 import {
 	createTrajectory,
@@ -47,7 +47,7 @@ const weatherAgent = new Agent({
 	model: google('models/gemini-2.5-flash-lite'),
 	tools: weatherTools,
 	stopWhen: stepCountIs(10),
-	system: 'You are a helpful weather assistant. Help users get weather information by asking for locations when needed and using the weather tool.',
+	instructions: 'You are a helpful weather assistant. Help users get weather information by asking for locations when needed and using the weather tool.',
 });
 
 const describeE2E = shouldRunE2E ? describe : describe.skip;

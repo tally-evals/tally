@@ -10,7 +10,7 @@
 
 import { describe, it, expect, beforeAll } from 'bun:test';
 import { google } from '@ai-sdk/google';
-import { Experimental_Agent as Agent, stepCountIs, tool } from 'ai';
+import { ToolLoopAgent as Agent, stepCountIs, tool } from 'ai';
 import { z } from 'zod';
 import {
 	createTrajectory,
@@ -130,7 +130,7 @@ const travelPlannerAgent = new Agent({
 	model: google('models/gemini-2.5-flash-lite'),
 	tools: travelPlannerTools,
 	stopWhen: stepCountIs(20),
-	system: `You are a helpful travel planning assistant. Your goal is to help users plan their trips by:
+	instructions: `You are a helpful travel planning assistant. Your goal is to help users plan their trips by:
 
 1. Gathering all necessary information before searching:
    - For flights: origin, destination, departure date (and return date if round trip)

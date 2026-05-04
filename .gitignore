@@ -106,3 +106,7 @@ Thumbs.db
 
 # Turbo
 .turbo
+
+*.db
+*.db-shm
+*.db-wal

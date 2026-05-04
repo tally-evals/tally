@@ -2,6 +2,8 @@
  * Tool call types for unified tool call extraction
  */
 
+import type { HILInteractionTrace } from './stepTrace';
+
 /**
  * Unified tool call representation
  *
@@ -21,6 +23,15 @@ export interface ExtractedToolCall {
 
   /** Result from tool execution (populated after matching with tool results) */
   result?: unknown;
+
+  /**
+   * HIL interaction associated with this tool call, if any.
+   *
+   * Populated by `extractToolCallsFromStep` when the parent `ConversationStep`
+   * has a matching entry in `hilInteractions`. Allows metrics to inspect the
+   * approval decision without scanning the step's `hilInteractions` array.
+   */
+  hilInteraction?: HILInteractionTrace;
 }
 
 /**

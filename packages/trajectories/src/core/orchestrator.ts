@@ -19,7 +19,9 @@ import { invokeAgent } from './execution/agentInvoker.js';
 import type { StepRuntimeState, StepId } from './steps/types.js';
 import { evaluateSatisfaction } from './execution/satisfaction.js';
 import { stepTracesToConversation } from '@tally-evals/core';
-import type { TallyStore, TrajectoryMeta } from '@tally-evals/core';
+import type { TallyStore, TrajectoryMeta, HILInteractionTrace } from '@tally-evals/core';
+import { resolveHILCalls } from './hil/handler.js';
+import type { HILContext, HILInteraction } from './hil/types.js';
 
 export interface RunTrajectoryOptions {
 	userModel?: Parameters<typeof import('ai').generateText>[0]['model'];
@@ -78,13 +80,29 @@ function buildTrajectoryMetaSnapshot(args: {
 }
 
 /**
+ * Convert a trajectories-internal HILInteraction to the core HILInteractionTrace
+ * (which lives on StepTrace and has no dependency on the trajectories package).
+ */
+function toHILInteractionTrace(interaction: HILInteraction): HILInteractionTrace {
+	return {
+		toolCall: {
+			toolCallId: interaction.toolCall.toolCallId,
+			toolName: interaction.toolCall.toolName,
+			args: interaction.toolCall.args,
+		},
+		decision: interaction.decision,
+		method: interaction.method,
+		timestamp: interaction.timestamp,
+	};
+}
+
+/**
  * Create a trajectory instance (validation and defaults)
  */
 export function createTrajectory(
 	def: Trajectory,
 	agent: AgentHandle
 ): Trajectory & { agent: AgentHandle } {
-	// Set defaults
 	const trajectory: Trajectory & { agent: AgentHandle } = {
 		...def,
 		agent,
@@ -262,11 +280,99 @@ export async function runTrajectory(
 		const userMessage = await generateUserMessage(userContext, userModel);
 
 		// Add user message to history
-		const updatedHistory = [...history, userMessage];
+		let updatedHistory = [...history, userMessage];
 		agentMemory.set(conversationId, updatedHistory);
 
 		// Invoke agent and parse response
-		const agentResult = await invokeAgent(trajectory.agent, updatedHistory);
+		let agentResult = await invokeAgent(trajectory.agent, updatedHistory);
+
+		// ================================================================
+		// HIL loop: detect pending tool calls and resolve them
+		// ================================================================
+		const hilInteractions: HILInteractionTrace[] = [];
+
+		if (trajectory.hil) {
+			// Fail fast: the agent handle must support resolveHIL when hil is configured
+			if (!trajectory.agent.resolveHIL) {
+				throw new Error(
+					'Trajectory has `hil` configured but the agent handle does not implement `resolveHIL`. ' +
+					'Use `withAISdkAgent()` or `withMastraAgent()` to wrap your agent.',
+				);
+			}
+
+			const { resolveHIL } = trajectory.agent;
+			const maxRoundtrips = trajectory.hil.maxRoundtripsPerTurn ?? 5;
+			let currentHistory = [...updatedHistory];
+
+			for (let roundtrip = 0; roundtrip < maxRoundtrips; roundtrip++) {
+				const pending = agentResult.pendingToolCalls;
+				if (pending.length === 0) break;
+
+				if (generateLogs) {
+					console.log(
+						` HIL round ${roundtrip + 1}: ${pending.length} pending tool call(s) — ${pending.map((p) => p.toolName).join(', ')}`,
+					);
+
+					if (trajectory.hil.tools) {
+						for (const p of pending) {
+							if (!(p.toolName in trajectory.hil.tools)) {
+								console.warn(
+									`  ⚠ Tool "${p.toolName}" triggered HIL but has no entry in hil.tools — falling back to defaultPolicy ("${trajectory.hil.defaultPolicy ?? 'llm'}")`,
+								);
+							}
+						}
+					}
+				}
+
+				const hilContext: HILContext = {
+					goal: trajectory.goal,
+					persona: trajectory.persona,
+					history: currentHistory,
+					stepTraces: steps,
+					turnIndex,
+					...(stepToUse && { currentStep: stepToUse }),
+				};
+
+				try {
+					const { decisions, interactions } = await resolveHILCalls(
+						pending,
+						trajectory.hil,
+						hilContext,
+						userModel,
+					);
+
+					for (const interaction of interactions) {
+						hilInteractions.push(toHILInteractionTrace(interaction));
+						if (generateLogs) {
+							console.log(
+								`    ↳ ${interaction.toolCall.toolName}: ${interaction.decision.type} (${interaction.method})`,
+							);
+						}
+					}
+
+					// Append the agent's pending messages before forwarding decisions
+					currentHistory = [...currentHistory, ...agentResult.allMessages];
+
+					const response = await resolveHIL(decisions, currentHistory);
+					agentResult = {
+						assistantMessages: response.messages.filter((m) => m.role === 'assistant'),
+						allMessages: [...response.messages],
+						pendingToolCalls: response.pendingToolCalls,
+					};
+				} catch (err) {
+					if (generateLogs) {
+						console.warn(
+							` HIL round ${roundtrip + 1} failed:`,
+							err instanceof Error ? err.message : err,
+						);
+					}
+					break;
+				}
+			}
+
+			// Propagate the HIL-updated history to subsequent code
+			updatedHistory = currentHistory;
+		}
 
 		// Create step trace
 		const stepTrace: StepTrace = {
@@ -279,6 +385,9 @@ export async function runTrajectory(
 				method,
 				...(candidates && { candidates }),
 			},
+			...(hilInteractions.length > 0 && {
+				hilInteractions,
+			}),
 		};
 
 		steps.push(stepTrace);

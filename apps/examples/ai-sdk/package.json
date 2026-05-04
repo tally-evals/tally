@@ -14,8 +14,8 @@
   },
   "scripts": {
     "build": "echo 'No build needed for example package'",
-    "test": "bun test",
-    "test:watch": "bun test --watch",
+    "test": "bun test --timeout 120000",
+    "test:watch": "bun test --watch --timeout 120000",
     "cli:build": "bun run --filter @tally-evals/cli build",
     "tui": "bun run cli:build && bunx --no-install tally browse",
     "dev:server": "bun run cli:build && bunx --no-install tally dev server",
@@ -24,8 +24,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "ai": "^5.0.121",
-    "@ai-sdk/google": "^2.0.52",
+    "ai": "^6.0.0",
+    "@ai-sdk/google": "^3.0.0",
     "@tally-evals/cli": "workspace:*",
     "zod": "^3.23.8",
     "@tally-evals/core": "workspace:*",

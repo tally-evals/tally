@@ -5,9 +5,7 @@ export const renderPreviewTool = createTool({
   id: 'renderPreview',
   description: 'Render a preview of the demand letter based on collected information',
   inputSchema: renderPreviewParamsSchema,
-  execute: async ({ context }) => {
-    // console.log('RENDER PREVIEW CONTEXT:', JSON.stringify(context, null, 2));
-    
+  execute: async (inputData) => {
     const {
       senderName,
       senderAddress,
@@ -18,7 +16,7 @@ export const renderPreviewTool = createTool({
       description,
       legalBasis,
       demandType,
-    } = context;
+    } = inputData;
 
     // Ensure amount is a number
     const amountNum = Number(amount);

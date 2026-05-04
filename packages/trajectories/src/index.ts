@@ -12,7 +12,23 @@ export type {
 	TrajectoryResult,
 	TrajectoryStopReason,
 	AgentHandle,
+	AgentResponse,
+	HILDecisionMap,
 } from './core/types.js';
+
+export { resolveHILCalls, generateHILDecision } from './core/hil/index.js';
+export type {
+	HILToolCall,
+	HILApproveDecision,
+	HILRejectDecision,
+	HILDecision,
+	HILContext,
+	HILHandler,
+	HILToolPolicy,
+	HILConfig,
+	HILInteraction,
+	HILResolutionResult,
+} from './core/hil/index.js';
 
 // Step types
 export type {
@@ -36,6 +52,7 @@ export type { RunTrajectoryOptions } from './core/orchestrator.js';
 
 // Agent wrappers
 export { withAISdkAgent, withMastraAgent } from './wrappers/index.js';
+export type { MastraAgentLike } from './wrappers/index.js';
 
 // Policies
 export { DefaultPolicy } from './policies/index.js';
