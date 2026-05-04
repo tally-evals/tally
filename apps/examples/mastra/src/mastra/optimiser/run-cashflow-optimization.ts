@@ -31,7 +31,7 @@ import {
 } from '../agents/cashflow-copilot-agent';
 
 // Used for evals, prompt optimisation (next-candidate generation), and other LLM calls in this runner.
-const DEFAULT_MODEL_ID = 'models/gemini-3.1-flash-lite-preview';
+const DEFAULT_MODEL_ID = 'models/gemini-3-flash-preview';
 
 /** Under `.tally/optimiser/` we write `agent/<evaluation name>/<jobId>/…`. */
 const OPTIMISER_AGENT_SEGMENT = 'agent';
@@ -63,7 +63,6 @@ export const DEFAULT_CASHFLOW_OPTIMIZATION_CONFIG: OptimizationJobConfig = {
   acceptanceThreshold: 0.95, 
   evaluationPolicy: {
     evalWeights: {
-      'Overall Quality': 0.25,
       'Role Adherence': 0.15,
       'Affordability Decision': 0.15,
       'Answer Relevance': 0.1,
@@ -73,7 +72,7 @@ export const DEFAULT_CASHFLOW_OPTIMIZATION_CONFIG: OptimizationJobConfig = {
       'Context Precision': 0.05,
       'Context Recall': 0.05,
     },
-    requiredEvals: ['Overall Quality', 'Role Adherence'],
+    requiredEvals: ['Role Adherence'],
   },
 };
 

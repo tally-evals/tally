@@ -1,0 +1,362 @@
+{
+  "cycleOutputId": "86c70bac-7323-4810-ae33-66c9e97c16a6",
+  "optimizationJobId": "ce72e8f0-63fc-44e1-91a3-6888a4223c4c",
+  "candidateAgentId": "ef8f4bcc-4e47-4d95-88d5-be9ea3b20569",
+  "tallyArtifacts": [
+    {
+      "trajectoryId": "trj-0",
+      "runId": "run-1777883888230-m5k3byg",
+      "artifactPath": ".tally/optimiser/conversations/ce72e8f0-63fc-44e1-91a3-6888a4223c4c-trj-0-ef8f4bcc-4e47-4d95-88d5-be9ea3b20569/runs/tally/run-1777883888230-m5k3byg.json"
+    },
+    {
+      "trajectoryId": "trj-1",
+      "runId": "run-1777883945257-7wz69ul",
+      "artifactPath": ".tally/optimiser/conversations/ce72e8f0-63fc-44e1-91a3-6888a4223c4c-trj-1-ef8f4bcc-4e47-4d95-88d5-be9ea3b20569/runs/tally/run-1777883945257-7wz69ul.json"
+    }
+  ],
+  "evalSummaries": {
+    "singleTurn": {
+      "Answer Relevance": {
+        "eval": "Answer Relevance",
+        "kind": "singleTurn",
+        "count": 49,
+        "aggregations": {
+          "score": {
+            "Mean": 0.9866666666666667,
+            "P50": 1,
+            "P75": 1,
+            "P90": 1
+          },
+          "raw": {
+            "Mean": 4.933333333333334,
+            "P50": 5,
+            "P75": 5,
+            "P90": 5
+          }
+        },
+        "verdictSummary": {
+          "passCount": 44,
+          "failCount": 5,
+          "unknownCount": 0,
+          "totalCount": 49,
+          "passRate": 0.8979591836734694,
+          "failRate": 0.10204081632653061,
+          "unknownRate": 0
+        }
+      },
+      "Completeness": {
+        "eval": "Completeness",
+        "kind": "singleTurn",
+        "count": 49,
+        "aggregations": {
+          "score": {
+            "Mean": 0.9733333333333333,
+            "P50": 1,
+            "P75": 1,
+            "P90": 1
+          },
+          "raw": {
+            "Mean": 4.866666666666666,
+            "P50": 5,
+            "P75": 5,
+            "P90": 5
+          }
+        },
+        "verdictSummary": {
+          "passCount": 41,
+          "failCount": 8,
+          "unknownCount": 0,
+          "totalCount": 49,
+          "passRate": 0.8367346938775511,
+          "failRate": 0.16326530612244897,
+          "unknownRate": 0
+        }
+      },
+      "Affordability Decision": {
+        "eval": "Affordability Decision",
+        "kind": "singleTurn",
+        "count": 49,
+        "aggregations": {
+          "score": {
+            "Mean": 0.9666666666666667,
+            "P50": 1,
+            "P75": 1,
+            "P90": 1
+          },
+          "raw": {
+            "Mean": 4.833333333333333,
+            "P50": 5,
+            "P75": 5,
+            "P90": 5
+          }
+        },
+        "verdictSummary": {
+          "passCount": 42,
+          "failCount": 7,
+          "unknownCount": 0,
+          "totalCount": 49,
+          "passRate": 0.8571428571428571,
+          "failRate": 0.14285714285714285,
+          "unknownRate": 0
+        }
+      },
+      "Clarification Precision": {
+        "eval": "Clarification Precision",
+        "kind": "singleTurn",
+        "count": 49,
+        "aggregations": {
+          "score": {
+            "Mean": 1,
+            "P50": 1,
+            "P75": 1,
+            "P90": 1
+          },
+          "raw": {
+            "Mean": 5,
+            "P50": 5,
+            "P75": 5,
+            "P90": 5
+          }
+        },
+        "verdictSummary": {
+          "passCount": 43,
+          "failCount": 6,
+          "unknownCount": 0,
+          "totalCount": 49,
+          "passRate": 0.8775510204081632,
+          "failRate": 0.12244897959183673,
+          "unknownRate": 0
+        }
+      },
+      "Context Precision": {
+        "eval": "Context Precision",
+        "kind": "singleTurn",
+        "count": 49,
+        "aggregations": {
+          "score": {
+            "Mean": 0.2400000000000001,
+            "P50": 0.2,
+            "P75": 0.35000000000000003,
+            "P90": 0.4
+          },
+          "raw": {
+            "Mean": 1.2,
+            "P50": 1,
+            "P75": 1.75,
+            "P90": 2
+          }
+        },
+        "verdictSummary": {
+          "passCount": 6,
+          "failCount": 43,
+          "unknownCount": 0,
+          "totalCount": 49,
+          "passRate": 0.12244897959183673,
+          "failRate": 0.8775510204081632,
+          "unknownRate": 0
+        }
+      },
+      "Context Recall": {
+        "eval": "Context Recall",
+        "kind": "singleTurn",
+        "count": 49,
+        "aggregations": {
+          "score": {
+            "Mean": 0.8666666666666667,
+            "P50": 1,
+            "P75": 1,
+            "P90": 1
+          },
+          "raw": {
+            "Mean": 4.333333333333333,
+            "P50": 5,
+            "P75": 5,
+            "P90": 5
+          }
+        },
+        "verdictSummary": {
+          "passCount": 39,
+          "failCount": 10,
+          "unknownCount": 0,
+          "totalCount": 49,
+          "passRate": 0.7959183673469388,
+          "failRate": 0.20408163265306123,
+          "unknownRate": 0
+        }
+      },
+      "Over Clarification": {
+        "eval": "Over Clarification",
+        "kind": "singleTurn",
+        "count": 49,
+        "aggregations": {
+          "score": {
+            "Mean": 0.9866666666666667,
+            "P50": 1,
+            "P75": 1,
+            "P90": 1
+          },
+          "raw": {
+            "Mean": 4.933333333333334,
+            "P50": 5,
+            "P75": 5,
+            "P90": 5
+          }
+        },
+        "verdictSummary": {
+          "passCount": 41,
+          "failCount": 8,
+          "unknownCount": 0,
+          "totalCount": 49,
+          "passRate": 0.8367346938775511,
+          "failRate": 0.16326530612244897,
+          "unknownRate": 0
+        }
+      }
+    },
+    "multiTurn": {
+      "Role Adherence": {
+        "eval": "Role Adherence",
+        "kind": "multiTurn",
+        "count": 2,
+        "aggregations": {
+          "score": {
+            "value": 1
+          },
+          "raw": {
+            "value": 5
+          }
+        },
+        "verdictSummary": {
+          "passCount": 1,
+          "failCount": 1,
+          "unknownCount": 0,
+          "totalCount": 2,
+          "passRate": 0.5,
+          "failRate": 0.5,
+          "unknownRate": 0
+        }
+      },
+      "Overall Quality": {
+        "eval": "Overall Quality",
+        "kind": "scorer",
+        "count": 49,
+        "aggregations": {
+          "score": {
+            "Mean": 0.8986666666666673,
+            "P50": 0.92,
+            "P75": 0.92,
+            "P90": 0.9400000000000001
+          }
+        },
+        "verdictSummary": {
+          "passCount": 46,
+          "failCount": 3,
+          "unknownCount": 0,
+          "totalCount": 49,
+          "passRate": 0.9387755102040817,
+          "failRate": 0.061224489795918366,
+          "unknownRate": 0
+        }
+      }
+    },
+    "singleTurnOverview": {
+      "summary": "7 of 7 eval(s) in this scope are failing.\nScope verdict totals: 256 pass, 87 fail (343 checks).\nFailing eval evidence:\nAnswer Relevance: 44 pass, 5 fail, 49 total (90% pass)\nCompleteness: 41 pass, 8 fail, 49 total (84% pass)\nAffordability Decision: 42 pass, 7 fail, 49 total (86% pass)\nClarification Precision: 43 pass, 6 fail, 49 total (88% pass)\nContext Precision: 6 pass, 43 fail, 49 total (12% pass)\nContext Recall: 39 pass, 10 fail, 49 total (80% pass)\nOver Clarification: 41 pass, 8 fail, 49 total (84% pass)",
+      "issues": [
+        {
+          "eval": "Answer Relevance",
+          "reason": "5 fail / 49 total",
+          "passRate": 0.8979591836734694,
+          "passedCount": 44,
+          "failedCount": 5,
+          "totalCount": 49
+        },
+        {
+          "eval": "Completeness",
+          "reason": "8 fail / 49 total",
+          "passRate": 0.8367346938775511,
+          "passedCount": 41,
+          "failedCount": 8,
+          "totalCount": 49
+        },
+        {
+          "eval": "Affordability Decision",
+          "reason": "7 fail / 49 total",
+          "passRate": 0.8571428571428571,
+          "passedCount": 42,
+          "failedCount": 7,
+          "totalCount": 49
+        },
+        {
+          "eval": "Clarification Precision",
+          "reason": "6 fail / 49 total",
+          "passRate": 0.8775510204081632,
+          "passedCount": 43,
+          "failedCount": 6,
+          "totalCount": 49
+        },
+        {
+          "eval": "Context Precision",
+          "reason": "43 fail / 49 total",
+          "passRate": 0.12244897959183673,
+          "passedCount": 6,
+          "failedCount": 43,
+          "totalCount": 49
+        },
+        {
+          "eval": "Context Recall",
+          "reason": "10 fail / 49 total",
+          "passRate": 0.7959183673469388,
+          "passedCount": 39,
+          "failedCount": 10,
+          "totalCount": 49
+        },
+        {
+          "eval": "Over Clarification",
+          "reason": "8 fail / 49 total",
+          "passRate": 0.8367346938775511,
+          "passedCount": 41,
+          "failedCount": 8,
+          "totalCount": 49
+        }
+      ],
+      "failingEvals": [
+        "Answer Relevance",
+        "Completeness",
+        "Affordability Decision",
+        "Clarification Precision",
+        "Context Precision",
+        "Context Recall",
+        "Over Clarification"
+      ],
+      "passingEvals": []
+    },
+    "multiTurnOverview": {
+      "summary": "2 of 2 eval(s) in this scope are failing.\nScope verdict totals: 47 pass, 4 fail (51 checks).\nFailing eval evidence:\nRole Adherence: 1 pass, 1 fail, 2 total (50% pass)\nOverall Quality: 46 pass, 3 fail, 49 total (94% pass)",
+      "issues": [
+        {
+          "eval": "Role Adherence",
+          "reason": "1 fail / 2 total",
+          "passRate": 0.5,
+          "passedCount": 1,
+          "failedCount": 1,
+          "totalCount": 2
+        },
+        {
+          "eval": "Overall Quality",
+          "reason": "3 fail / 49 total",
+          "passRate": 0.9387755102040817,
+          "passedCount": 46,
+          "failedCount": 3,
+          "totalCount": 49
+        }
+      ],
+      "failingEvals": [
+        "Role Adherence",
+        "Overall Quality"
+      ],
+      "passingEvals": []
+    }
+  },
+  "aggregatedPassRate": 0.736734693877551,
+  "createdAt": "2026-05-04T08:39:48.387Z"
+}

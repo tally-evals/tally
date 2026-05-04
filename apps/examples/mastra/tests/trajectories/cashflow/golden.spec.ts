@@ -81,7 +81,7 @@ describeCashflowGolden('Cashflow Copilot Agent - Golden Path', () => {
       return;
     }
 
-    const model = google('models/gemini-3.1-flash-lite-preview');
+    const model = google('models/gemini-3-flash-preview');
     const evals = createCashflowGoldenEvals({ provider: model });
 
     const tally = createTally({

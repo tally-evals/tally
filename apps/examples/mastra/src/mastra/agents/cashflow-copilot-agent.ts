@@ -197,7 +197,7 @@ export function createCashflowCopilotAgent(options: CreateCashflowCopilotAgentOp
   return new Agent({
     name: 'Personal Cashflow Projection Tool',
     instructions,
-    model: 'google/gemini-3.1-flash-lite-preview',
+    model: 'google/gemini-3-flash-preview',
     tools: {
       updateCashPosition: updateCashPositionTool,
       createRecurring: createRecurringTool,

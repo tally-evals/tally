@@ -67,7 +67,7 @@ describeCashflowCurve('Cashflow Copilot Agent - Curve Ball', () => {
       return;
     }
 
-    const model = google('models/gemini-3.1-flash-lite-preview');
+    const model = google('models/gemini-3-flash-preview');
 
     // General metrics
     const answerRelevance = createAnswerRelevanceMetric({

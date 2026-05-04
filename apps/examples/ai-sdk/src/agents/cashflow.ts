@@ -6,7 +6,7 @@ import { google } from '@ai-sdk/google';
 import { Experimental_Agent as Agent, stepCountIs } from 'ai';
 import { cashflowTools } from '../tools/cashflow';
 
-const DEFAULT_MODEL_ID = 'models/gemini-3.1-flash-lite-preview';
+const DEFAULT_MODEL_ID = 'models/gemini-3-flash-preview';
 const DEFAULT_MAX_STEPS = 30;
 
 const CASHFLOW_SYSTEM_PROMPT = `You are a personal cashflow planning assistant.
