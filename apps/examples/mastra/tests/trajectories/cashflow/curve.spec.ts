@@ -34,12 +34,20 @@ import {
   runCase,
   saveTallyReportToStore,
 } from '../../utils/harness';
-import { getSummaryScoreValue } from '../../utils/summary';
 import { cashflowCurveTrajectory } from './definitions';
 import {
   createClarificationPrecisionMetric,
   createOverClarificationMetric,
 } from './metrics';
+
+function getSummaryScoreValue(summary: {
+  aggregations?: {
+    score?: Record<string, unknown>;
+  };
+}): number | undefined {
+  const mean = summary.aggregations?.score?.mean ?? summary.aggregations?.score?.Mean;
+  return typeof mean === 'number' ? mean : undefined;
+}
 
 const skipReason = getTrajectoryTestSkipReason('cashflow-curve');
 if (skipReason) {

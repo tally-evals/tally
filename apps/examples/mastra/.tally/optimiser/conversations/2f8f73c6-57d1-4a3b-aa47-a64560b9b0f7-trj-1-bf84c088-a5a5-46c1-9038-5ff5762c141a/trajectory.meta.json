@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "trajectoryId": "2f8f73c6-57d1-4a3b-aa47-a64560b9b0f7-trj-1-bf84c088-a5a5-46c1-9038-5ff5762c141a",
+  "createdAt": "2026-05-05T15:19:17.168Z",
+  "goal": "Test agent handling of ambiguous financial information, incomplete setup, and changing plans",
+  "persona": {
+    "name": "Uncertain Planner",
+    "description": "You want to track your cashflow but are unsure about details. You provide incomplete information, change amounts mid-conversation, and ask about projections before fully setting up your data.",
+    "guardrails": [
+      "Provide incomplete information sometimes (e.g. income amount without a start date)",
+      "Change amounts or dates mid-conversation",
+      "Ask about projections before all data is entered",
+      "Mention vague one-time events without dates (e.g. \"sometime next month\")",
+      "Provide conflicting or contradictory amounts"
+    ]
+  },
+  "maxTurns": 25,
+  "stepGraph": {
+    "start": "step-1",
+    "terminals": [
+      "step-12"
+    ],
+    "steps": [
+      {
+        "id": "step-1",
+        "instruction": "Ask about your runway without providing any information: \"How many days can I survive financially?\""
+      },
+      {
+        "id": "step-2",
+        "instruction": "Provide a name but no balance: \"My name is Jordan, I use PKR\""
+      },
+      {
+        "id": "step-3",
+        "instruction": "Provide balance without currency confirmation: \"I have some money, maybe around 200,000\""
+      },
+      {
+        "id": "step-4",
+        "instruction": "Add income with no frequency: \"I get paid 100,000\""
+      },
+      {
+        "id": "step-5",
+        "instruction": "Clarify frequency ambiguously: \"it's monthly I think, or maybe bi-weekly\""
+      },
+      {
+        "id": "step-6",
+        "instruction": "Change the income amount: \"Actually I think my salary is 80,000 after taxes\""
+      },
+      {
+        "id": "step-7",
+        "instruction": "Add a future expense with a vague date: \"I have a medical bill coming sometime next month\""
+      },
+      {
+        "id": "step-8",
+        "instruction": "Request a projection even though setup is incomplete: \"Can you just project it now?\""
+      },
+      {
+        "id": "step-9",
+        "instruction": "Add conflicting data: \"Wait I forgot I also have a second income of 50,000 every week but only until end of next month\""
+      },
+      {
+        "id": "step-10",
+        "instruction": "Provide the missing date and confirm the summary: \"Use the 12th of next month for the medical bill, and yes, the rest looks right.\"",
+        "preconditions": [
+          {
+            "type": "stepSatisfied",
+            "stepId": "step-9"
+          }
+        ]
+      },
+      {
+        "id": "step-11",
+        "instruction": "Choose the projection flow: \"More than one month.\"",
+        "preconditions": [
+          {
+            "type": "stepSatisfied",
+            "stepId": "step-10"
+          }
+        ]
+      },
+      {
+        "id": "step-12",
+        "instruction": "Ask for a 2-month projection with a scenario: \"Project the next 2 months. What if I spend 100,000 on a car next week, and what is the lowest balance in that period?\"",
+        "preconditions": [
+          {
+            "type": "stepSatisfied",
+            "stepId": "step-11"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "version": 1,
+  "trajectoryId": "cashflow-curve",
+  "createdAt": "2026-05-05T13:54:20.437Z",
+  "goal": "Test cashflow handling with incomplete data and changing details",
+  "persona": {
+    "name": "Uncertain Planner",
+    "description": "You provide partial and sometimes conflicting information before settling on final values.",
+    "guardrails": [
+      "Start vague, then clarify",
+      "Change one financial detail mid-conversation",
+      "Request projection before setup is fully complete"
+    ]
+  },
+  "maxTurns": 20,
+  "loopDetection": {
+    "maxConsecutiveSameStep": 5
+  },
+  "stepGraph": {
+    "start": "step-1",
+    "terminals": [
+      "step-6"
+    ],
+    "steps": [
+      {
+        "id": "step-1",
+        "instruction": "Ask how long you can survive financially without giving numbers."
+      },
+      {
+        "id": "step-2",
+        "instruction": "Provide user id cashflow-user and say balance is around 200000."
+      },
+      {
+        "id": "step-3",
+        "instruction": "Say you get paid 100000 but do not mention frequency yet."
+      },
+      {
+        "id": "step-4",
+        "instruction": "Clarify it is monthly, then change it to 90000 after tax."
+      },
+      {
+        "id": "step-5",
+        "instruction": "Add a vague future expense then clarify it is 40000 on 2026-04-12."
+      },
+      {
+        "id": "step-6",
+        "instruction": "Request projection from 2026-03-01 to 2026-04-30 with no safety buffer."
+      }
+    ]
+  }
+}
