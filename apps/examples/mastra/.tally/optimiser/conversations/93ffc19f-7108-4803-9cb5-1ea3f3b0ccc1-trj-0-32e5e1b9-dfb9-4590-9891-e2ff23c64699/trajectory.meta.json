@@ -1,0 +1,112 @@
+{
+  "version": 1,
+  "trajectoryId": "93ffc19f-7108-4803-9cb5-1ea3f3b0ccc1-trj-0-32e5e1b9-dfb9-4590-9891-e2ff23c64699",
+  "createdAt": "2026-05-06T09:07:15.571Z",
+  "goal": "Set up a complete cashflow profile, run projections, simulate what-if scenarios, and understand financial risk",
+  "persona": {
+    "name": "Financial Planner",
+    "description": "You are setting up your personal cashflow tracking system. You have clear financial information and provide it naturally. You are organized and want to understand your projected balance and any risks over the next few months.",
+    "guardrails": [
+      "Provide financial information naturally and conversationally",
+      "Answer clarifying questions when asked",
+      "Ask about projections and scenarios after setting up data",
+      "Respond to the agent with reasonable follow-up questions about affordability"
+    ]
+  },
+  "maxTurns": 30,
+  "loopDetection": {
+    "maxConsecutiveSameStep": 5
+  },
+  "stepGraph": {
+    "start": "step-1",
+    "terminals": [
+      "step-12"
+    ],
+    "steps": [
+      {
+        "id": "step-1",
+        "instruction": "Introduce yourself and start setup: \"Hi, I want to set up cashflow tracking. My name is Alex and I use USD.\""
+      },
+      {
+        "id": "step-2",
+        "instruction": "Provide current balance: \"I currently have 150,000 in my account.\""
+      },
+      {
+        "id": "step-3",
+        "instruction": "Add recurring income: \"I receive a salary of 120,000 every month starting on the 5th.\""
+      },
+      {
+        "id": "step-4",
+        "instruction": "Add recurring expense: \"I pay 45,000 rent every month on the 1st.\""
+      },
+      {
+        "id": "step-5",
+        "instruction": "Add another recurring expense: \"I also pay 5,000 for internet monthly on the 10th and 2,000 for a gym subscription monthly on the 12th.\""
+      },
+      {
+        "id": "step-6",
+        "instruction": "Add a one-time future expense: \"I'm planning a vacation that will cost 30,000 next month around the 20th.\""
+      },
+      {
+        "id": "step-7",
+        "instruction": "Add a one-time future income: \"I also have a freelance payment of 25,000 coming in on the 15th of next month.\"",
+        "preconditions": [
+          {
+            "type": "stepSatisfied",
+            "stepId": "step-6"
+          }
+        ]
+      },
+      {
+        "id": "step-8",
+        "instruction": "Confirm the setup summary: \"Yes, that all looks correct.\"",
+        "preconditions": [
+          {
+            "type": "stepSatisfied",
+            "stepId": "step-7"
+          }
+        ]
+      },
+      {
+        "id": "step-9",
+        "instruction": "Choose the projection flow: \"More than one month.\"",
+        "preconditions": [
+          {
+            "type": "stepSatisfied",
+            "stepId": "step-8"
+          }
+        ]
+      },
+      {
+        "id": "step-10",
+        "instruction": "Request a concrete projection: \"Project the next 3 months with a safety buffer of 20,000.\"",
+        "preconditions": [
+          {
+            "type": "stepSatisfied",
+            "stepId": "step-9"
+          }
+        ]
+      },
+      {
+        "id": "step-11",
+        "instruction": "Ask a what-if scenario: \"What if I also had an emergency expense of 50,000 next month? Would I go into deficit?\"",
+        "preconditions": [
+          {
+            "type": "stepSatisfied",
+            "stepId": "step-10"
+          }
+        ]
+      },
+      {
+        "id": "step-12",
+        "instruction": "Ask for a final updated projection after the scenario: \"Show me the updated 3-month projection and the lowest balance again.\"",
+        "preconditions": [
+          {
+            "type": "stepSatisfied",
+            "stepId": "step-11"
+          }
+        ]
+      }
+    ]
+  }
+}

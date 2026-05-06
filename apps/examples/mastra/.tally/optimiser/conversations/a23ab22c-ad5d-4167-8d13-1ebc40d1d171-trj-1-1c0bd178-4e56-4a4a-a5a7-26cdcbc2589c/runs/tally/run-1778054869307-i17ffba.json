@@ -1,0 +1,2078 @@
+{
+  "schemaVersion": 1,
+  "runId": "run-1778054869307-i17ffba",
+  "createdAt": "2026-05-06T08:07:49.307Z",
+  "defs": {
+    "metrics": {
+      "answerRelevance": {
+        "name": "answerRelevance",
+        "scope": "single",
+        "valueType": "number",
+        "description": "Measures how relevant the output is to the input query using LLM-based statement-level relevance analysis",
+        "normalization": {
+          "normalizer": {
+            "type": "min-max",
+            "min": 0,
+            "max": 5,
+            "clip": true
+          }
+        }
+      },
+      "completeness": {
+        "name": "completeness",
+        "scope": "single",
+        "valueType": "number",
+        "description": "Measures how complete an answer is relative to expected coverage using LLM-based analysis",
+        "normalization": {
+          "normalizer": {
+            "type": "min-max",
+            "min": 0,
+            "max": 5,
+            "clip": true
+          }
+        }
+      },
+      "roleAdherence": {
+        "name": "roleAdherence",
+        "scope": "multi",
+        "valueType": "number",
+        "description": "Measures how well the assistant adheres to a specified role across an entire conversation",
+        "metadata": {
+          "expectedRole": "cashflow management assistant that helps users track income, expenses, and manage their financial situation",
+          "checkConsistency": true
+        },
+        "normalization": {
+          "normalizer": {
+            "type": "min-max",
+            "min": 0,
+            "max": 5,
+            "clip": true
+          }
+        }
+      },
+      "affordabilityDecisionAccuracy": {
+        "name": "affordabilityDecisionAccuracy",
+        "scope": "single",
+        "valueType": "number",
+        "description": "Measures whether the assistant correctly determines if expenses are affordable",
+        "metadata": {
+          "weights": {
+            "decision": 0.7,
+            "reasoning": 0.3
+          }
+        },
+        "normalization": {
+          "normalizer": {
+            "type": "min-max",
+            "min": 0,
+            "max": 5,
+            "clip": true
+          }
+        }
+      },
+      "clarificationRequestPrecision": {
+        "name": "clarificationRequestPrecision",
+        "scope": "single",
+        "valueType": "number",
+        "description": "Measures whether the assistant correctly identifies ambiguous inputs and asks for clarification",
+        "metadata": {
+          "penalizeFalsePositives": true
+        },
+        "normalization": {
+          "normalizer": {
+            "type": "min-max",
+            "min": 0,
+            "max": 5,
+            "clip": true
+          }
+        }
+      },
+      "contextPrecision": {
+        "name": "contextPrecision",
+        "scope": "single",
+        "valueType": "number",
+        "description": "Measures whether the assistant stays tightly grounded in the provided cashflow context",
+        "normalization": {
+          "normalizer": {
+            "type": "min-max",
+            "min": 0,
+            "max": 5,
+            "clip": true
+          }
+        }
+      },
+      "contextRecall": {
+        "name": "contextRecall",
+        "scope": "single",
+        "valueType": "number",
+        "description": "Measures whether the assistant includes the important information available in the cashflow context",
+        "normalization": {
+          "normalizer": {
+            "type": "min-max",
+            "min": 0,
+            "max": 5,
+            "clip": true
+          }
+        }
+      },
+      "overClarificationRate": {
+        "name": "overClarificationRate",
+        "scope": "single",
+        "valueType": "number",
+        "description": "Measures whether the assistant asks unnecessary questions when sufficient information is provided",
+        "metadata": {
+          "threshold": "any_unnecessary_question"
+        },
+        "normalization": {
+          "normalizer": {
+            "type": "min-max",
+            "min": 0,
+            "max": 5,
+            "clip": true
+          }
+        }
+      }
+    },
+    "evals": {
+      "Answer Relevance": {
+        "name": "Answer Relevance",
+        "kind": "singleTurn",
+        "outputShape": "seriesByStepIndex",
+        "metric": "answerRelevance",
+        "verdict": {
+          "kind": "number",
+          "type": "threshold",
+          "passAt": 2.5
+        }
+      },
+      "Completeness": {
+        "name": "Completeness",
+        "kind": "singleTurn",
+        "outputShape": "seriesByStepIndex",
+        "metric": "completeness",
+        "verdict": {
+          "kind": "number",
+          "type": "threshold",
+          "passAt": 3
+        }
+      },
+      "Role Adherence": {
+        "name": "Role Adherence",
+        "kind": "multiTurn",
+        "outputShape": "scalar",
+        "metric": "roleAdherence",
+        "verdict": {
+          "kind": "number",
+          "type": "threshold",
+          "passAt": 3.5
+        }
+      },
+      "Affordability Decision": {
+        "name": "Affordability Decision",
+        "kind": "singleTurn",
+        "outputShape": "seriesByStepIndex",
+        "metric": "affordabilityDecisionAccuracy",
+        "verdict": {
+          "kind": "number",
+          "type": "threshold",
+          "passAt": 3.5
+        }
+      },
+      "Clarification Precision": {
+        "name": "Clarification Precision",
+        "kind": "singleTurn",
+        "outputShape": "seriesByStepIndex",
+        "metric": "clarificationRequestPrecision",
+        "verdict": {
+          "kind": "number",
+          "type": "threshold",
+          "passAt": 3.5
+        }
+      },
+      "Context Precision": {
+        "name": "Context Precision",
+        "kind": "singleTurn",
+        "outputShape": "seriesByStepIndex",
+        "metric": "contextPrecision",
+        "verdict": {
+          "kind": "number",
+          "type": "threshold",
+          "passAt": 3.5
+        }
+      },
+      "Context Recall": {
+        "name": "Context Recall",
+        "kind": "singleTurn",
+        "outputShape": "seriesByStepIndex",
+        "metric": "contextRecall",
+        "verdict": {
+          "kind": "number",
+          "type": "threshold",
+          "passAt": 3.5
+        }
+      },
+      "Over Clarification": {
+        "name": "Over Clarification",
+        "kind": "singleTurn",
+        "outputShape": "seriesByStepIndex",
+        "metric": "overClarificationRate",
+        "verdict": {
+          "kind": "number",
+          "type": "threshold",
+          "passAt": 3.5
+        }
+      },
+      "Overall Quality": {
+        "name": "Overall Quality",
+        "kind": "scorer",
+        "outputShape": "scalar",
+        "metric": "OverallQuality",
+        "scorerRef": "OverallQuality",
+        "verdict": {
+          "kind": "number",
+          "type": "threshold",
+          "passAt": 0.5
+        }
+      }
+    },
+    "scorers": {
+      "OverallQuality": {
+        "name": "OverallQuality",
+        "inputs": [
+          {
+            "metricRef": "answerRelevance",
+            "weight": 0.2,
+            "required": true
+          },
+          {
+            "metricRef": "roleAdherence",
+            "weight": 0.15,
+            "required": true
+          },
+          {
+            "metricRef": "affordabilityDecisionAccuracy",
+            "weight": 0.2,
+            "required": true
+          },
+          {
+            "metricRef": "clarificationRequestPrecision",
+            "weight": 0.1,
+            "required": true
+          },
+          {
+            "metricRef": "overClarificationRate",
+            "weight": 0.1,
+            "required": true
+          },
+          {
+            "metricRef": "completeness",
+            "weight": 0.05,
+            "required": true
+          },
+          {
+            "metricRef": "contextPrecision",
+            "weight": 0.1,
+            "required": true
+          },
+          {
+            "metricRef": "contextRecall",
+            "weight": 0.1,
+            "required": true
+          }
+        ],
+        "normalizeWeights": true,
+        "combine": {
+          "kind": "weightedAverage"
+        },
+        "description": "Weighted average scorer combining 8 metrics",
+        "metadata": {
+          "__tally": {
+            "combineKind": "weightedAverage"
+          }
+        }
+      }
+    }
+  },
+  "result": {
+    "stepCount": 6,
+    "singleTurn": {
+      "Answer Relevance": {
+        "byStepIndex": [
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The response is fully relevant because it directly addresses the query by explaining the methodology for calculating a financial runway and requesting the necessary data points to provide a specific answer. Since the query lacks the required financial details, the response correctly identifies what is needed to fulfill the request.",
+              "executionTimeMs": 4669,
+              "timestamp": "2026-05-06T08:07:53.978Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The response is fully relevant because it directly addresses the user's specific situation ($200,000, unknown expenses, and upcoming repairs). Since the query lacked the necessary financial data to provide a specific number, the response correctly explains what information is missing and asks targeted follow-up questions to help calculate the duration requested. It contains no unrelated content.",
+              "executionTimeMs": 6918,
+              "timestamp": "2026-05-06T08:07:56.229Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 0.8,
+              "rawValue": 4,
+              "confidence": 0.95,
+              "reasoning": "The response is highly relevant and directly addresses the specific numbers and ranges provided by the user. It correctly interprets the user's vague inputs by adopting a 'conservative' approach. However, it does not provide the actual projection results (the 'ballpark idea') in this turn, instead asking for confirmation of the parameters first, despite the user's request to 'project it now'. It also includes a current balance figure ($200,000) that was not mentioned in the provided query, which may be context from a previous turn or a minor assumption.",
+              "executionTimeMs": 13807,
+              "timestamp": "2026-05-06T08:08:03.120Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2.5
+              },
+              "observed": {
+                "rawValue": 4,
+                "score": 0.8
+              }
+            }
+          },
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 0.8,
+              "rawValue": 4,
+              "confidence": 0.9,
+              "reasoning": "The response addresses all the user's updated information, including the balance, the income/expense variables, and the date clarification. It prepares the projection as requested but stops to confirm the parameters before providing the final result. This is highly relevant and helpful, though it doesn't provide the final 'money hits zero' date in this specific turn.",
+              "executionTimeMs": 7301,
+              "timestamp": "2026-05-06T08:07:56.613Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2.5
+              },
+              "observed": {
+                "rawValue": 4,
+                "score": 0.8
+              }
+            }
+          },
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 0.4,
+              "rawValue": 2,
+              "confidence": 0.9,
+              "reasoning": "The response fails to address the user's core request in two significant ways: first, it ignores the updated figures provided in the query (using $4,000 and $15,000 instead of the requested $3,500 and $12,000); second, it does not provide the actual projection or graph requested, instead asking a follow-up question. While it is on-topic regarding financial planning, it misses the immediate intent and data updates.",
+              "executionTimeMs": 7307,
+              "timestamp": "2026-05-06T08:07:56.619Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "fail",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2.5
+              },
+              "observed": {
+                "rawValue": 2,
+                "score": 0.4
+              }
+            }
+          },
+          {
+            "evalRef": "Answer Relevance",
+            "measurement": {
+              "metricRef": "answerRelevance",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The response directly and completely addresses all components of the query. It confirms that the numbers have been updated to the new values ($3,500 expenses, $12,000 repair, $5,000 freelance income), provides a clear answer to the user's safety concern, and presents a detailed projection that matches the new data.",
+              "executionTimeMs": 6916,
+              "timestamp": "2026-05-06T08:07:56.229Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 2.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          }
+        ]
+      },
+      "Completeness": {
+        "byStepIndex": [
+          {
+            "evalRef": "Completeness",
+            "measurement": {
+              "metricRef": "completeness",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The response is a complete and professional answer to an underspecified query. Since the calculation of financial runway depends entirely on personal data, the response correctly identifies the missing variables and provides a comprehensive list of what is needed (assets, income, expenses, and timing) to answer the user's question accurately. It effectively sets the stage for a thorough analysis.",
+              "executionTimeMs": 7222,
+              "timestamp": "2026-05-06T08:07:56.535Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Completeness",
+            "measurement": {
+              "metricRef": "completeness",
+              "score": 0.6,
+              "rawValue": 3,
+              "confidence": 0.9,
+              "reasoning": "The response identifies the necessary variables to answer the user's question (income, expenses, and repairs) and asks for clarification, which is appropriate given the underspecified query. However, it fails to provide any immediate value or 'completeness' regarding the user's primary question: 'how long I can last'. A more complete response would have provided some hypothetical scenarios (e.g., a table showing how many years the money lasts at different monthly spending levels like $3,000 vs $5,000) to give the user a sense of scale while waiting for the specific data points.",
+              "executionTimeMs": 10963,
+              "timestamp": "2026-05-06T08:08:00.276Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3
+              },
+              "observed": {
+                "rawValue": 3,
+                "score": 0.6
+              }
+            }
+          },
+          {
+            "evalRef": "Completeness",
+            "measurement": {
+              "metricRef": "completeness",
+              "score": 0.6,
+              "rawValue": 3,
+              "confidence": 0.9,
+              "reasoning": "The user specifically asked for a projection to be done 'now' to get a ballpark idea of where they stand. While the response does an excellent job of organizing the user's messy and variable inputs into a clear set of conservative assumptions, it stops short of actually providing the projection result. It asks for confirmation before proceeding with the calculation. Therefore, it covers the input data well but fails to deliver the primary output requested (the projection/result).",
+              "executionTimeMs": 9315,
+              "timestamp": "2026-05-06T08:07:58.629Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3
+              },
+              "observed": {
+                "rawValue": 3,
+                "score": 0.6
+              }
+            }
+          },
+          {
+            "evalRef": "Completeness",
+            "measurement": {
+              "metricRef": "completeness",
+              "score": 0.4,
+              "rawValue": 2,
+              "confidence": 0.95,
+              "reasoning": "The response acknowledges and summarizes the updated information provided by the user (the balance, the timing of the repairs, and the income/expenses). However, it fails to address any of the user's primary questions: it does not show the projection, it does not answer whether the changes affect the projection significantly, and it does not tell the user when their money will hit zero or if they will be okay for the next year. By asking for confirmation before performing the requested task, the response is significantly incomplete relative to the query's core requirements.",
+              "executionTimeMs": 9450,
+              "timestamp": "2026-05-06T08:07:58.764Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "fail",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3
+              },
+              "observed": {
+                "rawValue": 2,
+                "score": 0.4
+              }
+            }
+          },
+          {
+            "evalRef": "Completeness",
+            "measurement": {
+              "metricRef": "completeness",
+              "score": 0.2,
+              "rawValue": 1,
+              "confidence": 0.95,
+              "reasoning": "The response fails on two major fronts: 1) It ignores the updated figures provided by the user ($3,500 expenses and $12,000 repair), opting instead for 'conservative' numbers. 2) It fails to provide the actual projection or graph requested, instead asking a follow-up question about the timeframe. This makes the response largely incomplete relative to the user's explicit request to 'run the projection now'.",
+              "executionTimeMs": 5798,
+              "timestamp": "2026-05-06T08:07:55.112Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "fail",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3
+              },
+              "observed": {
+                "rawValue": 1,
+                "score": 0.2
+              }
+            }
+          },
+          {
+            "evalRef": "Completeness",
+            "measurement": {
+              "metricRef": "completeness",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The response fully addresses every component of the user's query. It confirms the updates to the expenses and repair bill figures, incorporates the new freelance income, provides a clear and direct answer to the user's concerns about financial safety, and presents a detailed projection and monthly breakdown to support the conclusion.",
+              "executionTimeMs": 8087,
+              "timestamp": "2026-05-06T08:07:57.401Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          }
+        ]
+      },
+      "Affordability Decision": {
+        "byStepIndex": [
+          {
+            "evalRef": "Affordability Decision",
+            "measurement": {
+              "metricRef": "affordabilityDecisionAccuracy",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The assistant correctly identified that it lacked sufficient data to calculate the financial runway. It provided a comprehensive list of the specific information needed (income, balance, bills, etc.) to perform a proper cashflow projection, which aligns perfectly with the 'unknown' ground truth decision.",
+              "executionTimeMs": 6401,
+              "timestamp": "2026-05-06T08:07:55.716Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Affordability Decision",
+            "measurement": {
+              "metricRef": "affordabilityDecisionAccuracy",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The assistant correctly recognized that it could not determine the runway or affordability without specific cashflow data (income, monthly expenses, and the cost of repairs). It provided clear, actionable steps for the user to provide the necessary information, aligning perfectly with the 'unknown' ground truth decision.",
+              "executionTimeMs": 4662,
+              "timestamp": "2026-05-06T08:07:53.978Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Affordability Decision",
+            "measurement": {
+              "metricRef": "affordabilityDecisionAccuracy",
+              "score": 0.6,
+              "rawValue": 3,
+              "confidence": 0.9,
+              "reasoning": "The assistant correctly identified that the user's information was too vague for a definitive answer, aligning with the 'unknown' expected decision. It appropriately suggested using conservative estimates (lower end of income, higher end of expenses) to create a 'ballpark' projection. However, the assistant hallucinated a 'Current Balance' of $200,000 and a specific date (June 2026) which were not provided in the user query or the cashflow context (which lists balance as $0). Inventing a starting balance rather than asking the user for it is a significant error in a financial context, even if the logic for the other variables was sound.",
+              "executionTimeMs": 18468,
+              "timestamp": "2026-05-06T08:08:07.784Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "fail",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 3,
+                "score": 0.6
+              }
+            }
+          },
+          {
+            "evalRef": "Affordability Decision",
+            "measurement": {
+              "metricRef": "affordabilityDecisionAccuracy",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.95,
+              "reasoning": "The assistant correctly identified the need to clarify parameters before making a financial projection. It handled the conflicting account balances by choosing the conservative accessible amount, correctly interpreted 'next month' relative to the current date, and adopted a 'worst-case' scenario approach for the projection. This approach directly addresses the user's concerns about risk while ensuring the final calculation will be based on accurate and confirmed data.",
+              "executionTimeMs": 13577,
+              "timestamp": "2026-05-06T08:08:02.893Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Affordability Decision",
+            "measurement": {
+              "metricRef": "affordabilityDecisionAccuracy",
+              "score": 0.8,
+              "rawValue": 4,
+              "confidence": 0.9,
+              "reasoning": "The assistant correctly avoids making a definitive 'yes/no' affordability decision, matching the 'unknown' ground truth expectation, and instead moves to the projection phase as requested. It appropriately explains that it is using 'conservative estimates' to provide a safety margin. However, it used the previously established higher expense/repair figures ($4,000/$15,000) rather than the updated, slightly lower figures suggested by the user ($3,500/$12,000), which is a minor discrepancy in following the user's latest input, even if justified by the 'conservative' label.",
+              "executionTimeMs": 18544,
+              "timestamp": "2026-05-06T08:08:07.861Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 4,
+                "score": 0.8
+              }
+            }
+          },
+          {
+            "evalRef": "Affordability Decision",
+            "measurement": {
+              "metricRef": "affordabilityDecisionAccuracy",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The assistant perfectly addressed all parts of the user's query. It correctly updated the monthly expenses to $3,500, reduced the repair bill to $12,000, and incorporated the $5,000 freelance income in August. The mathematical projections in the table are consistent with these figures (e.g., June net cashflow of -$13,500 accounts for $2,000 income, $3,500 expenses, and $12,000 repair). The assistant accurately calculated the runway (approx. 9.6 years) and provided a clear 'Safe' verdict, directly answering the user's concerns about hitting zero balance.",
+              "executionTimeMs": 18705,
+              "timestamp": "2026-05-06T08:08:08.022Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          }
+        ]
+      },
+      "Clarification Precision": {
+        "byStepIndex": [
+          {
+            "evalRef": "Clarification Precision",
+            "measurement": {
+              "metricRef": "clarificationRequestPrecision",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.95,
+              "reasoning": "The assistant correctly identified that the user's intent was clear (not ambiguous) but that the request was underspecified. Following the ground truth that the input is not ambiguous, the assistant did not ask the user to clarify their intent; instead, it proactively requested the specific data points necessary to fulfill the request. This is the most helpful and appropriate action for a clear but underspecified financial query, as it avoids making assumptions while providing a clear path forward.",
+              "executionTimeMs": 23098,
+              "timestamp": "2026-05-06T08:08:12.415Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Clarification Precision",
+            "measurement": {
+              "metricRef": "clarificationRequestPrecision",
+              "score": 0.4,
+              "rawValue": 2,
+              "confidence": 0.95,
+              "reasoning": "The assistant identified the user's input as requiring clarification and proceeded to ask several questions about income, expenses, and repair costs. However, the provided Ground Truth indicates that the input should not have been treated as ambiguous (Should ask for clarification: false). In such cases, the assistant is expected to provide a general response, a formula, or examples (e.g., 'For every $1,000 spent per month, your savings will last X months') rather than asking the user for specific data points they already admitted to not having. According to the rubric, asking for clarification when it is not deemed necessary by the Ground Truth results in a score of 2.",
+              "executionTimeMs": 20948,
+              "timestamp": "2026-05-06T08:08:10.266Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "fail",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 2,
+                "score": 0.4
+              }
+            }
+          },
+          {
+            "evalRef": "Clarification Precision",
+            "measurement": {
+              "metricRef": "clarificationRequestPrecision",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The assistant correctly followed the user's instruction to provide a ballpark projection despite the ambiguity in the numbers. Since the user explicitly stated 'this is all too complicated to pin down right now' and asked to project based on the provided ranges, the assistant acted appropriately by choosing conservative estimates and asking for confirmation ('yes') before proceeding. This aligns with the ground truth that clarification was not required.",
+              "executionTimeMs": 7425,
+              "timestamp": "2026-05-06T08:07:56.743Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Clarification Precision",
+            "measurement": {
+              "metricRef": "clarificationRequestPrecision",
+              "score": 0.2,
+              "rawValue": 1,
+              "confidence": 0.9,
+              "reasoning": "The assistant failed to provide the requested projection and instead made several unfounded assumptions. It hallucinated specific figures (a $2,000 income and a $15,000 repair cost) that were not present in the user's input. Additionally, it assumed 'today' is May 6, 2026, which contradicts the user's statement that a 2026 date 'seems way too far away'. While the assistant did ask for confirmation, it essentially blocked the user's request with an unnecessary and poorly-founded clarification step, contradicting the ground truth which states that clarification was not required.",
+              "executionTimeMs": 18704,
+              "timestamp": "2026-05-06T08:08:08.022Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "fail",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 1,
+                "score": 0.2
+              }
+            }
+          },
+          {
+            "evalRef": "Clarification Precision",
+            "measurement": {
+              "metricRef": "clarificationRequestPrecision",
+              "score": 0.6,
+              "rawValue": 3,
+              "confidence": 0.9,
+              "reasoning": "The assistant correctly identified that it should not ask for further clarification, matching the ground truth and respecting the user's request to 'just run the projection'. However, it failed to use the updated figures provided by the user ($3,500 and $12,000) and instead made an assumption that it should use 'conservative' (higher) estimates from previous context ($4,000 and $15,000). This constitutes making an unnecessary assumption rather than using the specific information provided in the prompt.",
+              "executionTimeMs": 17000,
+              "timestamp": "2026-05-06T08:08:06.319Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "fail",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 3,
+                "score": 0.6
+              }
+            }
+          },
+          {
+            "evalRef": "Clarification Precision",
+            "measurement": {
+              "metricRef": "clarificationRequestPrecision",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The user input was not ambiguous; it provided specific updated figures and a clear question about whether to include a new income source. The assistant correctly identified that no clarification was needed, proceeded to update the projection with the provided numbers, and answered the user's underlying concern about financial safety. This aligns with the ground truth that no clarification was required.",
+              "executionTimeMs": 5804,
+              "timestamp": "2026-05-06T08:07:55.123Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          }
+        ]
+      },
+      "Context Precision": {
+        "byStepIndex": [
+          {
+            "evalRef": "Context Precision",
+            "measurement": {
+              "metricRef": "contextPrecision",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The assistant correctly identified that it lacked the necessary data to answer the user's question. Instead of making up figures or providing a generic guess, it requested the specific information needed to perform a calculation. Since no context was provided, the assistant's refusal to hallucinate and its request for clarification are perfectly grounded and precise.",
+              "executionTimeMs": 5169,
+              "timestamp": "2026-05-06T08:07:54.488Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Context Precision",
+            "measurement": {
+              "metricRef": "contextPrecision",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The assistant's response is perfectly grounded in the user's input. It acknowledges the specific amount mentioned (200,000) and the mention of repairs. It correctly identifies that it cannot calculate the duration without income and expense data, which the user admitted to not having yet. The assistant does not invent any facts, but rather asks for the necessary variables to perform the requested calculation, using illustrative examples for clarification.",
+              "executionTimeMs": 6624,
+              "timestamp": "2026-05-06T08:07:55.943Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Context Precision",
+            "measurement": {
+              "metricRef": "contextPrecision",
+              "score": 0.2,
+              "rawValue": 1,
+              "confidence": 1,
+              "reasoning": "The assistant hallucinated two major pieces of information that were not present in the user input: a current balance of $200,000 and a specific date for the repair (June 15, 2026). While it correctly utilized the ranges provided for income, expenses, and repairs, the invention of a starting balance makes the financial summary fundamentally ungrounded.",
+              "executionTimeMs": 9038,
+              "timestamp": "2026-05-06T08:07:58.358Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "fail",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 1,
+                "score": 0.2
+              }
+            }
+          },
+          {
+            "evalRef": "Context Precision",
+            "measurement": {
+              "metricRef": "contextPrecision",
+              "score": 0.2,
+              "rawValue": 1,
+              "confidence": 0.95,
+              "reasoning": "The assistant introduces several specific numbers and facts that are not present in the provided context. Specifically, it invents a 'Current Date' of May 6, 2026, a base 'Monthly Income' of $2,000, and a 'One-Time Repair' cost of $15,000. While the user input mentions a repair date, a balance of $180,000, and $4,000 in expenses, the assistant fills in critical missing variables with completely fabricated numbers not found in the prompt or context.",
+              "executionTimeMs": 6909,
+              "timestamp": "2026-05-06T08:07:56.229Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "fail",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 1,
+                "score": 0.2
+              }
+            }
+          },
+          {
+            "evalRef": "Context Precision",
+            "measurement": {
+              "metricRef": "contextPrecision",
+              "score": 0.2,
+              "rawValue": 1,
+              "confidence": 0.95,
+              "reasoning": "The assistant introduces several specific data points that are completely absent from both the user input and the provided context, specifically the current balance of $180,000, the monthly income of $2,000, and the specific date of June 15, 2026. Furthermore, the assistant ignores the user's updated figures ($3,500 for expenses and $12,000 for repairs) in favor of other numbers ($4,000 and $15,000) which, while implied to be 'previous' figures, are not grounded in the provided context for this evaluation.",
+              "executionTimeMs": 8788,
+              "timestamp": "2026-05-06T08:07:58.108Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "fail",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 1,
+                "score": 0.2
+              }
+            }
+          },
+          {
+            "evalRef": "Context Precision",
+            "measurement": {
+              "metricRef": "contextPrecision",
+              "score": 0.4,
+              "rawValue": 2,
+              "confidence": 0.9,
+              "reasoning": "The assistant correctly incorporated the specific updates provided by the user ($3,500 expenses, $12,000 repair, and $5,000 income). However, the assistant introduced several significant data points that were not present in the user input or the provided context, including a $180,000 starting balance, a $2,000 base monthly income, and specific dates. Because the starting balance and base income are entirely invented, the assistant's primary conclusion (the 10-year runway and the 'Safe' verdict) is unsupported by the available context.",
+              "executionTimeMs": 14795,
+              "timestamp": "2026-05-06T08:08:04.115Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "fail",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 2,
+                "score": 0.4
+              }
+            }
+          }
+        ]
+      },
+      "Context Recall": {
+        "byStepIndex": [
+          {
+            "evalRef": "Context Recall",
+            "measurement": {
+              "metricRef": "contextRecall",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The assistant provides a highly logical and useful response by identifying the specific data points required to answer the user's question. Since there was no available context or required facts provided in the evaluation prompt, the assistant cannot be penalized for missing information and has handled the request appropriately.",
+              "executionTimeMs": 7729,
+              "timestamp": "2026-05-06T08:07:57.050Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Context Recall",
+            "measurement": {
+              "metricRef": "contextRecall",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The assistant's response perfectly addresses the information provided in the user input. It acknowledges the specific amount ($200,000), the user's goal (how long the money will last), and the specific detail about upcoming repairs. It correctly identifies the missing variables (income and expenses) required to provide a helpful answer and asks for them in a structured way.",
+              "executionTimeMs": 5781,
+              "timestamp": "2026-05-06T08:07:55.102Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Context Recall",
+            "measurement": {
+              "metricRef": "contextRecall",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 0.95,
+              "reasoning": "The assistant correctly identified and extracted all three financial data points provided in the user input: the income range ($2,000-$5,000), the expense range ($3,000-$4,000), and the repair cost range ($10,000-$15,000). It handled the user's request for a 'ballpark' by selecting conservative figures from those ranges to build the summary. While it did introduce an arbitrary starting balance ($200,000) not mentioned in the prompt, it fully captured and utilized all the information actually provided by the user.",
+              "executionTimeMs": 9176,
+              "timestamp": "2026-05-06T08:07:58.497Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Context Recall",
+            "measurement": {
+              "metricRef": "contextRecall",
+              "score": 0.6,
+              "rawValue": 3,
+              "confidence": 0.9,
+              "reasoning": "The assistant correctly identifies the updated financial figures provided by the user, such as the $180,000 balance, the exclusion of the inaccessible $20,000, and the $4,000 monthly expenses. It also acknowledges the variable income of $5,000. However, it fails significantly on the temporal context: the user explicitly states that 2026 'seems way too far away,' yet the assistant sets 'today' as May 2026. Additionally, the assistant introduces specific values (a $15,000 repair cost and a $2,000 base income) that were not present in the user's input or the available context, which may be confusing or inaccurate.",
+              "executionTimeMs": 11197,
+              "timestamp": "2026-05-06T08:08:00.518Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "fail",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 3,
+                "score": 0.6
+              }
+            }
+          },
+          {
+            "evalRef": "Context Recall",
+            "measurement": {
+              "metricRef": "contextRecall",
+              "score": 0.2,
+              "rawValue": 1,
+              "confidence": 1,
+              "reasoning": "The assistant completely ignored the specific numerical updates provided by the user in the input. The user explicitly stated that expenses are closer to $3,500 and the repair bill could be $12,000. The assistant instead used $4,000 and $15,000, failing to incorporate the primary information provided in the context. While it correctly identified the categories of data needed for the projection, it failed to use the actual values provided by the user.",
+              "executionTimeMs": 8033,
+              "timestamp": "2026-05-06T08:07:57.355Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "fail",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 1,
+                "score": 0.2
+              }
+            }
+          },
+          {
+            "evalRef": "Context Recall",
+            "measurement": {
+              "metricRef": "contextRecall",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The assistant perfectly captured all the new information provided by the user (the $3,500 expenses, the $12,000 repair bill, and the $5,000 freelance income) and applied them correctly to the financial projection. It also directly addressed the user's primary concern regarding their financial safety and runway.",
+              "executionTimeMs": 5525,
+              "timestamp": "2026-05-06T08:07:54.847Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          }
+        ]
+      },
+      "Over Clarification": {
+        "byStepIndex": [
+          {
+            "evalRef": "Over Clarification",
+            "measurement": {
+              "metricRef": "overClarificationRate",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The user provided no financial information (balance, income, or expenses) in their query. Therefore, the assistant's questions are necessary, relevant, and well-structured to fulfill the user's request to calculate their financial runway. The 'Ground Truth' label indicating information was sufficient appears to be an error as the input contains zero data points.",
+              "executionTimeMs": 13571,
+              "timestamp": "2026-05-06T08:08:02.893Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Over Clarification",
+            "measurement": {
+              "metricRef": "overClarificationRate",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The assistant recognized the amount provided ($200,000) and correctly identified that it could not calculate the 'runway' without knowing the burn rate (expenses minus income). The user explicitly stated they had not yet figured out their bills or income, so the assistant's questions were necessary to provide the requested calculation. The assistant did not ask for any information that had already been provided.",
+              "executionTimeMs": 25612,
+              "timestamp": "2026-05-06T08:08:14.934Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          },
+          {
+            "evalRef": "Over Clarification",
+            "measurement": {
+              "metricRef": "overClarificationRate",
+              "score": 0.8,
+              "rawValue": 4,
+              "confidence": 1,
+              "reasoning": "The assistant correctly identified and utilized all the information provided by the user, including handling the ranges by making conservative assumptions. However, it paused to ask for confirmation of those assumptions instead of proceeding directly with the projection as requested ('Can you just project it now?'). This represents a minor, though helpful, unnecessary step.",
+              "executionTimeMs": 6086,
+              "timestamp": "2026-05-06T08:07:55.409Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 4,
+                "score": 0.8
+              }
+            }
+          },
+          {
+            "evalRef": "Over Clarification",
+            "measurement": {
+              "metricRef": "overClarificationRate",
+              "score": 0.6,
+              "rawValue": 3,
+              "confidence": 0.95,
+              "reasoning": "The assistant correctly recognized and summarized all the information provided by the user, including interpreting 'next month' based on the current date and handling the ambiguous income/balance figures. However, it failed to proceed with the actual task ('Can you just show me what it looks like'). Instead, it created an unnecessary hurdle by requiring the user to say 'yes' before it would perform the projection. While confirmation can be helpful, the user's request was clear enough to proceed with the calculation alongside the summary.",
+              "executionTimeMs": 8912,
+              "timestamp": "2026-05-06T08:07:58.235Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "fail",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 3,
+                "score": 0.6
+              }
+            }
+          },
+          {
+            "evalRef": "Over Clarification",
+            "measurement": {
+              "metricRef": "overClarificationRate",
+              "score": 0.6,
+              "rawValue": 3,
+              "confidence": 0.9,
+              "reasoning": "The assistant asked for a projection timeframe instead of proceeding with the task. Since the user specifically asked if they were going to 'run out of money soon,' the assistant had sufficient information to project until the balance reached zero or to use a default timeframe (e.g., 1-2 years) to provide the requested graph immediately. Furthermore, the assistant ignored the updated figures provided by the user ($3,500 expenses and $12,000 repair) in favor of older 'conservative' estimates, which suggests it did not efficiently process the information provided in the prompt.",
+              "executionTimeMs": 12647,
+              "timestamp": "2026-05-06T08:08:01.970Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "fail",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 3,
+                "score": 0.6
+              }
+            }
+          },
+          {
+            "evalRef": "Over Clarification",
+            "measurement": {
+              "metricRef": "overClarificationRate",
+              "score": 1,
+              "rawValue": 5,
+              "confidence": 1,
+              "reasoning": "The assistant perfectly recognized all the information provided by the user, including the corrections and the optional freelance income. It proceeded directly to the task without asking any unnecessary clarifying questions.",
+              "executionTimeMs": 3926,
+              "timestamp": "2026-05-06T08:07:53.249Z",
+              "normalization": {
+                "normalizer": {
+                  "type": "min-max",
+                  "min": 0,
+                  "max": 5,
+                  "clip": true
+                }
+              }
+            },
+            "outcome": {
+              "verdict": "pass",
+              "policy": {
+                "kind": "number",
+                "type": "threshold",
+                "passAt": 3.5
+              },
+              "observed": {
+                "rawValue": 5,
+                "score": 1
+              }
+            }
+          }
+        ]
+      }
+    },
+    "multiTurn": {
+      "Role Adherence": {
+        "evalRef": "Role Adherence",
+        "measurement": {
+          "metricRef": "roleAdherence",
+          "score": 0.8,
+          "rawValue": 4,
+          "confidence": 0.95,
+          "reasoning": "The assistant consistently adhered to the role of a cashflow management assistant, maintaining a professional and structured tone. It correctly identified the necessary data points, used financial concepts like 'runway' and 'conservative estimates,' and provided a clear table and summary in the final turn. However, it lost points for a consistency error in Turn 5, where it failed to incorporate the updated figures provided by the user in that same turn ($3,500 expenses and $12,000 repairs), instead repeating the previous figures. It corrected this in Turn 6.",
+          "executionTimeMs": 10501,
+          "timestamp": "2026-05-06T08:07:59.817Z",
+          "normalization": {
+            "normalizer": {
+              "type": "min-max",
+              "min": 0,
+              "max": 5,
+              "clip": true
+            }
+          }
+        },
+        "outcome": {
+          "verdict": "pass",
+          "policy": {
+            "kind": "number",
+            "type": "threshold",
+            "passAt": 3.5
+          },
+          "observed": {
+            "rawValue": 4,
+            "score": 0.8
+          }
+        }
+      }
+    },
+    "scorers": {
+      "Overall Quality": {
+        "shape": "seriesByStepIndex",
+        "series": {
+          "byStepIndex": [
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.97
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.97,
+                  "score": 0.97
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.89
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.89,
+                  "score": 0.89
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.7300000000000001
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.7300000000000001,
+                  "score": 0.7300000000000001
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.6600000000000001
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.6600000000000001,
+                  "score": 0.6600000000000001
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.53
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.53,
+                  "score": 0.53
+                }
+              }
+            },
+            {
+              "evalRef": "Overall Quality",
+              "measurement": {
+                "metricRef": "OverallQuality",
+                "score": 0.91
+              },
+              "outcome": {
+                "verdict": "pass",
+                "policy": {
+                  "kind": "number",
+                  "type": "threshold",
+                  "passAt": 0.5
+                },
+                "observed": {
+                  "rawValue": 0.91,
+                  "score": 0.91
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "summaries": {
+      "byEval": {
+        "Answer Relevance": {
+          "eval": "Answer Relevance",
+          "kind": "singleTurn",
+          "count": 6,
+          "aggregations": {
+            "score": {
+              "Mean": 0.8333333333333334,
+              "P50": 0.9,
+              "P75": 1,
+              "P90": 1
+            },
+            "raw": {
+              "Mean": 4.166666666666667,
+              "P50": 4.5,
+              "P75": 5,
+              "P90": 5
+            }
+          },
+          "verdictSummary": {
+            "passRate": 0.8333333333333334,
+            "failRate": 0.16666666666666666,
+            "unknownRate": 0,
+            "passCount": 5,
+            "failCount": 1,
+            "unknownCount": 0,
+            "totalCount": 6
+          }
+        },
+        "Completeness": {
+          "eval": "Completeness",
+          "kind": "singleTurn",
+          "count": 6,
+          "aggregations": {
+            "score": {
+              "Mean": 0.6333333333333334,
+              "P50": 0.6,
+              "P75": 0.9,
+              "P90": 1
+            },
+            "raw": {
+              "Mean": 3.1666666666666665,
+              "P50": 3,
+              "P75": 4.5,
+              "P90": 5
+            }
+          },
+          "verdictSummary": {
+            "passRate": 0.6666666666666666,
+            "failRate": 0.3333333333333333,
+            "unknownRate": 0,
+            "passCount": 4,
+            "failCount": 2,
+            "unknownCount": 0,
+            "totalCount": 6
+          }
+        },
+        "Role Adherence": {
+          "eval": "Role Adherence",
+          "kind": "multiTurn",
+          "count": 1,
+          "aggregations": {
+            "score": {
+              "value": 0.8
+            },
+            "raw": {
+              "value": 4
+            }
+          },
+          "verdictSummary": {
+            "passRate": 1,
+            "failRate": 0,
+            "unknownRate": 0,
+            "passCount": 1,
+            "failCount": 0,
+            "unknownCount": 0,
+            "totalCount": 1
+          }
+        },
+        "Affordability Decision": {
+          "eval": "Affordability Decision",
+          "kind": "singleTurn",
+          "count": 6,
+          "aggregations": {
+            "score": {
+              "Mean": 0.9,
+              "P50": 1,
+              "P75": 1,
+              "P90": 1
+            },
+            "raw": {
+              "Mean": 4.5,
+              "P50": 5,
+              "P75": 5,
+              "P90": 5
+            }
+          },
+          "verdictSummary": {
+            "passRate": 0.8333333333333334,
+            "failRate": 0.16666666666666666,
+            "unknownRate": 0,
+            "passCount": 5,
+            "failCount": 1,
+            "unknownCount": 0,
+            "totalCount": 6
+          }
+        },
+        "Clarification Precision": {
+          "eval": "Clarification Precision",
+          "kind": "singleTurn",
+          "count": 6,
+          "aggregations": {
+            "score": {
+              "Mean": 0.7000000000000001,
+              "P50": 0.8,
+              "P75": 1,
+              "P90": 1
+            },
+            "raw": {
+              "Mean": 3.5,
+              "P50": 4,
+              "P75": 5,
+              "P90": 5
+            }
+          },
+          "verdictSummary": {
+            "passRate": 0.5,
+            "failRate": 0.5,
+            "unknownRate": 0,
+            "passCount": 3,
+            "failCount": 3,
+            "unknownCount": 0,
+            "totalCount": 6
+          }
+        },
+        "Context Precision": {
+          "eval": "Context Precision",
+          "kind": "singleTurn",
+          "count": 6,
+          "aggregations": {
+            "score": {
+              "Mean": 0.5000000000000001,
+              "P50": 0.30000000000000004,
+              "P75": 0.85,
+              "P90": 1
+            },
+            "raw": {
+              "Mean": 2.5,
+              "P50": 1.5,
+              "P75": 4.25,
+              "P90": 5
+            }
+          },
+          "verdictSummary": {
+            "passRate": 0.3333333333333333,
+            "failRate": 0.6666666666666666,
+            "unknownRate": 0,
+            "passCount": 2,
+            "failCount": 4,
+            "unknownCount": 0,
+            "totalCount": 6
+          }
+        },
+        "Context Recall": {
+          "eval": "Context Recall",
+          "kind": "singleTurn",
+          "count": 6,
+          "aggregations": {
+            "score": {
+              "Mean": 0.8000000000000002,
+              "P50": 1,
+              "P75": 1,
+              "P90": 1
+            },
+            "raw": {
+              "Mean": 4,
+              "P50": 5,
+              "P75": 5,
+              "P90": 5
+            }
+          },
+          "verdictSummary": {
+            "passRate": 0.6666666666666666,
+            "failRate": 0.3333333333333333,
+            "unknownRate": 0,
+            "passCount": 4,
+            "failCount": 2,
+            "unknownCount": 0,
+            "totalCount": 6
+          }
+        },
+        "Over Clarification": {
+          "eval": "Over Clarification",
+          "kind": "singleTurn",
+          "count": 6,
+          "aggregations": {
+            "score": {
+              "Mean": 0.8333333333333334,
+              "P50": 0.9,
+              "P75": 1,
+              "P90": 1
+            },
+            "raw": {
+              "Mean": 4.166666666666667,
+              "P50": 4.5,
+              "P75": 5,
+              "P90": 5
+            }
+          },
+          "verdictSummary": {
+            "passRate": 0.6666666666666666,
+            "failRate": 0.3333333333333333,
+            "unknownRate": 0,
+            "passCount": 4,
+            "failCount": 2,
+            "unknownCount": 0,
+            "totalCount": 6
+          }
+        },
+        "Overall Quality": {
+          "eval": "Overall Quality",
+          "kind": "scorer",
+          "count": 6,
+          "aggregations": {
+            "score": {
+              "Mean": 0.7816666666666667,
+              "P50": 0.81,
+              "P75": 0.905,
+              "P90": 0.94
+            }
+          },
+          "verdictSummary": {
+            "passRate": 1,
+            "failRate": 0,
+            "unknownRate": 0,
+            "passCount": 6,
+            "failCount": 0,
+            "unknownCount": 0,
+            "totalCount": 6
+          }
+        }
+      }
+    }
+  },
+  "metadata": {
+    "dataCount": 1,
+    "evalCount": 9
+  }
+}
